@@ -34,7 +34,7 @@ function ProductPicker({
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker", search],
     queryFn: async () => {
-      let q = supabase.from("products_admin" as any).select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
+      let q = (supabase as any).from("products_admin").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
       if (search.trim()) q = q.ilike("name_ar", `%${search}%`);
       const { data } = await q;
       return (data || []) as any[];
@@ -46,7 +46,7 @@ function ProductPicker({
     queryKey: ["admin-product-selected", value.product_id],
     queryFn: async () => {
       if (!value.product_id) return null;
-      const { data } = await supabase.from("products_admin" as any).select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
+      const { data } = await (supabase as any).from("products_admin").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
       return data as any;
     },
     enabled: !!value.product_id,
@@ -378,7 +378,7 @@ export default function StackGameTab() {
       if (!newMilestone.prize_name_ar.trim() && !newMilestone.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       // Validate stock exists for product-based prizes
       if (newMilestone.product_id) {
-        const { data: prod } = await supabase.from("products_admin" as any).select("direct_stock, pre_order_stock, colors").eq("id", newMilestone.product_id).single();
+        const { data: prod } = await (supabase as any).from("products_admin").select("direct_stock, pre_order_stock, colors").eq("id", newMilestone.product_id).single();
         const adminProd = prod as any;
         const hasDirectStock = adminProd?.direct_stock != null && adminProd.direct_stock > 0;
         const hasPreOrderStock = adminProd?.pre_order_stock != null && adminProd.pre_order_stock > 0;
@@ -433,7 +433,7 @@ export default function StackGameTab() {
     mutationFn: async () => {
       if (!newLbPrize.prize_name_ar.trim() && !newLbPrize.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       if (newLbPrize.product_id) {
-        const { data: prod } = await supabase.from("products_admin" as any).select("direct_stock, pre_order_stock, colors").eq("id", newLbPrize.product_id).single();
+        const { data: prod } = await (supabase as any).from("products_admin").select("direct_stock, pre_order_stock, colors").eq("id", newLbPrize.product_id).single();
         const adminProd = prod as any;
         const hasDirectStock = adminProd?.direct_stock != null && adminProd.direct_stock > 0;
         const hasPreOrderStock = adminProd?.pre_order_stock != null && adminProd.pre_order_stock > 0;

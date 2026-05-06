@@ -117,8 +117,8 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
     try {
       // Get existing product colors
       setRetryProgress(20);
-      const { data: product } = await supabase
-        .from('products_admin' as any)
+      const { data: product } = await (supabase as any)
+        .from('products_admin')
         .select('id, colors')
         .eq('slug', request.code)
         .single();

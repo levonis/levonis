@@ -64,8 +64,8 @@ const AdminProductColorQa = () => {
   const { data: products = [], isLoading: searchLoading } = useQuery({
     queryKey: ['qa-product-search', search],
     queryFn: async () => {
-      const q = supabase
-        .from('products_admin' as any)
+      const q = (supabase as any)
+        .from('products_admin')
         .select('id, slug, name, name_ar, image_url, images, colors, taobao_url')
         .order('updated_at', { ascending: false })
         .limit(25);

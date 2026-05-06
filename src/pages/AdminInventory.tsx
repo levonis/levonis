@@ -579,8 +579,8 @@ export default function AdminInventory() {
 
         for (const [pid, pItems] of Object.entries(byProduct)) {
           // Fetch fresh product data
-          const { data: product, error: fetchErr } = await supabase
-            .from('products_admin' as any)
+          const { data: product, error: fetchErr } = await (supabase as any)
+            .from('products_admin')
             .select('id, direct_stock, colors')
             .eq('id', pid)
             .single();
