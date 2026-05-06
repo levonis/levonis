@@ -262,7 +262,10 @@ const CreateBatchButton = ({
   const [cardId, setCardId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(6);
   const [durationDays, setDurationDays] = useState<number>(180);
-  const [codeExpiryDays, setCodeExpiryDays] = useState<number>(90);
+  const [validFrom, setValidFrom] = useState<Date | undefined>(undefined);
+  const [validUntil, setValidUntil] = useState<Date | undefined>(() => {
+    const d = new Date(); d.setDate(d.getDate() + 90); return d;
+  });
   const [batchLabel, setBatchLabel] = useState<string>('');
   const [requiresWarranty, setRequiresWarranty] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState(false);
@@ -289,8 +292,12 @@ const CreateBatchButton = ({
       toast.error('مدة البطاقة يجب أن تكون 1..1825 يوم');
       return;
     }
-    if (!Number.isInteger(codeExpiryDays) || codeExpiryDays < 1 || codeExpiryDays > 365) {
-      toast.error('مدة صلاحية الكود يجب أن تكون 1..365 يوم');
+    if (!validUntil) {
+      toast.error('اختر تاريخ انتهاء صلاحية الكود');
+      return;
+    }
+    if (validFrom && validFrom >= validUntil) {
+      toast.error('تاريخ البداية يجب أن يكون قبل تاريخ النهاية');
       return;
     }
     if ((batchLabel || '').length > 100) {
@@ -299,14 +306,14 @@ const CreateBatchButton = ({
     }
     setSubmitting(true);
     try {
-      const expires = new Date(Date.now() + codeExpiryDays * 86400_000).toISOString();
       const { error } = await (supabase as any).rpc('create_loyalty_code_batch', {
         p_card_id: cardId,
         p_quantity: quantity,
         p_duration_days: durationDays,
-        p_code_expires_at: expires,
+        p_code_expires_at: validUntil.toISOString(),
         p_batch_label: batchLabel?.trim() || null,
         p_requires_active_warranty: requiresWarranty,
+        p_valid_from: validFrom ? validFrom.toISOString() : null,
       });
       if (error) throw error;
       toast.success(`تم إنشاء ${quantity} كود`);
@@ -320,8 +327,28 @@ const CreateBatchButton = ({
     }
   };
 
+  const DateField = ({ value, onChange, placeholder }: { value: Date | undefined; onChange: (d: Date | undefined) => void; placeholder: string }) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            'w-full justify-start text-right font-normal h-9',
+            !value && 'text-muted-foreground'
+          )}
+        >
+          <CalendarIcon className="ml-2 h-3.5 w-3.5" />
+          {value ? format(value, 'yyyy-MM-dd') : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar mode="single" selected={value} onSelect={onChange} initialFocus className={cn('p-3 pointer-events-auto')} />
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogTrigger asChild>
         <Button size="sm"><Plus className="h-4 w-4 ml-1" /> دفعة جديدة</Button>
       </DialogTrigger>
@@ -351,11 +378,20 @@ const CreateBatchButton = ({
               <Input type="number" value={durationDays} onChange={e => setDurationDays(Number(e.target.value))} />
             </div>
           </div>
-          <div>
-            <Label className="text-xs">انتهاء صلاحية الكود (أيام من الآن)</Label>
-            <Input type="number" value={codeExpiryDays} onChange={e => setCodeExpiryDays(Number(e.target.value))} />
-            <p className="text-[10px] text-muted-foreground mt-1">
-              مثال: 90 = ينتهي الكود بعد 3 أشهر إذا لم يُستخدم
+          <div className="rounded-lg border border-border/60 p-2.5 space-y-2 bg-muted/20">
+            <Label className="text-xs font-semibold">فترة صلاحية الكود</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">تاريخ البداية (اختياري)</Label>
+                <DateField value={validFrom} onChange={setValidFrom} placeholder="فوراً" />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">تاريخ النهاية</Label>
+                <DateField value={validUntil} onChange={setValidUntil} placeholder="اختر تاريخاً" />
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              لن يعمل الكود قبل تاريخ البداية، ويُنتهى تلقائياً عند تاريخ النهاية.
             </p>
           </div>
           <div>
