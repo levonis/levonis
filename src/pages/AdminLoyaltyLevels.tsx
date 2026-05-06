@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminCardHeader, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 import LoyaltyCardPreview from "@/components/admin/LoyaltyCardPreview";
-import { CreateBatchButton, ImportBatchesButton } from "./AdminLoyaltyCardCodes";
+import { CreateBatchButton, ImportBatchesButton, LoyaltyCodeBatchesList } from "./AdminLoyaltyCardCodes";
 import { History, Ticket } from "lucide-react";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 
@@ -603,13 +603,6 @@ export default function AdminLoyaltyLevels() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-card-codes`)}
-              >
-                <Ticket className="h-4 w-4 ml-1" /> إدارة الأكواد
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
                 onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
               >
                 <History className="h-4 w-4 ml-1" /> سجل الاستخدام
@@ -853,10 +846,10 @@ export default function AdminLoyaltyLevels() {
                                   variant="outline"
                                   size="sm"
                                   className="w-full"
-                                  onClick={() => navigate('/cp-x9A3kL7m/loyalty-card-codes')}
+                                  onClick={() => { setDialogOpen(false); setTimeout(() => setCreateBatchOpen(true), 200); }}
                                 >
                                   <Tag className="h-3.5 w-3.5 ml-1" />
-                                  إدارة أكواد التفعيل وإنشاء دفعات جديدة
+                                  إنشاء دفعة أكواد جديدة
                                 </Button>
                               </div>
                             )}
@@ -1464,6 +1457,17 @@ export default function AdminLoyaltyLevels() {
               })}
             </div>
           )}
+
+          {/* Loyalty Activation Code Batches (merged from /loyalty-card-codes) */}
+          <AdminCard hover={false}>
+            <AdminCardHeader
+              title="دفعات أكواد التفعيل"
+              description="إنشاء وإدارة دفعات أكواد تفعيل بطاقات الولاء"
+            />
+            <AdminCardContent>
+              <LoyaltyCodeBatchesList showHeader={false} />
+            </AdminCardContent>
+          </AdminCard>
         </TabsContent>
 
         {/* Card Holders Tab */}

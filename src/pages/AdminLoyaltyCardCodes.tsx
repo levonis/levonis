@@ -51,11 +51,9 @@ const StatusBadge = ({ status }: { status: CodeRow['status'] }) => {
   return <Badge variant="outline" className={`text-[10px] ${m.cls}`}>{m.label}</Badge>;
 };
 
-const AdminLoyaltyCardCodes = () => {
+export const LoyaltyCodeBatchesList = ({ showHeader = true }: { showHeader?: boolean } = {}) => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const qc = useQueryClient();
-  const [openCreate, setOpenCreate] = useState(false);
   const [expandedBatches, setExpandedBatches] = useState<Record<string, boolean>>({});
 
   // Lazy expire on mount
@@ -144,129 +142,120 @@ const AdminLoyaltyCardCodes = () => {
     onError: (e: any) => toast.error(e?.message || 'فشل الإلغاء'),
   });
 
+  const Body = (
+    <div className="space-y-3">
+      <Card className="p-3 text-xs text-muted-foreground leading-relaxed">
+        الأكواد الناتجة هنا تُمكّن المستخدم من تفعيل بطاقة ولاء (مثل البطاقة البرونزية لمدة 6 أشهر) فقط
+        إذا كان لديه طابعة فعّالة في الضمان. تاريخ بدء البطاقة هو لحظة تفعيل الكود من قبل المستخدم.
+      </Card>
+
+      {isLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin" /></div>
+      ) : batches.length === 0 ? (
+        <Card className="p-8 text-center text-sm text-muted-foreground">لا توجد دفعات أكواد بعد</Card>
+      ) : (
+        batches.map(b => {
+          const counts = b.codes.reduce(
+            (acc, c) => { acc[c.status] = (acc[c.status] || 0) + 1; return acc; },
+            {} as Record<string, number>
+          );
+          const expanded = !!expandedBatches[b.batch_id];
+          return (
+            <Card key={b.batch_id} className="overflow-hidden">
+              <button
+                className="w-full p-3 text-right flex items-center justify-between hover:bg-muted/30"
+                onClick={() => setExpandedBatches(s => ({ ...s, [b.batch_id]: !s[b.batch_id] }))}
+              >
+                <div className="flex items-center gap-2">
+                  {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <div className="text-right">
+                    <div className="text-sm font-semibold">{cardName(b.card_id)}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {b.batch_label || `دفعة ${b.batch_id.slice(0, 6)}`} • {b.codes.length} كود •
+                     {b.valid_from && new Date(b.valid_from) > new Date()
+                       ? `يبدأ: ${new Date(b.valid_from).toLocaleDateString('ar')} • `
+                       : b.valid_from
+                       ? `بدأ: ${new Date(b.valid_from).toLocaleDateString('ar')} • `
+                       : ''}
+                     ينتهي: {new Date(b.code_expires_at).toLocaleDateString('ar')}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  {counts.active   ? <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-700 border-emerald-500/30">فعّال {counts.active}</Badge> : null}
+                  {counts.redeemed ? <Badge variant="outline" className="text-[10px] bg-sky-500/15 text-sky-700 border-sky-500/30">مستخدم {counts.redeemed}</Badge> : null}
+                  {counts.expired  ? <Badge variant="outline" className="text-[10px]">منتهي {counts.expired}</Badge> : null}
+                  {counts.revoked  ? <Badge variant="outline" className="text-[10px] bg-rose-500/15 text-rose-700 border-rose-500/30">ملغى {counts.revoked}</Badge> : null}
+                </div>
+              </button>
+              {expanded && (
+                <div className="border-t border-border/60 p-3 space-y-2">
+                  <div className="flex gap-2 justify-end">
+                    <Button size="sm" variant="outline" onClick={() => exportBatchCsv(b)}>
+                      <Download className="h-3 w-3 ml-1" /> CSV
+                    </Button>
+                    {(counts.active || 0) > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-rose-600"
+                        onClick={() => {
+                          if (confirm('إلغاء جميع الأكواد الفعّالة في هذه الدفعة؟')) {
+                            revokeBatchMutation.mutate(b.batch_id);
+                          }
+                        }}
+                        disabled={revokeBatchMutation.isPending}
+                      >
+                        <Ban className="h-3 w-3 ml-1" /> إلغاء الفعّال
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 max-h-80 overflow-y-auto">
+                    {b.codes.map(c => (
+                      <div key={c.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/30 border border-border/40">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <code className="text-sm font-mono font-bold tracking-wider">{c.code}</code>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyCode(c.code)}>
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground">{c.duration_days} يوم</span>
+                          <StatusBadge status={c.status} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          );
+        })
+      )}
+    </div>
+  );
+
+  if (!showHeader) return Body;
+
   return (
     <div className="min-h-screen bg-background pb-12">
       <div className="container mx-auto px-3 py-4 max-w-4xl space-y-4">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`${ADMIN_BASE_PATH}`)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-levels`)}>
             <ArrowRight className="h-4 w-4 ml-1" /> رجوع
           </Button>
           <h1 className="text-base font-bold flex items-center gap-2">
             <Ticket className="h-4 w-4" /> أكواد تفعيل بطاقات الولاء
           </h1>
-          <div className="flex gap-1.5">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
-            >
-              <History className="h-3 w-3 ml-1" /> سجل الاستخدام
-            </Button>
-            <ImportBatchesButton
-              cards={cards || []}
-              onCreated={() => qc.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
-            />
-            <CreateBatchButton
-              cards={cards || []}
-              open={openCreate}
-              onOpenChange={setOpenCreate}
-              onCreated={() => qc.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
-            />
-          </div>
+          <div className="w-16" />
         </div>
-
-        <Card className="p-3 text-xs text-muted-foreground leading-relaxed">
-          الأكواد الناتجة هنا تُمكّن المستخدم من تفعيل بطاقة ولاء (مثل البطاقة البرونزية لمدة 6 أشهر) فقط
-          إذا كان لديه طابعة فعّالة في الضمان. تاريخ بدء البطاقة هو لحظة تفعيل الكود من قبل المستخدم.
-        </Card>
-
-        {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin" /></div>
-        ) : batches.length === 0 ? (
-          <Card className="p-8 text-center text-sm text-muted-foreground">لا توجد دفعات أكواد بعد</Card>
-        ) : (
-          batches.map(b => {
-            const counts = b.codes.reduce(
-              (acc, c) => { acc[c.status] = (acc[c.status] || 0) + 1; return acc; },
-              {} as Record<string, number>
-            );
-            const expanded = !!expandedBatches[b.batch_id];
-            return (
-              <Card key={b.batch_id} className="overflow-hidden">
-                <button
-                  className="w-full p-3 text-right flex items-center justify-between hover:bg-muted/30"
-                  onClick={() => setExpandedBatches(s => ({ ...s, [b.batch_id]: !s[b.batch_id] }))}
-                >
-                  <div className="flex items-center gap-2">
-                    {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    <div className="text-right">
-                      <div className="text-sm font-semibold">{cardName(b.card_id)}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {b.batch_label || `دفعة ${b.batch_id.slice(0, 6)}`} • {b.codes.length} كود •
-                       {b.valid_from && new Date(b.valid_from) > new Date()
-                         ? `يبدأ: ${new Date(b.valid_from).toLocaleDateString('ar')} • `
-                         : b.valid_from
-                         ? `بدأ: ${new Date(b.valid_from).toLocaleDateString('ar')} • `
-                         : ''}
-                       ينتهي: {new Date(b.code_expires_at).toLocaleDateString('ar')}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    {counts.active   ? <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-700 border-emerald-500/30">فعّال {counts.active}</Badge> : null}
-                    {counts.redeemed ? <Badge variant="outline" className="text-[10px] bg-sky-500/15 text-sky-700 border-sky-500/30">مستخدم {counts.redeemed}</Badge> : null}
-                    {counts.expired  ? <Badge variant="outline" className="text-[10px]">منتهي {counts.expired}</Badge> : null}
-                    {counts.revoked  ? <Badge variant="outline" className="text-[10px] bg-rose-500/15 text-rose-700 border-rose-500/30">ملغى {counts.revoked}</Badge> : null}
-                  </div>
-                </button>
-                {expanded && (
-                  <div className="border-t border-border/60 p-3 space-y-2">
-                    <div className="flex gap-2 justify-end">
-                      <Button size="sm" variant="outline" onClick={() => exportBatchCsv(b)}>
-                        <Download className="h-3 w-3 ml-1" /> CSV
-                      </Button>
-                      {(counts.active || 0) > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-rose-600"
-                          onClick={() => {
-                            if (confirm('إلغاء جميع الأكواد الفعّالة في هذه الدفعة؟')) {
-                              revokeBatchMutation.mutate(b.batch_id);
-                            }
-                          }}
-                          disabled={revokeBatchMutation.isPending}
-                        >
-                          <Ban className="h-3 w-3 ml-1" /> إلغاء الفعّال
-                        </Button>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 max-h-80 overflow-y-auto">
-                      {b.codes.map(c => (
-                        <div key={c.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/30 border border-border/40">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <code className="text-sm font-mono font-bold tracking-wider">{c.code}</code>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyCode(c.code)}>
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-muted-foreground">{c.duration_days} يوم</span>
-                            <StatusBadge status={c.status} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </Card>
-            );
-          })
-        )}
+        {Body}
       </div>
     </div>
   );
 };
+
+const AdminLoyaltyCardCodes = () => <LoyaltyCodeBatchesList showHeader={true} />;
 
 export const CreateBatchButton = ({
   cards, open, onOpenChange, onCreated,

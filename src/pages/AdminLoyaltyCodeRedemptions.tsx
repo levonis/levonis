@@ -139,7 +139,7 @@ const AdminLoyaltyCodeRedemptions = () => {
     <div className="min-h-screen bg-background pb-12">
       <div className="container mx-auto px-3 py-4 max-w-5xl space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-card-codes`)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-levels`)}>
             <ArrowRight className="h-4 w-4 ml-1" /> رجوع
           </Button>
           <h1 className="text-base font-bold flex items-center gap-2">
