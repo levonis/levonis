@@ -12,8 +12,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import {
-  ArrowRight, Copy, Loader2, Plus, Ticket, ChevronDown, ChevronUp, Ban, Download, Upload, FileSpreadsheet,
+  ArrowRight, Copy, Loader2, Plus, Ticket, ChevronDown, ChevronUp, Ban, Download, Upload, FileSpreadsheet, CalendarIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n';
