@@ -1067,7 +1067,15 @@ export default function AdminLoyaltyLevels() {
                                   visible: true,
                                   enabled: formData.free_shipping,
                                   toggle: (v) => setFormData({ ...formData, free_shipping: v }),
-                                  text: 'شحن مجاني (تفاصيل في قسم الشحن)',
+                                  text: formData.free_shipping
+                                    ? (formData.free_shipping_min_order > 0
+                                        ? `شحن مجاني للطلبات أكثر من ${Number(formData.free_shipping_min_order).toLocaleString()} د.ع`
+                                        : 'شحن مجاني على جميع الطلبات')
+                                      + (Array.isArray(formData.free_shipping_methods) && formData.free_shipping_methods.length > 0
+                                          ? ` • ${formData.free_shipping_methods.map((m) => m === 'standard' ? 'اعتيادي' : m === 'personal' ? 'شخصي' : m).join(' + ')}`
+                                          : '')
+                                      + (formData.free_shipping_max_uses ? ` • حتى ${formData.free_shipping_max_uses} مرات` : '')
+                                    : 'شحن مجاني (معطّل)',
                                 },
                                 {
                                   key: 'monthly_free_shipping',
