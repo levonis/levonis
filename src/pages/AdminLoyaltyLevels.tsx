@@ -1386,6 +1386,7 @@ export default function AdminLoyaltyLevels() {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
 
