@@ -33,6 +33,7 @@ export default function AdminLoyaltyLevels() {
   const queryClient = useQueryClient();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [createBatchOpen, setCreateBatchOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<any>(null);
   const [formData, setFormData] = useState({
     level_key: "",
