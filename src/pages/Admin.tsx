@@ -1400,12 +1400,13 @@ const Admin = () => {
         description_ar: (formData.get('description_ar') as string) || null,
         description: (formData.get('description') as string) || null,
         price: formData.get('price') && formData.get('price') !== '' ? Number(formData.get('price')) : 0,
-        original_price: formData.get('original_price') && formData.get('original_price') !== '' 
-          ? Number(formData.get('original_price')) 
-          : null,
-        original_price_usd: formData.get('original_price_usd') && formData.get('original_price_usd') !== '' 
-          ? Number(formData.get('original_price_usd')) 
-          : null,
+        original_price: formData.get('original_price_iqd') && formData.get('original_price_iqd') !== ''
+          ? Number(formData.get('original_price_iqd'))
+          : (formData.get('original_price') && formData.get('original_price') !== ''
+              ? Number(formData.get('original_price'))
+              : null),
+        // Original price is now entered directly in IQD; clear the legacy USD column.
+        original_price_usd: null as number | null,
         cost_price: formData.get('cost_price') && formData.get('cost_price') !== '' 
           ? Number(formData.get('cost_price')) 
           : null,
@@ -1652,10 +1653,10 @@ const Admin = () => {
         values.price = prices.length > 0 ? Math.min(...prices) : priceIqd;
         values.is_pricing_updated = true;
 
-        // Original price = source price × exchange rate ONLY (no shipping, no commission, no extras)
-        const origUsd = values.original_price_usd;
-        if (origUsd && origUsd > 0) {
-          let origPriceIqd = Math.round(origUsd * settings.usd_to_iqd_rate);
+        // Original price is entered directly in IQD by the admin (no USD conversion).
+        // Apply optional rounding to nearest 250 if the toggle is on.
+        if (values.original_price && values.original_price > 0) {
+          let origPriceIqd = Math.round(Number(values.original_price));
           if (shouldRoundUp) {
             origPriceIqd = roundUpTo250(origPriceIqd);
           }

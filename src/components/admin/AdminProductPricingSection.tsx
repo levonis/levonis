@@ -68,7 +68,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
   // Common fields
   const [priceUsd, setPriceUsd] = useState<number>(0);
-  const [originalPriceUsd, setOriginalPriceUsd] = useState<number>(0);
+  const [originalPriceIqd, setOriginalPriceIqd] = useState<number>(0);
 
   // Dimensions & weight
   const [lengthCm, setLengthCm] = useState<number>(0);
@@ -90,33 +90,34 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Cash on Delivery (Pre-order only) — toggle only; fee comes from global settings
   const [codEnabled, setCodEnabled] = useState<boolean>(false);
   
-  // CNY converter
+  // CNY converter (only for cost price in USD)
   const [showCnyInput, setShowCnyInput] = useState(false);
   const [cnyValue, setCnyValue] = useState<string>('');
-  const [showCnyOrigInput, setShowCnyOrigInput] = useState(false);
-  const [cnyOrigValue, setCnyOrigValue] = useState<string>('');
-  
+
   const cnyToUsdRate = shippingSettings?.cny_to_usd_rate || 6.7;
-  
-  const handleCnyConvert = (target: 'price' | 'original') => {
-    const val = target === 'price' ? Number(cnyValue) : Number(cnyOrigValue);
+
+  const handleCnyConvert = () => {
+    const val = Number(cnyValue);
     if (!val || val <= 0) return;
     const usdVal = Math.round((val / cnyToUsdRate) * 100) / 100;
-    if (target === 'price') {
-      setPriceUsd(usdVal);
-      setCnyValue('');
-      setShowCnyInput(false);
-    } else {
-      setOriginalPriceUsd(usdVal);
-      setCnyOrigValue('');
-      setShowCnyOrigInput(false);
-    }
+    setPriceUsd(usdVal);
+    setCnyValue('');
+    setShowCnyInput(false);
   };
 
   useEffect(() => {
     if (editingProduct) {
       setPriceUsd(editingProduct.price_usd || 0);
-      setOriginalPriceUsd(editingProduct.original_price_usd || 0);
+      // Original price is now stored/edited directly in IQD.
+      // Backward compat: if old USD value is present and IQD is empty, convert it once.
+      const rate = shippingSettings?.usd_to_iqd_rate || 0;
+      if (editingProduct.original_price && editingProduct.original_price > 0) {
+        setOriginalPriceIqd(Number(editingProduct.original_price));
+      } else if (editingProduct.original_price_usd && editingProduct.original_price_usd > 0 && rate > 0) {
+        setOriginalPriceIqd(Math.round(Number(editingProduct.original_price_usd) * rate));
+      } else {
+        setOriginalPriceIqd(0);
+      }
       setLengthCm(editingProduct.length_cm || 0);
       setWidthCm(editingProduct.width_cm || 0);
       setHeightCm(editingProduct.height_cm || 0);
@@ -154,13 +155,16 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       // Persisted "link direct commission to COD %" toggle
       setLinkDirectCommissionToCod(!!editingProduct.link_direct_commission_to_cod);
     }
-  }, [editingProduct]);
+  }, [editingProduct, shippingSettings?.usd_to_iqd_rate]);
 
   useEffect(() => {
     const handleAutofill = (event: Event) => {
-      const detail = (event as CustomEvent<{ originalPriceUsd?: number; priceUsd?: number }>).detail;
-      if (detail?.originalPriceUsd && detail.originalPriceUsd > 0) {
-        setOriginalPriceUsd(detail.originalPriceUsd);
+      const detail = (event as CustomEvent<{ originalPriceUsd?: number; originalPriceIqd?: number; priceUsd?: number }>).detail;
+      const rate = shippingSettings?.usd_to_iqd_rate || 0;
+      if (detail?.originalPriceIqd && detail.originalPriceIqd > 0) {
+        setOriginalPriceIqd(Math.round(detail.originalPriceIqd));
+      } else if (detail?.originalPriceUsd && detail.originalPriceUsd > 0 && rate > 0) {
+        setOriginalPriceIqd(Math.round(detail.originalPriceUsd * rate));
       }
       if (detail?.priceUsd && detail.priceUsd > 0) {
         setPriceUsd(detail.priceUsd);
@@ -169,7 +173,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
     window.addEventListener('admin-product-pricing-autofill', handleAutofill);
     return () => window.removeEventListener('admin-product-pricing-autofill', handleAutofill);
-  }, []);
+  }, [shippingSettings?.usd_to_iqd_rate]);
 
   // Derive shipping_type value for hidden input
   const shippingTypeValue = useMemo(() => {
@@ -373,13 +377,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                   placeholder="المبلغ بالـ ¥"
                   className="h-8 text-sm"
                   autoFocus
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCnyConvert('price'); } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCnyConvert(); } }}
                 />
                 <Button
                   type="button"
                   size="sm"
                   className="h-8 px-3 text-xs shrink-0"
-                  onClick={() => handleCnyConvert('price')}
+                  onClick={() => handleCnyConvert()}
                   disabled={!cnyValue || Number(cnyValue) <= 0}
                 >
                   تحويل
@@ -403,58 +407,22 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
             />
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="original_price_usd">السعر الأصلي ($)</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-[10px] gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                onClick={() => setShowCnyOrigInput(!showCnyOrigInput)}
-              >
-                <span className="font-bold">¥</span>
-                {showCnyOrigInput ? 'إخفاء' : 'تحويل من يوان'}
-              </Button>
-            </div>
-            {showCnyOrigInput && (
-              <div className="flex gap-1.5 items-center p-2 rounded-md bg-amber-50 border border-amber-200">
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={cnyOrigValue}
-                  onChange={(e) => setCnyOrigValue(e.target.value)}
-                  placeholder="المبلغ بالـ ¥"
-                  className="h-8 text-sm"
-                  autoFocus
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCnyConvert('original'); } }}
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-8 px-3 text-xs shrink-0"
-                  onClick={() => handleCnyConvert('original')}
-                  disabled={!cnyOrigValue || Number(cnyOrigValue) <= 0}
-                >
-                  تحويل
-                </Button>
-                {cnyOrigValue && Number(cnyOrigValue) > 0 && (
-                  <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
-                    = {(Number(cnyOrigValue) / cnyToUsdRate).toFixed(2)}$
-                  </span>
-                )}
-              </div>
-            )}
+            <Label htmlFor="original_price_iqd">السعر الأصلي (د.ع)</Label>
             <Input
-              id="original_price_usd"
-              name="original_price_usd"
+              id="original_price_iqd"
+              name="original_price_iqd"
               type="number"
-              step="0.01"
+              step="250"
               min="0"
-              value={originalPriceUsd || ''}
-              onChange={(e) => setOriginalPriceUsd(Number(e.target.value))}
-              placeholder="اختياري"
+              value={originalPriceIqd || ''}
+              onChange={(e) => setOriginalPriceIqd(Number(e.target.value))}
+              placeholder="اختياري — يظهر للمستخدم كسعر قبل التخفيض"
             />
+            {originalPriceIqd > 0 && (
+              <p className="text-[10px] text-muted-foreground">
+                سيظهر للمستخدم: {Math.round(originalPriceIqd).toLocaleString()} د.ع
+              </p>
+            )}
           </div>
         </div>
 
