@@ -17,7 +17,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
-  ArrowRight, Copy, Loader2, Plus, Ticket, ChevronDown, ChevronUp, Ban, Download, Upload, FileSpreadsheet, CalendarIcon,
+  ArrowRight, Copy, Loader2, Plus, Ticket, ChevronDown, ChevronUp, Ban, Download, Upload, FileSpreadsheet, CalendarIcon, History,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n';
