@@ -90,6 +90,11 @@ const OptimizedImage = memo(({
     return resizeSupabaseImage(src, snapped, quality) || src;
   }, [src, targetWidth, width, quality]);
 
+  const srcSet = useMemo(
+    () => buildResponsiveSrcSet(src, [200, 400, 600, 800, 1200], quality),
+    [src, quality]
+  );
+
   return (
     <div ref={imgRef} className={`relative overflow-hidden ${className}`}>
       {/* Placeholder skeleton - uses CSS aspect-ratio if dimensions provided */}
