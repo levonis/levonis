@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminCardHeader, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 import LoyaltyCardPreview from "@/components/admin/LoyaltyCardPreview";
-import { CreateBatchButton, ImportBatchesButton } from "./AdminLoyaltyCardCodes";
+import { CreateBatchButton, ImportBatchesButton, LoyaltyCodeBatchesList } from "./AdminLoyaltyCardCodes";
 import { History, Ticket } from "lucide-react";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 
