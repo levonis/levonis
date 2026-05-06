@@ -84,6 +84,8 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
       setVerifying(false);
     };
 
+    setVerified(false);
+    setVerifying(true);
     verifyAdminAccess();
   }, [user, session, authLoading, navigate, location.pathname]);
 
