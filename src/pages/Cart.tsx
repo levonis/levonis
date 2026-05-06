@@ -1565,7 +1565,7 @@ const Cart = () => {
           refundIdempotencyKey: `refund:direct_sale_items:${orderNumber}`,
           refundReason: `استرجاع تلقائي - فشل حفظ عناصر الطلب ${orderNumber}`,
         });
-        if (!itemsResult.ok) {
+        if (itemsResult.ok === false) {
           const friendly = buildFriendlyOrderError(itemsResult.error, language as any);
           sonnerToast.error(friendly.title, {
             description: friendly.description,
