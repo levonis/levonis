@@ -1557,11 +1557,23 @@ const Cart = () => {
         });
 
       if (orderItems.length > 0) {
-        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-        if (itemsError) {
-          console.error('Order items insert error:', itemsError);
+        const itemsResult = await insertOrderItemsWithRollback(orderItems, {
+          orderId: orderResult.id,
+          orderNumber: orderResult.order_number,
+          userId: user.id,
+          walletDeductedAmount: walletDeductionAmount,
+          refundIdempotencyKey: `refund:direct_sale_items:${orderNumber}`,
+          refundReason: `استرجاع تلقائي - فشل حفظ عناصر الطلب ${orderNumber}`,
+        });
+        if (!itemsResult.ok) {
+          const friendly = buildFriendlyOrderError(itemsResult.error, language as any);
+          sonnerToast.error(friendly.title, {
+            description: friendly.description,
+            duration: 9000,
+          });
+          return;
         }
-        
+
         // Deduct stock for direct sale items - retry up to 3 times
         let stockDeducted = false;
         for (let attempt = 0; attempt < 3 && !stockDeducted; attempt++) {
