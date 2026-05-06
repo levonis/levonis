@@ -1017,8 +1017,6 @@ export default function AdminLoyaltyLevels() {
 
                           </AccordionContent>
                         </AccordionItem>
-                        {/* End shipping */}
-                        <div className="hidden">
 
                         {/* 5. Perks & VIP toggles */}
                         <AccordionItem value="perks" className="border rounded-xl bg-card overflow-hidden">
