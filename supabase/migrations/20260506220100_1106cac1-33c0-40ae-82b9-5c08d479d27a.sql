@@ -1,0 +1,1 @@
+GRANT SELECT (display_order, brand) ON public.products TO anon, authenticated;
