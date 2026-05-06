@@ -14352,6 +14352,7 @@ export type Database = {
         }
         Returns: Json
       }
+      purge_old_cancelled_orders: { Args: never; Returns: number }
       purge_oos_direct_cart_items: { Args: never; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
