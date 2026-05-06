@@ -51,11 +51,9 @@ const StatusBadge = ({ status }: { status: CodeRow['status'] }) => {
   return <Badge variant="outline" className={`text-[10px] ${m.cls}`}>{m.label}</Badge>;
 };
 
-const AdminLoyaltyCardCodes = () => {
+export const LoyaltyCodeBatchesList = ({ showHeader = true }: { showHeader?: boolean } = {}) => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const qc = useQueryClient();
-  const [openCreate, setOpenCreate] = useState(false);
   const [expandedBatches, setExpandedBatches] = useState<Record<string, boolean>>({});
 
   // Lazy expire on mount
