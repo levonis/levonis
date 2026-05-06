@@ -67,7 +67,6 @@
 
     <!-- Preload only the most critical font weight to reduce CLS without blocking FCP -->
     <link rel="preload" href="/fonts/cairo-400.ttf" as="font" type="font/ttf" crossorigin>
-    <link rel="preload" href="/fonts/cairo-900.ttf" as="font" type="font/ttf" crossorigin>
 
     <!-- Inline @font-face so the browser discovers Cairo BEFORE the large render-blocking
          CSS bundle is parsed. Combined with `font-display: swap`, this lets the FCP
