@@ -270,13 +270,13 @@ const AdminOrders = () => {
       }
       
       // Get order details for invoice
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
+      const { data: order, error: orderError } = await (supabase as any)
+        .from('orders_admin')
         .select(`
           *,
-          order_items!order_items_order_id_fkey(
+          order_items:order_items_admin!order_items_order_id_fkey(
             *,
-            products!order_items_product_id_fkey(name_ar, image_url),
+            products:products_admin!order_items_product_id_fkey(name_ar, image_url),
             custom_product_requests(product_name, image_url)
           ),
           profiles(full_name, email)
