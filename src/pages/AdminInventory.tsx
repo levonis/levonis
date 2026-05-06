@@ -585,8 +585,9 @@ export default function AdminInventory() {
             .eq('id', pid)
             .single();
           if (fetchErr || !product) throw new Error('المنتج غير موجود: ' + pid);
+          const adminProduct = product as any;
 
-          let colors = (product.colors || []) as any[];
+          let colors = (adminProduct.colors || []) as any[];
           let directStockAdd = 0;
 
           for (const item of pItems) {
@@ -636,7 +637,7 @@ export default function AdminInventory() {
           // Build update object
           const updateObj: any = { colors };
           if (directStockAdd > 0) {
-            updateObj.direct_stock = (Number(product.direct_stock) || 0) + directStockAdd;
+            updateObj.direct_stock = (Number(adminProduct.direct_stock) || 0) + directStockAdd;
           }
 
           await adminUpdateProduct(pid, updateObj);
