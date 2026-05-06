@@ -1400,12 +1400,13 @@ const Admin = () => {
         description_ar: (formData.get('description_ar') as string) || null,
         description: (formData.get('description') as string) || null,
         price: formData.get('price') && formData.get('price') !== '' ? Number(formData.get('price')) : 0,
-        original_price: formData.get('original_price') && formData.get('original_price') !== '' 
-          ? Number(formData.get('original_price')) 
-          : null,
-        original_price_usd: formData.get('original_price_usd') && formData.get('original_price_usd') !== '' 
-          ? Number(formData.get('original_price_usd')) 
-          : null,
+        original_price: formData.get('original_price_iqd') && formData.get('original_price_iqd') !== ''
+          ? Number(formData.get('original_price_iqd'))
+          : (formData.get('original_price') && formData.get('original_price') !== ''
+              ? Number(formData.get('original_price'))
+              : null),
+        // Original price is now entered directly in IQD; clear the legacy USD column.
+        original_price_usd: null as number | null,
         cost_price: formData.get('cost_price') && formData.get('cost_price') !== '' 
           ? Number(formData.get('cost_price')) 
           : null,
