@@ -474,7 +474,7 @@ const AdminOrders = () => {
           status: values.status || 'pending',
           currency: values.currency || 'دينار عراقي',
         }])
-        .select()
+        .select('id, order_number, status, total_amount, user_id, created_at')
         .single();
 
       if (error) throw error;
