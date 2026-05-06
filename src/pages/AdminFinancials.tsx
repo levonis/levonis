@@ -67,36 +67,46 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
+const toNumber = (value: unknown): number => {
+  const numberValue = typeof value === 'string' ? Number(value) : value;
+  return typeof numberValue === 'number' && Number.isFinite(numberValue) ? numberValue : 0;
+};
+
 const calcItemRevenue = (item: NonNullable<OrderWithDetails['order_items']>[number]): number => {
-  if (typeof item.total_price === 'number' && item.total_price > 0) return item.total_price;
-  return (item.unit_price || 0) * (item.quantity || 1);
+  const totalPrice = toNumber(item.total_price);
+  if (totalPrice > 0) return totalPrice;
+  return toNumber(item.unit_price) * (toNumber(item.quantity) || 1);
 };
 
 const getOrderItemsSubtotal = (order: OrderWithDetails): number => {
-  if (typeof order.subtotal === 'number' && order.subtotal > 0) return order.subtotal;
+  const subtotal = toNumber(order.subtotal);
+  if (subtotal > 0) return subtotal;
   if (!order.order_items?.length) return 0;
   return order.order_items.reduce((sum, item) => sum + calcItemRevenue(item), 0);
 };
 
 // Calculate delivery cost (respect manual admin_shipping_cost even when it's 0)
 const calcDeliveryCost = (order: OrderWithDetails): number => {
-  if (order.admin_shipping_cost != null) {
-    return order.admin_shipping_cost;
+  const manualShippingCost = toNumber(order.admin_shipping_cost);
+  if (manualShippingCost > 0) {
+    return manualShippingCost;
   }
   const subtotal = getOrderItemsSubtotal(order);
   if (subtotal > 0) {
-    return (order.total_amount || 0) - subtotal + (order.discount_amount || 0);
+    return Math.max(0, toNumber(order.total_amount) - subtotal + toNumber(order.discount_amount));
   }
   return 0;
 };
 
 // Calculate product cost (admin_product_cost, then admin_other_costs, then auto-derived)
 const calcProductCost = (order: OrderWithDetails, usdToIqdRate: number): number => {
-  if (order.admin_product_cost != null && order.admin_product_cost > 0) {
-    return order.admin_product_cost;
+  const adminProductCost = toNumber(order.admin_product_cost);
+  if (adminProductCost > 0) {
+    return adminProductCost;
   }
-  if (order.admin_other_costs != null && order.admin_other_costs > 0) {
-    return order.admin_other_costs;
+  const adminOtherCosts = toNumber(order.admin_other_costs);
+  if (adminOtherCosts > 0) {
+    return adminOtherCosts;
   }
   return calcAutoOrderProductCost(order, usdToIqdRate);
 };
