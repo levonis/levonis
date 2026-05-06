@@ -64,6 +64,7 @@ const productSchema = z.object({
   colors: z.array(z.any()).optional(),
   features: z.array(z.any()).optional(),
   pre_order_shipping_options: z.array(z.any()).optional(),
+  display_order: z.number().int().min(0).optional(),
 });
 
 const categorySchema = z.object({
@@ -1425,6 +1426,9 @@ const Admin = () => {
         pre_order_shipping_options: [],
         pre_order_free_shipping_price: null,
         pre_order_fast_shipping_price: null,
+        display_order: formData.get('display_order') && formData.get('display_order') !== ''
+          ? Number(formData.get('display_order'))
+          : 0,
         // Use empty array [] instead of undefined to actually clear data
         colors: validColors.length > 0 ? validColors : [],
         features: validFeatures.length > 0 ? validFeatures : [],
@@ -2613,6 +2617,19 @@ const Admin = () => {
                         <input id="in_stock" name="in_stock" type="checkbox" defaultChecked={editingProduct?.in_stock ?? defaultSettings?.in_stock ?? true} />
                         <Label htmlFor="in_stock">متاح في المخزون</Label>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="display_order">ترتيب العرض (الأصغر أولاً: 1، 2، 3 ...)</Label>
+                      <Input
+                        id="display_order"
+                        name="display_order"
+                        type="number"
+                        min={0}
+                        step={1}
+                        defaultValue={editingProduct?.display_order ?? 0}
+                        placeholder="0 = ترتيب تلقائي"
+                      />
                     </div>
 
                     {/* Availability options now managed by AdminProductPricingSection */}
