@@ -166,18 +166,30 @@ const AdminOrders = () => {
       const orderIds = (ordersData || []).map((o: any) => o.id);
       if (orderIds.length === 0) return [];
 
-      // Fetch related data using base tables (cost_price comes from order_items_admin)
+      // Fetch related data via admin views (cost columns are restricted on base tables)
       const [itemsRes, profilesRes, rfRes] = await Promise.all([
-        supabase.from('order_items_admin' as any).select('*, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd, name_ar, image_url), product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url)))').in('order_id', orderIds),
+        supabase.from('order_items_admin' as any).select('*, product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url)))').in('order_id', orderIds),
         supabase.from('profiles').select('id, full_name, email, username').in('id', Array.from(new Set((ordersData || []).map((o: any) => o.user_id).filter(Boolean)))),
         supabase.from('random_filament_orders').select('id, order_id, sale_type, product_id, product_option_id, selected_color, offer_id, random_filament_offers(title_ar)').in('order_id', orderIds),
       ]);
       if (itemsRes.error) throw itemsRes.error;
 
+      const itemsRaw = ((itemsRes.data as any[]) || []);
+      const productIds = Array.from(new Set(itemsRaw.map((it: any) => it.product_id).filter(Boolean)));
+      let productMap = new Map<string, any>();
+      if (productIds.length > 0) {
+        const { data: prodData } = await (supabase as any)
+          .from('products_admin')
+          .select('id, name_ar, image_url, price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd')
+          .in('id', productIds);
+        ((prodData as any[]) || []).forEach((p) => productMap.set(p.id, p));
+      }
+
       const itemsByOrder = new Map<string, any[]>();
-      ((itemsRes.data as any[]) || []).forEach((it) => {
+      itemsRaw.forEach((it) => {
+        const enriched = { ...it, products: productMap.get(it.product_id) || null };
         const arr = itemsByOrder.get(it.order_id) || [];
-        arr.push(it); itemsByOrder.set(it.order_id, arr);
+        arr.push(enriched); itemsByOrder.set(it.order_id, arr);
       });
       const profileById = new Map<string, any>();
       ((profilesRes.data as any[]) || []).forEach((p) => profileById.set(p.id, p));
