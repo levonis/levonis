@@ -1,24 +1,27 @@
 import { Badge } from '@/components/ui/badge';
 import { Coins, CreditCard, Crown, TrendingUp } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 
 interface CardDiscount {
-  level_id: string;
+  card_id?: string;
+  level_id?: string;
   discount_amount: number;
 }
 
-interface LoyaltyLevel {
+interface MembershipCard {
   id: string;
   name_ar: string;
-  color: string;
+  name_en?: string | null;
+  card_key?: string | null;
+  color?: string | null;
+  card_color?: string | null;
   display_order: number;
 }
 
 interface ProductRewardsSectionProps {
   pointsReward: number;
   cardDiscounts: CardDiscount[];
-  loyaltyLevels: LoyaltyLevel[];
+  loyaltyLevels: MembershipCard[]; // now membership cards (kept name for compat)
   userHasCard?: boolean;
   userCardLevelId?: string;
   userCardLevelOrder?: number;
@@ -31,38 +34,37 @@ const ProductRewardsSection = ({
   cardDiscounts,
   loyaltyLevels,
   userHasCard,
-  userCardLevelId,
   userCardLevelOrder,
   productPrice,
-  currency
 }: ProductRewardsSectionProps) => {
   const { t } = useLanguage();
-  const levelMap = new Map(loyaltyLevels.map(l => [l.id, l]));
-  
+  const cardMap = new Map(loyaltyLevels.map(l => [l.id, l]));
+
   const validDiscounts = cardDiscounts
-    .filter(d => d.level_id && d.discount_amount > 0 && levelMap.has(d.level_id))
+    .map(d => ({ ...d, _id: d.card_id || d.level_id || '' }))
+    .filter(d => d._id && d.discount_amount > 0 && cardMap.has(d._id))
     .map(d => {
-      const level = levelMap.get(d.level_id)!;
+      const card = cardMap.get(d._id)!;
       const percentage = productPrice > 0 ? (d.discount_amount / productPrice) * 100 : 0;
       return {
         ...d,
-        level,
-        displayPercentage: Math.round(percentage * 10) / 10
+        card,
+        displayPercentage: Math.round(percentage * 10) / 10,
       };
     })
-    .sort((a, b) => a.level.display_order - b.level.display_order);
+    .sort((a, b) => a.card.display_order - b.card.display_order);
 
-  const qualifyingDiscounts = validDiscounts.filter(d => 
-    userHasCard && 
+  const qualifyingDiscounts = validDiscounts.filter(d =>
+    userHasCard &&
     userCardLevelOrder !== undefined &&
-    userCardLevelOrder >= d.level.display_order
+    userCardLevelOrder >= d.card.display_order
   );
-  
-  const bestUserDiscount = qualifyingDiscounts.length > 0 
+
+  const bestUserDiscount = qualifyingDiscounts.length > 0
     ? qualifyingDiscounts.reduce((best, curr) => curr.discount_amount > best.discount_amount ? curr : best)
     : null;
 
-  const discountedPrice = bestUserDiscount 
+  const discountedPrice = bestUserDiscount
     ? productPrice - bestUserDiscount.discount_amount
     : null;
 
@@ -72,10 +74,9 @@ const ProductRewardsSection = ({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {/* Points Reward */}
       {pointsReward > 0 && (
-        <Badge 
-          variant="secondary" 
+        <Badge
+          variant="secondary"
           className="gap-1 px-2 py-0.5 text-[11px] font-medium bg-primary/8 text-primary border-primary/15 hover:bg-primary/12"
         >
           <Coins className="h-3 w-3" />
@@ -83,20 +84,18 @@ const ProductRewardsSection = ({
         </Badge>
       )}
 
-      {/* User's Qualifying Discount */}
       {bestUserDiscount && discountedPrice !== null && discountedPrice > 0 && (
-        <Badge 
+        <Badge
           variant="secondary"
           className="gap-1 px-2 py-0.5 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15"
         >
           <CreditCard className="h-3 w-3" />
-          -{bestUserDiscount.displayPercentage}%
+          {bestUserDiscount.card.name_ar} -{bestUserDiscount.displayPercentage}%
         </Badge>
       )}
 
-      {/* Card Discounts Promotion for non-cardholders */}
       {validDiscounts.length > 0 && !userHasCard && (
-        <Badge 
+        <Badge
           variant="outline"
           className="gap-1 px-2 py-0.5 text-[11px] font-normal text-muted-foreground border-dashed"
         >
@@ -105,11 +104,10 @@ const ProductRewardsSection = ({
         </Badge>
       )}
 
-      {/* Upgrade hints for cardholders */}
-      {userHasCard && validDiscounts.filter(d => 
-        userCardLevelOrder !== undefined && d.level.display_order > userCardLevelOrder
+      {userHasCard && validDiscounts.filter(d =>
+        userCardLevelOrder !== undefined && d.card.display_order > userCardLevelOrder
       ).length > 0 && (
-        <Badge 
+        <Badge
           variant="outline"
           className="gap-1 px-2 py-0.5 text-[11px] font-normal text-muted-foreground"
         >
