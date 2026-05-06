@@ -141,18 +141,12 @@ Deno.serve(async (req) => {
             await supabase.from("points_transactions")
               .insert({ user_id: approval.user_id, points: totalPoints, type: 'earned', source: 'daily_task', description: `مهمة (موافقة): ${taskInfo?.title_ar || approval.task_key}` });
 
-            const { data: currentPoints } = await supabase
-              .from("user_points").select("*").eq("user_id", approval.user_id).maybeSingle();
-            if (currentPoints) {
-              await supabase.from("user_points").update({
-                total_points: (currentPoints.total_points || 0) + totalPoints,
-                available_points: (currentPoints.available_points || 0) + totalPoints,
-              }).eq("user_id", approval.user_id);
-            } else {
-              await supabase.from("user_points").insert({
-                user_id: approval.user_id, total_points: totalPoints, available_points: totalPoints,
-              });
-            }
+            // Atomic points award (race-free)
+            await supabase.rpc("add_user_points", {
+              p_user_id: approval.user_id,
+              p_amount: totalPoints,
+              p_source: "daily_task",
+            });
 
             await editMessageReplyMarkup(TELEGRAM_BOT_TOKEN, chatId, messageId);
             await answerCallbackQuery(TELEGRAM_BOT_TOKEN, cbq.id, "✅ تمت الموافقة");
@@ -471,25 +465,12 @@ Deno.serve(async (req) => {
       if (ansError) {
         await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, "❌ حدث خطأ في إرسال الإجابة");
       } else {
-        // Award 5 points
-        const { data: currentPoints } = await supabase
-          .from("user_points")
-          .select("*")
-          .eq("user_id", reviewContext.user_id)
-          .maybeSingle();
-
-        if (currentPoints) {
-          await supabase.from("user_points").update({
-            total_points: (currentPoints.total_points || 0) + 5,
-            available_points: (currentPoints.available_points || 0) + 5,
-          }).eq("user_id", reviewContext.user_id);
-        } else {
-          await supabase.from("user_points").insert({
-            user_id: reviewContext.user_id,
-            total_points: 5,
-            available_points: 5,
-          });
-        }
+        // Atomic points award (race-free)
+        await supabase.rpc("add_user_points", {
+          p_user_id: reviewContext.user_id,
+          p_amount: 5,
+          p_source: "review_answer",
+        });
 
         await supabase.from("points_transactions").insert({
           user_id: reviewContext.user_id,

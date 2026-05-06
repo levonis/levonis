@@ -76,16 +76,12 @@ Deno.serve(async (req) => {
       const marketPrice = item.gacha_dolls.current_price;
       const sellPrice = Math.max(1, Math.round(marketPrice * (1 - discount / 100)));
 
-      // Add points to user
-      const { data: pts } = await supabase
-        .from("user_points").select("available_points").eq("user_id", user.id).single();
-      
-      if (pts) {
-        await supabase
-          .from("user_points")
-          .update({ available_points: pts.available_points + sellPrice })
-          .eq("user_id", user.id);
-      }
+      // Atomic points award (race-free)
+      await supabase.rpc("add_user_points", {
+        p_user_id: user.id,
+        p_amount: sellPrice,
+        p_source: "gacha_sell",
+      });
 
       // Remove from inventory
       await supabase.from("gacha_user_inventory").delete().eq("id", inventory_item_id);

@@ -31,6 +31,15 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
       );
     }
+    // Admin-only: prevent abuse of admin telegram channel and impersonation.
+    const callerId = (claimsData.claims as { sub?: string }).sub;
+    const { data: roleRow } = await anonClient
+      .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
+    const isService = (claimsData.claims as { role?: string }).role === "service_role";
+    if (!roleRow && !isService) {
+      return new Response(JSON.stringify({ success: false, error: "Forbidden" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 });
+    }
 
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");

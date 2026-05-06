@@ -100,20 +100,13 @@ export default function AdminTaskApprovalsTab() {
         });
       if (pointsError) throw pointsError;
 
-      // Update user points
-      const { data: currentPoints } = await supabase
-        .from('user_points').select('*').eq('user_id', userId).maybeSingle();
-
-      if (currentPoints) {
-        await supabase.from('user_points').update({
-          total_points: (currentPoints.total_points || 0) + totalPoints,
-          available_points: (currentPoints.available_points || 0) + totalPoints,
-        }).eq('user_id', userId);
-      } else {
-        await supabase.from('user_points').insert({
-          user_id: userId, total_points: totalPoints, available_points: totalPoints,
-        });
-      }
+      // Atomic points award via SECURITY DEFINER RPC (race-free)
+      const { error: addPointsError } = await supabase.rpc('add_user_points', {
+        p_user_id: userId,
+        p_amount: totalPoints,
+        p_source: 'daily_task',
+      });
+      if (addPointsError) throw addPointsError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-pending-approvals'] });
