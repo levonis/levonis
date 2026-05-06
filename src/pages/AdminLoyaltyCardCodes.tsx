@@ -575,7 +575,11 @@ const ImportBatchesButton = ({
         continue;
       }
       try {
-        const expires = new Date(Date.now() + r.code_expiry_days * 86400_000).toISOString();
+        const now = Date.now();
+        const expires = new Date(now + r.code_expiry_days * 86400_000).toISOString();
+        const validFrom = r.valid_from_days != null
+          ? new Date(now + r.valid_from_days * 86400_000).toISOString()
+          : null;
         const { error } = await (supabase as any).rpc('create_loyalty_code_batch', {
           p_card_id: r.card_id,
           p_quantity: r.quantity,
@@ -583,6 +587,7 @@ const ImportBatchesButton = ({
           p_code_expires_at: expires,
           p_batch_label: r.batch_label,
           p_requires_active_warranty: r.requires_active_warranty,
+          p_valid_from: validFrom,
         });
         if (error) throw error;
         success++;
