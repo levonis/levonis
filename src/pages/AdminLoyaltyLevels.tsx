@@ -1015,25 +1015,10 @@ export default function AdminLoyaltyLevels() {
                               </div>
                             </div>
 
-                            {/* Monthly free shipping (separate from main free shipping) */}
-                            <div className="admin-form-group pt-3 border-t">
-                              <Label className="flex items-center gap-2 text-sm">
-                                <Truck className="h-4 w-4 text-muted-foreground" />
-                                شحنات مجانية شهرياً (مستقلة)
-                              </Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                value={formData.monthly_free_shipping}
-                                onChange={(e) => setFormData({ ...formData, monthly_free_shipping: parseInt(e.target.value) || 0 })}
-                                placeholder="0 = معطّل"
-                              />
-                              <p className="text-[11px] text-muted-foreground mt-1">
-                                عدد الشحنات المجانية المتاحة كل شهر بغض النظر عن الإعدادات أعلاه
-                              </p>
-                            </div>
                           </AccordionContent>
                         </AccordionItem>
+                        {/* End shipping */}
+                        <div className="hidden">
 
                         {/* 5. Perks & VIP toggles */}
                         <AccordionItem value="perks" className="border rounded-xl bg-card overflow-hidden">
