@@ -229,12 +229,14 @@ const AdminFinancials = () => {
 
       const [itemsRes, profilesRes] = await Promise.all([
         orderIds.length
-          ? supabase.from('order_items_admin' as any).select('id, order_id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, product_bundles:bundle_id(id, title_ar, image_url)').in('order_id', orderIds)
+          ? supabase.from('order_items_admin' as any).select('id, order_id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id').in('order_id', orderIds)
           : Promise.resolve({ data: [], error: null } as any),
         userIds.length
           ? supabase.from('profiles').select('id, username, full_name').in('id', userIds)
           : Promise.resolve({ data: [], error: null } as any),
       ]);
+      if (itemsRes.error) throw itemsRes.error;
+      if (profilesRes.error) throw profilesRes.error;
       const itemsRaw = ((itemsRes.data as any[]) || []);
       // Hydrate product fields (cost columns are restricted on base table; use products_admin view)
       const productIds = Array.from(new Set(itemsRaw.map((it: any) => it.product_id).filter(Boolean)));
