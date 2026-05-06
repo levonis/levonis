@@ -928,17 +928,7 @@ export default function AdminLoyaltyLevels() {
                           })}
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <Label className="flex items-center gap-2 text-sm">
-                              <Truck className="h-4 w-4" />
-                              شحن مجاني
-                            </Label>
-                            <Switch
-                              checked={formData.free_shipping}
-                              onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
-                            />
-                          </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <Label className="flex items-center gap-2 text-sm">
                               <Tag className="h-4 w-4" />
