@@ -179,7 +179,7 @@ const AdminFinancials = () => {
   const { data: siteProducts } = useQuery({
     queryKey: ['admin-products-list'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('id, name_ar, price, cost_price').order('name_ar').limit(500);
+      const { data, error } = await (supabase as any).from('products_admin').select('id, name_ar, price, cost_price').order('name_ar').limit(500);
       if (error) throw error;
       return data || [];
     },
