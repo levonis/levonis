@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo } from "react";
-import { resizeSupabaseImage } from "@/lib/imageUtils";
+import { resizeSupabaseImage, buildResponsiveSrcSet } from "@/lib/imageUtils";
 
 interface OptimizedImageProps {
   src: string;
