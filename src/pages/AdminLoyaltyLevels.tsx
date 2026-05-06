@@ -753,14 +753,19 @@ export default function AdminLoyaltyLevels() {
                               <div className="text-right">
                                 <div className="font-semibold text-sm">طريقة الحصول على البطاقة</div>
                                 <div className="text-[11px] text-muted-foreground font-normal">
-                                  {formData.is_purchasable ? `بالشراء — ${formData.purchase_price_points || 0} نقطة` : `تلقائي — ${formData.min_points || 0} نقطة`}
+                                  {formData.is_purchasable ? `بالشراء — ${formData.purchase_price_points || 0} نقطة` : 'عن طريق كود تفعيل فقط'}
                                 </div>
                               </div>
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="px-4 pb-4 space-y-4">
                             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                              <Label className="font-medium">قابلة للشراء بالنقاط</Label>
+                              <div>
+                                <Label className="font-medium">قابلة للشراء بالنقاط/المحفظة</Label>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  عند التعطيل: تتفعّل البطاقة فقط عبر كود تفعيل
+                                </p>
+                              </div>
                               <Switch
                                 checked={formData.is_purchasable}
                                 onCheckedChange={(checked) => setFormData({ ...formData, is_purchasable: checked })}
@@ -792,14 +797,28 @@ export default function AdminLoyaltyLevels() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="admin-form-group">
-                                <Label>الحد الأدنى من النقاط (تلقائي)</Label>
-                                <Input
-                                  type="number"
-                                  value={formData.min_points}
-                                  onChange={(e) => setFormData({ ...formData, min_points: parseFloat(e.target.value) })}
-                                  placeholder="5000"
-                                />
+                              <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 space-y-3">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                                    <Tag className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="flex-1 space-y-1">
+                                    <p className="font-semibold text-sm">تفعيل عبر كود حصري</p>
+                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                      هذه البطاقة لن تظهر للشراء. يحصل عليها المستخدم فقط عند إدخال كود تفعيل صادر من الإدارة (يتطلب وجود ضمان طابعة فعّال).
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full"
+                                  onClick={() => navigate('/cp-x9A3kL7m/loyalty-card-codes')}
+                                >
+                                  <Tag className="h-3.5 w-3.5 ml-1" />
+                                  إدارة أكواد التفعيل وإنشاء دفعات جديدة
+                                </Button>
                               </div>
                             )}
                           </AccordionContent>
