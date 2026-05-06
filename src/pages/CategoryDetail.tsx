@@ -239,6 +239,7 @@ const CategoryDetail = () => {
       if (directOnly && !hasDirect) return false;
       if (minP != null && priceNum < minP) return false;
       if (maxP != null && priceNum > maxP) return false;
+      if (brandFilter !== 'all' && (p.brand || '').toString().trim() !== brandFilter) return false;
       if (searchQ && !isFinite(scoreFor(p))) return false;
       return true;
     });
