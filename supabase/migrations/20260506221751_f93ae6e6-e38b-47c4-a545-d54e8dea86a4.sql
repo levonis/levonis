@@ -1,0 +1,1 @@
+GRANT SELECT (price_usd, referral_earnings_iqd) ON public.products TO anon, authenticated;
