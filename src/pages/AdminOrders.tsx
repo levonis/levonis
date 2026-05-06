@@ -821,37 +821,39 @@ const AdminOrders = () => {
     return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
   };
 
-  // Filter orders
-  const filteredOrders = orders?.filter(order => {
-    const matchesSearch = 
+  // Base orders: filtered by tab + shipping type + search only (NOT by status).
+  // Used for stat cards and status-filter button counts so they reflect real totals.
+  const baseOrders = (orders || []).filter(order => {
+    const matchesSearch =
       order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.phone_number?.includes(searchTerm);
 
-    // When 'all' is selected, hide cancelled orders. Show them only via 'cancelled' filter.
-    const matchesStatus = statusFilter === 'all' 
+    const shippingInfo = getShippingInfo(order.order_items || []);
+    const isAirShipping = shippingInfo.isFast;
+    const matchesShippingType =
+      orderTab !== 'preorder' || preorderShippingTab === 'all' ||
+      (preorderShippingTab === 'air' && isAirShipping) ||
+      (preorderShippingTab === 'sea' && !isAirShipping);
+
+    const orderType = (order as any).order_type || (checkIfPreOrder(order.order_items || []) ? 'preorder' : 'direct');
+    const matchesOrderType =
+      (orderTab === 'preorder' && orderType === 'preorder') ||
+      (orderTab === 'direct' && orderType === 'direct');
+
+    return matchesSearch && matchesShippingType && matchesOrderType;
+  });
+
+  // Apply status filter on top of baseOrders for the visible list.
+  const filteredOrders = baseOrders.filter(order => {
+    const matchesStatus = statusFilter === 'all'
       ? order.status !== 'cancelled'
       : statusFilter === 'active'
         ? !['delivered', 'cancelled'].includes(order.status)
         : order.status === statusFilter;
-    
-    // Shipping type filter based on tab
-    const shippingInfo = getShippingInfo(order.order_items || []);
-    const isAirShipping = shippingInfo.isFast;
-    const matchesShippingType = 
-      orderTab !== 'preorder' || preorderShippingTab === 'all' || 
-      (preorderShippingTab === 'air' && isAirShipping) ||
-      (preorderShippingTab === 'sea' && !isAirShipping);
-    
-    // Order type filter based on tab
-    const orderType = (order as any).order_type || (checkIfPreOrder(order.order_items || []) ? 'preorder' : 'direct');
-    const matchesOrderType = 
-      (orderTab === 'preorder' && orderType === 'preorder') ||
-      (orderTab === 'direct' && orderType === 'direct');
-
-    return matchesSearch && matchesStatus && matchesShippingType && matchesOrderType;
-  }) || [];
+    return matchesStatus;
+  });
 
   // Pagination
   const pagination = usePagination(filteredOrders, { pageSize: 25 });
@@ -951,26 +953,26 @@ const AdminOrders = () => {
           <AdminStatsGrid>
             <AdminStatCard
               icon={<Package className="h-5 w-5" />}
-              value={filteredOrders?.length || 0}
+              value={baseOrders.length}
               label="إجمالي الطلبات"
             />
             <AdminStatCard
               icon={<Loader2 className="h-5 w-5" />}
-              value={filteredOrders?.filter(o => o.status === 'pending').length || 0}
+              value={baseOrders.filter(o => o.status === 'pending').length}
               label="قيد الانتظار"
               colorClass="text-amber-500"
               bgClass="bg-amber-500/10"
             />
             <AdminStatCard
               icon={<Truck className="h-5 w-5" />}
-              value={filteredOrders?.filter(o => o.status === 'shipped').length || 0}
+              value={baseOrders.filter(o => o.status === 'shipped').length}
               label="تم الشحن"
               colorClass="text-blue-500"
               bgClass="bg-blue-500/10"
             />
             <AdminStatCard
               icon={<ShoppingBag className="h-5 w-5" />}
-              value={filteredOrders?.filter(o => o.status === 'delivered').length || 0}
+              value={baseOrders.filter(o => o.status === 'delivered').length}
               label="تم التوصيل"
               colorClass="text-green-500"
               bgClass="bg-green-500/10"
@@ -1003,52 +1005,49 @@ const AdminOrders = () => {
                   size="sm"
                   onClick={() => { setStatusFilter('active'); pagination.resetPage(); }}
                 >
-                  النشطة ({filteredOrders?.filter(o => !['delivered', 'cancelled'].includes(o.status)).length || 0})
+                  النشطة ({baseOrders.filter(o => !['delivered', 'cancelled'].includes(o.status)).length})
                 </Button>
                 <Button
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('all'); pagination.resetPage(); }}
                 >
-                  الكل ({orders?.filter(o => {
-                    const ot = (o as any).order_type || (checkIfPreOrder(o.order_items || []) ? 'preorder' : 'direct');
-                    return ot === orderTab;
-                  }).length || 0})
+                  الكل ({baseOrders.filter(o => o.status !== 'cancelled').length})
                 </Button>
                 <Button
                   variant={statusFilter === 'pending' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('pending'); pagination.resetPage(); }}
                 >
-                  قيد الانتظار ({filteredOrders?.filter(o => o.status === 'pending').length || 0})
+                  قيد الانتظار ({baseOrders.filter(o => o.status === 'pending').length})
                 </Button>
                 <Button
                   variant={statusFilter === 'confirmed' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('confirmed'); pagination.resetPage(); }}
                 >
-                  تم التأكيد ({filteredOrders?.filter(o => o.status === 'confirmed').length || 0})
+                  تم التأكيد ({baseOrders.filter(o => o.status === 'confirmed').length})
                 </Button>
                 <Button
                   variant={statusFilter === 'processing' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('processing'); pagination.resetPage(); }}
                 >
-                  قيد المعالجة ({filteredOrders?.filter(o => o.status === 'processing').length || 0})
+                  قيد المعالجة ({baseOrders.filter(o => o.status === 'processing').length})
                 </Button>
                 <Button
                   variant={statusFilter === 'shipped' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('shipped'); pagination.resetPage(); }}
                 >
-                  تم الشحن ({filteredOrders?.filter(o => o.status === 'shipped').length || 0})
+                  تم الشحن ({baseOrders.filter(o => o.status === 'shipped').length})
                 </Button>
                 <Button
                   variant={statusFilter === 'delivered' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('delivered'); pagination.resetPage(); }}
                 >
-                  تم التوصيل ({filteredOrders?.filter(o => o.status === 'delivered').length || 0})
+                  تم التوصيل ({baseOrders.filter(o => o.status === 'delivered').length})
                 </Button>
                 <Button
                   variant={statusFilter === 'cancelled' ? 'default' : 'outline'}
@@ -1056,7 +1055,7 @@ const AdminOrders = () => {
                   onClick={() => { setStatusFilter('cancelled'); pagination.resetPage(); }}
                   className="text-destructive"
                 >
-                  ملغي ({filteredOrders?.filter(o => o.status === 'cancelled').length || 0})
+                  ملغي ({baseOrders.filter(o => o.status === 'cancelled').length})
                 </Button>
               </div>
             </div>
