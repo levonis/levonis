@@ -27,16 +27,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check admin status after state update
+        // Keep auth loading until the role check finishes so admin pages don't mount with isAdmin=false
         if (session?.user) {
-          setTimeout(() => {
-            checkAdminStatus(session.user.id);
-          }, 0);
+          checkAdminStatus(session.user.id).finally(() => setLoading(false));
         } else {
           setIsAdmin(false);
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
@@ -46,26 +43,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        setTimeout(() => {
-          checkAdminStatus(session.user.id);
-        }, 0);
+        checkAdminStatus(session.user.id).finally(() => setLoading(false));
+      } else {
+        setIsAdmin(false);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const checkAdminStatus = async (userId: string) => {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
-    
-    setIsAdmin(!!data);
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (error) throw error;
+      setIsAdmin(!!data);
+      return !!data;
+    } catch (error) {
+      console.error('Admin role check failed:', error);
+      setIsAdmin(false);
+      return false;
+    }
   };
 
   const signOut = async () => {
