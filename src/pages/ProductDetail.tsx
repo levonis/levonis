@@ -130,10 +130,14 @@ const ProductDetail = () => {
   usePageTitle('product', localizedName || (product as any)?.name_ar || (product as any)?.name);
 
   const { data: allLoyaltyLevels } = useQuery({
-    queryKey: ['loyalty-levels-for-discounts'],
+    queryKey: ['membership-cards-for-discounts'],
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase.from('loyalty_levels').select('id, name_ar, color, level_key, display_order').order('display_order', { ascending: true });
+      const { data, error } = await supabase
+        .from('membership_cards')
+        .select('id, name_ar, name_en, card_key, card_color, display_order')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
       if (error) throw error;
       return data;
     }
