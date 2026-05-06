@@ -178,8 +178,8 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
       const newSubtotal = items.reduce((sum, i) => sum + (i.total_price || 0), 0);
 
       // Fetch current order to compute the delta accurately
-      const { data: currentOrder } = await supabase
-        .from('orders')
+      const { data: currentOrder } = await (supabase as any)
+        .from('orders_admin')
         .select('subtotal, total_amount, discount_amount, tax_amount, admin_shipping_cost')
         .eq('id', orderId)
         .maybeSingle();
