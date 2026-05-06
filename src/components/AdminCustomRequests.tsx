@@ -119,11 +119,12 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
       setRetryProgress(20);
       const { data: product } = await supabase
         .from('products_admin' as any)
-        .select('colors')
+        .select('id, colors')
         .eq('slug', request.code)
         .single();
 
-      const existingColors = product?.colors || [];
+      const adminProduct = product as any;
+      const existingColors = adminProduct?.colors || [];
       
       setRetryProgress(40);
 
@@ -158,8 +159,8 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
           defaults,
         });
 
-        if (product?.id) {
-          await adminUpdateProduct(product.id, { colors: updatedColors as any });
+        if (adminProduct?.id) {
+          await adminUpdateProduct(adminProduct.id, { colors: updatedColors as any });
         }
 
         toast.success(data.mode === 'replace' 
