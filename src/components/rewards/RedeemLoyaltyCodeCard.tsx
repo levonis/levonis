@@ -230,11 +230,15 @@ export default function RedeemLoyaltyCodeCard() {
           </p>
           <Input
             value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); if (warrantyReason) setWarrantyReason(null); }}
+            onChange={e => {
+              setCode(e.target.value.toUpperCase());
+              if (warrantyReason) setWarrantyReason(null);
+              if (errorKey || success) clearFeedback();
+            }}
             placeholder="مثال: A1B2C3D4E5F6"
-            className="font-mono tracking-wider text-center"
+            className={`font-mono tracking-wider text-center ${errorKey ? 'border-destructive focus-visible:ring-destructive' : ''}`}
             autoFocus
-            disabled={submitting}
+            disabled={submitting || success}
             onKeyDown={e => { if (e.key === 'Enter' && !submitting && cooldown === 0) submit(); }}
           />
           {checking && !warrantyCheck && (
@@ -243,7 +247,38 @@ export default function RedeemLoyaltyCodeCard() {
               جاري التحقق من حالة الضمان...
             </div>
           )}
-          {activeReason && (
+          {success && (
+            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+              <div className="space-y-1 text-right">
+                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                  تم تفعيل البطاقة بنجاح
+                </p>
+                <p className="text-xs text-emerald-700/90 dark:text-emerald-300/90">
+                  أصبحت مزايا البطاقة فعّالة في حسابك الآن.
+                </p>
+              </div>
+            </div>
+          )}
+          {errorKey && !success && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 flex items-start gap-2">
+              <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <div className="space-y-1 text-right flex-1">
+                <p className="text-sm font-semibold text-destructive">
+                  {ERROR_DETAILS[errorKey].title}
+                </p>
+                <p className="text-xs text-destructive/90 leading-relaxed">
+                  {ERROR_DETAILS[errorKey].desc}
+                </p>
+                {errorKey === 'unknown' && errorRaw && (
+                  <p className="text-[10px] text-muted-foreground font-mono break-all mt-1">
+                    {errorRaw}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          {activeReason && !success && (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
