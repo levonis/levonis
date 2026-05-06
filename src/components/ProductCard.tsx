@@ -150,6 +150,8 @@ const ProductCard = ({
           )}
           <img 
             src={optimizedImage || '/placeholder.svg'} 
+            srcSet={srcSet}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
             alt={nameAr}
             className={`w-full h-full object-cover group-hover:scale-103 transition-all duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading={priority ? "eager" : "lazy"}
