@@ -1336,6 +1336,12 @@ const Cart = () => {
     setIsDirectSaleProcessing(true);
 
     try {
+      // CRITICAL: refuse to checkout an empty cart (prevents charging wallet for nothing).
+      if (!items || items.length === 0) {
+        toast({ title: 'السلة فارغة', description: 'لا توجد منتجات لإتمام الطلب', variant: 'destructive' });
+        setIsDirectSaleProcessing(false);
+        return;
+      }
       // حماية إضافية: عند وجود فلمنت عشوائي، يجب الدفع من المحفظة بالكامل لقيمة المنتجات + التوصيل
       if (hasRandomFilamentItems) {
         const productsTotal = total - (appliedCoupon ? calculateDiscount() : 0);
