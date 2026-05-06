@@ -477,7 +477,7 @@ export default function AdminLoyaltyLevels() {
     setOfferData({
       title_ar: offer.title_ar,
       description_ar: offer.description_ar || "",
-      min_card_level_id: offer.min_card_level_id || "",
+      min_card_level_id: offer.min_card_id || offer.min_card_level_id || "",
       offer_type: offer.offer_type || "discount",
       offer_value: offer.offer_value || 0,
       is_active: offer.is_active,
