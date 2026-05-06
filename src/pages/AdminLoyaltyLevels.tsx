@@ -434,10 +434,10 @@ export default function AdminLoyaltyLevels() {
   const handleEdit = (level: any) => {
     setEditingLevel(level);
     setFormData({
-      level_key: level.level_key,
+      level_key: level.card_key || level.level_key || "",
       name_ar: level.name_ar,
       name_en: level.name_en,
-      min_points: level.min_points,
+      min_points: level.min_points ?? 0,
       color: level.color,
       discount_percentage: level.discount_percentage || 0,
       discount_percentage_max_amount: level.discount_percentage_max_amount ?? null,
@@ -446,8 +446,8 @@ export default function AdminLoyaltyLevels() {
       free_shipping_min_order: level.free_shipping_min_order || 0,
       free_shipping_methods: Array.isArray(level.free_shipping_methods) ? level.free_shipping_methods : ["standard"],
       free_shipping_max_uses: level.free_shipping_max_uses ?? null,
-      is_purchasable: level.is_purchasable ?? true,
-      purchase_price_points: level.purchase_price_points || 0,
+      is_purchasable: level.is_active ?? true,
+      purchase_price_points: level.price_points ?? level.purchase_price_points ?? 0,
       duration_days: level.duration_days || 30,
       card_discounts_enabled: level.card_discounts_enabled || false,
       icon: level.icon || "crown",
