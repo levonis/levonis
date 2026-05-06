@@ -35,7 +35,8 @@ Deno.serve(async (req) => {
     const callerId = (claimsData.claims as { sub?: string }).sub;
     const { data: roleRow } = await anonClient
       .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
-    if (!roleRow) {
+    const isService = (claimsData.claims as { role?: string }).role === "service_role";
+    if (!roleRow && !isService) {
       return new Response(JSON.stringify({ success: false, error: "Forbidden" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 });
     }
