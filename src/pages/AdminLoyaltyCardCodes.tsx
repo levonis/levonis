@@ -268,7 +268,7 @@ const AdminLoyaltyCardCodes = () => {
   );
 };
 
-const CreateBatchButton = ({
+export const CreateBatchButton = ({
   cards, open, onOpenChange, onCreated,
 }: {
   cards: CardRow[]; open: boolean; onOpenChange: (b: boolean) => void; onCreated: () => void;
