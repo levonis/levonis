@@ -23,6 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminCardHeader, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 import LoyaltyCardPreview from "@/components/admin/LoyaltyCardPreview";
+import { CreateBatchButton, ImportBatchesButton } from "./AdminLoyaltyCardCodes";
+import { History, Ticket } from "lucide-react";
+import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 
 export default function AdminLoyaltyLevels() {
   const { user } = useAuth();
@@ -30,6 +33,7 @@ export default function AdminLoyaltyLevels() {
   const queryClient = useQueryClient();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [createBatchOpen, setCreateBatchOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<any>(null);
   const [formData, setFormData] = useState({
     level_key: "",
@@ -591,17 +595,52 @@ export default function AdminLoyaltyLevels() {
 
         {/* Cards Tab */}
         <TabsContent value="cards" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center flex-wrap gap-2">
             <p className="text-sm text-muted-foreground">
               البطاقات المتاحة للمستخدمين للشراء أو الحصول عليها تلقائياً
             </p>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="admin-btn-primary" onClick={resetForm}>
-                  <Plus className="ml-2 h-4 w-4" />
-                  إضافة بطاقة جديدة
-                </Button>
-              </DialogTrigger>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-card-codes`)}
+              >
+                <Ticket className="h-4 w-4 ml-1" /> إدارة الأكواد
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
+              >
+                <History className="h-4 w-4 ml-1" /> سجل الاستخدام
+              </Button>
+              <ImportBatchesButton
+                cards={(levels || []).map((l: any) => ({
+                  id: l.id,
+                  name_ar: l.name_ar,
+                  name_en: l.name_en,
+                  duration_days: l.duration_days,
+                }))}
+                onCreated={() => queryClient.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
+              />
+              <CreateBatchButton
+                cards={(levels || []).map((l: any) => ({
+                  id: l.id,
+                  name_ar: l.name_ar,
+                  name_en: l.name_en,
+                  duration_days: l.duration_days,
+                }))}
+                open={createBatchOpen}
+                onOpenChange={setCreateBatchOpen}
+                onCreated={() => queryClient.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
+              />
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="admin-btn-primary" onClick={resetForm}>
+                    <Plus className="ml-2 h-4 w-4" />
+                    إضافة بطاقة جديدة
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="admin-dialog max-w-6xl h-[92vh] p-0 flex flex-col !overflow-hidden !max-h-none">
                 <DialogHeader className="px-6 py-4 border-b shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
                   <DialogTitle className="flex items-center gap-2 text-lg">
@@ -1348,6 +1387,7 @@ export default function AdminLoyaltyLevels() {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
 

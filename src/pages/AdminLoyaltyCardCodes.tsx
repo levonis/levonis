@@ -268,7 +268,7 @@ const AdminLoyaltyCardCodes = () => {
   );
 };
 
-const CreateBatchButton = ({
+export const CreateBatchButton = ({
   cards, open, onOpenChange, onCreated,
 }: {
   cards: CardRow[]; open: boolean; onOpenChange: (b: boolean) => void; onCreated: () => void;
@@ -527,7 +527,7 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
   return { rows, errors };
 };
 
-const ImportBatchesButton = ({
+export const ImportBatchesButton = ({
   cards, onCreated,
 }: { cards: CardRow[]; onCreated: () => void }) => {
   const [open, setOpen] = useState(false);
