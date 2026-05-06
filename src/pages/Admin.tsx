@@ -26,6 +26,7 @@ import AdminProductAIContentEditor from '@/components/admin/AdminProductAIConten
 import { ExtractionProgress, type ExtractionStep } from '@/components/admin/ExtractionProgress';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import PermissionsHealthPanel from '@/components/admin/PermissionsHealthPanel';
+import { adminCreateProduct, adminDeleteProduct, adminUpdateProduct } from '@/lib/adminMutations';
 
 const EXTRACTION_STEP_DEFS: { key: string; label: string }[] = [
   { key: 'fetch', label: 'جلب صفحة المنتج' },
@@ -512,11 +513,7 @@ const Admin = () => {
 
   const createProduct = useMutation({
     mutationFn: async (values: any) => {
-      const { error } = await supabase
-        .from('products')
-        .insert([values]);
-      
-      if (error) throw error;
+      await adminCreateProduct(values);
     },
     onSuccess: () => {
       // Invalidate all product-related queries across the app
@@ -545,12 +542,7 @@ const Admin = () => {
 
   const updateProduct = useMutation({
     mutationFn: async ({ id, values }: { id: string, values: any }) => {
-      const { error } = await supabase
-        .from('products')
-        .update(values)
-        .eq('id', id);
-      
-      if (error) throw error;
+      await adminUpdateProduct(id, values);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
@@ -579,12 +571,7 @@ const Admin = () => {
 
   const deleteProduct = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      await adminDeleteProduct(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
