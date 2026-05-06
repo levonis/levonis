@@ -59,6 +59,30 @@ const SectionHeader = ({ icon: Icon, title }: { icon: any; title: string }) => (
   </div>
 );
 
+const ORDER_DETAIL_SELECT = `
+  id, user_id, order_number, status, total_amount, currency, shipping_address,
+  phone_number, governorate, shipping_notes, created_at, updated_at, shipped_at,
+  delivered_at, serial_number_image_url, arrived_warehouse_at, arrived_iraq_at,
+  user_confirmed_delivery, user_confirmed_at, auto_confirmed, admin_images, admin_files,
+  estimated_delivery_date, actual_weight, package_dimensions, customs_declaration_number,
+  priority, payment_status, payment_method, subtotal, tax_amount, tax_percentage,
+  discount_amount, paid_amount, remaining_amount, shipping_route_type,
+  shipping_duration_days, shipping_route_waypoints, confirmed_at, processing_at,
+  purchased_at, on_the_way_at, cancelled_at, order_type, stock_deducted,
+  delivery_method, card_discount_amount, card_discount_level_name,
+  referral_coupon_id, referral_owner_earnings_iqd,
+  order_items!order_items_order_id_fkey(
+    id, order_id, product_id, product_option_id, product_name, product_name_ar,
+    selected_option, selected_color, quantity, unit_price, total_price, created_at,
+    shipping_option_name_ar, shipping_price_adjustment, color_image_url, custom_request_id,
+    serial_number, customer_notes, bundle_id, is_gift, rf_offer_id,
+    products!order_items_product_id_fkey(id, name_ar, image_url, images, taobao_url),
+    custom_product_requests(product_name, image_url, suggested_price),
+    random_filament_offers!order_items_rf_offer_id_fkey(id, title_ar, description_ar, image_url)
+  ),
+  profiles(full_name, email)
+`;
+
 const InfoRow = ({ label, value, icon: Icon, valueClass = '' }: { label: string; value: string; icon?: any; valueClass?: string }) => (
   <div className="flex items-start gap-3 py-2.5 border-b border-border/20 last:border-0">
     {Icon && <Icon className="h-4 w-4 text-primary/60 mt-0.5 shrink-0" />}
@@ -91,7 +115,7 @@ const OrderDetail = () => {
       if (!orderId) return null;
       let query = supabase
         .from('orders')
-        .select(`*, order_items!order_items_order_id_fkey(*, products!order_items_product_id_fkey(id, name_ar, image_url, images, taobao_url), custom_product_requests(product_name, image_url, suggested_price), random_filament_offers!order_items_rf_offer_id_fkey(id, title_ar, description_ar, image_url)), profiles(full_name, email)`)
+        .select(ORDER_DETAIL_SELECT)
         .eq('id', orderId);
       if (!isAdmin) {
         if (!user) return null;
