@@ -3258,6 +3258,63 @@ const Cart = () => {
                     </div>
                   )}
 
+                  {/* Card perk scope notices: explain why free shipping / discount activates or not */}
+                  {(cardShippingScope || cardDiscountScope) && (
+                    <div className="space-y-1.5">
+                      {cardShippingScope && (
+                        <div className={`text-[11px] rounded-lg px-3 py-2 border ${
+                          cardShippingScope.eligible
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
+                        }`}>
+                          {cardShippingScope.eligible ? (
+                            <div className="font-semibold">
+                              {t('cart_card_perk_eligible_title', { perk: t('cart_free_delivery_won') })}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="font-bold mb-0.5">
+                                {t('cart_card_perk_blocked_title', { perk: t('cart_free_delivery_won') })}
+                              </div>
+                              <div className="leading-relaxed">
+                                {t('cart_card_perk_blocked_desc', {
+                                  perk: t('cart_free_delivery_won'),
+                                  cats: cardShippingScope.allowedNames || '—',
+                                  items: cardShippingScope.blockingNames || '—',
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {cardDiscountScope && (
+                        <div className={`text-[11px] rounded-lg px-3 py-2 border ${
+                          cardDiscountScope.eligible
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
+                        }`}>
+                          {cardDiscountScope.eligible ? (
+                            <div className="font-semibold">
+                              {t('cart_card_perk_eligible_title', { perk: `${cardDiscount?.percentageRate || 0}%` })}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="font-bold mb-0.5">
+                                {t('cart_card_perk_blocked_title', { perk: `${cardDiscount?.percentageRate || 0}%` })}
+                              </div>
+                              <div className="leading-relaxed">
+                                {t('cart_card_perk_blocked_desc', {
+                                  perk: `${cardDiscount?.percentageRate || 0}%`,
+                                  cats: cardDiscountScope.allowedNames || '—',
+                                  items: cardDiscountScope.blockingNames || '—',
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
