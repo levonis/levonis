@@ -378,7 +378,7 @@ export default function StackGameTab() {
       if (!newMilestone.prize_name_ar.trim() && !newMilestone.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       // Validate stock exists for product-based prizes
       if (newMilestone.product_id) {
-        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock, colors").eq("id", newMilestone.product_id).single();
+        const { data: prod } = await supabase.from("products_admin" as any).select("direct_stock, pre_order_stock, colors").eq("id", newMilestone.product_id).single();
         const hasDirectStock = prod?.direct_stock != null && prod.direct_stock > 0;
         const hasPreOrderStock = prod?.pre_order_stock != null && prod.pre_order_stock > 0;
         const hasColorStock = Array.isArray(prod?.colors) && (prod.colors as any[]).some((c: any) => {
@@ -432,7 +432,7 @@ export default function StackGameTab() {
     mutationFn: async () => {
       if (!newLbPrize.prize_name_ar.trim() && !newLbPrize.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       if (newLbPrize.product_id) {
-        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock, colors").eq("id", newLbPrize.product_id).single();
+        const { data: prod } = await supabase.from("products_admin" as any).select("direct_stock, pre_order_stock, colors").eq("id", newLbPrize.product_id).single();
         const hasDirectStock = prod?.direct_stock != null && prod.direct_stock > 0;
         const hasPreOrderStock = prod?.pre_order_stock != null && prod.pre_order_stock > 0;
         const hasColorStock = Array.isArray(prod?.colors) && (prod.colors as any[]).some((c: any) => {
