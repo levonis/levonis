@@ -70,17 +70,33 @@ export function useCartCardDiscount(
     staleTime: 5 * 60 * 1000,
   });
 
-  // Get discount usage for the current card
+  // Get current sub-cycle window for the active card (limits reset per cycle, e.g. each 30 days within a 180d card)
   const cardId = userCard?.id;
+  const { data: cycle } = useQuery({
+    queryKey: ["user-card-cycle", cardId],
+    queryFn: async () => {
+      if (!cardId) return null;
+      const { data, error } = await (supabase as any).rpc("get_user_card_cycle", { p_card_id: cardId });
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] : data;
+    },
+    enabled: !!cardId,
+    staleTime: 60 * 1000,
+  });
+  const cycleStart: string | null = cycle?.cycle_start ?? null;
+
+  // Get discount usage for the current card in the current cycle only
   const { data: discountUsage, isLoading: loadingUsage } = useQuery({
-    queryKey: ["card-discount-usage", cardId],
+    queryKey: ["card-discount-usage", cardId, cycleStart],
     queryFn: async () => {
       if (!user || !cardId) return [];
-      const { data, error } = await supabase
+      let q = supabase
         .from("card_discount_usage")
         .select("category_id")
         .eq("user_id", user.id)
         .eq("card_id", cardId);
+      if (cycleStart) q = q.gte("used_at", cycleStart);
+      const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
