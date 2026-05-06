@@ -89,6 +89,9 @@ export default function RedeemLoyaltyCodeCard() {
   const [submitting, setSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [warrantyReason, setWarrantyReason] = useState<WarrantyReason | null>(null);
+  const [errorKey, setErrorKey] = useState<ErrorKey | null>(null);
+  const [errorRaw, setErrorRaw] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const inFlightRef = useRef(false);
   const lastAttemptRef = useRef<{ code: string; at: number } | null>(null);
   const qc = useQueryClient();
@@ -117,17 +120,40 @@ export default function RedeemLoyaltyCodeCard() {
     return () => clearInterval(t);
   }, [cooldown]);
 
+  // Reset states on dialog close
+  useEffect(() => {
+    if (!open) {
+      setErrorKey(null);
+      setErrorRaw(null);
+      setSuccess(false);
+    }
+  }, [open]);
+
+  const clearFeedback = () => {
+    setErrorKey(null);
+    setErrorRaw(null);
+    setSuccess(false);
+  };
+
   const submit = async () => {
     if (inFlightRef.current || submitting) return;
+    clearFeedback();
     if (precheckBlocked) {
-      toast.error(WARRANTY_DETAILS[precheckBlocked].title);
+      setWarrantyReason(precheckBlocked);
       return;
     }
     const trimmed = code.trim().toUpperCase();
-    if (!trimmed) { toast.error('أدخل الكود'); return; }
+    if (!trimmed) {
+      setErrorKey('code_invalid_format');
+      return;
+    }
+    if (!CODE_REGEX.test(trimmed)) {
+      setErrorKey('code_invalid_format');
+      return;
+    }
     const last = lastAttemptRef.current;
     if (last && last.code === trimmed && Date.now() - last.at < COOLDOWN_MS) {
-      toast.error('يرجى الانتظار قبل إعادة المحاولة');
+      setErrorKey('rate_limited');
       return;
     }
     inFlightRef.current = true;
@@ -137,19 +163,27 @@ export default function RedeemLoyaltyCodeCard() {
       const { error } = await (supabase as any).rpc('redeem_loyalty_card_code', { p_code: trimmed });
       lastAttemptRef.current = { code: trimmed, at: Date.now() };
       if (error) {
-        const key = (error.message || '').match(/[a-z_]+/)?.[0] || '';
+        const raw = (error.message || '').toString();
+        const key = (raw.match(/[a-z_]+/g) || []).find(Boolean) || '';
         setCooldown(COOLDOWN_MS);
         if (key === 'no_printer_registered' || key === 'warranty_expired' || key === 'no_active_warranty') {
           setWarrantyReason(key as WarrantyReason);
           return;
         }
-        toast.error(ERROR_MESSAGES[key] || error.message || 'فشل التفعيل');
+        const knownKeys: ErrorKey[] = [
+          'code_not_found','code_already_used','code_expired',
+          'already_has_active_card','auth_required','card_not_found',
+        ];
+        if (knownKeys.includes(key as ErrorKey)) {
+          setErrorKey(key as ErrorKey);
+        } else {
+          setErrorKey('unknown');
+          setErrorRaw(raw);
+        }
         return;
       }
+      setSuccess(true);
       toast.success('تم تفعيل البطاقة بنجاح');
-      setOpen(false);
-      setCode('');
-      setWarrantyReason(null);
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
       qc.invalidateQueries({ queryKey: ['user-cards'] });
       qc.invalidateQueries({ queryKey: ['user-loyalty-code-history'] });
@@ -158,9 +192,11 @@ export default function RedeemLoyaltyCodeCard() {
       qc.invalidateQueries({ queryKey: ['card-discount-usage'] });
       qc.invalidateQueries({ queryKey: ['card-percentage-discount-used'] });
       qc.invalidateQueries({ queryKey: ['card-free-shipping-used'] });
+      setTimeout(() => { setOpen(false); setCode(''); }, 1200);
     } catch (e: any) {
       setCooldown(COOLDOWN_MS);
-      toast.error(e?.message || 'فشل التفعيل');
+      setErrorKey('unknown');
+      setErrorRaw(e?.message || null);
     } finally {
       inFlightRef.current = false;
       setSubmitting(false);
