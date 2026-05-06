@@ -336,6 +336,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             personal_delivery_cost,
             categories!products_category_id_fkey (
               id,
+              name_ar,
               tax_rate,
               main_section_id
             )
