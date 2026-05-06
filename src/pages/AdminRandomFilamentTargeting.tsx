@@ -147,7 +147,7 @@ function OfferTargetingRow({
     enabled: categoryIds.length > 0,
     queryFn: async () => {
       const { data } = await supabase
-        .from("products")
+        .from("products_admin" as any)
         .select(`id, name_ar, image_url, category_id, in_stock, colors, product_options(id, name_ar, name, available_for_pre_order, available_for_direct_sale, in_stock, stock_quantity)`)
         .in("category_id", categoryIds)
         .order("name_ar")

@@ -50,7 +50,7 @@ export default function AdminReelsManager() {
     queryKey: ['admin-site-products-for-reel'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_admin' as any)
         .select('id, name_ar, price, image_url')
         .order('created_at', { ascending: false })
         .limit(200);

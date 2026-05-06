@@ -440,7 +440,7 @@ function OfferDialog({
     enabled: !!offer && !!draft.category_ids?.length,
     queryFn: async () => {
       const { data } = await supabase
-        .from("products")
+        .from("products_admin" as any)
         .select(`
           id, name_ar, image_url, category_id, in_stock, direct_stock, colors,
           product_options (id, available_for_direct_sale, available_for_pre_order, stock_quantity)
