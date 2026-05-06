@@ -242,10 +242,11 @@ const AdminFinancials = () => {
       const productIds = Array.from(new Set(itemsRaw.map((it: any) => it.product_id).filter(Boolean)));
       const productMap = new Map<string, any>();
       if (productIds.length > 0) {
-        const { data: prodData } = await (supabase as any)
+        const { data: prodData, error: prodErr } = await (supabase as any)
           .from('products_admin')
           .select('id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, personal_delivery_cost, referral_earnings_iqd, category_id, categories!products_category_id_fkey(id, name_ar, main_section_id, main_sections!categories_main_section_id_fkey(id, name_ar))')
           .in('id', productIds);
+        if (prodErr) throw prodErr;
         ((prodData as any[]) || []).forEach((p) => productMap.set(p.id, p));
       }
       const itemsByOrder = new Map<string, any[]>();
