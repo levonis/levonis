@@ -834,7 +834,7 @@ const Cart = () => {
   // Apply card free shipping if eligible: must include selected method + have remaining uses + cart contains an item from whitelist (if any)
   const cardShipCats = cardDiscount?.freeShippingApplicableCategoryIds || [];
   const cartHasCardShipCategory = cardShipCats.length === 0
-    || items.some((it: any) => it?.products?.category_id && cardShipCats.includes(it.products.category_id));
+    || (items.filter((it:any)=>!it?.is_gift).length > 0 && items.filter((it:any)=>!it?.is_gift).every((it: any) => it?.products?.category_id && cardShipCats.includes(it.products.category_id)));
   const cardFreeShippingEligibleMethod = !!cardDiscount?.freeShipping
     && (cardDiscount?.freeShippingMethods?.length ? cardDiscount.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const cardFreeShippingHasUses = cardDiscount?.freeShippingRemainingUses == null
@@ -847,7 +847,7 @@ const Cart = () => {
   // Warranty free shipping (official, free system) — only if not already getting card free shipping
   const warrantyShipCats = warrantyBenefits?.freeShippingApplicableCategoryIds || [];
   const cartHasWarrantyShipCategory = warrantyShipCats.length === 0
-    || items.some((it: any) => it?.products?.category_id && warrantyShipCats.includes(it.products.category_id));
+    || (items.filter((it:any)=>!it?.is_gift).length > 0 && items.filter((it:any)=>!it?.is_gift).every((it: any) => it?.products?.category_id && warrantyShipCats.includes(it.products.category_id)));
   const warrantyFreeShippingEligibleMethod = !!warrantyBenefits?.freeShipping
     && (warrantyBenefits?.freeShippingMethods?.length ? warrantyBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const warrantyFreeShippingHasUses = (warrantyBenefits?.freeShippingRemainingUses ?? 0) > 0;
@@ -862,7 +862,7 @@ const Cart = () => {
   // Subscription (paid protection plan) free shipping — independent ledger; falls back if warranty has no uses
   const subShipCats = subscriptionBenefits?.freeShippingApplicableCategoryIds || [];
   const cartHasSubShipCategory = subShipCats.length === 0
-    || items.some((it: any) => it?.products?.category_id && subShipCats.includes(it.products.category_id));
+    || (items.filter((it:any)=>!it?.is_gift).length > 0 && items.filter((it:any)=>!it?.is_gift).every((it: any) => it?.products?.category_id && subShipCats.includes(it.products.category_id)));
   const subFreeShippingEligibleMethod = !!subscriptionBenefits?.freeShipping
     && (subscriptionBenefits?.freeShippingMethods?.length ? subscriptionBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const subFreeShippingHasUses = (subscriptionBenefits?.freeShippingRemainingUses ?? 0) > 0;
