@@ -29,6 +29,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useLanguage } from '@/lib/i18n';
 import { translateShippingOption } from '@/lib/shippingLabel';
 import { buildFriendlyOrderError } from '@/lib/orderErrorMessages';
+import { insertOrderItemsWithRollback } from '@/lib/orderItemsInsert';
 
 import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
@@ -1556,11 +1557,23 @@ const Cart = () => {
         });
 
       if (orderItems.length > 0) {
-        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-        if (itemsError) {
-          console.error('Order items insert error:', itemsError);
+        const itemsResult = await insertOrderItemsWithRollback(orderItems, {
+          orderId: orderResult.id,
+          orderNumber: orderResult.order_number,
+          userId: user.id,
+          walletDeductedAmount: walletDeductionAmount,
+          refundIdempotencyKey: `refund:direct_sale_items:${orderNumber}`,
+          refundReason: `استرجاع تلقائي - فشل حفظ عناصر الطلب ${orderNumber}`,
+        });
+        if (itemsResult.ok === false) {
+          const friendly = buildFriendlyOrderError(itemsResult.error, language as any);
+          sonnerToast.error(friendly.title, {
+            description: friendly.description,
+            duration: 9000,
+          });
+          return;
         }
-        
+
         // Deduct stock for direct sale items - retry up to 3 times
         let stockDeducted = false;
         for (let attempt = 0; attempt < 3 && !stockDeducted; attempt++) {
@@ -2056,16 +2069,21 @@ const Cart = () => {
 
       console.log('Inserting order items:', orderItems);
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+      const walletChargedNow = isPreOrderCod ? 0 : requiredPaymentNow;
+      const itemsResult = await insertOrderItemsWithRollback(orderItems, {
+        orderId: order.id,
+        orderNumber: order.order_number,
+        userId: user.id,
+        walletDeductedAmount: walletChargedNow,
+        refundIdempotencyKey: `refund:preorder_items:${order.order_number}`,
+        refundReason: `استرجاع تلقائي - فشل حفظ عناصر الطلب ${order.order_number}`,
+      });
 
-      if (itemsError) {
-        console.error('Order items insert error:', itemsError);
-        toast({
-          title: "خطأ",
-          description: "حدث خطأ أثناء حفظ عناصر الطلب: " + itemsError.message,
-          variant: "destructive",
+      if (itemsResult.ok === false) {
+        const friendly = buildFriendlyOrderError(itemsResult.error, language as any);
+        sonnerToast.error(friendly.title, {
+          description: friendly.description,
+          duration: 9000,
         });
         return;
       }
