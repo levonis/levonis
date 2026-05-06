@@ -308,6 +308,7 @@ const CategoryDetail = () => {
     setDirectOnly(false);
     setMinPrice('');
     setMaxPrice('');
+    setBrandFilter('all');
   };
 
   const filtersActive =
@@ -315,7 +316,18 @@ const CategoryDetail = () => {
     stockFilter !== 'all' ||
     directOnly ||
     minPrice !== '' ||
-    maxPrice !== '';
+    maxPrice !== '' ||
+    brandFilter !== 'all';
+
+  const availableBrands = useMemo(() => {
+    if (!products) return [] as string[];
+    const set = new Set<string>();
+    for (const p of products as any[]) {
+      const b = (p.brand || '').toString().trim();
+      if (b) set.add(b);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [products]);
 
   return (
     <div className="min-h-screen">
