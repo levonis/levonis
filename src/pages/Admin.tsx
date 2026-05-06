@@ -1426,6 +1426,9 @@ const Admin = () => {
         pre_order_shipping_options: [],
         pre_order_free_shipping_price: null,
         pre_order_fast_shipping_price: null,
+        display_order: formData.get('display_order') && formData.get('display_order') !== ''
+          ? Number(formData.get('display_order'))
+          : 0,
         // Use empty array [] instead of undefined to actually clear data
         colors: validColors.length > 0 ? validColors : [],
         features: validFeatures.length > 0 ? validFeatures : [],
