@@ -1,0 +1,1 @@
+ALTER TABLE public.membership_cards ADD COLUMN IF NOT EXISTS is_purchasable BOOLEAN NOT NULL DEFAULT true;
