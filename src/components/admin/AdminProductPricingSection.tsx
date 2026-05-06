@@ -68,7 +68,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
   // Common fields
   const [priceUsd, setPriceUsd] = useState<number>(0);
-  const [originalPriceUsd, setOriginalPriceUsd] = useState<number>(0);
+  const [originalPriceIqd, setOriginalPriceIqd] = useState<number>(0);
 
   // Dimensions & weight
   const [lengthCm, setLengthCm] = useState<number>(0);
