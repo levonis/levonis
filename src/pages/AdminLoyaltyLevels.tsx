@@ -1043,6 +1043,20 @@ export default function AdminLoyaltyLevels() {
                                 toggle: (v: boolean) => void;
                                 visible: boolean;
                               }> = [
+                                {
+                                  key: 'free_shipping',
+                                  visible: true,
+                                  enabled: formData.free_shipping,
+                                  toggle: (v) => setFormData({ ...formData, free_shipping: v }),
+                                  text: 'شحن مجاني (تفاصيل في قسم الشحن)',
+                                },
+                                {
+                                  key: 'monthly_free_shipping',
+                                  visible: true,
+                                  enabled: formData.monthly_free_shipping > 0,
+                                  toggle: (v) => setFormData({ ...formData, monthly_free_shipping: v ? (formData.monthly_free_shipping || 1) : 0 }),
+                                  text: formData.monthly_free_shipping > 0 ? `${formData.monthly_free_shipping} شحنات مجانية شهرياً` : 'شحنات مجانية شهرياً',
+                                },
                                 { key: 'vip_support', visible: true, enabled: formData.vip_support, toggle: (v) => setFormData({ ...formData, vip_support: v }), text: 'دعم عملاء مميز وأولوية الرد' },
                                 { key: 'priority_shipping', visible: true, enabled: formData.priority_shipping, toggle: (v) => setFormData({ ...formData, priority_shipping: v }), text: 'أولوية في الشحن والتوصيل' },
                                 { key: 'priority_packaging', visible: true, enabled: formData.priority_packaging, toggle: (v) => setFormData({ ...formData, priority_packaging: v }), text: 'أولوية في التغليف' },
@@ -1062,36 +1076,54 @@ export default function AdminLoyaltyLevels() {
                                 },
                               ];
                               return (
-                                <ul className="space-y-2">
-                                  {items.map((it) => (
-                                    <li
-                                      key={it.key}
-                                      className={cn(
-                                        "flex items-center justify-between gap-3 p-2.5 rounded-lg border text-sm transition-colors",
-                                        it.enabled ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-border/50 opacity-60"
+                                <div className="space-y-3">
+                                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {items.map((it) => (
+                                      <li
+                                        key={it.key}
+                                        className={cn(
+                                          "flex items-center justify-between gap-3 p-2.5 rounded-lg border text-sm transition-colors",
+                                          it.enabled ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-border/50 opacity-60"
+                                        )}
+                                      >
+                                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                                          <Check className={cn("h-4 w-4 shrink-0 mt-0.5", it.enabled ? "text-primary" : "text-muted-foreground")} />
+                                          <span className={cn("leading-tight", !it.enabled && "line-through")}>{it.text}</span>
+                                        </div>
+                                        <Switch checked={it.enabled} onCheckedChange={it.toggle} />
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  {(formData.free_daily_games > 0 || formData.monthly_free_shipping > 0) && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t">
+                                      {formData.monthly_free_shipping > 0 && (
+                                        <div className="p-2.5 rounded-lg border border-dashed">
+                                          <Label className="text-xs">عدد الشحنات المجانية شهرياً</Label>
+                                          <Input
+                                            type="number"
+                                            min="1"
+                                            value={formData.monthly_free_shipping}
+                                            onChange={(e) => setFormData({ ...formData, monthly_free_shipping: parseInt(e.target.value) || 0 })}
+                                            className="mt-1"
+                                          />
+                                        </div>
                                       )}
-                                    >
-                                      <div className="flex items-start gap-2 flex-1 min-w-0">
-                                        <Check className={cn("h-4 w-4 shrink-0 mt-0.5", it.enabled ? "text-primary" : "text-muted-foreground")} />
-                                        <span className={cn(!it.enabled && "line-through")}>{it.text}</span>
-                                      </div>
-                                      <Switch checked={it.enabled} onCheckedChange={it.toggle} />
-                                    </li>
-                                  ))}
-                                  {formData.free_daily_games > 0 && (
-                                    <li className="p-2.5 rounded-lg border border-dashed">
-                                      <Label className="text-xs">عدد الألعاب المجانية يومياً</Label>
-                                      <Input
-                                        type="number"
-                                        min="1"
-                                        value={formData.free_daily_games}
-                                        onChange={(e) => setFormData({ ...formData, free_daily_games: parseInt(e.target.value) || 0 })}
-                                        className="mt-1"
-                                      />
-                                    </li>
+                                      {formData.free_daily_games > 0 && (
+                                        <div className="p-2.5 rounded-lg border border-dashed">
+                                          <Label className="text-xs">عدد الألعاب المجانية يومياً</Label>
+                                          <Input
+                                            type="number"
+                                            min="1"
+                                            value={formData.free_daily_games}
+                                            onChange={(e) => setFormData({ ...formData, free_daily_games: parseInt(e.target.value) || 0 })}
+                                            className="mt-1"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
                                   )}
-                                </ul>
-                              );
+                                </div>
+
                             })()}
                           </AccordionContent>
                         </AccordionItem>
