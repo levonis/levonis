@@ -583,6 +583,10 @@ export default function AdminLoyaltyLevels() {
             <Users className="h-4 w-4" />
             المشتركين
           </TabsTrigger>
+          <TabsTrigger value="codes" className="admin-tab flex items-center gap-2">
+            <Ticket className="h-4 w-4" />
+            أكواد التفعيل
+          </TabsTrigger>
           <TabsTrigger value="offers" className="admin-tab flex items-center gap-2">
             <Gift className="h-4 w-4" />
             العروض الحصرية
