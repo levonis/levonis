@@ -607,13 +607,6 @@ export default function AdminLoyaltyLevels() {
               >
                 <History className="h-4 w-4 ml-1" /> سجل الاستخدام
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
-              >
-                <History className="h-4 w-4 ml-1" /> سجل الاستخدام
-              </Button>
               <ImportBatchesButton
                 cards={(levels || []).map((l: any) => ({
                   id: l.id,
