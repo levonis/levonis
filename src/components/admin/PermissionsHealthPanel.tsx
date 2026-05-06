@@ -63,7 +63,7 @@ const PROBES: Probe[] = [
     page: 'المستخدمين',
     route: '/users',
     table: 'profiles',
-    columns: 'id, username, full_name, phone',
+    columns: 'id, username, full_name, phone_number',
   },
   {
     page: 'أدوار المستخدمين',
