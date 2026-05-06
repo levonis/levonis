@@ -155,6 +155,13 @@ const AdminLoyaltyCardCodes = () => {
             <Ticket className="h-4 w-4" /> أكواد تفعيل بطاقات الولاء
           </h1>
           <div className="flex gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
+            >
+              <History className="h-3 w-3 ml-1" /> سجل الاستخدام
+            </Button>
             <ImportBatchesButton
               cards={cards || []}
               onCreated={() => qc.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
