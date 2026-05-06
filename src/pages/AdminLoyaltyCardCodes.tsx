@@ -32,6 +32,7 @@ interface CodeRow {
   batch_label: string | null;
   duration_days: number;
   code_expires_at: string;
+  valid_from: string | null;
   status: 'active' | 'redeemed' | 'expired' | 'revoked';
   redeemed_by_user_id: string | null;
   redeemed_at: string | null;
