@@ -14,6 +14,7 @@ import { calculateShippingCost, type ShippingSettings } from "@/hooks/useShippin
 import AdminLayout, { AdminLoading } from "@/components/admin/AdminLayout";
 import { IRAQI_GOVERNORATES } from "@/components/auth/signup/types";
 import { cn } from "@/lib/utils";
+import { adminUpdateProduct } from "@/lib/adminMutations";
 
 interface ShippingSetting {
   id: string;
@@ -746,8 +747,12 @@ export default function AdminShippingSettings() {
       }
 
       if (Object.keys(updates).length > 0) {
-        const { error: updateError } = await supabase.from('products').update(updates).eq('id', p.id);
-        if (!updateError) updated++;
+        try {
+          await adminUpdateProduct(p.id, updates);
+          updated++;
+        } catch (updateError) {
+          console.error('Product price recalculation failed:', updateError);
+        }
       }
     }
     return updated;
