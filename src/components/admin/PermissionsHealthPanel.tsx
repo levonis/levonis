@@ -45,7 +45,7 @@ const PROBES: Probe[] = [
     page: 'بنود الطلبات',
     route: '/orders',
     table: 'order_items_admin',
-    columns: 'id, price, cost_price, profit_amount',
+    columns: 'id, unit_price, total_price, cost_price',
   },
   {
     page: 'المنتجات / المخزون',
