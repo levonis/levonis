@@ -81,7 +81,7 @@ const CategoryDetail = () => {
       if (!category?.id) return [];
       let query = supabase
         .from('products')
-        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, direct_sale_price, link_direct_commission_to_cod, has_pre_order, shipping_type, price_usd, personal_delivery_cost, referral_earnings_iqd, sea_price, air_price, round_up_price, display_order, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)')
+        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, direct_sale_price, link_direct_commission_to_cod, has_pre_order, shipping_type, price_usd, personal_delivery_cost, referral_earnings_iqd, sea_price, air_price, round_up_price, display_order, brand, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)')
         .eq('category_id', category.id)
         .eq('in_stock', true)
         .order('display_order', { ascending: true })
