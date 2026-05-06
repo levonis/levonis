@@ -1123,7 +1123,7 @@ export default function AdminLoyaltyLevels() {
                                     </div>
                                   )}
                                 </div>
-
+                              );
                             })()}
                           </AccordionContent>
                         </AccordionItem>
