@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2, Globe } from "lucide-react";
 import SeasonAdminFields from "./SeasonAdminFields";
+import { adminUpdateProduct } from "@/lib/adminMutations";
 
 interface ProductPickerValue {
   product_id: string | null;
@@ -33,7 +34,7 @@ function ProductPicker({
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker", search],
     queryFn: async () => {
-      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
+      let q = (supabase as any).from("products_admin").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
       if (search.trim()) q = q.ilike("name_ar", `%${search}%`);
       const { data } = await q;
       return (data || []) as any[];
@@ -45,7 +46,7 @@ function ProductPicker({
     queryKey: ["admin-product-selected", value.product_id],
     queryFn: async () => {
       if (!value.product_id) return null;
-      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
+      const { data } = await (supabase as any).from("products_admin").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
       return data as any;
     },
     enabled: !!value.product_id,
@@ -198,8 +199,7 @@ function ProductPicker({
                   size="sm" 
                   className="text-xs h-7" 
                   onClick={async () => {
-                    const { error } = await supabase.from("products").update({ direct_stock: manualStock } as any).eq("id", value.product_id!);
-                    if (error) { toast.error("فشل تحديث المخزون"); return; }
+                    try { await adminUpdateProduct(value.product_id!, { direct_stock: manualStock }); } catch { toast.error("فشل تحديث المخزون"); return; }
                     toast.success(`تم تحديد المخزون: ${manualStock}`);
                     setSettingStock(false);
                     queryClient.invalidateQueries({ queryKey: ["admin-product-selected", value.product_id] });
@@ -378,16 +378,17 @@ export default function StackGameTab() {
       if (!newMilestone.prize_name_ar.trim() && !newMilestone.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       // Validate stock exists for product-based prizes
       if (newMilestone.product_id) {
-        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock, colors").eq("id", newMilestone.product_id).single();
-        const hasDirectStock = prod?.direct_stock != null && prod.direct_stock > 0;
-        const hasPreOrderStock = prod?.pre_order_stock != null && prod.pre_order_stock > 0;
-        const hasColorStock = Array.isArray(prod?.colors) && (prod.colors as any[]).some((c: any) => {
+        const { data: prod } = await (supabase as any).from("products_admin").select("direct_stock, pre_order_stock, colors").eq("id", newMilestone.product_id).single();
+        const adminProd = prod as any;
+        const hasDirectStock = adminProd?.direct_stock != null && adminProd.direct_stock > 0;
+        const hasPreOrderStock = adminProd?.pre_order_stock != null && adminProd.pre_order_stock > 0;
+        const hasColorStock = Array.isArray(adminProd?.colors) && (adminProd.colors as any[]).some((c: any) => {
           if (c.option_stocks && typeof c.option_stocks === 'object') {
             return Object.values(c.option_stocks).some((v: any) => Number(v) > 0);
           }
           return false;
         });
-        if (prod && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
+        if (adminProd && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
           throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً من خلال زر 'تحديد مخزون يدوي للجوائز'");
         }
       }
@@ -432,16 +433,17 @@ export default function StackGameTab() {
     mutationFn: async () => {
       if (!newLbPrize.prize_name_ar.trim() && !newLbPrize.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       if (newLbPrize.product_id) {
-        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock, colors").eq("id", newLbPrize.product_id).single();
-        const hasDirectStock = prod?.direct_stock != null && prod.direct_stock > 0;
-        const hasPreOrderStock = prod?.pre_order_stock != null && prod.pre_order_stock > 0;
-        const hasColorStock = Array.isArray(prod?.colors) && (prod.colors as any[]).some((c: any) => {
+        const { data: prod } = await (supabase as any).from("products_admin").select("direct_stock, pre_order_stock, colors").eq("id", newLbPrize.product_id).single();
+        const adminProd = prod as any;
+        const hasDirectStock = adminProd?.direct_stock != null && adminProd.direct_stock > 0;
+        const hasPreOrderStock = adminProd?.pre_order_stock != null && adminProd.pre_order_stock > 0;
+        const hasColorStock = Array.isArray(adminProd?.colors) && (adminProd.colors as any[]).some((c: any) => {
           if (c.option_stocks && typeof c.option_stocks === 'object') {
             return Object.values(c.option_stocks).some((v: any) => Number(v) > 0);
           }
           return false;
         });
-        if (prod && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
+        if (adminProd && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
           throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً");
         }
       }

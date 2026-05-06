@@ -23,6 +23,7 @@ import { formatPrice } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { adminUpdateProduct } from '@/lib/adminMutations';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -578,14 +579,15 @@ export default function AdminInventory() {
 
         for (const [pid, pItems] of Object.entries(byProduct)) {
           // Fetch fresh product data
-          const { data: product, error: fetchErr } = await supabase
-            .from('products')
+          const { data: product, error: fetchErr } = await (supabase as any)
+            .from('products_admin')
             .select('id, direct_stock, colors')
             .eq('id', pid)
             .single();
           if (fetchErr || !product) throw new Error('المنتج غير موجود: ' + pid);
+          const adminProduct = product as any;
 
-          let colors = (product.colors || []) as any[];
+          let colors = (adminProduct.colors || []) as any[];
           let directStockAdd = 0;
 
           for (const item of pItems) {
@@ -635,19 +637,17 @@ export default function AdminInventory() {
           // Build update object
           const updateObj: any = { colors };
           if (directStockAdd > 0) {
-            updateObj.direct_stock = (Number(product.direct_stock) || 0) + directStockAdd;
+            updateObj.direct_stock = (Number(adminProduct.direct_stock) || 0) + directStockAdd;
           }
 
-          const { error: updErr } = await supabase.from('products').update(updateObj).eq('id', pid);
-          if (updErr) throw updErr;
+          await adminUpdateProduct(pid, updateObj);
         }
       } else {
         // Legacy fallback for shipments without items array
         const product = products.find((p) => p.id === shipment.product_id);
         if (!product) throw new Error('المنتج غير موجود');
         const currentStock = Number(product.direct_stock) || 0;
-        const { error } = await supabase.from('products').update({ direct_stock: currentStock + shipment.quantity }).eq('id', shipment.product_id);
-        if (error) throw error;
+        await adminUpdateProduct(shipment.product_id, { direct_stock: currentStock + shipment.quantity });
         await supabase.from('inventory_movements').insert({
           product_id: shipment.product_id, movement_type: 'inbound', quantity: shipment.quantity, stock_field: 'direct_stock',
           note: `استلام شحنة: ${shipment.note || ''} (تكلفة: ${formatPrice(shipment.total_cost)})`
@@ -667,8 +667,7 @@ export default function AdminInventory() {
 
   const updateStockMutation = useMutation({
     mutationFn: async ({ productId, value }: {productId: string;value: number;}) => {
-      const { error } = await supabase.from('products').update({ direct_stock: value }).eq('id', productId);
-      if (error) throw error;
+      await adminUpdateProduct(productId, { direct_stock: value });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory-products'] });

@@ -46,11 +46,11 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
     enabled: open,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("products")
+      const { data } = await (supabase as any)
+        .from("products_admin")
         .select("id, name, name_ar, price, colors, direct_stock")
         .order("name_ar");
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 

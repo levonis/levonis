@@ -132,8 +132,8 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
     queryKey: ['batch-product-stocks', batchProductIds],
     queryFn: async () => {
       if (batchProductIds.length === 0) return {};
-      const { data } = await supabase
-        .from('products')
+      const { data } = await (supabase as any)
+        .from('products_admin')
         .select('id, direct_stock, colors')
         .in('id', batchProductIds);
       if (!data) return {};
@@ -173,8 +173,8 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
           .limit(10);
         return (data || []).map((b: any) => ({ id: b.id, name_ar: b.title_ar, image_url: b.image_url, _type: 'bundle' }));
       }
-      const { data } = await supabase
-        .from('products')
+      const { data } = await (supabase as any)
+        .from('products_admin')
         .select('id, name_ar, image_url')
         .ilike('name_ar', `%${productSearch}%`)
         .limit(10);

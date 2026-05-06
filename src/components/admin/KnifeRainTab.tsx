@@ -25,7 +25,7 @@ function ProductPicker({ value, onChange, requireStock = false }: { value: Produ
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker-kr", search],
     queryFn: async () => {
-      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
+      let q = (supabase as any).from("products_admin").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
       if (search.trim()) q = q.ilike("name_ar", `%${search}%`);
       const { data } = await q;
       return (data || []) as any[];
@@ -37,7 +37,7 @@ function ProductPicker({ value, onChange, requireStock = false }: { value: Produ
     queryKey: ["admin-product-selected-kr", value.product_id],
     queryFn: async () => {
       if (!value.product_id) return null;
-      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
+      const { data } = await (supabase as any).from("products_admin").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
       return data as any;
     },
     enabled: !!value.product_id,

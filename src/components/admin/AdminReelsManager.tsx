@@ -49,8 +49,8 @@ export default function AdminReelsManager() {
   const { data: siteProducts } = useQuery({
     queryKey: ['admin-site-products-for-reel'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
+      const { data, error } = await (supabase as any)
+        .from('products_admin')
         .select('id, name_ar, price, image_url')
         .order('created_at', { ascending: false })
         .limit(200);

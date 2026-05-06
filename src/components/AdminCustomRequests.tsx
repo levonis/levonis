@@ -14,6 +14,7 @@ import { formatDate, formatPrice } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { mergeRetryColors } from '@/lib/mergeRetryColors';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { adminUpdateProduct } from '@/lib/adminMutations';
 
 interface AdminCustomRequestsProps {
   requests: any[] | undefined;
@@ -116,13 +117,14 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
     try {
       // Get existing product colors
       setRetryProgress(20);
-      const { data: product } = await supabase
-        .from('products')
-        .select('colors')
+      const { data: product } = await (supabase as any)
+        .from('products_admin')
+        .select('id, colors')
         .eq('slug', request.code)
         .single();
 
-      const existingColors = product?.colors || [];
+      const adminProduct = product as any;
+      const existingColors = adminProduct?.colors || [];
       
       setRetryProgress(40);
 
@@ -157,10 +159,9 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
           defaults,
         });
 
-        await supabase
-          .from('products')
-          .update({ colors: updatedColors as any })
-          .eq('slug', request.code);
+        if (adminProduct?.id) {
+          await adminUpdateProduct(adminProduct.id, { colors: updatedColors as any });
+        }
 
         toast.success(data.mode === 'replace' 
           ? `تم تحديث ${updatedColors.length} لون`

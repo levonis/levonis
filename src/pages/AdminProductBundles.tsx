@@ -362,8 +362,8 @@ const AdminProductBundles = () => {
   const { data: products } = useQuery({
     queryKey: ['admin-products-for-bundles', productSearch],
     queryFn: async () => {
-      let query = supabase
-        .from('products')
+      let query = (supabase as any)
+        .from('products_admin')
         .select('id, name_ar, image_url, images, colors, direct_sale_price, price, original_price, air_price, sea_price, direct_stock, pre_order_stock')
         .order('name_ar');
       if (productSearch) query = query.ilike('name_ar', `%${productSearch}%`);

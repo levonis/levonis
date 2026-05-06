@@ -132,8 +132,8 @@ function ProductVariantSelector({
   const { data: product } = useQuery({
     queryKey: ["admin-product-variants", productId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("products")
+      const { data } = await (supabase as any)
+        .from("products_admin")
         .select("colors")
         .eq("id", productId)
         .single();
@@ -240,7 +240,7 @@ function ProductSearch({ selectedId, onSelect }: { selectedId: string; onSelect:
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-search", query],
     queryFn: async () => {
-      let q = supabase.from("products").select("id, name, name_ar, image_url, price").order("name_ar").limit(20);
+      let q = (supabase as any).from("products_admin").select("id, name, name_ar, image_url, price").order("name_ar").limit(20);
       if (query.trim()) {
         q = q.or(`name_ar.ilike.%${query}%,name.ilike.%${query}%`);
       }
