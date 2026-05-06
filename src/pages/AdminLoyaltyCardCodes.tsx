@@ -431,6 +431,7 @@ interface CsvRow {
   quantity: number;
   duration_days: number;
   code_expiry_days: number;
+  valid_from_days: number | null;
   batch_label: string | null;
   requires_active_warranty: boolean;
   _line: number;
@@ -465,6 +466,8 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
     const quantity = Number(get('quantity'));
     const duration = Number(get('duration_days'));
     const expiry = Number(get('code_expiry_days'));
+    const validFromRaw = get('valid_from_days');
+    const validFromDays = validFromRaw === '' ? null : Number(validFromRaw);
     const label = get('batch_label') || null;
     const reqWarrantyRaw = get('requires_active_warranty').toLowerCase();
     const requires = reqWarrantyRaw === '' ? true : ['true', '1', 'yes', 'نعم'].includes(reqWarrantyRaw);
@@ -486,6 +489,10 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
       errors.push(`السطر ${idx + 1}: code_expiry_days يجب أن يكون 1..365`);
       return;
     }
+    if (validFromDays !== null && (!Number.isInteger(validFromDays) || validFromDays < 0 || validFromDays >= expiry)) {
+      errors.push(`السطر ${idx + 1}: valid_from_days يجب أن يكون 0..${expiry - 1}`);
+      return;
+    }
     if (label && label.length > 100) {
       errors.push(`السطر ${idx + 1}: batch_label طويل جداً`);
       return;
@@ -496,6 +503,7 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
       quantity,
       duration_days: duration,
       code_expiry_days: expiry,
+      valid_from_days: validFromDays,
       batch_label: label,
       requires_active_warranty: requires,
       _line: idx + 1,
