@@ -151,10 +151,10 @@ export default function AdminLoyaltyLevels() {
   }, [user, navigate]);
 
   const { data: levels, isLoading } = useQuery({
-    queryKey: ["loyaltyLevels"],
+    queryKey: ["membershipCards"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("loyalty_levels")
+        .from("membership_cards")
         .select("*")
         .order("display_order", { ascending: true });
 
@@ -182,7 +182,7 @@ export default function AdminLoyaltyLevels() {
         .from("user_cards")
         .select(`
           *,
-          loyalty_levels:level_id(name_ar, color)
+          membership_cards:card_id(name_ar, color)
         `)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
@@ -200,6 +200,7 @@ export default function AdminLoyaltyLevels() {
       return cards.map((c: any) => ({
         ...c,
         profiles: profileMap.get(c.user_id) || null,
+        loyalty_levels: c.membership_cards, // backward-compat for existing UI bindings
       }));
     },
   });
@@ -211,12 +212,12 @@ export default function AdminLoyaltyLevels() {
         .from("card_exclusive_offers")
         .select(`
           *,
-          loyalty_levels:min_card_level_id(name_ar, color)
+          membership_cards:min_card_id(name_ar, color)
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return (data || []).map((o: any) => ({ ...o, loyalty_levels: o.membership_cards }));
     },
   });
 
@@ -224,8 +225,8 @@ export default function AdminLoyaltyLevels() {
     queryKey: ["loyaltyStats"],
     queryFn: async () => {
       const [cardsRes, holdersRes] = await Promise.all([
-        supabase.from("loyalty_levels").select("id", { count: "exact" }),
-        supabase.from("user_cards").select("id", { count: "exact" }).eq("is_active", true),
+        supabase.from("membership_cards").select("id", { count: "exact", head: true }),
+        supabase.from("user_cards").select("id", { count: "exact", head: true }).eq("is_active", true),
       ]);
       return {
         totalCards: cardsRes.count || 0,
