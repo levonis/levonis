@@ -920,17 +920,9 @@ export default function AdminLoyaltyLevels() {
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="px-4 pb-4 space-y-4">
-                            {/* Master toggle */}
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20">
-                              <Label className="flex items-center gap-2 font-medium">
-                                <Truck className="h-4 w-4 text-orange-600" />
-                                تفعيل الشحن المجاني
-                              </Label>
-                              <Switch
-                                checked={formData.free_shipping}
-                                onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
-                              />
-                            </div>
+                            <p className="text-[11px] text-muted-foreground">
+                              فعّل/أوقف "الشحن المجاني" من قسم "المزايا الإضافية" أدناه. هذه الحقول إعدادات تفصيلية له.
+                            </p>
 
                             <div className={cn("space-y-4 transition-opacity", !formData.free_shipping && "opacity-50 pointer-events-none")}>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
