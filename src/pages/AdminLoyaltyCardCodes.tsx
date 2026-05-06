@@ -90,7 +90,7 @@ const AdminLoyaltyCardCodes = () => {
   });
 
   const batches = useMemo(() => {
-    const map = new Map<string, { batch_id: string; batch_label: string | null; card_id: string; created_at: string; code_expires_at: string; codes: CodeRow[] }>();
+    const map = new Map<string, { batch_id: string; batch_label: string | null; card_id: string; created_at: string; code_expires_at: string; valid_from: string | null; codes: CodeRow[] }>();
     for (const c of codes || []) {
       const cur = map.get(c.batch_id) || {
         batch_id: c.batch_id,
@@ -98,6 +98,7 @@ const AdminLoyaltyCardCodes = () => {
         card_id: c.card_id,
         created_at: c.created_at,
         code_expires_at: c.code_expires_at,
+        valid_from: c.valid_from,
         codes: [] as CodeRow[],
       };
       cur.codes.push(c);
