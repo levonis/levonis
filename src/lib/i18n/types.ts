@@ -1151,6 +1151,10 @@ export type TranslationKeys = {
   warranty_expired_panel_desc: string;
   cart_free_delivery_won: string;
   cart_free_delivery_remaining: string;
+  cart_card_perk_blocked_title: string;
+  cart_card_perk_blocked_desc: string;
+  cart_card_perk_eligible_title: string;
+  cart_card_perk_remove_unsupported: string;
   cart_delivery_address: string;
   cart_switch_address: string;
   cart_manage_addresses: string;
