@@ -2069,16 +2069,21 @@ const Cart = () => {
 
       console.log('Inserting order items:', orderItems);
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+      const walletChargedNow = isPreOrderCod ? 0 : requiredPaymentNow;
+      const itemsResult = await insertOrderItemsWithRollback(orderItems, {
+        orderId: order.id,
+        orderNumber: order.order_number,
+        userId: user.id,
+        walletDeductedAmount: walletChargedNow,
+        refundIdempotencyKey: `refund:preorder_items:${order.order_number}`,
+        refundReason: `استرجاع تلقائي - فشل حفظ عناصر الطلب ${order.order_number}`,
+      });
 
-      if (itemsError) {
-        console.error('Order items insert error:', itemsError);
-        toast({
-          title: "خطأ",
-          description: "حدث خطأ أثناء حفظ عناصر الطلب: " + itemsError.message,
-          variant: "destructive",
+      if (itemsResult.ok === false) {
+        const friendly = buildFriendlyOrderError(itemsResult.error, language as any);
+        sonnerToast.error(friendly.title, {
+          description: friendly.description,
+          duration: 9000,
         });
         return;
       }
