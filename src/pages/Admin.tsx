@@ -483,11 +483,11 @@ const Admin = () => {
     queryKey: ['admin-stats', isAdmin],
     queryFn: async () => {
       const [productsResult, featuredResult, categoriesResult, outOfStockResult, pendingOrdersResult] = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }),
-        supabase.from('products').select('id', { count: 'exact', head: true }).eq('featured', true),
+        (supabase as any).from('products_admin').select('id', { count: 'exact', head: true }),
+        (supabase as any).from('products_admin').select('id', { count: 'exact', head: true }).eq('featured', true),
         supabase.from('categories').select('*', { count: 'exact', head: true }),
-        supabase.from('products').select('id', { count: 'exact', head: true }).eq('in_stock', false),
-        supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+        (supabase as any).from('products_admin').select('id', { count: 'exact', head: true }).eq('in_stock', false),
+        (supabase as any).from('orders_admin').select('id', { count: 'exact', head: true }).eq('status', 'pending')
       ]);
 
       return {
@@ -1274,7 +1274,7 @@ const Admin = () => {
       const { data: inserted, error: insertError } = await supabase
         .from('products')
         .insert([newValues as any])
-        .select()
+        .select('id')
         .single();
       if (insertError) throw insertError;
 
@@ -1700,7 +1700,7 @@ const Admin = () => {
         const { data, error } = await supabase
           .from('products')
           .insert([values as any])
-          .select()
+          .select('id')
           .single();
         
         if (error) throw error;
