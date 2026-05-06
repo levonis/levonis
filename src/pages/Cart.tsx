@@ -878,6 +878,59 @@ const Cart = () => {
   const subscriptionFreeShippingApplied = useSubscriptionContrib && !warrantyFreeShippingApplied && subFreeShippingEligible;
   const hardwareFreeShippingApplied = warrantyFreeShippingApplied || subscriptionFreeShippingApplied;
 
+  // ── Card perks scope notices: tell user which items block free shipping / discount ─────
+  const allWhitelistCatIds = useMemo(() => {
+    const ids = new Set<string>();
+    [
+      ...(cardDiscount?.discountApplicableCategoryIds || []),
+      ...(cardShipCats || []),
+    ].forEach((id) => id && ids.add(id));
+    return Array.from(ids);
+  }, [cardDiscount?.discountApplicableCategoryIds, cardShipCats]);
+
+  const { data: whitelistCatNames = {} } = useQuery({
+    queryKey: ['cart-whitelist-cat-names', allWhitelistCatIds.join(',')],
+    queryFn: async () => {
+      if (!allWhitelistCatIds.length) return {};
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name_ar')
+        .in('id', allWhitelistCatIds);
+      if (error) throw error;
+      return Object.fromEntries((data || []).map((c: any) => [c.id, c.name_ar]));
+    },
+    enabled: allWhitelistCatIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const nonGiftItems = items.filter((it: any) => !it?.is_gift);
+
+  const buildScopeNotice = (whitelist: string[]) => {
+    if (!whitelist.length || nonGiftItems.length === 0) return null;
+    const allowedSet = new Set(whitelist);
+    const blocking = nonGiftItems.filter((it: any) => {
+      const cid = it?.products?.category_id;
+      return !cid || !allowedSet.has(cid);
+    });
+    const allowedNames = whitelist
+      .map((id) => (whitelistCatNames as any)[id])
+      .filter(Boolean)
+      .join('، ');
+    const blockingNames = blocking
+      .map((it: any) => it?.products?.name_ar || it?.products?.name)
+      .filter(Boolean)
+      .slice(0, 3)
+      .join('، ') + (blocking.length > 3 ? ` +${blocking.length - 3}` : '');
+    return { eligible: blocking.length === 0, allowedNames, blockingNames };
+  };
+
+  const cardDiscountScope = cardDiscount?.discountApplicableCategoryIds?.length
+    ? buildScopeNotice(cardDiscount.discountApplicableCategoryIds)
+    : null;
+  const cardShippingScope = (cardDiscount?.freeShipping && cardShipCats.length)
+    ? buildScopeNotice(cardShipCats)
+    : null;
+
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
   const referralMinOrder = (appliedReferral as any)?.free_delivery_min_order_iqd ?? 100000;
   const referralFreeShippingApplied = !!appliedReferral && total >= referralMinOrder;
