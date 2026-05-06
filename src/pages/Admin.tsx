@@ -65,6 +65,7 @@ const productSchema = z.object({
   features: z.array(z.any()).optional(),
   pre_order_shipping_options: z.array(z.any()).optional(),
   display_order: z.number().int().min(0).optional(),
+  brand: z.string().nullable().optional(),
 });
 
 const categorySchema = z.object({
