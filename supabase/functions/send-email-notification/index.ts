@@ -168,6 +168,14 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ success: false, error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // Admin-only: prevent any registered user from spoofing system emails to others.
+    const callerId = (claimsData.claims as { sub?: string }).sub;
+    const { data: roleRow } = await anonClient
+      .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
+    if (!roleRow) {
+      return new Response(JSON.stringify({ success: false, error: "Forbidden" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
