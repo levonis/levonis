@@ -81,7 +81,7 @@ const PROBES: Probe[] = [
     page: 'الكوبونات',
     route: '/coupons',
     table: 'coupons',
-    columns: 'id, code, discount_amount',
+    columns: 'id, code, discount_value, discount_type',
   },
   {
     page: 'بطاقات العضوية',
