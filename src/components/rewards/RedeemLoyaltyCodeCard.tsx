@@ -305,9 +305,11 @@ export default function RedeemLoyaltyCodeCard() {
           <Button
             className="w-full"
             onClick={submit}
-            disabled={submitting || cooldown > 0 || !code.trim() || !!precheckBlocked || checking}
+            disabled={submitting || cooldown > 0 || !code.trim() || !!precheckBlocked || checking || success}
           >
-            {submitting ? (
+            {success ? (
+              <><CheckCircle2 className="h-4 w-4 mr-2" /> تم التفعيل</>
+            ) : submitting ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" /> جاري التفعيل...</>
             ) : cooldown > 0 ? (
               `إعادة المحاولة خلال ${(cooldown / 1000).toFixed(1)}s`
