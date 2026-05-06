@@ -72,8 +72,8 @@ const ProductCard = ({
   const displayDescription = getLocalizedField(localProduct, 'description', language);
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
-  // Compress image to 300px width with medium quality for cards
   const optimizedImage = resizeSupabaseImage(displayImage, IMAGE_SIZES.card, IMAGE_QUALITY.medium);
+  const srcSet = buildResponsiveSrcSet(displayImage, [200, 300, 400, 600], IMAGE_QUALITY.medium);
 
   const handleAddToFavorites = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
