@@ -530,6 +530,24 @@ const CategoryDetail = () => {
                                 </Select>
                               </div>
 
+                              {/* Brand filter */}
+                              {availableBrands.length > 0 && (
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-bold text-foreground/80">الشركة المصنعة</Label>
+                                  <Select value={brandFilter} onValueChange={setBrandFilter}>
+                                    <SelectTrigger className="w-full h-9 rounded-lg bg-[hsl(var(--background)/0.6)] backdrop-blur border-[hsl(var(--border)/0.5)]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="all">الكل</SelectItem>
+                                      {availableBrands.map((b) => (
+                                        <SelectItem key={b} value={b}>{b}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+
                               {/* Direct sale */}
                               <div className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border)/0.4)] bg-[hsl(var(--background)/0.4)] backdrop-blur p-3">
                                 <div className="flex-1">
