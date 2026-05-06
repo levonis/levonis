@@ -379,15 +379,16 @@ export default function StackGameTab() {
       // Validate stock exists for product-based prizes
       if (newMilestone.product_id) {
         const { data: prod } = await supabase.from("products_admin" as any).select("direct_stock, pre_order_stock, colors").eq("id", newMilestone.product_id).single();
-        const hasDirectStock = prod?.direct_stock != null && prod.direct_stock > 0;
-        const hasPreOrderStock = prod?.pre_order_stock != null && prod.pre_order_stock > 0;
-        const hasColorStock = Array.isArray(prod?.colors) && (prod.colors as any[]).some((c: any) => {
+        const adminProd = prod as any;
+        const hasDirectStock = adminProd?.direct_stock != null && adminProd.direct_stock > 0;
+        const hasPreOrderStock = adminProd?.pre_order_stock != null && adminProd.pre_order_stock > 0;
+        const hasColorStock = Array.isArray(adminProd?.colors) && (adminProd.colors as any[]).some((c: any) => {
           if (c.option_stocks && typeof c.option_stocks === 'object') {
             return Object.values(c.option_stocks).some((v: any) => Number(v) > 0);
           }
           return false;
         });
-        if (prod && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
+        if (adminProd && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
           throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً من خلال زر 'تحديد مخزون يدوي للجوائز'");
         }
       }
@@ -433,15 +434,16 @@ export default function StackGameTab() {
       if (!newLbPrize.prize_name_ar.trim() && !newLbPrize.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       if (newLbPrize.product_id) {
         const { data: prod } = await supabase.from("products_admin" as any).select("direct_stock, pre_order_stock, colors").eq("id", newLbPrize.product_id).single();
-        const hasDirectStock = prod?.direct_stock != null && prod.direct_stock > 0;
-        const hasPreOrderStock = prod?.pre_order_stock != null && prod.pre_order_stock > 0;
-        const hasColorStock = Array.isArray(prod?.colors) && (prod.colors as any[]).some((c: any) => {
+        const adminProd = prod as any;
+        const hasDirectStock = adminProd?.direct_stock != null && adminProd.direct_stock > 0;
+        const hasPreOrderStock = adminProd?.pre_order_stock != null && adminProd.pre_order_stock > 0;
+        const hasColorStock = Array.isArray(adminProd?.colors) && (adminProd.colors as any[]).some((c: any) => {
           if (c.option_stocks && typeof c.option_stocks === 'object') {
             return Object.values(c.option_stocks).some((v: any) => Number(v) > 0);
           }
           return false;
         });
-        if (prod && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
+        if (adminProd && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
           throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً");
         }
       }
