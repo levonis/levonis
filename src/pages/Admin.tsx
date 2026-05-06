@@ -2619,6 +2619,19 @@ const Admin = () => {
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="display_order">ترتيب العرض (الأصغر أولاً: 1، 2، 3 ...)</Label>
+                      <Input
+                        id="display_order"
+                        name="display_order"
+                        type="number"
+                        min={0}
+                        step={1}
+                        defaultValue={editingProduct?.display_order ?? 0}
+                        placeholder="0 = ترتيب تلقائي"
+                      />
+                    </div>
+
                     {/* Availability options now managed by AdminProductPricingSection */}
 
                     <div className="space-y-2">
