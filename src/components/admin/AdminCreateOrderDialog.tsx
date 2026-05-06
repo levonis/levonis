@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Loader2, Search, User, Package, Plus, Minus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
+import { adminCreateOrder } from '@/lib/adminMutations';
 
 interface OrderItem {
   product_id: string;
@@ -187,26 +188,20 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
       const totalProductCost = orderItems.reduce((sum, item) => sum + (item.cost_price * item.quantity), 0);
 
       // Create order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert([{
-          user_id: selectedUser.id,
-          order_number: orderNumber,
-          total_amount: totals.totalRevenue,
-          subtotal: totals.totalRevenue,
-          admin_product_cost: totalProductCost,
-          profit_amount: totals.profit,
-          shipping_address: shippingAddress,
-          phone_number: phoneNumber,
-          governorate: governorate,
-          shipping_notes: shippingNotes || null,
-          status: status,
-          currency: currency,
-        }])
-        .select('id, order_number, status, total_amount, user_id, created_at')
-        .single();
-
-      if (orderError) throw orderError;
+      const order = await adminCreateOrder({
+        user_id: selectedUser.id,
+        order_number: orderNumber,
+        total_amount: totals.totalRevenue,
+        subtotal: totals.totalRevenue,
+        admin_product_cost: totalProductCost,
+        profit_amount: totals.profit,
+        shipping_address: shippingAddress,
+        phone_number: phoneNumber,
+        governorate: governorate,
+        shipping_notes: shippingNotes || null,
+        status: status,
+        currency: currency,
+      });
 
       // Create order items
       const orderItemsData = orderItems.map(item => ({
