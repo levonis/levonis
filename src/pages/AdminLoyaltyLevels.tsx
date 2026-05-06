@@ -846,10 +846,10 @@ export default function AdminLoyaltyLevels() {
                                   variant="outline"
                                   size="sm"
                                   className="w-full"
-                                  onClick={() => navigate('/cp-x9A3kL7m/loyalty-card-codes')}
+                                  onClick={() => { setDialogOpen(false); setTimeout(() => setCreateBatchOpen(true), 200); }}
                                 >
                                   <Tag className="h-3.5 w-3.5 ml-1" />
-                                  إدارة أكواد التفعيل وإنشاء دفعات جديدة
+                                  إنشاء دفعة أكواد جديدة
                                 </Button>
                               </div>
                             )}
