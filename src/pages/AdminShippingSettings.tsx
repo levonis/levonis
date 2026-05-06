@@ -658,8 +658,8 @@ export default function AdminShippingSettings() {
     const roundUpTo250 = (v: number) => Math.ceil(v / 250) * 250;
 
     // Fetch all products that have price_usd
-    const { data: products, error } = await supabase
-      .from('products')
+    const { data: products, error } = await (supabase as any)
+      .from('products_admin')
       .select('id, price_usd, original_price_usd, length_cm, width_cm, height_cm, weight_kg, shipping_type, has_pre_order, has_in_stock, commission_sea_iqd, commission_air_iqd, commission_direct_iqd, other_costs_iqd, round_up_price, colors')
       .not('price_usd', 'is', null)
       .gt('price_usd', 0);

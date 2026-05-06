@@ -70,8 +70,8 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
   const { data: products = [] } = useQuery({
     queryKey: ['admin-products-search'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
+      const { data, error } = await (supabase as any)
+        .from('products_admin')
         .select('id, name, name_ar, price, cost_price, image_url, slug')
         .order('created_at', { ascending: false })
         .limit(500);
@@ -203,7 +203,7 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
           status: status,
           currency: currency,
         }])
-        .select()
+        .select('id, order_number, status, total_amount, user_id, created_at')
         .single();
 
       if (orderError) throw orderError;
