@@ -25,6 +25,7 @@ export const ADMIN_ROUTES = {
   pointsSettings: `${ADMIN_BASE_PATH}/points-settings`,
   chats: `${ADMIN_BASE_PATH}/chats`,
   loyaltyLevels: `${ADMIN_BASE_PATH}/loyalty-levels`,
+  loyaltyCardCodes: `${ADMIN_BASE_PATH}/loyalty-card-codes`,
   defaultSettings: `${ADMIN_BASE_PATH}/default-settings`,
   wallet: `${ADMIN_BASE_PATH}/wallet`,
   walletSettings: `${ADMIN_BASE_PATH}/wallet-settings`,
