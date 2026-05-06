@@ -261,15 +261,12 @@ Deno.serve(async (req) => {
           spin_id: spinRecord?.id,
         });
       } else if (selectedPrize.prize_type === "points" && selectedPrize.points_value) {
-        // Add points to user
-        const { data: pts } = await supabase
-          .from("user_points").select("available_points").eq("user_id", user.id).single();
-        if (pts) {
-          await supabase
-            .from("user_points")
-            .update({ available_points: pts.available_points + selectedPrize.points_value })
-            .eq("user_id", user.id);
-        }
+        // Atomic points award (race-free)
+        await supabase.rpc("add_user_points", {
+          p_user_id: user.id,
+          p_amount: selectedPrize.points_value,
+          p_source: "gacha_spin",
+        });
       }
       // advice cards don't need inventory tracking, just shown in result
 
