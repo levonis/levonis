@@ -207,7 +207,7 @@ const Admin = () => {
     icon?: string;
   }>>([]);
   const [productCardDiscounts, setProductCardDiscounts] = useState<Array<{
-    level_id: string;
+    card_id: string;
     discount_amount: number; // Amount in IQD
   }>>([]);
   const [productAIContent, setProductAIContent] = useState<any>({});
@@ -285,13 +285,14 @@ const Admin = () => {
     }
   });
 
-  // Fetch loyalty levels for card discount selection
-  const { data: loyaltyLevels } = useQuery({
-    queryKey: ['loyalty-levels-admin'],
+  // Fetch membership cards for product card discount selection
+  const { data: membershipCardsForDiscounts } = useQuery({
+    queryKey: ['membership-cards-admin-discounts'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('loyalty_levels')
-        .select('id, name_ar, level_key, color')
+        .from('membership_cards')
+        .select('id, name_ar, name_en, card_key, color')
+        .eq('is_active', true)
         .order('display_order', { ascending: true });
       
       if (error) throw error;
@@ -321,7 +322,10 @@ const Admin = () => {
       
       // Load card discounts from product
       const cardDiscounts = Array.isArray(editingProduct.card_discounts) ? editingProduct.card_discounts : [];
-      setProductCardDiscounts(cardDiscounts);
+      setProductCardDiscounts(cardDiscounts.map((d: any) => ({
+        card_id: d.card_id || d.level_id || '',
+        discount_amount: Number(d.discount_amount || 0),
+      })));
 
       // Load options from the database ONLY if editing an existing product (has id)
       // For duplicated products (no id), options are already set by handleDuplicateProduct
@@ -1456,7 +1460,7 @@ const Admin = () => {
           ? Number(formData.get('points_reward')) 
           : 0,
         // Multiple card discounts as JSON array
-        card_discounts: productCardDiscounts.filter(d => d.level_id && d.discount_amount > 0),
+        card_discounts: productCardDiscounts.filter(d => d.card_id && d.discount_amount > 0),
         // New USD pricing fields
         price_usd: formData.get('price_usd') && formData.get('price_usd') !== '' 
           ? Number(formData.get('price_usd')) 
@@ -2563,7 +2567,7 @@ const Admin = () => {
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setProductCardDiscounts([...productCardDiscounts, { level_id: '', discount_amount: 0 }])}
+                              onClick={() => setProductCardDiscounts([...productCardDiscounts, { card_id: '', discount_amount: 0 }])}
                             >
                               <Plus className="ml-1 h-3 w-3" />
                               إضافة خصم بطاقة
@@ -2577,18 +2581,18 @@ const Admin = () => {
                                 <div key={index} className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-border">
                                   <div className="flex-1">
                                     <select
-                                      value={discount.level_id}
+                                      value={discount.card_id}
                                       onChange={(e) => {
                                         const updated = [...productCardDiscounts];
-                                        updated[index] = { ...updated[index], level_id: e.target.value };
+                                        updated[index] = { ...updated[index], card_id: e.target.value };
                                         setProductCardDiscounts(updated);
                                       }}
                                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                                     >
                                       <option value="">اختر البطاقة</option>
-                                      {loyaltyLevels?.map((level) => (
-                                        <option key={level.id} value={level.id}>
-                                          {level.name_ar}
+                                      {membershipCardsForDiscounts?.map((card) => (
+                                        <option key={card.id} value={card.id}>
+                                          {card.name_ar || card.name_en || card.card_key}
                                         </option>
                                       ))}
                                     </select>
