@@ -13209,6 +13209,7 @@ export type Database = {
           ai_content: Json | null
           air_price: number | null
           availability_type: string | null
+          brand: string | null
           card_discounts: Json | null
           category_id: string | null
           cod_enabled: boolean | null
@@ -13228,6 +13229,7 @@ export type Database = {
           description_ku: string | null
           direct_sale_price: number | null
           direct_stock: number | null
+          display_order: number | null
           featured: boolean | null
           features: Json | null
           has_in_stock: boolean | null
@@ -13278,6 +13280,7 @@ export type Database = {
           ai_content?: Json | null
           air_price?: number | null
           availability_type?: string | null
+          brand?: string | null
           card_discounts?: Json | null
           category_id?: string | null
           cod_enabled?: boolean | null
@@ -13297,6 +13300,7 @@ export type Database = {
           description_ku?: string | null
           direct_sale_price?: number | null
           direct_stock?: number | null
+          display_order?: number | null
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
@@ -13347,6 +13351,7 @@ export type Database = {
           ai_content?: Json | null
           air_price?: number | null
           availability_type?: string | null
+          brand?: string | null
           card_discounts?: Json | null
           category_id?: string | null
           cod_enabled?: boolean | null
@@ -13366,6 +13371,7 @@ export type Database = {
           description_ku?: string | null
           direct_sale_price?: number | null
           direct_stock?: number | null
+          display_order?: number | null
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
