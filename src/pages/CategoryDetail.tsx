@@ -55,6 +55,7 @@ const CategoryDetail = () => {
   const [directOnly, setDirectOnly] = useState(false);
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
+  const [brandFilter, setBrandFilter] = useState<string>('all');
 
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
