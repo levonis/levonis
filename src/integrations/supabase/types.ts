@@ -5882,6 +5882,7 @@ export type Database = {
           id: string
           investment_enabled: boolean | null
           is_active: boolean
+          is_purchasable: boolean
           is_vip_plus: boolean
           monthly_free_shipping: number | null
           name_ar: string
@@ -5929,6 +5930,7 @@ export type Database = {
           id?: string
           investment_enabled?: boolean | null
           is_active?: boolean
+          is_purchasable?: boolean
           is_vip_plus?: boolean
           monthly_free_shipping?: number | null
           name_ar: string
@@ -5976,6 +5978,7 @@ export type Database = {
           id?: string
           investment_enabled?: boolean | null
           is_active?: boolean
+          is_purchasable?: boolean
           is_vip_plus?: boolean
           monthly_free_shipping?: number | null
           name_ar?: string

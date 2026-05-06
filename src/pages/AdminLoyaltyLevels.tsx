@@ -268,7 +268,6 @@ export default function AdminLoyaltyLevels() {
         level_key,
         min_points,
         purchase_price_points,
-        is_purchasable,
         ...rest
       } = formData;
 
@@ -276,7 +275,6 @@ export default function AdminLoyaltyLevels() {
         ...rest,
         card_key: level_key,
         price_points: purchase_price_points,
-        is_active: is_purchasable, // false ⇒ exclusive (admin-gift only)
         benefits,
         display_order: displayOrder,
         discount_applicable_category_ids: formData.discount_applicable_category_ids.length > 0
@@ -446,7 +444,7 @@ export default function AdminLoyaltyLevels() {
       free_shipping_min_order: level.free_shipping_min_order || 0,
       free_shipping_methods: Array.isArray(level.free_shipping_methods) ? level.free_shipping_methods : ["standard"],
       free_shipping_max_uses: level.free_shipping_max_uses ?? null,
-      is_purchasable: level.is_active ?? true,
+      is_purchasable: level.is_purchasable ?? true,
       purchase_price_points: level.price_points ?? level.purchase_price_points ?? 0,
       duration_days: level.duration_days || 30,
       card_discounts_enabled: level.card_discounts_enabled || false,
