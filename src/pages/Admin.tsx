@@ -2065,6 +2065,7 @@ const Admin = () => {
                 { icon: Zap, title: 'الافتراضية', desc: 'قيم افتراضية', path: ADMIN_ROUTES.defaultSettings },
                 { icon: Coins, title: 'النقاط', desc: 'مكافآت', path: ADMIN_ROUTES.pointsSettings },
                 { icon: Award, title: 'الولاء', desc: 'مستويات', path: ADMIN_ROUTES.loyaltyLevels },
+                { icon: Ticket, title: 'أكواد الولاء', desc: 'تفعيل البطاقات', path: ADMIN_ROUTES.loyaltyCardCodes },
                 { icon: Wallet, title: 'المحفظة', desc: 'أرصدة', path: ADMIN_ROUTES.wallet },
                 { icon: MessageCircle, title: 'المحادثات', desc: 'دعم', path: ADMIN_ROUTES.chats },
                 { icon: Receipt, title: 'الفواتير', desc: 'قوالب', path: ADMIN_ROUTES.invoiceTemplates },
