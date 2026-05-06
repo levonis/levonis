@@ -5509,6 +5509,7 @@ export type Database = {
           requires_active_warranty: boolean
           status: string
           updated_at: string
+          valid_from: string | null
         }
         Insert: {
           batch_id: string
@@ -5526,6 +5527,7 @@ export type Database = {
           requires_active_warranty?: boolean
           status?: string
           updated_at?: string
+          valid_from?: string | null
         }
         Update: {
           batch_id?: string
@@ -5543,6 +5545,7 @@ export type Database = {
           requires_active_warranty?: boolean
           status?: string
           updated_at?: string
+          valid_from?: string | null
         }
         Relationships: [
           {
@@ -13951,17 +13954,30 @@ export type Database = {
         Args: { points_amount: number }
         Returns: Json
       }
-      create_loyalty_code_batch: {
-        Args: {
-          p_batch_label?: string
-          p_card_id: string
-          p_code_expires_at: string
-          p_duration_days: number
-          p_quantity: number
-          p_requires_active_warranty?: boolean
-        }
-        Returns: Json
-      }
+      create_loyalty_code_batch:
+        | {
+            Args: {
+              p_batch_label?: string
+              p_card_id: string
+              p_code_expires_at: string
+              p_duration_days: number
+              p_quantity: number
+              p_requires_active_warranty?: boolean
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_batch_label?: string
+              p_card_id: string
+              p_code_expires_at: string
+              p_duration_days: number
+              p_quantity: number
+              p_requires_active_warranty?: boolean
+              p_valid_from?: string
+            }
+            Returns: Json
+          }
       create_notification_if_not_exists: {
         Args: {
           p_is_general?: boolean

@@ -12,8 +12,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import {
-  ArrowRight, Copy, Loader2, Plus, Ticket, ChevronDown, ChevronUp, Ban, Download, Upload, FileSpreadsheet,
+  ArrowRight, Copy, Loader2, Plus, Ticket, ChevronDown, ChevronUp, Ban, Download, Upload, FileSpreadsheet, CalendarIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n';
@@ -28,6 +32,7 @@ interface CodeRow {
   batch_label: string | null;
   duration_days: number;
   code_expires_at: string;
+  valid_from: string | null;
   status: 'active' | 'redeemed' | 'expired' | 'revoked';
   redeemed_by_user_id: string | null;
   redeemed_at: string | null;
@@ -85,7 +90,7 @@ const AdminLoyaltyCardCodes = () => {
   });
 
   const batches = useMemo(() => {
-    const map = new Map<string, { batch_id: string; batch_label: string | null; card_id: string; created_at: string; code_expires_at: string; codes: CodeRow[] }>();
+    const map = new Map<string, { batch_id: string; batch_label: string | null; card_id: string; created_at: string; code_expires_at: string; valid_from: string | null; codes: CodeRow[] }>();
     for (const c of codes || []) {
       const cur = map.get(c.batch_id) || {
         batch_id: c.batch_id,
@@ -93,6 +98,7 @@ const AdminLoyaltyCardCodes = () => {
         card_id: c.card_id,
         created_at: c.created_at,
         code_expires_at: c.code_expires_at,
+        valid_from: c.valid_from,
         codes: [] as CodeRow[],
       };
       cur.codes.push(c);
@@ -190,7 +196,12 @@ const AdminLoyaltyCardCodes = () => {
                       <div className="text-sm font-semibold">{cardName(b.card_id)}</div>
                       <div className="text-[10px] text-muted-foreground">
                         {b.batch_label || `دفعة ${b.batch_id.slice(0, 6)}`} • {b.codes.length} كود •
-                        ينتهي الاستخدام: {new Date(b.code_expires_at).toLocaleDateString('ar')}
+                       {b.valid_from && new Date(b.valid_from) > new Date()
+                         ? `يبدأ: ${new Date(b.valid_from).toLocaleDateString('ar')} • `
+                         : b.valid_from
+                         ? `بدأ: ${new Date(b.valid_from).toLocaleDateString('ar')} • `
+                         : ''}
+                       ينتهي: {new Date(b.code_expires_at).toLocaleDateString('ar')}
                       </div>
                     </div>
                   </div>
@@ -258,7 +269,10 @@ const CreateBatchButton = ({
   const [cardId, setCardId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(6);
   const [durationDays, setDurationDays] = useState<number>(180);
-  const [codeExpiryDays, setCodeExpiryDays] = useState<number>(90);
+  const [validFrom, setValidFrom] = useState<Date | undefined>(undefined);
+  const [validUntil, setValidUntil] = useState<Date | undefined>(() => {
+    const d = new Date(); d.setDate(d.getDate() + 90); return d;
+  });
   const [batchLabel, setBatchLabel] = useState<string>('');
   const [requiresWarranty, setRequiresWarranty] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState(false);
@@ -285,8 +299,12 @@ const CreateBatchButton = ({
       toast.error('مدة البطاقة يجب أن تكون 1..1825 يوم');
       return;
     }
-    if (!Number.isInteger(codeExpiryDays) || codeExpiryDays < 1 || codeExpiryDays > 365) {
-      toast.error('مدة صلاحية الكود يجب أن تكون 1..365 يوم');
+    if (!validUntil) {
+      toast.error('اختر تاريخ انتهاء صلاحية الكود');
+      return;
+    }
+    if (validFrom && validFrom >= validUntil) {
+      toast.error('تاريخ البداية يجب أن يكون قبل تاريخ النهاية');
       return;
     }
     if ((batchLabel || '').length > 100) {
@@ -295,14 +313,14 @@ const CreateBatchButton = ({
     }
     setSubmitting(true);
     try {
-      const expires = new Date(Date.now() + codeExpiryDays * 86400_000).toISOString();
       const { error } = await (supabase as any).rpc('create_loyalty_code_batch', {
         p_card_id: cardId,
         p_quantity: quantity,
         p_duration_days: durationDays,
-        p_code_expires_at: expires,
+        p_code_expires_at: validUntil.toISOString(),
         p_batch_label: batchLabel?.trim() || null,
         p_requires_active_warranty: requiresWarranty,
+        p_valid_from: validFrom ? validFrom.toISOString() : null,
       });
       if (error) throw error;
       toast.success(`تم إنشاء ${quantity} كود`);
@@ -316,8 +334,28 @@ const CreateBatchButton = ({
     }
   };
 
+  const DateField = ({ value, onChange, placeholder }: { value: Date | undefined; onChange: (d: Date | undefined) => void; placeholder: string }) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            'w-full justify-start text-right font-normal h-9',
+            !value && 'text-muted-foreground'
+          )}
+        >
+          <CalendarIcon className="ml-2 h-3.5 w-3.5" />
+          {value ? format(value, 'yyyy-MM-dd') : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar mode="single" selected={value} onSelect={onChange} initialFocus className={cn('p-3 pointer-events-auto')} />
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogTrigger asChild>
         <Button size="sm"><Plus className="h-4 w-4 ml-1" /> دفعة جديدة</Button>
       </DialogTrigger>
@@ -347,11 +385,20 @@ const CreateBatchButton = ({
               <Input type="number" value={durationDays} onChange={e => setDurationDays(Number(e.target.value))} />
             </div>
           </div>
-          <div>
-            <Label className="text-xs">انتهاء صلاحية الكود (أيام من الآن)</Label>
-            <Input type="number" value={codeExpiryDays} onChange={e => setCodeExpiryDays(Number(e.target.value))} />
-            <p className="text-[10px] text-muted-foreground mt-1">
-              مثال: 90 = ينتهي الكود بعد 3 أشهر إذا لم يُستخدم
+          <div className="rounded-lg border border-border/60 p-2.5 space-y-2 bg-muted/20">
+            <Label className="text-xs font-semibold">فترة صلاحية الكود</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">تاريخ البداية (اختياري)</Label>
+                <DateField value={validFrom} onChange={setValidFrom} placeholder="فوراً" />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">تاريخ النهاية</Label>
+                <DateField value={validUntil} onChange={setValidUntil} placeholder="اختر تاريخاً" />
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              لن يعمل الكود قبل تاريخ البداية، ويُنتهى تلقائياً عند تاريخ النهاية.
             </p>
           </div>
           <div>
@@ -391,6 +438,7 @@ interface CsvRow {
   quantity: number;
   duration_days: number;
   code_expiry_days: number;
+  valid_from_days: number | null;
   batch_label: string | null;
   requires_active_warranty: boolean;
   _line: number;
@@ -425,6 +473,8 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
     const quantity = Number(get('quantity'));
     const duration = Number(get('duration_days'));
     const expiry = Number(get('code_expiry_days'));
+    const validFromRaw = get('valid_from_days');
+    const validFromDays = validFromRaw === '' ? null : Number(validFromRaw);
     const label = get('batch_label') || null;
     const reqWarrantyRaw = get('requires_active_warranty').toLowerCase();
     const requires = reqWarrantyRaw === '' ? true : ['true', '1', 'yes', 'نعم'].includes(reqWarrantyRaw);
@@ -446,6 +496,10 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
       errors.push(`السطر ${idx + 1}: code_expiry_days يجب أن يكون 1..365`);
       return;
     }
+    if (validFromDays !== null && (!Number.isInteger(validFromDays) || validFromDays < 0 || validFromDays >= expiry)) {
+      errors.push(`السطر ${idx + 1}: valid_from_days يجب أن يكون 0..${expiry - 1}`);
+      return;
+    }
     if (label && label.length > 100) {
       errors.push(`السطر ${idx + 1}: batch_label طويل جداً`);
       return;
@@ -456,6 +510,7 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
       quantity,
       duration_days: duration,
       code_expiry_days: expiry,
+      valid_from_days: validFromDays,
       batch_label: label,
       requires_active_warranty: requires,
       _line: idx + 1,
@@ -497,10 +552,10 @@ const ImportBatchesButton = ({
     const csv = [
       '# قالب استيراد دفعات أكواد بطاقات الولاء',
       '# اعمدة مطلوبة: card_id,quantity,duration_days,code_expiry_days',
-      '# اختياري: batch_label,requires_active_warranty (true/false)',
-      'card_id,quantity,duration_days,code_expiry_days,batch_label,requires_active_warranty',
-      `${sampleCard},6,180,90,بطاقة برونزية ٦ أشهر — مايو,true`,
-      `${sampleCard},10,365,60,بطاقة سنوية — يونيو,true`,
+      '# اختياري: valid_from_days (تأجيل البداية بأيام),batch_label,requires_active_warranty',
+      'card_id,quantity,duration_days,code_expiry_days,valid_from_days,batch_label,requires_active_warranty',
+      `${sampleCard},6,180,90,,بطاقة برونزية ٦ أشهر — مايو,true`,
+      `${sampleCard},10,365,60,7,بطاقة سنوية — يونيو,true`,
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -527,7 +582,11 @@ const ImportBatchesButton = ({
         continue;
       }
       try {
-        const expires = new Date(Date.now() + r.code_expiry_days * 86400_000).toISOString();
+        const now = Date.now();
+        const expires = new Date(now + r.code_expiry_days * 86400_000).toISOString();
+        const validFrom = r.valid_from_days != null
+          ? new Date(now + r.valid_from_days * 86400_000).toISOString()
+          : null;
         const { error } = await (supabase as any).rpc('create_loyalty_code_batch', {
           p_card_id: r.card_id,
           p_quantity: r.quantity,
@@ -535,6 +594,7 @@ const ImportBatchesButton = ({
           p_code_expires_at: expires,
           p_batch_label: r.batch_label,
           p_requires_active_warranty: r.requires_active_warranty,
+          p_valid_from: validFrom,
         });
         if (error) throw error;
         success++;
