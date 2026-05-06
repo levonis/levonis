@@ -105,9 +105,9 @@ export default function AdminLoyaltyLevels() {
   const adminGiftMutation = useMutation({
     mutationFn: async ({ levelId, recipientId, message }: { levelId: string; recipientId: string; message: string }) => {
       const { data, error } = await supabase.rpc('admin_gift_loyalty_card' as any, {
-        p_recipient_id: recipientId,
-        p_level_id: levelId,
-        p_message: message || null,
+        p_user_id: recipientId,
+        p_card_id: levelId,
+        p_admin_note: message || null,
       });
       if (error) throw error;
       const result = data as { success?: boolean; error?: string };
