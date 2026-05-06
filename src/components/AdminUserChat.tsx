@@ -82,7 +82,7 @@ export default function AdminUserChat({
     
     const loadProducts = async () => {
       const { data } = await (supabase as any)
-        .from('products')
+        .from('products_admin')
         .select('id, name_ar, image_url, price')
         .eq('status', 'published')
         .ilike('name_ar', `%${productSearchQuery}%`)
