@@ -30,6 +30,7 @@ import { sendAllNotifications } from '@/lib/notifications';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { calcAutoOrderProductCost } from '@/lib/orderFinancials';
 import AdminOrderItemEditor from '@/components/admin/AdminOrderItemEditor';
+import { adminCreateOrder, adminUpdateOrder } from '@/lib/adminMutations';
 const directStatusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
   { value: 'confirmed', label: 'تم التأكيد' },
@@ -389,15 +390,11 @@ const AdminOrders = () => {
         const extraFields = { ...values };
         delete extraFields.status; // Already set by RPC
         if (Object.keys(extraFields).length > 0) {
-          await supabase.from('orders').update(extraFields).eq('id', id);
+          await adminUpdateOrder(id, extraFields);
         }
       } else if (values.status === 'confirmed' && previousStatus === 'cancelled') {
         // Re-confirm a cancelled order: update status first, then re-deduct stock
-        const { error } = await supabase
-          .from('orders')
-          .update({ ...values, stock_deducted: false })
-          .eq('id', id);
-        if (error) throw error;
+        await adminUpdateOrder(id, { ...values, stock_deducted: false });
 
         // Re-deduct stock since order is being re-activated
         if (order?.order_type === 'direct') {
@@ -407,11 +404,7 @@ const AdminOrders = () => {
           }
         }
       } else {
-        const { error } = await supabase
-          .from('orders')
-          .update(values)
-          .eq('id', id);
-        if (error) throw error;
+        await adminUpdateOrder(id, values);
       }
       
       // Auto-create invoice when order is confirmed
@@ -466,18 +459,12 @@ const AdminOrders = () => {
       const { data: orderNumberData } = await supabase.rpc('generate_order_number');
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
-      const { data, error } = await supabase
-        .from('orders')
-        .insert([{
-          ...values,
-          order_number: orderNumber,
-          status: values.status || 'pending',
-          currency: values.currency || 'دينار عراقي',
-        }])
-        .select('id, order_number, status, total_amount, user_id, created_at')
-        .single();
-
-      if (error) throw error;
+      const data = await adminCreateOrder({
+        ...values,
+        order_number: orderNumber,
+        status: values.status || 'pending',
+        currency: values.currency || 'دينار عراقي',
+      });
       return data;
     },
     onSuccess: () => {
@@ -526,10 +513,10 @@ const AdminOrders = () => {
       if (result && !result.success) throw new Error(result.error || 'فشل إلغاء الطلب');
 
       // Update payment status to refunded
-      await supabase.from('orders').update({
+      await adminUpdateOrder(order.id, {
         payment_status: 'refunded',
         updated_at: new Date().toISOString()
-      }).eq('id', order.id);
+      });
 
       if (paidAmount > 0) {
         const { data: wallet, error: walletFetchError } = await supabase
