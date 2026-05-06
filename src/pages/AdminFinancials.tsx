@@ -218,16 +218,28 @@ const AdminFinancials = () => {
 
       const [itemsRes, profilesRes] = await Promise.all([
         orderIds.length
-          ? supabase.from('order_items_admin' as any).select('id, order_id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, products!order_items_product_id_fkey(id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, personal_delivery_cost, referral_earnings_iqd, category_id, categories!products_category_id_fkey(id, name_ar, main_section_id, main_sections!categories_main_section_id_fkey(id, name_ar))), product_bundles:bundle_id(id, title_ar, image_url)').in('order_id', orderIds)
+          ? supabase.from('order_items_admin' as any).select('id, order_id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, product_bundles:bundle_id(id, title_ar, image_url)').in('order_id', orderIds)
           : Promise.resolve({ data: [], error: null } as any),
         userIds.length
           ? supabase.from('profiles').select('id, username, full_name').in('id', userIds)
           : Promise.resolve({ data: [], error: null } as any),
       ]);
+      const itemsRaw = ((itemsRes.data as any[]) || []);
+      // Hydrate product fields (cost columns are restricted on base table; use products_admin view)
+      const productIds = Array.from(new Set(itemsRaw.map((it: any) => it.product_id).filter(Boolean)));
+      const productMap = new Map<string, any>();
+      if (productIds.length > 0) {
+        const { data: prodData } = await (supabase as any)
+          .from('products_admin')
+          .select('id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, personal_delivery_cost, referral_earnings_iqd, category_id, categories!products_category_id_fkey(id, name_ar, main_section_id, main_sections!categories_main_section_id_fkey(id, name_ar))')
+          .in('id', productIds);
+        ((prodData as any[]) || []).forEach((p) => productMap.set(p.id, p));
+      }
       const itemsByOrder = new Map<string, any[]>();
-      ((itemsRes.data as any[]) || []).forEach((it) => {
+      itemsRaw.forEach((it) => {
+        const enriched = { ...it, products: productMap.get(it.product_id) || null };
         const arr = itemsByOrder.get(it.order_id) || [];
-        arr.push(it); itemsByOrder.set(it.order_id, arr);
+        arr.push(enriched); itemsByOrder.set(it.order_id, arr);
       });
       const profileById = new Map<string, any>();
       ((profilesRes.data as any[]) || []).forEach((p) => profileById.set(p.id, p));
