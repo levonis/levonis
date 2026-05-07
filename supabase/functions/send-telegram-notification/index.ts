@@ -12,36 +12,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate JWT authentication
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
-      );
-    }
-    const anonClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
-      );
-    }
-    // Admin-only: prevent abuse of admin telegram channel and impersonation.
-    const callerId = (claimsData.claims as { sub?: string }).sub;
-    const { data: roleRow } = await anonClient
-      .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
-    const isService = (claimsData.claims as { role?: string }).role === "service_role";
-    if (!roleRow && !isService) {
-      return new Response(JSON.stringify({ success: false, error: "Forbidden" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 });
-    }
-
+    // Centralized admin guard (admin or service_role only).
+    const auth = await requireAdmin(req, corsHeaders);
+    if (auth instanceof Response) return auth;
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const DEFAULT_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
