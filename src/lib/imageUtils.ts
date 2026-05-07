@@ -2,35 +2,52 @@
  * Image compression and optimization utilities
  */
 
+// Module-level LRU caches to avoid recomputing identical URLs/srcsets
+// across many product cards. Bounded to prevent unbounded memory growth.
+const RESIZE_CACHE = new Map<string, string | undefined>();
+const SRCSET_CACHE = new Map<string, string | undefined>();
+const CACHE_MAX = 500;
+
+function cacheGet<T>(map: Map<string, T>, key: string): T | undefined {
+  if (!map.has(key)) return undefined;
+  const v = map.get(key) as T;
+  map.delete(key);
+  map.set(key, v);
+  return v;
+}
+
+function cacheSet<T>(map: Map<string, T>, key: string, value: T): T {
+  if (map.size >= CACHE_MAX) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, value);
+  return value;
+}
+
 /**
  * Resize Supabase storage images by modifying the URL parameters
- * @param url - Original Supabase storage URL
- * @param width - Target width in pixels
- * @param quality - Image quality (1-100), default 75
- * @returns Optimized URL with resize/quality parameters
  */
 export function resizeSupabaseImage(
-  url: string | undefined, 
+  url: string | undefined,
   width: number,
   quality: number = 75
 ): string | undefined {
   if (!url) return url;
 
-  // Only Supabase storage URLs support transforms
-  if (!url.includes('supabase.co/storage')) return url;
+  const cacheKey = `${url}|${width}|${quality}`;
+  const cached = cacheGet(RESIZE_CACHE, cacheKey);
+  if (cached !== undefined) return cached;
 
-  // If already pointed at the render endpoint, just (re)apply params
-  // Otherwise rewrite /object/public/ → /render/image/public/ which is the
-  // image transformation endpoint that actually honors width/quality.
+  if (!url.includes('supabase.co/storage')) return cacheSet(RESIZE_CACHE, cacheKey, url);
+
   let base = url;
   if (url.includes('/storage/v1/object/public/')) {
     base = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
   } else if (!url.includes('/storage/v1/render/image/public/')) {
-    // Unknown storage URL shape (e.g. signed); leave untouched
-    return url;
+    return cacheSet(RESIZE_CACHE, cacheKey, url);
   }
 
-  // Strip any pre-existing transform params so callers can re-resize safely
   const [path, query = ''] = base.split('?');
   const params = new URLSearchParams(query);
   params.delete('width');
@@ -40,17 +57,13 @@ export function resizeSupabaseImage(
   params.delete('format');
   params.set('width', String(width));
   params.set('quality', String(Math.max(1, Math.min(100, Math.round(quality)))));
-  // 'contain' preserves aspect ratio and never upscales beyond the source,
-  // preventing the "zoomed/oversized" appearance caused by the default 'cover' mode.
   params.set('resize', 'contain');
-  // Request WebP — ~25-35% smaller than JPEG at equal quality, supported by all modern browsers.
   params.set('format', 'webp');
-  return `${path}?${params.toString()}`;
+  return cacheSet(RESIZE_CACHE, cacheKey, `${path}?${params.toString()}`);
 }
 
 /**
  * Build a responsive srcset for a Supabase image at multiple widths.
- * Browser picks the smallest acceptable size based on `sizes` attribute.
  */
 export function buildResponsiveSrcSet(
   url: string | undefined,
@@ -58,13 +71,18 @@ export function buildResponsiveSrcSet(
   quality: number = 75
 ): string | undefined {
   if (!url) return undefined;
-  return widths
+  const cacheKey = `${url}|${widths.join(',')}|${quality}`;
+  const cached = cacheGet(SRCSET_CACHE, cacheKey);
+  if (cached !== undefined) return cached;
+
+  const result = widths
     .map((w) => {
       const u = resizeSupabaseImage(url, w, quality);
       return u ? `${u} ${w}w` : null;
     })
     .filter(Boolean)
     .join(', ');
+  return cacheSet(SRCSET_CACHE, cacheKey, result || undefined);
 }
 
 /**
