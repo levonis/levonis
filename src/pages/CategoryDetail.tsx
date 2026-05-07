@@ -603,30 +603,15 @@ const CategoryDetail = () => {
                   );
                 })()}
 
-                {/* Responsive grid of product cards */}
+                {/* Responsive grid of product cards — incremental render on scroll */}
                 {otherProducts.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
-                    {otherProducts.map((product) => {
-                      const finalCardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
-                      const cardOriginal = computeUnifiedCardOriginalPrice(product, usdToIqd, codDefaults, liveDirectMap) ?? undefined;
-                      return (
-                        <FloatingProductCard
-                          key={product.id}
-                          id={product.id}
-                          name={product.name}
-                          nameAr={product.name_ar}
-                          price={finalCardPrice}
-                          originalPrice={cardOriginal}
-                          imageUrl={product.image_url || undefined}
-                          currency={product.currency || undefined}
-                          slug={product.slug}
-                          hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
-                          directSalePriceLive={null}
-                          highlightQuery={searchQ}
-                        />
-                      );
-                    })}
-                  </div>
+                  <IncrementalProductGrid
+                    products={otherProducts}
+                    usdToIqd={usdToIqd}
+                    codDefaults={codDefaults}
+                    liveDirectMap={liveDirectMap}
+                    searchQ={searchQ}
+                  />
                 ) : (
                   <div className="glass-panel text-center py-12 px-6">
                     <p className="text-foreground/60 text-sm">{t('catdetail_no_match')}</p>
