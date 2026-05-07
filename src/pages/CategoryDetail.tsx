@@ -260,6 +260,7 @@ const CategoryDetail = () => {
     // Without a query, prioritize direct-sale products and apply the chosen sort.
     const directRank = (p: any) =>
       (p.has_in_stock ?? false) && !isAllDirectStockDepleted(p) ? 0 : 1;
+    const userSortActive = sortBy !== 'default';
     arr = [...arr].sort((a, b) => {
       if (searchQ) {
         const s = scoreFor(a) - scoreFor(b);
@@ -268,8 +269,11 @@ const CategoryDetail = () => {
         if (pop !== 0) return pop;
         return directRank(a) - directRank(b);
       }
-      const d = directRank(a) - directRank(b);
-      if (d !== 0) return d;
+      // Only prioritize direct-sale products when no explicit sort is chosen.
+      if (!userSortActive) {
+        const d = directRank(a) - directRank(b);
+        if (d !== 0) return d;
+      }
       return sorters[sortBy](a, b);
     });
     return arr;
