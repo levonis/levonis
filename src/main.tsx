@@ -5,12 +5,9 @@ import App from "./App.tsx";
 import "./index.css";
 import { installFriendlyFunctionErrorMessages } from "@/lib/functionErrors";
 import { installScrollPerformance } from "@/lib/scrollPerformance";
-import { installWebVitals } from "@/lib/webVitals";
 
 installFriendlyFunctionErrorMessages();
 installScrollPerformance();
-// Real-User Monitoring: capture LCP / CLS / INP / FCP / TTFB from production visitors.
-installWebVitals();
 
 // Service Worker kill-switch removed — it was wiping caches on every load,
 // forcing every asset to be re-downloaded and making the site very slow.

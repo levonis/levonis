@@ -12512,54 +12512,6 @@ export type Database = {
         }
         Relationships: []
       }
-      web_vitals: {
-        Row: {
-          connection_type: string | null
-          created_at: string
-          device_pixel_ratio: number | null
-          id: string
-          metric_id: string | null
-          metric_name: string
-          metric_rating: string | null
-          metric_value: number
-          navigation_type: string | null
-          path: string | null
-          user_agent: string | null
-          user_id: string | null
-          viewport_width: number | null
-        }
-        Insert: {
-          connection_type?: string | null
-          created_at?: string
-          device_pixel_ratio?: number | null
-          id?: string
-          metric_id?: string | null
-          metric_name: string
-          metric_rating?: string | null
-          metric_value: number
-          navigation_type?: string | null
-          path?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-          viewport_width?: number | null
-        }
-        Update: {
-          connection_type?: string | null
-          created_at?: string
-          device_pixel_ratio?: number | null
-          id?: string
-          metric_id?: string | null
-          metric_name?: string
-          metric_rating?: string | null
-          metric_value?: number
-          navigation_type?: string | null
-          path?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-          viewport_width?: number | null
-        }
-        Relationships: []
-      }
       wish_likes: {
         Row: {
           created_at: string | null

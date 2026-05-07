@@ -99,7 +99,6 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "0.170.0",
     "vaul": "^0.9.9",
-    "web-vitals": "^5.2.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
