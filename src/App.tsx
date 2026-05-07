@@ -454,7 +454,7 @@ export default function App() {
       persistOptions={{
         persister,
         maxAge: 24 * 60 * 60 * 1000,
-        buster: "v1",
+        buster: "v2-direct-sale-array",
         dehydrateOptions: {
           shouldDehydrateQuery: (q) => {
             // Don't persist queries flagged ephemeral or per-user mutable

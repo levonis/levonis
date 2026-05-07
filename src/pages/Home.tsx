@@ -87,6 +87,12 @@ const Home = () => {
     }, {} as Record<string, typeof categories>);
   }, [categories]);
 
+  const directSaleCategoryIdList = useMemo(() => {
+    if (Array.isArray(directSaleCategoryIds)) return directSaleCategoryIds;
+    if ((directSaleCategoryIds as unknown) instanceof Set) return Array.from(directSaleCategoryIds as unknown as Set<string>);
+    return [] as string[];
+  }, [directSaleCategoryIds]);
+
   // Unified i18n picker — falls back to ar when requested lang is missing.
   const pick = (row: any, field: string) => {
     if (!row) return '';
@@ -231,7 +237,7 @@ const Home = () => {
                           icon={category.icon}
                           description={category.description}
                           descriptionAr={getCategoryDescription(category)}
-                          hasDirectSale={directSaleCategoryIds?.includes(category.id)}
+                          hasDirectSale={directSaleCategoryIdList.includes(category.id)}
                           mediaUrl={(category as any).media_url}
                           mediaType={(category as any).media_type}
                           mediaTransparent={!!(category as any).media_transparent}
