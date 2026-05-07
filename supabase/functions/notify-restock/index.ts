@@ -26,6 +26,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: "Unauthorized" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 });
     }
+    // Admin or service_role only (DB trigger calls with service role)
+    const callerId = (claimsData.claims as { sub?: string }).sub;
+    const isService = (claimsData.claims as { role?: string }).role === "service_role";
+    if (!isService) {
+      const { data: roleRow } = await anonClient
+        .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
+      if (!roleRow) {
+        return new Response(JSON.stringify({ success: false, error: "Forbidden" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 });
+      }
+    }
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
