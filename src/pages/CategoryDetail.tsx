@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import FloatingProductCard from '@/components/FloatingProductCard';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ArrowRight, SlidersHorizontal, ArrowUpDown, Package, Check } from 'lucide-react';
