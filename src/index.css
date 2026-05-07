@@ -10,9 +10,41 @@
 @font-face {
   font-family: 'Cairo';
   font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url('./assets/fonts/cairo-200.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('./assets/fonts/cairo-300.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/cairo-400.ttf') format('truetype');
+  src: url('./assets/fonts/cairo-400.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./assets/fonts/cairo-500.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/cairo-600.ttf') format('truetype');
 }
 
 @font-face {
@@ -20,7 +52,15 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/cairo-700.ttf') format('truetype');
+  src: url('./assets/fonts/cairo-700.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./assets/fonts/cairo-800.ttf') format('truetype');
 }
 
 @font-face {
@@ -28,7 +68,7 @@
   font-style: normal;
   font-weight: 900;
   font-display: swap;
-  src: url('/fonts/cairo-900.ttf') format('truetype');
+  src: url('./assets/fonts/cairo-900.ttf') format('truetype');
 }
 
 /* UniSIRWAN Qabas - Kurdish (Sorani) font */
