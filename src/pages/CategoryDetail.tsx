@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import FloatingProductCard from '@/components/FloatingProductCard';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ArrowRight, SlidersHorizontal, ArrowUpDown, Package, Check } from 'lucide-react';
@@ -603,30 +603,15 @@ const CategoryDetail = () => {
                   );
                 })()}
 
-                {/* Responsive grid of product cards */}
+                {/* Responsive grid of product cards — incremental render on scroll */}
                 {otherProducts.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
-                    {otherProducts.map((product) => {
-                      const finalCardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
-                      const cardOriginal = computeUnifiedCardOriginalPrice(product, usdToIqd, codDefaults, liveDirectMap) ?? undefined;
-                      return (
-                        <FloatingProductCard
-                          key={product.id}
-                          id={product.id}
-                          name={product.name}
-                          nameAr={product.name_ar}
-                          price={finalCardPrice}
-                          originalPrice={cardOriginal}
-                          imageUrl={product.image_url || undefined}
-                          currency={product.currency || undefined}
-                          slug={product.slug}
-                          hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
-                          directSalePriceLive={null}
-                          highlightQuery={searchQ}
-                        />
-                      );
-                    })}
-                  </div>
+                  <IncrementalProductGrid
+                    products={otherProducts}
+                    usdToIqd={usdToIqd}
+                    codDefaults={codDefaults}
+                    liveDirectMap={liveDirectMap}
+                    searchQ={searchQ}
+                  />
                 ) : (
                   <div className="glass-panel text-center py-12 px-6">
                     <p className="text-foreground/60 text-sm">{t('catdetail_no_match')}</p>
@@ -658,6 +643,84 @@ const CategoryDetail = () => {
         )}
       </main>
     </div>
+  );
+};
+
+// Incrementally renders product cards as the user scrolls down.
+// Initial batch is small (fast paint), more batches load when sentinel approaches viewport.
+const PAGE_SIZE = 12;
+const IncrementalProductGrid = ({
+  products,
+  usdToIqd,
+  codDefaults,
+  liveDirectMap,
+  searchQ,
+}: {
+  products: any[];
+  usdToIqd: number;
+  codDefaults: any;
+  liveDirectMap: any;
+  searchQ: string;
+}) => {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset when the underlying list changes (filters / sort / search)
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [products]);
+
+  useEffect(() => {
+    if (visibleCount >= products.length) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisibleCount((c) => Math.min(c + PAGE_SIZE, products.length));
+        }
+      },
+      { rootMargin: '600px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visibleCount, products.length]);
+
+  const visible = products.slice(0, visibleCount);
+
+  return (
+    <>
+      <div
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5"
+        style={{ contentVisibility: 'auto' as any, containIntrinsicSize: '600px' }}
+      >
+        {visible.map((product: any) => {
+          const finalCardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
+          const cardOriginal = computeUnifiedCardOriginalPrice(product, usdToIqd, codDefaults, liveDirectMap) ?? undefined;
+          return (
+            <FloatingProductCard
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              nameAr={product.name_ar}
+              price={finalCardPrice}
+              originalPrice={cardOriginal}
+              imageUrl={product.image_url || undefined}
+              currency={product.currency || undefined}
+              slug={product.slug}
+              hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
+              directSalePriceLive={null}
+              highlightQuery={searchQ}
+            />
+          );
+        })}
+      </div>
+      {visibleCount < products.length && (
+        <div ref={sentinelRef} className="h-16 w-full flex items-center justify-center">
+          <div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+        </div>
+      )}
+    </>
   );
 };
 
