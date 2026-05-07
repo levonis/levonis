@@ -89,7 +89,7 @@ const Home = () => {
 
   const directSaleCategoryIdList = useMemo(() => {
     if (Array.isArray(directSaleCategoryIds)) return directSaleCategoryIds;
-    if (directSaleCategoryIds instanceof Set) return Array.from(directSaleCategoryIds);
+    if ((directSaleCategoryIds as unknown) instanceof Set) return Array.from(directSaleCategoryIds as unknown as Set<string>);
     return [] as string[];
   }, [directSaleCategoryIds]);
 
