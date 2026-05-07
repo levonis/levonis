@@ -622,9 +622,9 @@ export default function AdminLoyaltyLevels() {
                   </p>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-0">
+                <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-0 min-h-0">
                   {/* Form area - scrollable */}
-                  <ScrollArea className="h-full">
+                  <ScrollArea className="h-full min-w-0">
                     <div className="px-6 py-5">
                       <Accordion
                         type="multiple"
