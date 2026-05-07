@@ -144,7 +144,8 @@ Deno.serve(async (req) => {
         telegramMessage = `🛒 <b>طلب شراء</b>\n📦 ${listing_title}\n👤 ${buyer_name || 'مشتري'}`;
         break;
       case "new_message":
-        telegramMessage = `💬 <b>${sender_name || 'مستخدم'}</b>${listing_title ? `\n📦 ${listing_title}` : ''}\n${message_content || '(صورة)'}`;
+        telegramMessage = `💬 <b>${(safeSenderName || 'مستخدم').toString().replace(/[<>]/g,'')}</b>${listing_title ? `\n📦 ${String(listing_title).replace(/[<>]/g,'')}` : ''}\n${safeMessageContent || '(صورة)'}`;
+        break;
         break;
       default:
         telegramMessage = `📢 <b>إشعار</b>\n${listing_title || ''}`;
