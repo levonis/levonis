@@ -26,6 +26,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: "Unauthorized" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 });
     }
+    const callerId = (claimsData.claims as { sub?: string }).sub!;
+    const isService = (claimsData.claims as { role?: string }).role === "service_role";
+    const { data: roleRow } = await anonClient
+      .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
+    const isAdmin = !!roleRow || isService;
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     
@@ -50,6 +55,38 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: false, error: "user_id and event_type required" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
+    }
+
+    // Authorization: only admins can fire admin-style events.
+    // For "new_message", require caller to be a participant of the target conversation.
+    let safeSenderName = sender_name;
+    let safeMessageContent = message_content;
+    if (event_type === "new_message") {
+      if (!conversation_id) {
+        return new Response(JSON.stringify({ success: false, error: "conversation_id required" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+      }
+      if (!isAdmin) {
+        const { data: convo } = await supabase
+          .from("listing_conversations")
+          .select("buyer_id, seller_id")
+          .eq("id", conversation_id)
+          .maybeSingle();
+        const participants = [convo?.buyer_id, convo?.seller_id].filter(Boolean);
+        if (!convo || !participants.includes(callerId) || !participants.includes(user_id)) {
+          return new Response(JSON.stringify({ success: false, error: "Forbidden" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 });
+        }
+        // Derive sender name from caller's profile (do not trust client value)
+        const { data: callerProfile } = await supabase
+          .from("profiles").select("full_name, username").eq("id", callerId).maybeSingle();
+        safeSenderName = callerProfile?.full_name || callerProfile?.username || "مستخدم";
+        // Strip any HTML from caller-provided message to prevent injection
+        safeMessageContent = (message_content ? String(message_content) : "").replace(/<[^>]*>/g, "").slice(0, 500);
+      }
+    } else if (!isAdmin) {
+      return new Response(JSON.stringify({ success: false, error: "Forbidden" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 });
     }
 
     // Check notification settings
