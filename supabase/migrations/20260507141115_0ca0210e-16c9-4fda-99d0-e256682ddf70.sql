@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_internal_http_secret(text) TO service_role;

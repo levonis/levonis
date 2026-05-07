@@ -4684,6 +4684,27 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_http_secrets: {
+        Row: {
+          created_at: string
+          purpose: string
+          secret: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          purpose: string
+          secret: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          purpose?: string
+          secret?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_movements: {
         Row: {
           color_name: string | null
@@ -14228,6 +14249,7 @@ export type Database = {
           category_id: string
         }[]
       }
+      get_internal_http_secret: { Args: { p_purpose: string }; Returns: string }
       get_merchant_debt: {
         Args: { p_merchant_user_id: string }
         Returns: number

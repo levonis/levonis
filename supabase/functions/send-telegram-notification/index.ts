@@ -6,15 +6,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function safeEqual(a: string | null, b: string | null): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Centralized admin guard (admin or service_role only).
-    const auth = await requireAdmin(req, corsHeaders);
-    if (auth instanceof Response) return auth;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const internalSecret = req.headers.get("x-lovable-internal-secret");
+    let isTrustedInternalCall = false;
+    if (internalSecret) {
+      const { data: expectedSecret } = await supabase.rpc("get_internal_http_secret", {
+        p_purpose: "send-telegram-notification",
+      });
+      isTrustedInternalCall = safeEqual(internalSecret, expectedSecret as string | null);
+    }
+
+    // Centralized admin guard for browser/API callers; database triggers use the internal secret above.
+    if (!isTrustedInternalCall) {
+      const auth = await requireAdmin(req, corsHeaders);
+      if (auth instanceof Response) return auth;
+    }
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const DEFAULT_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
@@ -27,10 +49,6 @@ Deno.serve(async (req) => {
     }
 
     const { message, parse_mode = "HTML", chat_id, user_id, conversation_id, customer_user_id, channel_key, reply_markup } = await req.json();
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Check notification settings
     const { data: settings } = await supabase
