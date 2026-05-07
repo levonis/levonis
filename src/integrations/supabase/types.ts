@@ -12710,7 +12710,7 @@ export type Database = {
           reputation_score?: number | null
           total_requests_made?: number | null
           total_requests_received?: number | null
-          total_spent?: number | null
+          total_spent?: never
           updated_at?: string | null
           user_id?: string | null
         }
@@ -12726,7 +12726,7 @@ export type Database = {
           reputation_score?: number | null
           total_requests_made?: number | null
           total_requests_received?: number | null
-          total_spent?: number | null
+          total_spent?: never
           updated_at?: string | null
           user_id?: string | null
         }
@@ -14054,6 +14054,10 @@ export type Database = {
       credit_user_wallet: {
         Args: { p_amount: number; p_user_id: string }
         Returns: number
+      }
+      decrement_gacha_prize_stock: {
+        Args: { p_prize_id: string }
+        Returns: boolean
       }
       deduct_order_stock: { Args: { p_order_id: string }; Returns: undefined }
       deduct_prize_stock: {
