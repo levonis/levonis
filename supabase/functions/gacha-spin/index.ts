@@ -214,12 +214,16 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Decrease stock if limited
+        // Atomically decrement stock if limited; if it failed (race lost), fall back to first unlimited prize
         if (selectedPrize.stock !== null && selectedPrize.stock > 0) {
-          await supabase
-            .from("gacha_machine_prizes")
-            .update({ stock: selectedPrize.stock - 1 })
-            .eq("id", selectedPrize.id);
+          const { data: decremented, error: decErr } = await supabase
+            .rpc("decrement_gacha_prize_stock", { p_prize_id: selectedPrize.id });
+          if (decErr || decremented !== true) {
+            const unlimited = prizes.filter(p => p.stock === null);
+            if (unlimited.length > 0) {
+              selectedPrize = unlimited[Math.floor(Math.random() * unlimited.length)];
+            }
+          }
         }
       }
 
