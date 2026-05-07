@@ -48,7 +48,10 @@
               // BannerImage component uses width=800 for the first/LCP banner
               // (mobile-sized) and width=1200 for the rest. Use the smaller, mobile-
               // optimized variant here since the preload only matters for the LCP.
-              var w = (window.innerWidth && window.innerWidth > 900) ? 1200 : 800;
+              // Use screen.width instead of window.innerWidth — the latter forces a
+              // synchronous layout this early in page load (large LH "forced reflow" hit).
+              var sw = (window.screen && window.screen.width) || 800;
+              var w = sw > 900 ? 1200 : 800;
               if (src.indexOf('/storage/v1/object/public/') !== -1) {
                 src = src.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
                   + (src.indexOf('?') === -1 ? '?' : '&') + 'width=' + w + '&quality=75&resize=contain';
