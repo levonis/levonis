@@ -396,6 +396,10 @@ function AppContent() {
             <Route path="/marketplace" element={<Navigate to="/community/merchant/store" replace />} />
             <Route path="/marketplace/*" element={<Navigate to="/community/merchant/store" replace />} />
 
+            {/* Defense-in-depth: any unmatched path under ADMIN_BASE_PATH still
+                forces admin verification before showing 404, so unknown admin
+                paths cannot be probed without auth. */}
+            <Route path={`${ADMIN_BASE_PATH}/*`} element={<AdminRoute><NotFound /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </PageFade>
