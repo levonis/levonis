@@ -3,7 +3,9 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import LanguageProvider from "@/components/LanguageProvider";
@@ -430,16 +432,41 @@ export default function App() {
     defaultOptions: {
       queries: {
         staleTime: 10 * 60 * 1000, // 10 minutes - reduced refetching
-        gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
+        gcTime: 24 * 60 * 60 * 1000, // 24h - keep cache for persistence
         retry: 1,
-        refetchOnWindowFocus: false, // Prevent refetch on tab switch
-        refetchOnReconnect: false
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
       }
     }
   }));
 
+  const [persister] = useState(() =>
+    createSyncStoragePersister({
+      storage: typeof window !== "undefined" ? window.localStorage : undefined as any,
+      key: "lvn-rq-cache-v1",
+      throttleTime: 1000,
+    })
+  );
+
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: 24 * 60 * 60 * 1000,
+        buster: "v1",
+        dehydrateOptions: {
+          shouldDehydrateQuery: (q) => {
+            // Don't persist queries flagged ephemeral or per-user mutable
+            const key = Array.isArray(q.queryKey) ? String(q.queryKey[0] ?? "") : "";
+            if (!key) return false;
+            // Skip user-private / realtime caches
+            const skip = ["cart", "notifications", "messages", "auth", "online", "wallet", "session"];
+            return !skip.some((s) => key.toLowerCase().includes(s));
+          },
+        },
+      }}
+    >
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -461,6 +488,6 @@ export default function App() {
           </LanguageProvider>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>);
+    </PersistQueryClientProvider>);
 
 }
