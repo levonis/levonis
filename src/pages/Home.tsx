@@ -66,9 +66,9 @@ const Home = () => {
     queryFn: async () => {
       const { data, error } = await (supabase as any).rpc('get_direct_sale_category_ids');
       if (error) throw error;
-      const ids = new Set<string>();
+      const ids: string[] = [];
       for (const row of (data || [])) {
-        if (row?.category_id) ids.add(row.category_id);
+        if (row?.category_id) ids.push(row.category_id);
       }
       return ids;
     },
@@ -231,7 +231,7 @@ const Home = () => {
                           icon={category.icon}
                           description={category.description}
                           descriptionAr={getCategoryDescription(category)}
-                          hasDirectSale={directSaleCategoryIds?.has(category.id)}
+                          hasDirectSale={directSaleCategoryIds?.includes(category.id)}
                           mediaUrl={(category as any).media_url}
                           mediaType={(category as any).media_type}
                           mediaTransparent={!!(category as any).media_transparent}
