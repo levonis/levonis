@@ -1360,16 +1360,27 @@ ${pageContent.substring(0, 100000)}${extraContext}
 
 ⚠️ ممنوع منعاً باتاً إرجاع هذه الحقول فارغة أو null أو بقيم placeholder. استخدم منطقك واستنتج من السياق دائماً.
 
-===== قواعد استخراج الأبعاد والوزن (مهم جداً) =====
+===== قواعد استخراج أبعاد ووزن الكرتون مع التغليف (مهم جداً جداً) =====
 
-مطلوب: استخرج أبعاد المنتج ووزنه بدقة!
+⚠️ مطلوب: أبعاد **الكرتون / علبة الشحن مع كل مواد التغليف** (Packaging / Carton / Box / Shipping dimensions)
+⚠️ ممنوع منعاً باتاً إعادة أبعاد المنتج العاري (Product / Net / Item dimensions).
+⚠️ مطلوب للوزن: **الوزن الإجمالي مع التغليف** (Gross Weight / Shipping Weight / Package Weight) وليس الوزن الصافي (Net Weight).
 
-أماكن البحث:
-1. ابحث عن: 尺寸, 规格, 重量, weight, dimensions, size, cm, kg, mm, g, lb, inch
-2. حول الوحدات: inch → cm (×2.54)، mm → cm (÷10)، g → kg (÷1000)، lb → kg (×0.453)
-3. إذا لم تجد الأبعاد، قدّر بناءً على نوع المنتج أو اترك null
-4. dimensions.length_cm, dimensions.width_cm, dimensions.height_cm بالسنتيمتر
-5. weight_kg بالكيلوغرام
+قواعد الاختيار:
+1. ابحث أولاً عن: "Package Dimensions", "Packaging Size", "Carton Size", "Shipping Dimensions", "Box Size", "包装尺寸", "外箱尺寸", "纸箱尺寸", "Gross Weight", "Shipping Weight", "Package Weight", "毛重", "包装重量", "运输重量".
+2. إذا وجدت قيمتين (Product/Package أو Net/Gross): اختر **دائماً** قيمة Package/Carton/Gross — حتى لو كانت أكبر بكثير.
+3. إذا وُجد فقط أبعاد/وزن المنتج: قدّر التغليف بإضافة 5-15سم على كل بعد، ووزن إضافي 10-25% للتغليف.
+4. للطابعات ثلاثية الأبعاد كرتون التغليف عادة 60-75سم × 50-65سم × 50-65سم ووزن إجمالي 22-35كغ.
+
+تحويل الوحدات: inch → cm (×2.54)، mm → cm (÷10)، g → kg (÷1000)، lb → kg (×0.453).
+dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بالكيلوغرام.
+
+===== قواعد استخراج البراند =====
+- استخرج اسم الشركة المصنعة الحقيقية للمنتج (مثل: QIDI, Bambu Lab, Creality, Anycubic, Elegoo, Apple, Samsung, Xiaomi).
+- ابحث في: عنوان الصفحة، اسم المنتج، JSON-LD "brand", "manufacturer"، meta tags، شعار الموقع، اسم الـdomain.
+- لا تستخدم اسم المتجر العام (مثل Taobao/JD/Amazon). أعطِ البراند الفعلي للمنتج.
+- إذا لم تجد، خمّن من اسم المنتج أو domain (مثل qidi3d.com → QIDI).
+
 
 ===== قواعد استخراج الألوان (مهم جداً) =====
 
