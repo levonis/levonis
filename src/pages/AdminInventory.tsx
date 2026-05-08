@@ -785,14 +785,14 @@ export default function AdminInventory() {
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const rows = draftItems.map((it) => {
-      const profit = ((it.sale_price || 0) - (it.unit_cost || 0) - (it.shipping_cost || 0) - (it.commission || 0)) * it.quantity;
+      const profit = ((it.sale_price || 0) - (it.unit_cost || 0) * usdToIqd - (it.shipping_cost || 0) - (it.commission || 0)) * it.quantity;
       return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, profit, it.quantity, it.line_total].map(esc).join(',');
     });
     const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
-    const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
+    const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * usdToIqd * (i.quantity || 0), 0);
     const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
     const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
-    const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
+    const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) * usdToIqd - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
     const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
     const totalRow = ['الإجمالي', '', '', tUnit, tShip, tComm, tProfit, tQty, tLine].map(esc).join(',');
     const csv = '\uFEFF' + [headers.join(','), ...rows, totalRow].join('\n');
@@ -1240,7 +1240,7 @@ export default function AdminInventory() {
                                         <Input type="number" min={0} value={item.commission || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, commission: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center text-[11px] font-mono font-bold" style={{ color: NEON.emerald }} title="الربح = (سعر البيع − تكلفة الوحدة − الشحن − العمولة) × الكمية">
-                                        {formatPrice(((item.sale_price || 0) - (item.unit_cost || 0) - (item.shipping_cost || 0) - (item.commission || 0)) * item.quantity)}
+                                        {formatPrice(((item.sale_price || 0) - (item.unit_cost || 0) * usdToIqd - (item.shipping_cost || 0) - (item.commission || 0)) * item.quantity)}
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * (it.shipping_cost || 0) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
@@ -1258,10 +1258,10 @@ export default function AdminInventory() {
                                 </TableBody>
                                 {(() => {
                                   const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
-                                  const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
+                                  const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * usdToIqd * (i.quantity || 0), 0);
                                   const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
                                   const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
-                                  const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
+                                  const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) * usdToIqd - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
                                   const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
                                   return (
                                     <TableFooter className="bg-white/[0.03]">
