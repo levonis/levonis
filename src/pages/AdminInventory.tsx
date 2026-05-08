@@ -597,12 +597,25 @@ export default function AdminInventory() {
             const hasColor = item.color && item.color !== 'none' && item.color !== '';
             const hasOption = item.option && item.option !== 'none' && item.option !== '';
 
+            const normalize = (s: string) => String(s ?? '').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF\u200E\u200F]/g, '').replace(/\s+/g, ' ').trim();
+            const itemColorNorm = normalize(item.color || '');
+            const itemOptionNorm = normalize(item.option || '');
+
+            const findColorIdx = () => colors.findIndex((c: any) => normalize(getVariantColorName(c)) === itemColorNorm);
+            const findOptionKey = (optStocks: any, opt: string): string => {
+              if (!optStocks || typeof optStocks !== 'object') return opt;
+              const target = normalize(opt);
+              const match = Object.keys(optStocks).find((k) => normalize(k) === target);
+              return match || opt;
+            };
+
             if (hasColor && hasOption) {
               // Update option_stocks within the matching color
-              const colorIdx = colors.findIndex((c: any) => c.color === item.color);
+              const colorIdx = findColorIdx();
               if (colorIdx >= 0) {
                 const optStocks = colors[colorIdx].option_stocks || {};
-                optStocks[item.option] = (Number(optStocks[item.option]) || 0) + item.quantity;
+                const key = findOptionKey(optStocks, item.option);
+                optStocks[key] = (Number(optStocks[key]) || 0) + item.quantity;
                 colors[colorIdx].option_stocks = optStocks;
               } else {
                 // Color not found in JSONB, add it
@@ -614,7 +627,7 @@ export default function AdminInventory() {
               }
             } else if (hasColor && !hasOption) {
               // Color only - update direct_stock on color level or add quantity to product direct_stock
-              const colorIdx = colors.findIndex((c: any) => c.color === item.color);
+              const colorIdx = findColorIdx();
               if (colorIdx >= 0) {
                 const optStocks = colors[colorIdx].option_stocks || {};
                 optStocks['_default'] = (Number(optStocks['_default']) || 0) + item.quantity;
