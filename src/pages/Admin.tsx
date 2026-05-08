@@ -379,13 +379,41 @@ const Admin = () => {
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ['admin-products-with-options'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data: productRows, error } = await (supabase as any)
         .from('products_admin')
-        .select('*, categories!products_category_id_fkey(name_ar), product_options(id, in_stock, taobao_available, taobao_sku_id)')
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+
+      const productIds = (productRows || []).map((product: any) => product.id).filter(Boolean);
+
+      const [categoriesResult, optionsResult] = await Promise.all([
+        supabase.from('categories').select('id, name_ar'),
+        productIds.length > 0
+          ? supabase
+              .from('product_options')
+              .select('id, product_id, in_stock, taobao_available, taobao_sku_id')
+              .in('product_id', productIds)
+          : Promise.resolve({ data: [], error: null } as any),
+      ]);
+
+      if (categoriesResult.error) throw categoriesResult.error;
+      if (optionsResult.error) throw optionsResult.error;
+
+      const categoryMap = new Map((categoriesResult.data || []).map((category: any) => [category.id, category]));
+      const optionsByProduct = new Map<string, any[]>();
+      (optionsResult.data || []).forEach((option: any) => {
+        const list = optionsByProduct.get(option.product_id) || [];
+        list.push(option);
+        optionsByProduct.set(option.product_id, list);
+      });
+
+      return (productRows || []).map((product: any) => ({
+        ...product,
+        categories: categoryMap.get(product.category_id) || null,
+        product_options: optionsByProduct.get(product.id) || [],
+      }));
     },
     enabled: isAdmin
   });
