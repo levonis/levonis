@@ -1206,10 +1206,7 @@ export default function AdminInventory() {
                                         <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * (it.unit_cost + (it.shipping_cost || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>
-                                        <div>{formatPrice(item.line_total)}</div>
-                                        <div className="text-[9px] font-normal mt-0.5" style={{ color: NEON.emerald }} title="صافي الربح = العمولة × الكمية">
-                                          صافي الربح: {formatPrice((item.commission || 0) * item.quantity)}
-                                        </div>
+                                        {formatPrice(item.line_total)}
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <button onClick={() => removeItemFromDraft(i)} className="p-1 rounded hover:bg-red-500/20 transition-colors">
