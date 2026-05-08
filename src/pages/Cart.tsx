@@ -2096,7 +2096,7 @@ const Cart = () => {
         
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
-            message: `🛒 <b>طلب جديد - مدفوع</b>\n\n` +
+            message: `🛒 <b>طلب جديد - ${isPreOrderCod ? 'الدفع عند الاستلام' : 'مدفوع'}</b>\n\n` +
               `👤 العميل: ${profile?.full_name || 'غير محدد'}\n` +
               `📱 اليوزر: @${profile?.username || 'غير محدد'}\n` +
               `📞 الهاتف: ${selectedAddress.phone_number}\n\n` +
