@@ -381,6 +381,8 @@ const NAV_ITEMS: {id: Section;icon: any;label: string;color: string;}[] = [
 { id: 'shipments', icon: Truck, label: 'الشحنات', color: NEON.blue },
 { id: 'inventory', icon: Package, label: 'المخزون المباشر', color: NEON.emerald }];
 
+  const draftTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
+  const productsTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
 
 // ====== MAIN COMPONENT ======
 export default function AdminInventory() {
@@ -1174,7 +1176,7 @@ export default function AdminInventory() {
                             تصدير CSV
                           </Button>
                         </div>
-                        <div className="rounded-xl border border-white/[0.05] overflow-x-auto">
+                        <div ref={draftTableScrollRef} className="rounded-xl border border-white/[0.05] overflow-x-auto">
                               <Table className="min-w-[1100px]">
                                 <TableHeader>
                                   <TableRow className="border-white/[0.05] hover:bg-transparent">
@@ -1542,7 +1544,7 @@ export default function AdminInventory() {
                 </GlassCard>
 
                 <GlassCard className="overflow-hidden">
-                  <div className="overflow-x-auto">
+                  <div ref={productsTableScrollRef} className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-white/[0.05] hover:bg-transparent">
