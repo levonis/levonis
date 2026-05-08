@@ -16,7 +16,7 @@ import {
   Search, BarChart3, Boxes, DollarSign, ArrowRight, Truck,
   Plus, CheckCircle2, Clock, ShoppingCart, FileText, ChevronLeft,
   ChevronRight, Trash2, X, Send, Palette, Settings2, Pencil, Undo2,
-  ChevronDown, ChevronUp } from
+  ChevronDown, ChevronUp, Download } from
 'lucide-react';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { useNavigate } from 'react-router-dom';
@@ -774,6 +774,36 @@ export default function AdminInventory() {
   const removeItemFromDraft = (index: number) => setDraftItems((prev) => prev.filter((_, i) => i !== index));
   const draftGrandTotal = useMemo(() => draftItems.reduce((s, i) => s + i.line_total, 0), [draftItems]);
 
+  const exportDraftItemsCsv = useCallback(() => {
+    if (draftItems.length === 0) return;
+    const headers = ['المنتج', 'اللون', 'الخيار', 'تكلفة الوحدة', 'الشحن', 'العمولة', 'الربح', 'الكمية', 'المجموع'];
+    const esc = (v: any) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = draftItems.map((it) => {
+      const profit = ((it.sale_price || 0) - (it.unit_cost || 0) - (it.shipping_cost || 0) - (it.commission || 0)) * it.quantity;
+      return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, profit, it.quantity, it.line_total].map(esc).join(',');
+    });
+    const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
+    const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
+    const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
+    const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
+    const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
+    const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
+    const totalRow = ['الإجمالي', '', '', tUnit, tShip, tComm, tProfit, tQty, tLine].map(esc).join(',');
+    const csv = '\uFEFF' + [headers.join(','), ...rows, totalRow].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventory-draft-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [draftItems]);
+
   // Helper: get available colors and options for a draft item's product
   const getDraftProductVariants = useCallback((productId: string, selectedColor?: string) => {
     const product = products.find((p) => p.id === productId);
@@ -1136,7 +1166,14 @@ export default function AdminInventory() {
 
                           {/* Items table */}
                           {draftItems.length > 0 &&
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border border-white/[0.05] overflow-x-auto">
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
+                        <div className="flex justify-end">
+                          <Button size="sm" variant="outline" onClick={exportDraftItemsCsv} className="h-8 gap-1.5 text-xs bg-white/[0.04] border-white/10 text-white/70 hover:bg-white/[0.08]">
+                            <Download className="h-3.5 w-3.5" />
+                            تصدير CSV
+                          </Button>
+                        </div>
+                        <div className="rounded-xl border border-white/[0.05] overflow-x-auto">
                               <Table className="min-w-[1100px]">
                                 <TableHeader>
                                   <TableRow className="border-white/[0.05] hover:bg-transparent">
@@ -1241,6 +1278,7 @@ export default function AdminInventory() {
                                   );
                                 })()}
                               </Table>
+                            </div>
                             </motion.div>
                       }
 
