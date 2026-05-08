@@ -656,6 +656,16 @@ export default function AdminInventory() {
             updateObj.direct_stock = (Number(adminProduct.direct_stock) || 0) + directStockAdd;
           }
 
+          // Weighted-average cost_price update from incoming items
+          const totalQtyForProd = pItems.reduce((s, it) => s + Number(it.quantity || 0), 0);
+          const totalCostForProd = pItems.reduce((s, it) => s + Number(it.line_total || 0), 0);
+          if (totalQtyForProd > 0 && totalCostForProd > 0) {
+            const oldStock = Number(adminProduct.direct_stock) || 0;
+            const oldCost = Number(adminProduct.cost_price) || 0;
+            const newAvgCost = ((oldStock * oldCost) + totalCostForProd) / (oldStock + totalQtyForProd);
+            updateObj.cost_price = Math.round(newAvgCost);
+          }
+
           await adminUpdateProduct(pid, updateObj);
         }
       } else {
