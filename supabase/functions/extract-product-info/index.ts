@@ -1659,33 +1659,29 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
       console.log('Search query:', searchQuery);
       
       try {
-        const searchPrompt = `You are a product specifications expert. Search for and provide the packaging dimensions and weight for this product:
+        const searchPrompt = `You are a product specifications expert. Provide the **PACKAGING / CARTON / SHIPPING-BOX dimensions** and **GROSS (shipping) weight including all packaging** for this product. Do NOT return the bare product (net) dimensions or net weight.
 
 Product Name: ${productInfo.name}
 Product URL: ${url}
 
-Your task:
-1. Based on your knowledge, estimate the PACKAGING dimensions (not just the product dimensions) for this type of product
-2. Consider that packaging adds extra space around the product (typically 5-15% larger)
-3. For electronics, consider protective packaging materials
-4. Provide weight including packaging
-
-IMPORTANT RULES:
-- If this is a printer (like Bambu Lab, Creality, etc.), typical packaging is: 50-70cm length, 40-55cm width, 40-60cm height, weight 15-35kg
-- If this is a laptop, typical packaging is: 45-55cm length, 30-40cm width, 10-15cm height, weight 3-5kg
-- If this is a phone, typical packaging is: 18-22cm length, 10-14cm width, 6-10cm height, weight 0.3-0.6kg
-- For other products, estimate based on the product type
+Rules:
+1. Always return the OUTER CARTON / shipping box size (width × depth × height in cm) including foam, accessories box, and outer cardboard — NOT the product itself.
+2. Always return GROSS weight (kg) including the printer/device + foam + accessories + cardboard + tape + labels.
+3. If both Net and Gross are known, return Gross. If both Product and Package dimensions are known, return Package.
+4. Reference values (gross / shipping carton):
+   - QIDI Plus4 / Bambu Lab X1 / similar enclosed FDM 3D printer carton: ~70×60×60 cm, ~28-32 kg gross.
+   - Creality Ender-3 class open-frame printer carton: ~55×50×30 cm, ~9-12 kg gross.
+   - Resin printer (Anycubic Mono / Elegoo Saturn): ~45×35×55 cm, ~12-18 kg gross.
+   - Laptop carton: ~50×35×12 cm, ~3-5 kg.
+   - Phone carton: ~20×12×8 cm, ~0.4-0.6 kg.
+5. For other products, estimate carton size = product size + 5-15 cm per axis, gross weight = net × 1.10-1.25.
 
 Return JSON ONLY:
 {
-  "dimensions": {
-    "length_cm": number,
-    "width_cm": number,
-    "height_cm": number
-  },
+  "dimensions": { "length_cm": number, "width_cm": number, "height_cm": number },
   "weight_kg": number,
   "confidence": "high" | "medium" | "low",
-  "source": "estimated based on product type"
+  "source": "package/carton/gross estimate"
 }`;
 
         const searchResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -1697,7 +1693,7 @@ Return JSON ONLY:
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
             messages: [
-              { role: 'system', content: 'You are a product specifications expert. Estimate packaging dimensions and weight accurately.' },
+              { role: 'system', content: 'You are a product packaging expert. Always return PACKAGE/CARTON dimensions and GROSS weight (with packaging), never bare product dimensions or net weight.' },
               { role: 'user', content: searchPrompt }
             ],
             temperature: 0.1,
