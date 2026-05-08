@@ -2003,6 +2003,7 @@ const Cart = () => {
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
         payment_method: isPreOrderCod ? 'cod' : 'wallet',
+        payment_status: isPreOrderCod ? 'cod' : (isPreOrderWithPartialPayment ? 'partial' : 'paid'),
       } as any;
       if (appliedReferral) {
         orderData.referral_coupon_id = appliedReferral.coupon_id;
@@ -2074,10 +2075,10 @@ const Cart = () => {
 
       // إرسال إشعار للتيليجرام عند إنشاء طلب جديد
       try {
-        const paymentStatusText = isPreOrderWithPartialPayment ? 'دفع جزئي (ربع المبلغ)' : 'مدفوع بالكامل';
-        const orderTotalAmount = (total - discount) + deliveryFee;
+        const paymentStatusText = isPreOrderCod ? 'الدفع عند الاستلام' : (isPreOrderWithPartialPayment ? 'دفع جزئي (نصف المبلغ)' : 'مدفوع بالكامل');
+        const orderTotalAmount = orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0);
         const paidAmountNow = grandTotal;
-        const remainingToPay = isPreOrderWithPartialPayment ? remainingAmount : 0;
+        const remainingToPay = (isPreOrderCod || isPreOrderWithPartialPayment) ? remainingAmount : 0;
 
         const paidItemDetailsList = items.map((item, idx) => {
           const name = item.custom_request_id
@@ -3798,7 +3799,7 @@ const Cart = () => {
                         </div>
                         <div className="flex justify-between text-sm text-orange-500 mb-3">
                           <span>{t('cart_total_on_receipt')}</span>
-                          <span className="font-bold">{formatPrice(remainingAmount + deliveryFee)} {t('pd_currency_iqd')}</span>
+                          <span className="font-bold">{formatPrice(remainingAmount)} {t('pd_currency_iqd')}</span>
                         </div>
                       </>
                     )}
