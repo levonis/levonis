@@ -2050,11 +2050,14 @@ Return ONLY JSON:
         const fcKey = Deno.env.get('FIRECRAWL_API_KEY');
         if (fcKey) {
           try {
+            const fcCtrl = new AbortController();
+            const fcT = setTimeout(() => fcCtrl.abort(), 20000);
             const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${fcKey}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ url, formats: ['html'], waitFor: 5000 }),
-            });
+              signal: fcCtrl.signal,
+            }).finally(() => clearTimeout(fcT));
             if (fcResp.ok) {
               const fcData = await fcResp.json();
               const renderedHtml = fcData.data?.html || fcData.html || '';
