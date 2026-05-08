@@ -528,6 +528,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       let remainingAmount = toInvoiceNumber(buyer.orderRemainingAmount || 0);
       let deliveryMethod = buyer.orderDeliveryMethod || '';
       let adminShippingCost = toInvoiceNumber(buyer.orderAdminShippingCost || 0);
+      let orderCodFee = 0;
       
       // Fallback: check printer's order_item_id
       if (!subtotal && printer.order_item_id) {
@@ -569,6 +570,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
           buyer.paymentMethod = orderData.payment_method || buyer.paymentMethod;
           buyer.paymentStatus = orderData.payment_status || buyer.paymentStatus;
           cardDiscount = toInvoiceNumber(orderData.card_discount_amount ?? cardDiscount);
+          orderCodFee = toInvoiceNumber(orderData.cod_fee ?? 0);
         }
       }
 
@@ -617,8 +619,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         deliveryMethod,
         calculatedDeliveryFee,
       });
-      const storedCodFee = toInvoiceNumber((orderData as any)?.cod_fee ?? 0);
-      const paymentFee = storedCodFee > 0 ? storedCodFee : derivedPaymentFee;
+      const paymentFee = orderCodFee > 0 ? orderCodFee : derivedPaymentFee;
       const finalTotal = orderTotal > 0
         ? orderTotal
         : Math.max(0, sub + finalTaxAmount + deliveryFee + paymentFee - discounts.totalDiscount);
