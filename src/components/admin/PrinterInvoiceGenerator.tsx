@@ -553,7 +553,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       if (buyer.orderId) {
         const { data: orderData } = await (supabase as any)
           .from('orders_admin')
-          .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, card_discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost')
+          .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, card_discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost, cod_fee')
           .eq('id', buyer.orderId)
           .maybeSingle();
         if (orderData) {
@@ -607,7 +607,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         governorate: buyer.address?.split(' - ')?.[0] || null,
         orderTotalForFreeDelivery: sub,
       });
-      const { deliveryFee, paymentFee } = deriveCustomerDeliveryFee({
+      const { deliveryFee, paymentFee: derivedPaymentFee } = deriveCustomerDeliveryFee({
         subtotal: sub,
         taxAmount: finalTaxAmount,
         totalAmount: orderTotal,
@@ -617,6 +617,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         deliveryMethod,
         calculatedDeliveryFee,
       });
+      const storedCodFee = toInvoiceNumber((orderData as any)?.cod_fee ?? 0);
+      const paymentFee = storedCodFee > 0 ? storedCodFee : derivedPaymentFee;
       const finalTotal = orderTotal > 0
         ? orderTotal
         : Math.max(0, sub + finalTaxAmount + deliveryFee + paymentFee - discounts.totalDiscount);
