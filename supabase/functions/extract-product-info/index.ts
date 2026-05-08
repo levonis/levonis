@@ -1155,6 +1155,7 @@ serve(async (req) => {
       'bambulab.com','store.bambulab.com',
       'creality.com','store.creality.com',
       'anycubic.com','elegoo.com','prusa3d.com','prusaprinters.org',
+      'qidi3d.com','qidi3dprinter.com','qidi3dofficial.com','qidi-tech.com',
       'thingiverse.com','printables.com','makerworld.com','cults3d.com',
       'shopify.com',
     ];
