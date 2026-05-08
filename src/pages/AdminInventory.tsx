@@ -1146,7 +1146,7 @@ export default function AdminInventory() {
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">تكلفة الوحدة</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الشحن</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">العمولة</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">تكاليف أخرى</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-28">الربح</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-20">الكمية</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">المجموع</TableHead>
                                     <TableHead className="text-white/40 text-[10px] w-10"></TableHead>
