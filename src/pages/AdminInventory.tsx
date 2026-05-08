@@ -940,7 +940,7 @@ export default function AdminInventory() {
       console.error('Inventory PDF export error:', e);
       toast.error('حدث خطأ أثناء تصدير PDF');
     }
-  }, [/* eslint-disable react-hooks/exhaustive-deps */]);
+  };
 
   // ====== COMPUTED ======
   const pendingShipments = useMemo(() => shipments.filter((s) => s.status === 'pending'), [shipments]);
