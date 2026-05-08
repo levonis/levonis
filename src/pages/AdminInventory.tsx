@@ -760,7 +760,7 @@ export default function AdminInventory() {
           shipping_cost: prodShipping,
           commission: prodCommission,
           other_costs: prodOther,
-          line_total: draftItemForm.quantity * draftItemForm.unit_cost
+          line_total: draftItemForm.quantity * (draftItemForm.unit_cost + prodShipping + prodOther)
         });
       }
     }
