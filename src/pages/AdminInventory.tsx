@@ -584,7 +584,7 @@ export default function AdminInventory() {
           // Fetch fresh product data
           const { data: product, error: fetchErr } = await (supabase as any)
             .from('products_admin')
-            .select('id, direct_stock, colors')
+            .select('id, direct_stock, colors, cost_price')
             .eq('id', pid)
             .single();
           if (fetchErr || !product) throw new Error('المنتج غير موجود: ' + pid);
@@ -654,6 +654,16 @@ export default function AdminInventory() {
           const updateObj: any = { colors };
           if (directStockAdd > 0) {
             updateObj.direct_stock = (Number(adminProduct.direct_stock) || 0) + directStockAdd;
+          }
+
+          // Weighted-average cost_price update from incoming items
+          const totalQtyForProd = pItems.reduce((s, it) => s + Number(it.quantity || 0), 0);
+          const totalCostForProd = pItems.reduce((s, it) => s + Number(it.line_total || 0), 0);
+          if (totalQtyForProd > 0 && totalCostForProd > 0) {
+            const oldStock = Number(adminProduct.direct_stock) || 0;
+            const oldCost = Number(adminProduct.cost_price) || 0;
+            const newAvgCost = ((oldStock * oldCost) + totalCostForProd) / (oldStock + totalQtyForProd);
+            updateObj.cost_price = Math.round(newAvgCost);
           }
 
           await adminUpdateProduct(pid, updateObj);
@@ -1030,7 +1040,7 @@ export default function AdminInventory() {
                                   <ProductSearchDropdown
                                 products={products}
                                 value={draftItemForm.product_id}
-                                onSelect={(p) => setDraftItemForm((f) => ({ ...f, product_id: p.id || '', colors: [], options: [] }))} />
+                                onSelect={(p) => setDraftItemForm((f) => ({ ...f, product_id: p.id || '', colors: [], options: [], unit_cost: f.unit_cost > 0 ? f.unit_cost : (Number((p as any).cost_price) || 0) }))} />
                               
                                 </div>
                               </div>
