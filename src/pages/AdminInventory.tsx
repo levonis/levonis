@@ -1231,8 +1231,8 @@ export default function AdminInventory() {
                                         <TableCell />
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tUnit)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tShip)}</TableCell>
-                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tComm)}</TableCell>
-                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tOther)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tComm)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tProfit)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{tQty}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.purple }}>{formatPrice(tLine)}</TableCell>
                                         <TableCell />
