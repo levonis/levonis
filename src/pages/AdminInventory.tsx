@@ -49,6 +49,7 @@ interface DraftItem {
   shipping_cost: number;
   commission: number;
   other_costs: number;
+  sale_price: number;
   line_total: number;
 }
 
