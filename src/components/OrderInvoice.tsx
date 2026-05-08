@@ -9,6 +9,7 @@ interface OrderInvoiceProps {
 }
 
 export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
+  const codFee = Math.max(0, Number(order.cod_fee || 0));
   const { data: template } = useQuery({
     queryKey: ["default-invoice-template"],
     queryFn: async () => {
@@ -482,6 +483,18 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
                 </span>
                 <span>
                   -{formatPrice(Number(order.discount_amount))} {order.currency}
+                </span>
+              </div>
+            )}
+
+            {/* رسوم الدفع عند الاستلام */}
+            {codFee > 0 && (
+              <div className="flex justify-between items-center pb-2 border-b border-current/10 text-amber-600">
+                <span>
+                  رسوم الدفع عند الاستلام / COD Fee
+                </span>
+                <span>
+                  +{formatPrice(codFee)} {order.currency}
                 </span>
               </div>
             )}

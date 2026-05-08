@@ -528,6 +528,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       let remainingAmount = toInvoiceNumber(buyer.orderRemainingAmount || 0);
       let deliveryMethod = buyer.orderDeliveryMethod || '';
       let adminShippingCost = toInvoiceNumber(buyer.orderAdminShippingCost || 0);
+      let orderCodFee = 0;
       
       // Fallback: check printer's order_item_id
       if (!subtotal && printer.order_item_id) {
@@ -553,7 +554,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       if (buyer.orderId) {
         const { data: orderData } = await (supabase as any)
           .from('orders_admin')
-          .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, card_discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost')
+          .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, card_discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost, cod_fee')
           .eq('id', buyer.orderId)
           .maybeSingle();
         if (orderData) {
@@ -569,6 +570,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
           buyer.paymentMethod = orderData.payment_method || buyer.paymentMethod;
           buyer.paymentStatus = orderData.payment_status || buyer.paymentStatus;
           cardDiscount = toInvoiceNumber(orderData.card_discount_amount ?? cardDiscount);
+          orderCodFee = toInvoiceNumber(orderData.cod_fee ?? 0);
         }
       }
 
@@ -607,7 +609,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         governorate: buyer.address?.split(' - ')?.[0] || null,
         orderTotalForFreeDelivery: sub,
       });
-      const { deliveryFee, paymentFee } = deriveCustomerDeliveryFee({
+      const { deliveryFee, paymentFee: derivedPaymentFee } = deriveCustomerDeliveryFee({
         subtotal: sub,
         taxAmount: finalTaxAmount,
         totalAmount: orderTotal,
@@ -617,6 +619,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         deliveryMethod,
         calculatedDeliveryFee,
       });
+      const paymentFee = orderCodFee > 0 ? orderCodFee : derivedPaymentFee;
       const finalTotal = orderTotal > 0
         ? orderTotal
         : Math.max(0, sub + finalTaxAmount + deliveryFee + paymentFee - discounts.totalDiscount);
