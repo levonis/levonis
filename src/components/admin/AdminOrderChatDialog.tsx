@@ -618,11 +618,15 @@ export default function AdminOrderChatDialog({
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="rounded-lg border border-border p-2 text-center">
                       <p className="text-muted-foreground text-[10px]">طريقة الدفع</p>
-                      <p className="font-medium text-xs mt-0.5">{displayOrder.payment_method || '—'}</p>
+                      <p className="font-medium text-xs mt-0.5">
+                        {(displayOrder.payment_method || displayOrder.payment_status) === 'cod' ? 'عند الاستلام' : (displayOrder.payment_method || '—')}
+                      </p>
                     </div>
                     <div className="rounded-lg border border-border p-2 text-center">
                       <p className="text-muted-foreground text-[10px]">حالة الدفع</p>
-                      <p className="font-medium text-xs mt-0.5">{displayOrder.payment_status || '—'}</p>
+                      <p className="font-medium text-xs mt-0.5">
+                        {displayOrder.payment_status === 'cod' ? 'عند الاستلام' : (displayOrder.payment_status || '—')}
+                      </p>
                     </div>
                   </div>
 
@@ -670,10 +674,30 @@ export default function AdminOrderChatDialog({
                   </div>
 
                   {/* Total */}
-                  <div className="flex items-center justify-between pt-2 border-t border-border text-sm font-bold">
-                    <span>المجموع</span>
-                    <span className="text-primary">{formatPrice(displayOrder.total_amount || 0)}</span>
-                  </div>
+                  {(() => {
+                    const productsTotal = (displayOrder.order_items as any[] || []).reduce(
+                      (sum: number, item: any) => sum + (Number(item.total_price) || (Number(item.unit_price) || 0) * (Number(item.quantity) || 1)),
+                      0,
+                    );
+                    const orderTotal = Number(displayOrder.total_amount || 0);
+                    const extraAmount = Math.max(0, orderTotal - productsTotal);
+                    const isCod = (displayOrder.payment_method || displayOrder.payment_status) === 'cod';
+
+                    return (
+                      <div className="space-y-1 pt-2 border-t border-border text-sm">
+                        {extraAmount > 0 && (
+                          <div className="flex items-center justify-between text-amber-600 font-medium">
+                            <span>{isCod ? 'رسوم الدفع عند الاستلام' : 'رسوم إضافية'}</span>
+                            <span>+{formatPrice(extraAmount)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between font-bold">
+                          <span>المجموع</span>
+                          <span className="text-primary">{formatPrice(orderTotal)}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : isOrderLoading ? (
                 <div className="flex items-center justify-center h-40">
