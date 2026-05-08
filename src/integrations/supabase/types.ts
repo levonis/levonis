@@ -7622,6 +7622,7 @@ export type Database = {
           cancelled_at: string | null
           card_discount_amount: number | null
           card_discount_level_name: string | null
+          cod_fee: number
           confirmed_at: string | null
           created_at: string
           currency: string
@@ -7682,6 +7683,7 @@ export type Database = {
           cancelled_at?: string | null
           card_discount_amount?: number | null
           card_discount_level_name?: string | null
+          cod_fee?: number
           confirmed_at?: string | null
           created_at?: string
           currency?: string
@@ -7742,6 +7744,7 @@ export type Database = {
           cancelled_at?: string | null
           card_discount_amount?: number | null
           card_discount_level_name?: string | null
+          cod_fee?: number
           confirmed_at?: string | null
           created_at?: string
           currency?: string
@@ -13147,6 +13150,7 @@ export type Database = {
           cancelled_at: string | null
           card_discount_amount: number | null
           card_discount_level_name: string | null
+          cod_fee: number | null
           confirmed_at: string | null
           created_at: string | null
           currency: string | null
@@ -13618,6 +13622,7 @@ export type Database = {
           cancelled_at: string | null
           card_discount_amount: number | null
           card_discount_level_name: string | null
+          cod_fee: number
           confirmed_at: string | null
           created_at: string
           currency: string
@@ -13815,6 +13820,7 @@ export type Database = {
           cancelled_at: string | null
           card_discount_amount: number | null
           card_discount_level_name: string | null
+          cod_fee: number
           confirmed_at: string | null
           created_at: string
           currency: string
