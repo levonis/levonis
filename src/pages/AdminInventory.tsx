@@ -387,6 +387,8 @@ export default function AdminInventory() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = (shippingSettings as any)?.usd_to_iqd_rate || 1540;
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
