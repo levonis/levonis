@@ -1477,6 +1477,9 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
           productInfo.name_ar = ai.name_ar || productInfo.name_ar;
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
+          if (typeof ai.brand === 'string' && ai.brand.trim().length > 0) {
+            productInfo.brand = ai.brand.trim().slice(0, 80);
+          }
 
           // SEO short summary (tri-lang) + searchable tags + AI content (why this product)
           if (ai.short_summary && typeof ai.short_summary === 'object') {
