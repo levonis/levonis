@@ -124,10 +124,9 @@ const AdminOrders = () => {
   // Profit = commission from product + stored COD fee when available.
   // Falls back to total - delivery - cost if no commission data.
   const [commissionProfit, setCommissionProfit] = useState(0);
-  const storedCodFee = Math.max(0, Number((editingOrder as any)?.cod_fee || 0));
   const calculatedProfit = commissionProfit > 0
     ? commissionProfit
-    : (totalAmount - deliveryFee - adminProductCost + storedCodFee);
+    : (totalAmount - deliveryFee - adminProductCost);
   
   useEffect(() => {
     const status = searchParams.get('status');
