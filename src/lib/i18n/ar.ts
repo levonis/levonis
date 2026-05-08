@@ -1187,6 +1187,8 @@ export const ar: TranslationKeys = {
   cart_terms_required_title: 'الشروط والأحكام',
   cart_terms_required_desc: 'يجب الموافقة على الشروط والأحكام لإتمام الطلب',
   cart_mixed_shipping_title: 'لا يمكن خلط أنواع الشحن',
+  cart_mixed_categories_title: 'لا يمكن خلط أنواع المنتجات في طلب واحد',
+  cart_mixed_categories_desc: 'الأنواع التالية لا يمكن جمعها معاً، يرجى إتمام كل نوع في طلب منفصل:',
   cart_mixed_shipping_desc: 'سلتك تحتوي على منتجات بشحن جوي ✈️ وبحري 🚢 معاً. الرجاء إنشاء طلبين منفصلين أو توحيد نوع الشحن لكل المنتجات.',
   cart_address_required_title: 'يجب اختيار عنوان',
   cart_address_required_desc2: 'الرجاء اختيار أو إضافة عنوان توصيل أولاً',
