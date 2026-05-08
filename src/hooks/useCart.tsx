@@ -1010,8 +1010,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       const deletedSet = new Set((data || []).map((r: any) => r.id));
       setItems(prev => prev.filter((i) => !deletedSet.has(i.id)));
-      if (hasRevealed) {
-        toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المكشوفة)');
+      if (hasRevealed || hasKeptOther) {
+        toast.success('تم تفريغ السلة (تم الإبقاء على العناصر المقفلة/الهدايا)');
       } else {
         toast.success('تم تفريغ السلة');
       }
