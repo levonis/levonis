@@ -1054,7 +1054,7 @@ const Cart = () => {
         ? (tiers.find(t => lineTotal >= t.min_amount && lineTotal <= t.max_amount) || tiers[tiers.length - 1])
         : null;
       const productCodValue = product.cod_fee_value == null ? null : Number(product.cod_fee_value);
-      const codType = (product.cod_fee_type || tier?.cod_fee_type || fallbackCodType) as 'percentage' | 'fixed';
+      const codType = ((productCodValue != null && productCodValue > 0 ? product.cod_fee_type : null) || tier?.cod_fee_type || fallbackCodType) as 'percentage' | 'fixed';
       const codVal = productCodValue != null && productCodValue > 0
         ? productCodValue
         : Number(tier?.cod_fee_value ?? fallbackCodValue);
