@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/lib/i18n';
-import { translateShippingOption } from '@/lib/shippingLabel';
+import { translateShippingOption, getShippingCategory } from '@/lib/shippingLabel';
 import { buildFriendlyOrderError } from '@/lib/orderErrorMessages';
 import { insertOrderItemsWithRollback } from '@/lib/orderItemsInsert';
 
@@ -1344,6 +1344,24 @@ const Cart = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // Block mixed Air + Sea shipping in the same order
+    {
+      const cats = new Set(
+        (items || [])
+          .filter((it: any) => !it.is_gift)
+          .map((it: any) => getShippingCategory(it.shipping_option_name_ar))
+          .filter((c) => c === 'air' || c === 'sea')
+      );
+      if (cats.has('air') && cats.has('sea')) {
+        toast({
+          title: t('cart_mixed_shipping_title'),
+          description: t('cart_mixed_shipping_desc'),
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     if (isDirectSaleCart) {

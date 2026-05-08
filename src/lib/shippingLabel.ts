@@ -24,3 +24,17 @@ export function translateShippingOption(
   // Unknown custom label — return as-is.
   return s;
 }
+
+/**
+ * Classify a raw shipping option label into a coarse category used for
+ * mixed-shipping validation in the cart. Returns 'air' | 'sea' | 'other'.
+ */
+export function getShippingCategory(
+  rawArabic: string | null | undefined,
+): 'air' | 'sea' | 'other' {
+  if (!rawArabic) return 'other';
+  const norm = rawArabic.replace(/[^\u0600-\u06FF\s]/g, '').trim();
+  if (norm.includes('بحري')) return 'sea';
+  if (norm.includes('جوي') || norm.includes('سريع')) return 'air';
+  return 'other';
+}

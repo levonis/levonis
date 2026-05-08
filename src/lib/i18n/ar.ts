@@ -1186,6 +1186,8 @@ export const ar: TranslationKeys = {
   cart_login_required_to_checkout_desc: 'الرجاء تسجيل الدخول أولاً لإتمام الطلب',
   cart_terms_required_title: 'الشروط والأحكام',
   cart_terms_required_desc: 'يجب الموافقة على الشروط والأحكام لإتمام الطلب',
+  cart_mixed_shipping_title: 'لا يمكن خلط أنواع الشحن',
+  cart_mixed_shipping_desc: 'سلتك تحتوي على منتجات بشحن جوي ✈️ وبحري 🚢 معاً. الرجاء إنشاء طلبين منفصلين أو توحيد نوع الشحن لكل المنتجات.',
   cart_address_required_title: 'يجب اختيار عنوان',
   cart_address_required_desc2: 'الرجاء اختيار أو إضافة عنوان توصيل أولاً',
   cart_wallet_insufficient_title: 'رصيد المحفظة غير كافٍ',
