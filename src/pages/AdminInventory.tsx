@@ -822,7 +822,8 @@ export default function AdminInventory() {
   }, [products]);
 
   // ====== EXPORT INVENTORY TO PDF ======
-  const exportInventoryPdf = useCallback(async () => {
+  // Defined as a regular function (not useCallback) so it always closes over fresh state.
+  const exportInventoryPdf = async () => {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { default: jsPDF } = await import('jspdf');
