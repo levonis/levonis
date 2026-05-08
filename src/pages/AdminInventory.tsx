@@ -115,22 +115,21 @@ const GlassCard = ({ children, className = '', style }: {children: React.ReactNo
 
 
 const StatCard3D = ({ icon: Icon, label, value, color, sub }: {icon: any;label: string;value: string | number;color: string;sub?: string;}) =>
-<motion.div whileHover={{ scale: 1.03, rotateY: 3 }} style={{ perspective: 1200 }}>
-    <GlassCard className="p-5 group cursor-default overflow-hidden">
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700" style={{ background: `radial-gradient(circle at 30% 30%, ${color}08, transparent 60%)` }} />
+<div>
+    <GlassCard className="p-5 cursor-default overflow-hidden">
       <div className="flex items-start justify-between relative z-10">
         <div className="space-y-1">
           <p className="text-[11px] text-white/40 tracking-wide">{label}</p>
           <p className="text-xl font-bold text-white/90 tabular-nums">{value}</p>
           {sub && <p className="text-[10px] text-white/30">{sub}</p>}
         </div>
-        <div className="p-2.5 rounded-xl transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg"
-      style={{ background: `linear-gradient(135deg, ${color}22, ${color}08)`, boxShadow: `0 4px 20px ${color}15` }}>
+        <div className="p-2.5 rounded-xl"
+      style={{ background: `linear-gradient(135deg, ${color}22, ${color}08)` }}>
           <Icon className="h-5 w-5" style={{ color }} />
         </div>
       </div>
     </GlassCard>
-  </motion.div>;
+  </div>;
 
 
 // ====== SMART PRODUCT SEARCH ======
