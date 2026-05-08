@@ -1216,6 +1216,30 @@ export default function AdminInventory() {
                                     </TableRow>
                             )}
                                 </TableBody>
+                                {(() => {
+                                  const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
+                                  const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
+                                  const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
+                                  const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
+                                  const tOther = draftItems.reduce((s, i) => s + (i.other_costs || 0) * (i.quantity || 0), 0);
+                                  const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
+                                  return (
+                                    <TableFooter className="bg-white/[0.03]">
+                                      <TableRow className="border-white/[0.08] hover:bg-transparent">
+                                        <TableCell className="text-[10px] text-white/55 text-right font-bold">الإجمالي</TableCell>
+                                        <TableCell />
+                                        <TableCell />
+                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tUnit)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tShip)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tComm)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tOther)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{tQty}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.purple }}>{formatPrice(tLine)}</TableCell>
+                                        <TableCell />
+                                      </TableRow>
+                                    </TableFooter>
+                                  );
+                                })()}
                               </Table>
                             </motion.div>
                       }
