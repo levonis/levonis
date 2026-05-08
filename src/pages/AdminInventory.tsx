@@ -1128,26 +1128,26 @@ export default function AdminInventory() {
                               <Table>
                                 <TableHeader>
                                   <TableRow className="border-white/[0.05] hover:bg-transparent">
-                                    <TableHead className="text-white/40 text-[10px]">المنتج</TableHead>
-                                    <TableHead className="text-white/40 text-[10px]">اللون</TableHead>
-                                    <TableHead className="text-white/40 text-[10px]">الخيار</TableHead>
-                                    <TableHead className="text-white/40 text-[10px]">تكلفة الوحدة</TableHead>
-                                    <TableHead className="text-white/40 text-[10px]">الكمية</TableHead>
-                                    <TableHead className="text-white/40 text-[10px]">المجموع</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-right">المنتج</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-28">اللون</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-28">الخيار</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-24">تكلفة الوحدة</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-20">الكمية</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-24">المجموع</TableHead>
                                     <TableHead className="text-white/40 text-[10px] w-10"></TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {draftItems.map((item, i) =>
                             <TableRow key={i} className="border-white/[0.04] hover:bg-white/[0.02]">
-                                      <TableCell className="text-xs text-white/65">{item.product_name}</TableCell>
-                                      <TableCell>
+                                      <TableCell className="text-xs text-white/65 text-right">{item.product_name}</TableCell>
+                                      <TableCell className="text-center">
                                         {(() => {
                                           const variants = getDraftProductVariants(item.product_id);
                                           if (variants.colors.length > 0) {
                                             return (
                                               <Select value={item.color || 'none'} onValueChange={(val) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: val === 'none' ? '' : val, option: '' } : it))}>
-                                                <SelectTrigger className="h-7 w-24 text-xs bg-white/5 border-white/10 text-white/70"><SelectValue placeholder="—" /></SelectTrigger>
+                                                <SelectTrigger className="h-7 w-full text-xs bg-white/5 border-white/10 text-white/70"><SelectValue placeholder="—" /></SelectTrigger>
                                                 <SelectContent>
                                                   <SelectItem value="none">بدون لون</SelectItem>
                                                   {variants.colors.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -1155,16 +1155,16 @@ export default function AdminInventory() {
                                               </Select>
                                             );
                                           }
-                                          return <span className="text-muted-foreground text-xs text-center block">—</span>;
+                                          return <span className="text-muted-foreground text-xs block">—</span>;
                                         })()}
                                       </TableCell>
-                                      <TableCell>
+                                      <TableCell className="text-center">
                                         {(() => {
                                           const variants = getDraftProductVariants(item.product_id, item.color || undefined);
                                           if (variants.options.length > 0) {
                                             return (
                                               <Select value={item.option || 'none'} onValueChange={(val) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: val === 'none' ? '' : val } : it))}>
-                                                <SelectTrigger className="h-7 w-24 text-xs bg-white/5 border-white/10 text-white/70"><SelectValue placeholder="—" /></SelectTrigger>
+                                                <SelectTrigger className="h-7 w-full text-xs bg-white/5 border-white/10 text-white/70"><SelectValue placeholder="—" /></SelectTrigger>
                                                 <SelectContent>
                                                   <SelectItem value="none">بدون خيار</SelectItem>
                                                   {variants.options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
@@ -1172,17 +1172,17 @@ export default function AdminInventory() {
                                               </Select>
                                             );
                                           }
-                                          return <span className="text-muted-foreground text-xs text-center block">—</span>;
+                                          return <span className="text-muted-foreground text-xs block">—</span>;
                                         })()}
                                       </TableCell>
-                                      <TableCell>
-                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-20 text-xs font-mono bg-white/5 border-white/10 text-white/70" />
+                                      <TableCell className="text-center">
+                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
-                                      <TableCell>
-                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: it.unit_cost * val } : it)); }} className="h-7 w-16 text-xs font-mono bg-white/5 border-white/10 text-white/70" />
+                                      <TableCell className="text-center">
+                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: it.unit_cost * val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
-                                      <TableCell className="text-xs font-mono font-bold" style={{ color: NEON.purple }}>{formatPrice(item.line_total)}</TableCell>
-                                      <TableCell>
+                                      <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>{formatPrice(item.line_total)}</TableCell>
+                                      <TableCell className="text-center">
                                         <button onClick={() => removeItemFromDraft(i)} className="p-1 rounded hover:bg-red-500/20 transition-colors">
                                           <Trash2 className="h-3 w-3 text-red-400/60" />
                                         </button>
