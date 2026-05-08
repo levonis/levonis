@@ -1266,7 +1266,7 @@ export default function AdminInventory() {
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tComm)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{tQty}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.purple }}>${tLine.toLocaleString()}</TableCell>
-                                        <TableCell />
+                                        <TableCell className="sticky left-0 z-10 w-16 min-w-16 bg-background/95 backdrop-blur-md" />
                                       </TableRow>
                                     </TableFooter>
                                   );
