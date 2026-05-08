@@ -14040,6 +14040,10 @@ export type Database = {
       cleanup_old_coupon_attempts: { Args: never; Returns: undefined }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       complete_daily_task: { Args: { task_key_param: string }; Returns: Json }
+      compute_cod_fee_from_settings: {
+        Args: { _subtotal: number }
+        Returns: number
+      }
       compute_overall_print_score: {
         Args: {
           p_avg_quality_stars: number
