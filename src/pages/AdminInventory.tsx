@@ -1191,19 +1191,19 @@ export default function AdminInventory() {
                                         })()}
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: it.quantity * (val + (it.shipping_cost || 0) + (it.other_costs || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: it.quantity * (val + (it.shipping_cost || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val, line_total: it.quantity * (it.unit_cost + val + (it.other_costs || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val, line_total: it.quantity * (it.unit_cost + val) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={0} value={item.commission || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, commission: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
-                                      <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.other_costs || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, other_costs: val, line_total: it.quantity * (it.unit_cost + (it.shipping_cost || 0) + val) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                      <TableCell className="text-center text-[11px] font-mono font-bold" style={{ color: NEON.emerald }} title="الربح = (سعر البيع − تكلفة الوحدة − الشحن − العمولة) × الكمية">
+                                        {formatPrice(((item.sale_price || 0) - (item.unit_cost || 0) - (item.shipping_cost || 0) - (item.commission || 0)) * item.quantity)}
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * (it.unit_cost + (it.shipping_cost || 0) + (it.other_costs || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * (it.unit_cost + (it.shipping_cost || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>
                                         <div>{formatPrice(item.line_total)}</div>
