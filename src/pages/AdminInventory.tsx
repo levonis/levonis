@@ -778,22 +778,20 @@ export default function AdminInventory() {
 
   const exportDraftItemsCsv = useCallback(() => {
     if (draftItems.length === 0) return;
-    const headers = ['المنتج', 'اللون', 'الخيار', 'تكلفة الوحدة', 'الشحن', 'العمولة', 'الربح', 'الكمية', 'المجموع'];
+    const headers = ['المنتج', 'اللون', 'الخيار', 'تكلفة الوحدة', 'الشحن', 'الربح', 'الكمية', 'المجموع'];
     const esc = (v: any) => {
       const s = String(v ?? '');
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const rows = draftItems.map((it) => {
-      const profit = (it.commission || 0) * it.quantity;
-      return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, profit, it.quantity, it.line_total].map(esc).join(',');
+      return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, it.quantity, it.line_total].map(esc).join(',');
     });
     const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
     const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
     const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
     const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
-    const tProfit = tComm;
     const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
-    const totalRow = ['الإجمالي', '', '', tUnit, tShip, tComm, tProfit, tQty, tLine].map(esc).join(',');
+    const totalRow = ['الإجمالي', '', '', tUnit, tShip, tComm, tQty, tLine].map(esc).join(',');
     const csv = '\uFEFF' + [headers.join(','), ...rows, totalRow].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
