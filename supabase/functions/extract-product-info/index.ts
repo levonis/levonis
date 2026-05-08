@@ -824,6 +824,56 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
       setIfValid(rawName, rawUrl);
     }
   }
+
+  // Tertiary source: Next.js RSC chunk references (Bambu US/EU stores).
+  // Variants are encoded as separate chunks linked by IDs, e.g.:
+  //   d9:{"resourceFileId":"...","url":"https://.../Matte-Ivory-White.png"}
+  //   db:{"propertyKey":"Color","propertyValue":"Matte Ivory White (11100)",...}
+  //   da:["$db","$dc","$dd"]
+  //   {...,"mediaFile":"$d9","productSkuPropertyList":"$da",...}
+  // Resolve the references to map each color's propertyValue to its real image.
+  try {
+    const mediaMap = new Map<string, string>();
+    for (const mm of html.matchAll(/([0-9a-f]+):\{"resourceFileId":"[^"]*","url":"([^"]+)"\}/g)) {
+      mediaMap.set(mm[1], mm[2].replace(/\\\//g, '/'));
+    }
+    const propMap = new Map<string, string>();
+    for (const mm of html.matchAll(/([0-9a-f]+):\{[^}]*"propertyKey":"Color"[^}]*"propertyValue":"([^"]+)"[^}]*\}/g)) {
+      propMap.set(mm[1], mm[2]);
+    }
+    const listMap = new Map<string, string[]>();
+    for (const mm of html.matchAll(/([0-9a-f]+):\[((?:"\$[0-9a-f]+",?)+)\]/g)) {
+      const ids = [...mm[2].matchAll(/"\$([0-9a-f]+)"/g)].map((x) => x[1]);
+      listMap.set(mm[1], ids);
+    }
+    // SKU chunks containing both mediaFile and productSkuPropertyList (in any order).
+    const skuRe = /\{[^{}]*"(?:mediaFile|productSkuPropertyList)":"\$[0-9a-f]+"[^{}]*"(?:mediaFile|productSkuPropertyList)":"\$[0-9a-f]+"[^{}]*\}/g;
+    for (const mm of html.matchAll(skuRe)) {
+      const block = mm[0];
+      const mediaIdMatch = block.match(/"mediaFile":"\$([0-9a-f]+)"/);
+      const listIdMatch = block.match(/"productSkuPropertyList":"\$([0-9a-f]+)"/);
+      if (!mediaIdMatch || !listIdMatch) continue;
+      const url = mediaMap.get(mediaIdMatch[1]);
+      const refs = listMap.get(listIdMatch[1]) || [];
+      if (!url) continue;
+      for (const r of refs) {
+        const colorName = propMap.get(r);
+        if (colorName) {
+          const key = normalizeVariantName(colorName);
+          let finalUrl = url;
+          if (finalUrl.startsWith('//')) finalUrl = 'https:' + finalUrl;
+          if (/^https?:\/\//i.test(finalUrl) && !/\/swatch\//i.test(finalUrl) && !/-swatch[\.-]/i.test(finalUrl)) {
+            // RSC-resolved match is most accurate — overwrite any previous entry.
+            map.set(key, finalUrl);
+          }
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    console.log('Bambu RSC chunk resolver failed:', e);
+  }
+
   return map;
 }
 
