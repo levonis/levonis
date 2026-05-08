@@ -52,7 +52,6 @@ export function getCartItemCategory(item: any): CartCategory {
 export function getCartCategories(items: any[]): Set<CartCategory> {
   const set = new Set<CartCategory>();
   for (const it of items || []) {
-    if (it?.is_gift) continue; // gifts allowed with anything
     set.add(getCartItemCategory(it));
   }
   return set;
