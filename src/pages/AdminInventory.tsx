@@ -396,6 +396,8 @@ export default function AdminInventory() {
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [draftNotes, setDraftNotes] = useState('');
   const [draftItemForm, setDraftItemForm] = useState<DraftItemFormState>({ product_id: '', colors: [], options: [], quantity: 0, unit_cost: 0 });
+  const [collapsedDrafts, setCollapsedDrafts] = useState<Record<string, boolean>>({});
+  const toggleDraftCollapse = (id: string) => setCollapsedDrafts((prev) => ({ ...prev, [id]: !prev[id] }));
 
   // Inventory variant expansion
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
