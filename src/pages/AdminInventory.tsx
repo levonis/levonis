@@ -427,7 +427,7 @@ export default function AdminInventory() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['inventory-products'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('products_admin').select('id, name_ar, price, cost_price, shipping_cost_iqd, commission_iqd, other_costs_iqd, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar), product_options(id, name_ar)').order('name_ar');
+      const { data, error } = await (supabase as any).from('products_admin').select('id, name_ar, price, cost_price, shipping_cost_iqd, commission_iqd, commission_direct_iqd, other_costs_iqd, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar), product_options(id, name_ar)').order('name_ar');
       if (error) throw error;
       return data || [];
     },
@@ -747,7 +747,7 @@ export default function AdminInventory() {
     
     const newItems: DraftItem[] = [];
     const prodShipping = Number((product as any)?.shipping_cost_iqd) || 0;
-    const prodCommission = Number((product as any)?.commission_iqd) || 0;
+    const prodCommission = Number((product as any)?.commission_direct_iqd) || 0;
     const prodOther = Number((product as any)?.other_costs_iqd) || 0;
     const prodSale = Number((product as any)?.price) || 0;
     for (const color of colorsToAdd) {
