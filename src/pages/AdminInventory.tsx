@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -387,8 +386,6 @@ export default function AdminInventory() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: shippingSettings } = useShippingSettings();
-  const usdToIqd = (shippingSettings as any)?.usd_to_iqd_rate || 1540;
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -785,14 +782,14 @@ export default function AdminInventory() {
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const rows = draftItems.map((it) => {
-      const profit = ((it.sale_price || 0) - (it.unit_cost || 0) * usdToIqd - (it.shipping_cost || 0) - (it.commission || 0)) * it.quantity;
+      const profit = (it.commission || 0) * it.quantity;
       return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, profit, it.quantity, it.line_total].map(esc).join(',');
     });
     const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
     const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
     const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
     const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
-    const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) * usdToIqd - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
+    const tProfit = tComm;
     const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
     const totalRow = ['الإجمالي', '', '', tUnit, tShip, tComm, tProfit, tQty, tLine].map(esc).join(',');
     const csv = '\uFEFF' + [headers.join(','), ...rows, totalRow].join('\n');
