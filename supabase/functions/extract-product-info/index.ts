@@ -1329,6 +1329,7 @@ ${pageContent.substring(0, 100000)}${extraContext}
   "price": 29.99,
   "original_price": 39.99,
   "currency": "CNY",
+  "brand": "اسم الشركة المصنعة (مثل: QIDI, Bambu Lab, Creality, Apple, Samsung)",
   "dimensions": {"length_cm": 30, "width_cm": 20, "height_cm": 15},
   "weight_kg": 1.5,
   "main_product_images": ["https://صورة-المنتج-الرئيسية.jpg"],
