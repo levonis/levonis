@@ -1166,7 +1166,14 @@ export default function AdminInventory() {
 
                           {/* Items table */}
                           {draftItems.length > 0 &&
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border border-white/[0.05] overflow-x-auto">
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
+                        <div className="flex justify-end">
+                          <Button size="sm" variant="outline" onClick={exportDraftItemsCsv} className="h-8 gap-1.5 text-xs bg-white/[0.04] border-white/10 text-white/70 hover:bg-white/[0.08]">
+                            <Download className="h-3.5 w-3.5" />
+                            تصدير CSV
+                          </Button>
+                        </div>
+                        <div className="rounded-xl border border-white/[0.05] overflow-x-auto">
                               <Table className="min-w-[1100px]">
                                 <TableHeader>
                                   <TableRow className="border-white/[0.05] hover:bg-transparent">
