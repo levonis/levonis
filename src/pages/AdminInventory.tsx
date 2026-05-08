@@ -1621,19 +1621,9 @@ export default function AdminInventory() {
             {/* ===== LIVE INVENTORY ===== */}
             {activeSection === 'inventory' &&
             <div className="space-y-4">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <h2 className="text-lg font-bold text-white/85 flex items-center gap-2">
-                    <Package className="h-5 w-5" style={{ color: NEON.emerald }} /> المخزون المباشر
-                  </h2>
-                  <Button
-                    onClick={exportInventoryPdf}
-                    disabled={filteredProducts.length === 0}
-                    className="gap-2 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs h-9"
-                  >
-                    <Download className="h-4 w-4" />
-                    تصدير PDF
-                  </Button>
-                </div>
+                <h2 className="text-lg font-bold text-white/85 flex items-center gap-2">
+                  <Package className="h-5 w-5" style={{ color: NEON.emerald }} /> المخزون المباشر
+                </h2>
 
                 <GlassCard className="p-4">
                   <div className="flex flex-col md:flex-row gap-3">
