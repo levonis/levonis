@@ -121,10 +121,13 @@ const AdminOrders = () => {
     }
   }, [taxPercentage, subtotalAmount]);
   
-  // Profit = commission from product (commission_direct_iqd * quantity) for direct sale
-  // Falls back to total - delivery - cost if no commission data
+  // Profit = commission from product + stored COD fee when available.
+  // Falls back to total - delivery - cost if no commission data.
   const [commissionProfit, setCommissionProfit] = useState(0);
-  const calculatedProfit = commissionProfit > 0 ? commissionProfit : (totalAmount - deliveryFee - adminProductCost);
+  const storedCodFee = Math.max(0, Number((editingOrder as any)?.cod_fee || 0));
+  const calculatedProfit = commissionProfit > 0
+    ? commissionProfit
+    : (totalAmount - deliveryFee - adminProductCost + storedCodFee);
   
   useEffect(() => {
     const status = searchParams.get('status');
@@ -171,7 +174,7 @@ const AdminOrders = () => {
       // For COD orders, the extra amount (orderTotal - productsTotal - delivery) is the COD fee
       // which is pure commission added on top of the product price. Include it in profit.
       const isCod = (editingOrder.payment_method === 'cod') || (editingOrder.payment_status === 'cod');
-      let codCommission = 0;
+      let codCommission = Number(editingOrder.cod_fee || 0);
       if (isCod) {
         const productsTotal = items.reduce(
           (s: number, it: any) => s + (Number(it.total_price) || (Number(it.unit_price) || 0) * (Number(it.quantity) || 1)),
@@ -179,7 +182,7 @@ const AdminOrders = () => {
         );
         const orderTotal = Number(editingOrder.total_amount || 0);
         const delivery = Number(editingOrder.delivery_fee || 0);
-        codCommission = Math.max(0, orderTotal - productsTotal - delivery);
+        codCommission = codCommission > 0 ? codCommission : Math.max(0, orderTotal - productsTotal - delivery);
       }
 
       setCommissionProfit(totalCommission + codCommission);
