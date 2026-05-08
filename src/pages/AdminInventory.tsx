@@ -1180,11 +1180,11 @@ export default function AdminInventory() {
                                     <TableHead className="text-white/40 text-[10px] text-right min-w-[140px]">المنتج</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">اللون</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الخيار</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">تكلفة الوحدة ($)</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">الشحن</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">الربح</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-20">الكمية</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">المجموع ($)</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-32">تكلفة الوحدة ($)</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-32">الشحن</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-32">الربح</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-24">الكمية</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-32">المجموع ($)</TableHead>
                                     <TableHead className="text-white/40 text-[10px] w-12 text-center">حذف</TableHead>
                                   </TableRow>
                                 </TableHeader>
