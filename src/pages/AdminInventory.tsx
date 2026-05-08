@@ -749,7 +749,7 @@ export default function AdminInventory() {
     
     const newItems: DraftItem[] = [];
     const prodShipping = Number((product as any)?.shipping_cost_iqd) || 0;
-    const prodCommission = Number((product as any)?.commission_direct_iqd) || 0;
+    const prodCommission = Number((product as any)?.commission_direct_iqd) || Number((product as any)?.commission_iqd) || 0;
     const prodOther = Number((product as any)?.other_costs_iqd) || 0;
     const prodSale = Number((product as any)?.price) || 0;
     for (const color of colorsToAdd) {
