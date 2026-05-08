@@ -337,20 +337,16 @@ export default function DailyTasksPanel() {
         ? `${t('dt_task_label')}: ${taskTitle} (${task.points_reward} + ${bonusPoints} ${t('dt_streak_label')})`
         : `${t('dt_task_label')}: ${taskTitle}`;
 
-      const { error: pointsError } = await supabase
-        .from('points_transactions')
-        .insert({
-          user_id: user.id, points: totalPoints, type: 'earned',
-          source: 'daily_task', description: desc,
-        });
-      if (pointsError) throw pointsError;
-
-      // Atomic server-side increment to prevent race-condition double-credit
-      await supabase.rpc('add_user_points', {
-        p_user_id: user.id,
-        p_amount: totalPoints,
-        p_source: 'daily_task',
+      // Server-validated points award (inserts points_transactions + atomic balance update)
+      const { error: awardError } = await supabase.functions.invoke('award-points', {
+        body: {
+          source: 'daily_task',
+          amount: totalPoints,
+          task_key: task.task_key,
+          description: desc,
+        },
       });
+      if (awardError) throw awardError;
       return { ...task, totalPoints, bonusPoints, pendingApproval: false };
     },
     onSuccess: (result) => {
@@ -823,18 +819,16 @@ function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; revi
       });
       if (reviewError) throw reviewError;
 
-      const { error: pointsError } = await supabase.from('points_transactions').insert({
-        user_id: user.id, points: reviewPoints, type: 'earned', source: 'review',
-        description: t('dt_review_description', { product: item.product_name_ar || item.product_name }),
-        related_id: item.product_id,
+      // Server-validated award
+      const { error: awardError } = await supabase.functions.invoke('award-points', {
+        body: {
+          source: 'review',
+          amount: reviewPoints,
+          related_id: item.product_id,
+          description: t('dt_review_description', { product: item.product_name_ar || item.product_name }),
+        },
       });
-      if (pointsError) throw pointsError;
-
-      await supabase.rpc('add_user_points', {
-        p_user_id: user.id,
-        p_amount: reviewPoints,
-        p_source: 'review',
-      });
+      if (awardError) throw awardError;
 
       queryClient.invalidateQueries({ queryKey: ['reviewable-orders'] });
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
