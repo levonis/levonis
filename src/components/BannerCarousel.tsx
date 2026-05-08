@@ -51,7 +51,7 @@ const BannerImage = memo(({
   // Mobile devices (the common LCP critical path) only need ~800px;
   // 1200 was over-fetching ~50% extra bytes for the banner above the fold.
   const optimizedSrc = useMemo(
-    () => resizeSupabaseImage(src, isFirst ? 800 : 1200, 75) || src,
+    () => resizeSupabaseImage(src, isFirst ? 800 : 900, 70) || src,
     [src, isFirst]
   );
 
