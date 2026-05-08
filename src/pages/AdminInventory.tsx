@@ -1278,6 +1278,7 @@ export default function AdminInventory() {
                                   );
                                 })()}
                               </Table>
+                            </div>
                             </motion.div>
                       }
 
