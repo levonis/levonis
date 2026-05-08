@@ -396,7 +396,25 @@ export default function AdminInventory() {
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [draftNotes, setDraftNotes] = useState('');
   const [draftItemForm, setDraftItemForm] = useState<DraftItemFormState>({ product_id: '', colors: [], options: [], quantity: 0, unit_cost: 0 });
-  const [collapsedDrafts, setCollapsedDrafts] = useState<Record<string, boolean>>({});
+  const collapsedDraftsStorageKey = useMemo(() => `admin-inventory:collapsedDrafts:${user?.id || 'anon'}`, [user?.id]);
+  const [collapsedDrafts, setCollapsedDrafts] = useState<Record<string, boolean>>(() => {
+    try {
+      if (typeof window === 'undefined') return {};
+      const raw = localStorage.getItem(`admin-inventory:collapsedDrafts:anon`);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
+  // Reload when user identity becomes known
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(collapsedDraftsStorageKey);
+      setCollapsedDrafts(raw ? JSON.parse(raw) : {});
+    } catch { /* ignore */ }
+  }, [collapsedDraftsStorageKey]);
+  // Persist
+  useEffect(() => {
+    try { localStorage.setItem(collapsedDraftsStorageKey, JSON.stringify(collapsedDrafts)); } catch { /* ignore */ }
+  }, [collapsedDrafts, collapsedDraftsStorageKey]);
   const toggleDraftCollapse = (id: string) => setCollapsedDrafts((prev) => ({ ...prev, [id]: !prev[id] }));
 
   // Inventory variant expansion
