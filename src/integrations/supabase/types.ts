@@ -628,13 +628,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "banners_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       bundle_items: {
@@ -678,13 +671,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bundle_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
           {
@@ -993,13 +979,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cart_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cart_items_product_option_id_fkey"
             columns: ["product_option_id"]
             isOneToOne: false
@@ -1148,13 +1127,6 @@ export type Database = {
             columns: ["featured_product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "categories_featured_product_id_fkey"
-            columns: ["featured_product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
           {
@@ -1957,13 +1929,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "competition_prizes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       competition_tickets: {
@@ -2188,24 +2153,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "competitions_prize_product_id_fkey"
-            columns: ["prize_product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "competitions_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "competitions_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -2429,13 +2380,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "crossy_road_leaderboard_prizes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "crossy_road_leaderboard_prizes_selected_option_id_fkey"
             columns: ["selected_option_id"]
             isOneToOne: false
@@ -2526,13 +2470,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crossy_road_milestones_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
           {
@@ -2689,13 +2626,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "crossy_road_winners_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "crossy_road_winners_selected_option_id_fkey"
             columns: ["selected_option_id"]
             isOneToOne: false
@@ -2849,13 +2779,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "customer_special_coupons_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -3386,13 +3309,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "favorites_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       filament_discount_usage: {
@@ -3516,13 +3432,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "future_shipments_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -4750,13 +4659,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "inventory_movements_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       invoice_templates: {
@@ -4865,13 +4767,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "knife_rain_leaderboard_prizes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "knife_rain_leaderboard_prizes_selected_option_id_fkey"
             columns: ["selected_option_id"]
             isOneToOne: false
@@ -4962,13 +4857,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knife_rain_milestones_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
           {
@@ -5165,13 +5053,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "letter_prize_coupons_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "letter_prize_coupons_redemption_id_fkey"
             columns: ["redemption_id"]
             isOneToOne: false
@@ -5230,13 +5111,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "letter_prize_redemptions_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -6439,13 +6313,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "merchant_giveaways_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       merchant_monthly_orders: {
@@ -6994,13 +6861,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "merchant_reels_site_product_id_fkey"
-            columns: ["site_product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       merchant_store_categories: {
@@ -7318,13 +7178,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "mystery_case_rewards_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "mystery_case_rewards_product_option_id_fkey"
             columns: ["product_option_id"]
             isOneToOne: false
@@ -7564,24 +7417,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "order_items_product_id_fkey_products"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_product_id_fkey_products"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
           {
@@ -7902,13 +7741,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "parts_discount_requests_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "parts_discount_requests_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
@@ -8020,13 +7852,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "plan_discount_usage_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
           {
@@ -8212,13 +8037,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "price_match_requests_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -8773,13 +8591,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "product_batches_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       product_bookings: {
@@ -8932,13 +8743,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "product_card_discounts_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       product_color_qa_flags: {
@@ -8978,13 +8782,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_color_qa_flags_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -9194,13 +8991,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_options_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -9855,13 +9645,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "random_filament_orders_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "random_filament_orders_product_option_id_fkey"
             columns: ["product_option_id"]
             isOneToOne: false
@@ -10452,13 +10235,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "reviews_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       saved_invoices: {
@@ -10892,13 +10668,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "stack_game_leaderboard_prizes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       stack_game_milestone_claims: {
@@ -10995,13 +10764,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stack_game_milestones_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -11153,13 +10915,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "stack_game_winners_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
         ]
       }
       stock_notifications: {
@@ -11196,13 +10951,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stock_notifications_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -11616,13 +11364,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "taobao_sync_logs_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -12213,13 +11954,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_purchased_products_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
           {
@@ -13092,24 +12826,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "order_items_product_id_fkey_products"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_product_id_fkey_products"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_admin"
             referencedColumns: ["id"]
           },
           {
@@ -13349,157 +13069,7 @@ export type Database = {
           weight_kg: number | null
           width_cm: number | null
         }
-        Insert: {
-          ai_content?: Json | null
-          air_price?: number | null
-          availability_type?: string | null
-          brand?: string | null
-          card_discounts?: Json | null
-          category_id?: string | null
-          cod_enabled?: boolean | null
-          cod_fee_type?: string | null
-          cod_fee_value?: number | null
-          colors?: Json | null
-          commission_air_iqd?: number | null
-          commission_direct_iqd?: number | null
-          commission_iqd?: number | null
-          commission_sea_iqd?: number | null
-          cost_price?: number | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          description_ar?: string | null
-          description_en?: string | null
-          description_ku?: string | null
-          direct_sale_price?: number | null
-          direct_stock?: number | null
-          display_order?: number | null
-          featured?: boolean | null
-          features?: Json | null
-          has_in_stock?: boolean | null
-          has_pre_order?: boolean | null
-          height_cm?: number | null
-          id?: string | null
-          image_url?: string | null
-          images?: string[] | null
-          in_stock?: boolean | null
-          is_pricing_updated?: boolean | null
-          length_cm?: number | null
-          link_direct_commission_to_cod?: boolean | null
-          name?: string | null
-          name_ar?: string | null
-          name_en?: string | null
-          name_ku?: string | null
-          original_price?: number | null
-          original_price_usd?: number | null
-          other_costs_iqd?: number | null
-          personal_delivery_cost?: number | null
-          points_reward?: number | null
-          pre_order_fast_shipping_price?: number | null
-          pre_order_free_shipping_price?: number | null
-          pre_order_shipping_options?: Json | null
-          pre_order_stock?: number | null
-          price?: number | null
-          price_usd?: number | null
-          referral_earnings_iqd?: number | null
-          round_up_price?: boolean | null
-          sea_price?: number | null
-          searchable_attributes?: string[] | null
-          shipping_cost_iqd?: number | null
-          shipping_type?: string | null
-          short_summary?: Json | null
-          slug?: string | null
-          sold_count?: number | null
-          taobao_availability_cache?: Json | null
-          taobao_last_sync_at?: string | null
-          taobao_sync_status?: string | null
-          taobao_url?: string | null
-          taobao_variant_mapping?: Json | null
-          ticket_reward?: number | null
-          updated_at?: string | null
-          weight_kg?: number | null
-          width_cm?: number | null
-        }
-        Update: {
-          ai_content?: Json | null
-          air_price?: number | null
-          availability_type?: string | null
-          brand?: string | null
-          card_discounts?: Json | null
-          category_id?: string | null
-          cod_enabled?: boolean | null
-          cod_fee_type?: string | null
-          cod_fee_value?: number | null
-          colors?: Json | null
-          commission_air_iqd?: number | null
-          commission_direct_iqd?: number | null
-          commission_iqd?: number | null
-          commission_sea_iqd?: number | null
-          cost_price?: number | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          description_ar?: string | null
-          description_en?: string | null
-          description_ku?: string | null
-          direct_sale_price?: number | null
-          direct_stock?: number | null
-          display_order?: number | null
-          featured?: boolean | null
-          features?: Json | null
-          has_in_stock?: boolean | null
-          has_pre_order?: boolean | null
-          height_cm?: number | null
-          id?: string | null
-          image_url?: string | null
-          images?: string[] | null
-          in_stock?: boolean | null
-          is_pricing_updated?: boolean | null
-          length_cm?: number | null
-          link_direct_commission_to_cod?: boolean | null
-          name?: string | null
-          name_ar?: string | null
-          name_en?: string | null
-          name_ku?: string | null
-          original_price?: number | null
-          original_price_usd?: number | null
-          other_costs_iqd?: number | null
-          personal_delivery_cost?: number | null
-          points_reward?: number | null
-          pre_order_fast_shipping_price?: number | null
-          pre_order_free_shipping_price?: number | null
-          pre_order_shipping_options?: Json | null
-          pre_order_stock?: number | null
-          price?: number | null
-          price_usd?: number | null
-          referral_earnings_iqd?: number | null
-          round_up_price?: boolean | null
-          sea_price?: number | null
-          searchable_attributes?: string[] | null
-          shipping_cost_iqd?: number | null
-          shipping_type?: string | null
-          short_summary?: Json | null
-          slug?: string | null
-          sold_count?: number | null
-          taobao_availability_cache?: Json | null
-          taobao_last_sync_at?: string | null
-          taobao_sync_status?: string | null
-          taobao_url?: string | null
-          taobao_variant_mapping?: Json | null
-          ticket_reward?: number | null
-          updated_at?: string | null
-          weight_kg?: number | null
-          width_cm?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "products_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles_public: {
         Row: {
@@ -13672,6 +13242,86 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      _admin_products_full: {
+        Args: never
+        Returns: {
+          ai_content: Json | null
+          air_price: number | null
+          availability_type: string
+          brand: string | null
+          card_discounts: Json | null
+          category_id: string | null
+          cod_enabled: boolean
+          cod_fee_type: string
+          cod_fee_value: number
+          colors: Json | null
+          commission_air_iqd: number | null
+          commission_direct_iqd: number | null
+          commission_iqd: number | null
+          commission_sea_iqd: number | null
+          cost_price: number | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
+          direct_sale_price: number | null
+          direct_stock: number | null
+          display_order: number
+          featured: boolean | null
+          features: Json | null
+          has_in_stock: boolean | null
+          has_pre_order: boolean | null
+          height_cm: number | null
+          id: string
+          image_url: string | null
+          images: string[] | null
+          in_stock: boolean | null
+          is_pricing_updated: boolean | null
+          length_cm: number | null
+          link_direct_commission_to_cod: boolean
+          name: string
+          name_ar: string
+          name_en: string | null
+          name_ku: string | null
+          original_price: number | null
+          original_price_usd: number | null
+          other_costs_iqd: number | null
+          personal_delivery_cost: number
+          points_reward: number | null
+          pre_order_fast_shipping_price: number | null
+          pre_order_free_shipping_price: number | null
+          pre_order_shipping_options: Json | null
+          pre_order_stock: number | null
+          price: number
+          price_usd: number | null
+          referral_earnings_iqd: number
+          round_up_price: boolean | null
+          sea_price: number | null
+          searchable_attributes: string[] | null
+          shipping_cost_iqd: number | null
+          shipping_type: string | null
+          short_summary: Json | null
+          slug: string
+          sold_count: number
+          taobao_availability_cache: Json | null
+          taobao_last_sync_at: string | null
+          taobao_sync_status: string | null
+          taobao_url: string | null
+          taobao_variant_mapping: Json | null
+          ticket_reward: number | null
+          updated_at: string | null
+          weight_kg: number | null
+          width_cm: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
           isOneToOne: false
           isSetofReturn: true
         }
