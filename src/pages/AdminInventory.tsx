@@ -15,7 +15,8 @@ import {
   Package, AlertTriangle, TrendingUp, ArrowDownCircle,
   Search, BarChart3, Boxes, DollarSign, ArrowRight, Truck,
   Plus, CheckCircle2, Clock, ShoppingCart, FileText, ChevronLeft,
-  ChevronRight, Trash2, X, Send, Palette, Settings2, Pencil, Undo2 } from
+  ChevronRight, Trash2, X, Send, Palette, Settings2, Pencil, Undo2,
+  ChevronDown, ChevronUp } from
 'lucide-react';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { useNavigate } from 'react-router-dom';
@@ -395,6 +396,8 @@ export default function AdminInventory() {
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [draftNotes, setDraftNotes] = useState('');
   const [draftItemForm, setDraftItemForm] = useState<DraftItemFormState>({ product_id: '', colors: [], options: [], quantity: 0, unit_cost: 0 });
+  const [collapsedDrafts, setCollapsedDrafts] = useState<Record<string, boolean>>({});
+  const toggleDraftCollapse = (id: string) => setCollapsedDrafts((prev) => ({ ...prev, [id]: !prev[id] }));
 
   // Inventory variant expansion
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
@@ -1174,69 +1177,88 @@ export default function AdminInventory() {
                 drafts.map((draft: any) => {
                   const items = (draft.items || []) as DraftItem[];
                   const isConverted = draft.status === 'converted';
-                  return (
-                    <GlassCard key={draft.id} className={`p-5 ${isConverted ? 'opacity-50' : ''}`}>
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-sm font-semibold text-white/75">{draft.title || 'مسودة بدون عنوان'}</h3>
-                              <Badge className={isConverted ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[9px]' : 'bg-purple-500/15 text-purple-400 border-purple-500/20 text-[9px]'}>
-                                {isConverted ? 'تم التحويل' : 'مسودة'}
-                              </Badge>
-                            </div>
-                            <p className="text-[10px] text-white/30 mt-1">{format(new Date(draft.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                                <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
-                            style={{ background: `linear-gradient(135deg, ${NEON.purple}25, ${NEON.purple}10)`, borderColor: `${NEON.purple}30` }}
-                            onClick={() => {
-                              const items = (draft.items || []) as DraftItem[];
-                              setEditingDraftId(draft.id);
-                              setDraftTitle(draft.title || '');
-                              setDraftItems(items);
-                              setDraftNotes(draft.notes || '');
-                              setShowDraftForm(true);
-                            }}>
-                                  <Pencil className="h-3 w-3 ml-1" /> تعديل
-                                </Button>
-                            {!isConverted &&
-                                <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
-                            style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
-                            disabled={convertDraftMutation.isPending}
-                            onClick={() => convertDraftMutation.mutate(draft)}>
-                                  <Send className="h-3 w-3 ml-1" /> تحويل لشحنة
-                                </Button>
-                            }
-                                <button onClick={() => deleteDraftMutation.mutate(draft.id)} className="p-1.5 rounded-lg hover:bg-red-500/15 transition-colors">
-                                  <Trash2 className="h-3.5 w-3.5 text-red-400/50" />
-                                </button>
-                          </div>
-                        </div>
+                   return (
+                     <GlassCard key={draft.id} className={`p-5 ${isConverted ? 'opacity-50' : ''}`}>
+                         <div className="flex items-start justify-between mb-4">
+                           <button
+                             type="button"
+                             onClick={() => toggleDraftCollapse(draft.id)}
+                             className="flex items-start gap-2 text-right flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                             aria-expanded={!collapsedDrafts[draft.id]}
+                           >
+                             {collapsedDrafts[draft.id] ? (
+                               <ChevronLeft className="h-4 w-4 text-white/40 mt-0.5 shrink-0" />
+                             ) : (
+                               <ChevronDown className="h-4 w-4 text-white/40 mt-0.5 shrink-0" />
+                             )}
+                             <div className="min-w-0">
+                               <div className="flex items-center gap-2 flex-wrap">
+                                 <h3 className="text-sm font-semibold text-white/75 truncate">{draft.title || 'مسودة بدون عنوان'}</h3>
+                                 <Badge className={isConverted ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[9px]' : 'bg-purple-500/15 text-purple-400 border-purple-500/20 text-[9px]'}>
+                                   {isConverted ? 'تم التحويل' : 'مسودة'}
+                                 </Badge>
+                                 {collapsedDrafts[draft.id] && (
+                                   <span className="text-[10px] text-white/40 font-mono">
+                                     {items.length} عنصر · {formatPrice(Number(draft.total_value) || 0)}
+                                   </span>
+                                 )}
+                               </div>
+                               <p className="text-[10px] text-white/30 mt-1">{format(new Date(draft.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
+                             </div>
+                           </button>
+                           <div className="flex items-center gap-2">
+                                 <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
+                             style={{ background: `linear-gradient(135deg, ${NEON.purple}25, ${NEON.purple}10)`, borderColor: `${NEON.purple}30` }}
+                             onClick={() => {
+                               const items = (draft.items || []) as DraftItem[];
+                               setEditingDraftId(draft.id);
+                               setDraftTitle(draft.title || '');
+                               setDraftItems(items);
+                               setDraftNotes(draft.notes || '');
+                               setShowDraftForm(true);
+                             }}>
+                                   <Pencil className="h-3 w-3 ml-1" /> تعديل
+                                 </Button>
+                             {!isConverted &&
+                                 <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
+                             style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
+                             disabled={convertDraftMutation.isPending}
+                             onClick={() => convertDraftMutation.mutate(draft)}>
+                                   <Send className="h-3 w-3 ml-1" /> تحويل لشحنة
+                                 </Button>
+                             }
+                                 <button onClick={() => deleteDraftMutation.mutate(draft.id)} className="p-1.5 rounded-lg hover:bg-red-500/15 transition-colors">
+                                   <Trash2 className="h-3.5 w-3.5 text-red-400/50" />
+                                 </button>
+                           </div>
+                         </div>
 
-                        <div className="space-y-1.5">
-                          {items.map((item: DraftItem, i: number) =>
-                        <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] text-xs">
-                              <div className="flex items-center gap-3">
-                                <span className="text-white/60">{item.product_name}</span>
-                                {item.color && item.color !== 'none' && <span className="text-white/25">• {item.color}</span>}
-                                {item.option && item.option !== 'none' && <span className="text-white/25">• {item.option}</span>}
-                              </div>
-                              <div className="flex items-center gap-4 font-mono">
-                                <span className="text-white/30">{item.quantity}×</span>
-                                <span className="text-white/40">{formatPrice(item.unit_cost)}</span>
-                                <span className="font-bold" style={{ color: NEON.purple }}>{formatPrice(item.line_total)}</span>
-                              </div>
-                            </div>
-                        )}
-                        </div>
+                         {!collapsedDrafts[draft.id] && (<>
+                         <div className="space-y-1.5">
+                           {items.map((item: DraftItem, i: number) =>
+                         <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] text-xs">
+                               <div className="flex items-center gap-3">
+                                 <span className="text-white/60">{item.product_name}</span>
+                                 {item.color && item.color !== 'none' && <span className="text-white/25">• {item.color}</span>}
+                                 {item.option && item.option !== 'none' && <span className="text-white/25">• {item.option}</span>}
+                               </div>
+                               <div className="flex items-center gap-4 font-mono">
+                                 <span className="text-white/30">{item.quantity}×</span>
+                                 <span className="text-white/40">{formatPrice(item.unit_cost)}</span>
+                                 <span className="font-bold" style={{ color: NEON.purple }}>{formatPrice(item.line_total)}</span>
+                               </div>
+                             </div>
+                         )}
+                         </div>
 
-                        <div className="mt-3 pt-3 border-t border-white/[0.04] flex items-center justify-between">
-                          <span className="text-[10px] text-white/30">{items.length} عنصر · {items.reduce((s: number, i: DraftItem) => s + i.quantity, 0)} وحدة</span>
-                          <span className="text-sm font-bold font-mono" style={{ color: NEON.purple }}>{formatPrice(Number(draft.total_value) || 0)}</span>
-                        </div>
-                      </GlassCard>);
+                         <div className="mt-3 pt-3 border-t border-white/[0.04] flex items-center justify-between">
+                           <span className="text-[10px] text-white/30">{items.length} عنصر · {items.reduce((s: number, i: DraftItem) => s + i.quantity, 0)} وحدة</span>
+                           <span className="text-sm font-bold font-mono" style={{ color: NEON.purple }}>{formatPrice(Number(draft.total_value) || 0)}</span>
+                         </div>
+                         </>)}
+                       </GlassCard>);
 
-                })}
+                 })}
                 </div>
               </div>
             }
