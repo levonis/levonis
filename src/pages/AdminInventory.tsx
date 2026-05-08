@@ -46,6 +46,9 @@ interface DraftItem {
   option: string;
   quantity: number;
   unit_cost: number;
+  shipping_cost: number;
+  commission: number;
+  other_costs: number;
   line_total: number;
 }
 
