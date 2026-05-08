@@ -18,6 +18,7 @@ import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useHorizontalWheelScroll } from '@/hooks/useHorizontalWheelScroll';
 import AdminCreateOrderDialog from '@/components/admin/AdminCreateOrderDialog';
 import LevelBadge from '@/components/LevelBadge';
 import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
@@ -74,6 +75,7 @@ const AdminOrders = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const ordersTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqdRate = shippingSettings?.usd_to_iqd_rate ?? 1500;
   const [activeTab, setActiveTab] = useState('orders');
@@ -1190,7 +1192,7 @@ const AdminOrders = () => {
               </div>
 
               {/* Desktop Table View */}
-              <div className="admin-table-container overflow-x-auto hidden md:block">
+              <div ref={ordersTableScrollRef} className="admin-table-container overflow-x-auto hidden md:block">
                 <Table className="min-w-[900px]">
                   <TableHeader>
                     <TableRow className="admin-table-header">
