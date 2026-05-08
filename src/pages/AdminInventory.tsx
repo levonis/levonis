@@ -763,7 +763,7 @@ export default function AdminInventory() {
           commission: prodCommission,
           other_costs: prodOther,
           sale_price: prodSale,
-          line_total: draftItemForm.quantity * (draftItemForm.unit_cost + prodShipping)
+          line_total: draftItemForm.quantity * prodShipping
         });
       }
     }
@@ -1159,7 +1159,7 @@ export default function AdminInventory() {
 
                             {draftItemForm.quantity > 0 && draftItemForm.unit_cost > 0 &&
                         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-white/35">
-                                المجموع: <span className="font-mono font-bold" style={{ color: NEON.purple }}>{formatPrice(draftItemForm.quantity * draftItemForm.unit_cost)}</span>
+                                تكلفة الوحدة: <span className="font-mono font-bold" style={{ color: NEON.cyan }}>${(draftItemForm.quantity * draftItemForm.unit_cost).toLocaleString()}</span>
                               </motion.p>
                         }
                           </div>
@@ -1180,7 +1180,7 @@ export default function AdminInventory() {
                                     <TableHead className="text-white/40 text-[10px] text-right min-w-[140px]">المنتج</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">اللون</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الخيار</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">تكلفة الوحدة</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-28">تكلفة الوحدة ($)</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الشحن</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">العمولة</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الربح</TableHead>
@@ -1228,10 +1228,10 @@ export default function AdminInventory() {
                                         })()}
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: it.quantity * (val + (it.shipping_cost || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-center" style={{ color: NEON.cyan }} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val, line_total: it.quantity * (it.unit_cost + val) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val, line_total: it.quantity * val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={0} value={item.commission || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, commission: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
@@ -1240,7 +1240,7 @@ export default function AdminInventory() {
                                         {formatPrice(((item.sale_price || 0) - (item.unit_cost || 0) - (item.shipping_cost || 0) - (item.commission || 0)) * item.quantity)}
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * (it.unit_cost + (it.shipping_cost || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * (it.shipping_cost || 0) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>
                                         {formatPrice(item.line_total)}
@@ -1266,7 +1266,7 @@ export default function AdminInventory() {
                                         <TableCell className="text-[10px] text-white/55 text-right font-bold">الإجمالي</TableCell>
                                         <TableCell />
                                         <TableCell />
-                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tUnit)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.cyan }}>${tUnit.toLocaleString()}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tShip)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tComm)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tProfit)}</TableCell>
