@@ -778,22 +778,20 @@ export default function AdminInventory() {
 
   const exportDraftItemsCsv = useCallback(() => {
     if (draftItems.length === 0) return;
-    const headers = ['المنتج', 'اللون', 'الخيار', 'تكلفة الوحدة', 'الشحن', 'العمولة', 'الربح', 'الكمية', 'المجموع'];
+    const headers = ['المنتج', 'اللون', 'الخيار', 'تكلفة الوحدة', 'الشحن', 'الربح', 'الكمية', 'المجموع'];
     const esc = (v: any) => {
       const s = String(v ?? '');
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const rows = draftItems.map((it) => {
-      const profit = (it.commission || 0) * it.quantity;
-      return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, profit, it.quantity, it.line_total].map(esc).join(',');
+      return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, it.quantity, it.line_total].map(esc).join(',');
     });
     const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
     const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
     const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
     const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
-    const tProfit = tComm;
     const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
-    const totalRow = ['الإجمالي', '', '', tUnit, tShip, tComm, tProfit, tQty, tLine].map(esc).join(',');
+    const totalRow = ['الإجمالي', '', '', tUnit, tShip, tComm, tQty, tLine].map(esc).join(',');
     const csv = '\uFEFF' + [headers.join(','), ...rows, totalRow].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1184,7 +1182,6 @@ export default function AdminInventory() {
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الخيار</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">تكلفة الوحدة ($)</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الشحن</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">العمولة</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الربح</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-20">الكمية</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">المجموع ($)</TableHead>
@@ -1238,9 +1235,6 @@ export default function AdminInventory() {
                                       <TableCell className="text-center">
                                         <Input type="number" min={0} value={item.commission || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, commission: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
-                                      <TableCell className="text-center text-[11px] font-mono font-bold" style={{ color: NEON.emerald }} title="الربح = العمولة × الكمية">
-                                        {formatPrice((item.commission || 0) * item.quantity)}
-                                      </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * it.unit_cost } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
@@ -1270,8 +1264,7 @@ export default function AdminInventory() {
                                         <TableCell />
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.cyan }}>${tUnit.toLocaleString()}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tShip)}</TableCell>
-                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tComm)}</TableCell>
-                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tProfit)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tComm)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{tQty}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.purple }}>${tLine.toLocaleString()}</TableCell>
                                         <TableCell />
