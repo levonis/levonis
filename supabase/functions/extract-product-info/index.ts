@@ -1914,12 +1914,15 @@ Return JSON ONLY:
     }
 
     // ===== Strategy 3: Firecrawl fallback for JS-rendered sites =====
+    // Only run when we actually have no colors yet — otherwise it wastes ~20-40s
+    // and pushes the whole edge function past the client invoke timeout.
     const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
-    const shouldTryFirecrawl = productInfo.colors.length === 0 || 
-      (isJsRendered && !platformApiData && firecrawlKey);
+    const shouldTryFirecrawl = !!firecrawlKey && productInfo.colors.length === 0 && isJsRendered && !platformApiData;
     if (shouldTryFirecrawl && firecrawlKey) {
         console.log('Trying Firecrawl for JS-rendered content (colors found:', productInfo.colors.length, ')...');
         try {
+          const fcController = new AbortController();
+          const fcTimer = setTimeout(() => fcController.abort(), 20000);
           const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
             method: 'POST',
             headers: {
@@ -1931,7 +1934,8 @@ Return JSON ONLY:
               formats: ['html'],
               waitFor: 3000,
             }),
-          });
+            signal: fcController.signal,
+          }).finally(() => clearTimeout(fcTimer));
 
           if (fcResp.ok) {
             const fcData = await fcResp.json();
@@ -2046,11 +2050,14 @@ Return ONLY JSON:
         const fcKey = Deno.env.get('FIRECRAWL_API_KEY');
         if (fcKey) {
           try {
+            const fcCtrl = new AbortController();
+            const fcT = setTimeout(() => fcCtrl.abort(), 20000);
             const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${fcKey}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ url, formats: ['html'], waitFor: 5000 }),
-            });
+              signal: fcCtrl.signal,
+            }).finally(() => clearTimeout(fcT));
             if (fcResp.ok) {
               const fcData = await fcResp.json();
               const renderedHtml = fcData.data?.html || fcData.html || '';
