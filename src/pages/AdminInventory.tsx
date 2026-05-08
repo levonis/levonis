@@ -1231,7 +1231,7 @@ export default function AdminInventory() {
                                         })()}
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-center" style={{ color: NEON.cyan }} />
+                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: it.quantity * val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-center" style={{ color: NEON.cyan }} />
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
