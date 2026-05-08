@@ -39,6 +39,7 @@ interface Payload {
   amount: number;
   target_user_id?: string; // admin only; defaults to caller
   related_id?: string;
+  task_key?: string; // for daily_task
   description?: string;
 }
 
@@ -130,6 +131,50 @@ Deno.serve(async (req) => {
     if (dup) return new Response(JSON.stringify({ ok: true, deduped: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+  }
+
+  if (source === 'daily_task' && !isAdmin) {
+    if (targetUserId !== callerId) return bad(400, 'daily_task: target must be self');
+    if (!body.task_key) return bad(400, 'daily_task: task_key required');
+    // Validate against authoritative task definition
+    const { data: task } = await admin
+      .from('daily_tasks')
+      .select('points_reward, streak_bonus_per_day, max_streak_days, is_active')
+      .eq('task_key', body.task_key)
+      .maybeSingle();
+    if (!task || !task.is_active) return bad(404, 'task not found');
+    const maxAmount = Number(task.points_reward || 0) +
+      Number(task.streak_bonus_per_day || 0) * Number(task.max_streak_days || 0);
+    if (amount > maxAmount) return bad(400, `amount exceeds task max (${maxAmount})`);
+    // Require completion row inserted within last 60s by caller
+    const since = new Date(Date.now() - 60_000).toISOString();
+    const { data: comp } = await admin
+      .from('user_task_completions')
+      .select('id, completed_at')
+      .eq('user_id', callerId)
+      .eq('task_key', body.task_key)
+      .gte('completed_at', since)
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!comp) return bad(404, 'no recent completion');
+    // Idempotency: at most one daily_task tx per (user, task_key) per UTC day
+    const dayStart = new Date();
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const { data: dup } = await admin
+      .from('points_transactions')
+      .select('id')
+      .eq('user_id', callerId)
+      .eq('source', 'daily_task')
+      .ilike('description', `%${body.task_key}%`)
+      .gte('created_at', dayStart.toISOString())
+      .maybeSingle();
+    if (dup) return new Response(JSON.stringify({ ok: true, deduped: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+    // Force description to include task_key for future dedup
+    if (!body.description) body.description = `daily_task:${body.task_key}`;
+    else body.description = `${body.description} [${body.task_key}]`;
   }
 
   if (source === 'review' && !isAdmin) {
