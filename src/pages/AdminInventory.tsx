@@ -584,7 +584,7 @@ export default function AdminInventory() {
           // Fetch fresh product data
           const { data: product, error: fetchErr } = await (supabase as any)
             .from('products_admin')
-            .select('id, direct_stock, colors')
+            .select('id, direct_stock, colors, cost_price')
             .eq('id', pid)
             .single();
           if (fetchErr || !product) throw new Error('المنتج غير موجود: ' + pid);
