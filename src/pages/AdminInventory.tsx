@@ -1188,7 +1188,7 @@ export default function AdminInventory() {
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">الربح</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-20">الكمية</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-28">المجموع ($)</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] w-12 sticky left-0 bg-background/95 backdrop-blur-sm">حذف</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] w-12 text-center">حذف</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1247,7 +1247,7 @@ export default function AdminInventory() {
                                       <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>
                                         ${(item.line_total || 0).toLocaleString()}
                                       </TableCell>
-                                      <TableCell className="text-center sticky left-0 bg-background/95 backdrop-blur-sm">
+                                      <TableCell className="text-center">
                                         <button onClick={() => removeItemFromDraft(i)} className="p-1 rounded hover:bg-red-500/20 transition-colors">
                                           <Trash2 className="h-3.5 w-3.5 text-red-400" />
                                         </button>
@@ -1274,7 +1274,7 @@ export default function AdminInventory() {
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tProfit)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{tQty}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.purple }}>${tLine.toLocaleString()}</TableCell>
-                                        <TableCell className="sticky left-0 bg-white/[0.03] backdrop-blur-sm" />
+                                        <TableCell />
                                       </TableRow>
                                     </TableFooter>
                                   );
