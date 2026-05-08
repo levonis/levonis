@@ -976,14 +976,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = async () => {
     if (!user) return;
 
-    // Only revealed RF items (linked to an order) cannot be removed — the DB trigger
-    // protect_random_filament_cart_delete is the source of truth and will block those.
-    // We still attempt to delete unrevealed RF items so the user can clear the cart.
-    const revealedIds = new Set(
-      items.filter((i: any) => i.is_random_filament_revealed).map((i) => i.id)
-    );
-    const deletableIds = items.filter((i) => !revealedIds.has(i.id)).map(i => i.id);
-    const hasRevealed = revealedIds.size > 0;
+    // Items the DB will refuse to delete: revealed Random Filament, locked items, and gifts.
+    // Exclude them up-front so the rest of the cart actually empties.
+    const nonDeletable = (i: any) =>
+      i.is_random_filament_revealed || i.is_locked || i.is_gift;
+    const keptIds = new Set(items.filter(nonDeletable).map((i: any) => i.id));
+    const deletableIds = items.filter((i: any) => !keptIds.has(i.id)).map((i: any) => i.id);
+    const hasRevealed = items.some((i: any) => i.is_random_filament_revealed);
+    const hasKeptOther = items.some((i: any) => (i.is_locked || i.is_gift) && !i.is_random_filament_revealed);
 
     if (deletableIds.length === 0) {
       toast.info('لا توجد عناصر يمكن حذفها من السلة');
@@ -1010,8 +1010,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       const deletedSet = new Set((data || []).map((r: any) => r.id));
       setItems(prev => prev.filter((i) => !deletedSet.has(i.id)));
-      if (hasRevealed) {
-        toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المكشوفة)');
+      if (hasRevealed || hasKeptOther) {
+        toast.success('تم تفريغ السلة (تم الإبقاء على العناصر المقفلة/الهدايا)');
       } else {
         toast.success('تم تفريغ السلة');
       }
