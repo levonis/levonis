@@ -611,7 +611,7 @@ export default function AdminLoyaltyLevels() {
                     إضافة بطاقة جديدة
                   </Button>
                 </DialogTrigger>
-              <DialogContent className="admin-dialog max-w-6xl h-[92vh] p-0 flex flex-col !overflow-hidden !max-h-none">
+              <DialogContent className="admin-dialog w-[calc(100%-1.5rem)] !max-w-6xl sm:!max-w-6xl h-[92vh] p-0 flex flex-col !overflow-hidden !max-h-none">
                 <DialogHeader className="px-6 py-4 border-b shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
                   <DialogTitle className="flex items-center gap-2 text-lg">
                     <CreditCard className="h-5 w-5 text-primary" />
