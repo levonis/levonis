@@ -699,11 +699,24 @@ export default function AdminInventory() {
       const { error: mergeErr } = await supabase.from('future_shipments').update({ status: 'merged', merged_at: new Date().toISOString() }).eq('id', shipment.id);
       if (mergeErr) throw mergeErr;
     },
-    onSuccess: () => {
+    onSuccess: (_data, shipment: any) => {
       queryClient.invalidateQueries({ queryKey: ['inventory-products'] });
       queryClient.invalidateQueries({ queryKey: ['future-shipments'] });
       queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
-      toast.success('تم استلام الشحنة وإضافتها للمخزون');
+      const items = (shipment?.items || []) as DraftItem[];
+      const totalQty = items.reduce((s, it) => s + Number(it.quantity || 0), 0);
+      const lines = items.slice(0, 5).map((it) => {
+        const prod = products.find((p) => p.id === it.product_id);
+        const pname = prod?.name_ar || 'منتج';
+        const c = it.color && it.color !== 'none' ? ` • ${it.color}` : '';
+        const o = it.option && it.option !== 'none' ? ` • ${it.option}` : '';
+        return `${pname}${c}${o}: +${it.quantity}`;
+      });
+      const more = items.length > 5 ? `\n+${items.length - 5} منتج إضافي` : '';
+      toast.success(`تم تحديث المخزون (${totalQty} وحدة)`, {
+        description: lines.join('\n') + more,
+        duration: 6000
+      });
     },
     onError: (err: any) => toast.error(err.message || 'خطأ في استلام الشحنة')
   });
@@ -1551,20 +1564,23 @@ export default function AdminInventory() {
                             {variants.map((c: any, i: number) => {
                             const name = c.name || c.color || `color-${i}`;
                             const hint = getColorHint(name);
-                            const options = c.options || c.option_stocks || [];
+                            const optStocks = c.option_stocks && typeof c.option_stocks === 'object' && !Array.isArray(c.option_stocks) ? c.option_stocks : null;
+                            const optionsArr: { name: string; stock: any }[] = optStocks
+                              ? Object.entries(optStocks).map(([k, v]) => ({ name: k === '_default' ? '—' : k, stock: v }))
+                              : (Array.isArray(c.options) ? c.options.map((o: any) => ({ name: o.name || o.option, stock: o.stock_quantity ?? o.stock })) : []);
                             return (
-                              <div key={i} className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] min-w-[120px]"
+                              <div key={i} className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] min-w-[140px]"
                               style={{ borderColor: `${hint}25` }}>
                                   <div className="flex items-center gap-2 mb-1.5">
                                     <span className="w-3 h-3 rounded-full border border-white/15" style={{ background: hint, boxShadow: `0 0 8px ${hint}40` }} />
                                     <span className="text-[11px] text-white/60 font-medium">{name}</span>
                                   </div>
-                                  {options.length > 0 &&
+                                  {optionsArr.length > 0 &&
                                 <div className="space-y-0.5 mt-1">
-                                      {options.map((o: any, j: number) =>
-                                  <div key={j} className="flex items-center justify-between text-[10px]">
-                                          <span className="text-white/35">{o.name || o.option}</span>
-                                          <span className="text-white/25 font-mono">{o.stock_quantity ?? o.stock ?? '—'}</span>
+                                      {optionsArr.map((o, j: number) =>
+                                  <div key={j} className="flex items-center justify-between text-[10px] gap-2">
+                                          <span className="text-white/35">{o.name}</span>
+                                          <span className="text-white/60 font-mono">{o.stock ?? '—'}</span>
                                         </div>
                                   )}
                                     </div>
