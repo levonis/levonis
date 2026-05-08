@@ -1,6 +1,6 @@
 /**
  * Disable expensive backdrop-filter while the user is scrolling.
- * Adds `is-scrolling` to <html> on scroll, removes it ~140ms after scroll stops.
+ * Adds `is-scrolling` to <html> on scroll, removes it ~220ms after scroll stops.
  * This single hook gives a noticeable FPS boost on pages with many glass panels.
  */
 export function installScrollPerformance() {
@@ -8,7 +8,7 @@ export function installScrollPerformance() {
   let timeoutId: number | null = null;
   const root = document.documentElement;
 
-  const onScroll = () => {
+  const begin = () => {
     if (!root.classList.contains("is-scrolling")) {
       root.classList.add("is-scrolling");
     }
@@ -16,8 +16,12 @@ export function installScrollPerformance() {
     timeoutId = window.setTimeout(() => {
       root.classList.remove("is-scrolling");
       timeoutId = null;
-    }, 140);
+    }, 220);
   };
 
-  window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+  // Kick in immediately on the gesture, before the first scroll frame paints.
+  window.addEventListener("scroll", begin, { passive: true, capture: true });
+  window.addEventListener("wheel", begin, { passive: true, capture: true });
+  window.addEventListener("touchmove", begin, { passive: true, capture: true });
+  window.addEventListener("touchstart", begin, { passive: true, capture: true });
 }
