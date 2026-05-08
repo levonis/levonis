@@ -167,7 +167,22 @@ const AdminOrders = () => {
         }
         return sum + perUnit * qty;
       }, 0);
-      setCommissionProfit(totalCommission);
+
+      // For COD orders, the extra amount (orderTotal - productsTotal - delivery) is the COD fee
+      // which is pure commission added on top of the product price. Include it in profit.
+      const isCod = (editingOrder.payment_method === 'cod') || (editingOrder.payment_status === 'cod');
+      let codCommission = 0;
+      if (isCod) {
+        const productsTotal = items.reduce(
+          (s: number, it: any) => s + (Number(it.total_price) || (Number(it.unit_price) || 0) * (Number(it.quantity) || 1)),
+          0,
+        );
+        const orderTotal = Number(editingOrder.total_amount || 0);
+        const delivery = Number(editingOrder.delivery_fee || 0);
+        codCommission = Math.max(0, orderTotal - productsTotal - delivery);
+      }
+
+      setCommissionProfit(totalCommission + codCommission);
     } else {
       setCommissionProfit(0);
     }
