@@ -92,7 +92,7 @@ export function useCodDefaults() {
             min_amount: Number(t.min_amount) || 0,
             max_amount: Number(t.max_amount) || 0,
             cod_fee_type: (t.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed',
-            cod_fee_value: Number(t.cod_fee_value ?? 0) || 0,
+            cod_fee_value: t.cod_fee_value == null ? undefined : Number(t.cod_fee_value) || 0,
           }))
         : undefined;
       return {
