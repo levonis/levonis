@@ -1096,6 +1096,62 @@ const Admin = () => {
       markFieldFilled('ai_content');
     }
 
+    // Auto-fill brand (only when empty, to preserve admin edits)
+    if (productInfo.brand && typeof productInfo.brand === 'string') {
+      const brandInput = form.querySelector('#brand') as HTMLInputElement | null;
+      if (brandInput && !brandInput.value.trim()) {
+        brandInput.value = productInfo.brand;
+        brandInput.dispatchEvent(new Event('input', { bubbles: true }));
+        brandInput.dispatchEvent(new Event('change', { bubbles: true }));
+        markFieldFilled('brand');
+      }
+    }
+
+    // Auto-fill display_order: next available within the same category (only when empty/0)
+    try {
+      const orderInput = form.querySelector('#display_order') as HTMLInputElement | null;
+      const categorySelect = form.querySelector('#category_id') as HTMLSelectElement | null;
+      const currentCategoryId = categorySelect?.value || editingProduct?.category_id || null;
+      if (orderInput && (!orderInput.value || Number(orderInput.value) === 0) && Array.isArray(products)) {
+        const sameCat = currentCategoryId
+          ? (products as any[]).filter((p) => p.category_id === currentCategoryId)
+          : (products as any[]);
+        const maxOrder = sameCat.reduce((m, p) => Math.max(m, Number(p.display_order) || 0), 0);
+        orderInput.value = String(maxOrder + 1);
+        orderInput.dispatchEvent(new Event('input', { bubbles: true }));
+        orderInput.dispatchEvent(new Event('change', { bubbles: true }));
+        markFieldFilled('display_order');
+      }
+    } catch (_) { /* non-fatal */ }
+
+    // Auto-fill packaging dimensions (carton with packaging) and gross weight
+    const dims = productInfo.dimensions || {};
+    const setNumInput = (selector: string, value: any) => {
+      const el = form.querySelector(selector) as HTMLInputElement | null;
+      if (!el) return;
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) return;
+      el.value = String(n);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    setNumInput('#length_cm', dims.length_cm);
+    setNumInput('#width_cm', dims.width_cm);
+    setNumInput('#height_cm', dims.height_cm);
+    setNumInput('#weight_kg', productInfo.weight_kg);
+
+    // Notify pricing section to sync its local state for shipping calculation
+    if (productInfo.dimensions || productInfo.weight_kg) {
+      window.dispatchEvent(new CustomEvent('admin-product-pricing-autofill', {
+        detail: {
+          length_cm: Number(dims.length_cm) || undefined,
+          width_cm: Number(dims.width_cm) || undefined,
+          height_cm: Number(dims.height_cm) || undefined,
+          weight_kg: Number(productInfo.weight_kg) || undefined,
+        },
+      }));
+    }
+
     if (productInfo.dimensions) markFieldFilled('dimensions');
     if (productInfo.weight_kg) markFieldFilled('weight_kg');
     if (Array.isArray(productInfo.images) && productInfo.images.length > 0) markFieldFilled('images');

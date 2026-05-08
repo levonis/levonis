@@ -1329,6 +1329,7 @@ ${pageContent.substring(0, 100000)}${extraContext}
   "price": 29.99,
   "original_price": 39.99,
   "currency": "CNY",
+  "brand": "اسم الشركة المصنعة (مثل: QIDI, Bambu Lab, Creality, Apple, Samsung)",
   "dimensions": {"length_cm": 30, "width_cm": 20, "height_cm": 15},
   "weight_kg": 1.5,
   "main_product_images": ["https://صورة-المنتج-الرئيسية.jpg"],
@@ -1359,16 +1360,27 @@ ${pageContent.substring(0, 100000)}${extraContext}
 
 ⚠️ ممنوع منعاً باتاً إرجاع هذه الحقول فارغة أو null أو بقيم placeholder. استخدم منطقك واستنتج من السياق دائماً.
 
-===== قواعد استخراج الأبعاد والوزن (مهم جداً) =====
+===== قواعد استخراج أبعاد ووزن الكرتون مع التغليف (مهم جداً جداً) =====
 
-مطلوب: استخرج أبعاد المنتج ووزنه بدقة!
+⚠️ مطلوب: أبعاد **الكرتون / علبة الشحن مع كل مواد التغليف** (Packaging / Carton / Box / Shipping dimensions)
+⚠️ ممنوع منعاً باتاً إعادة أبعاد المنتج العاري (Product / Net / Item dimensions).
+⚠️ مطلوب للوزن: **الوزن الإجمالي مع التغليف** (Gross Weight / Shipping Weight / Package Weight) وليس الوزن الصافي (Net Weight).
 
-أماكن البحث:
-1. ابحث عن: 尺寸, 规格, 重量, weight, dimensions, size, cm, kg, mm, g, lb, inch
-2. حول الوحدات: inch → cm (×2.54)، mm → cm (÷10)، g → kg (÷1000)، lb → kg (×0.453)
-3. إذا لم تجد الأبعاد، قدّر بناءً على نوع المنتج أو اترك null
-4. dimensions.length_cm, dimensions.width_cm, dimensions.height_cm بالسنتيمتر
-5. weight_kg بالكيلوغرام
+قواعد الاختيار:
+1. ابحث أولاً عن: "Package Dimensions", "Packaging Size", "Carton Size", "Shipping Dimensions", "Box Size", "包装尺寸", "外箱尺寸", "纸箱尺寸", "Gross Weight", "Shipping Weight", "Package Weight", "毛重", "包装重量", "运输重量".
+2. إذا وجدت قيمتين (Product/Package أو Net/Gross): اختر **دائماً** قيمة Package/Carton/Gross — حتى لو كانت أكبر بكثير.
+3. إذا وُجد فقط أبعاد/وزن المنتج: قدّر التغليف بإضافة 5-15سم على كل بعد، ووزن إضافي 10-25% للتغليف.
+4. للطابعات ثلاثية الأبعاد كرتون التغليف عادة 60-75سم × 50-65سم × 50-65سم ووزن إجمالي 22-35كغ.
+
+تحويل الوحدات: inch → cm (×2.54)، mm → cm (÷10)، g → kg (÷1000)، lb → kg (×0.453).
+dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بالكيلوغرام.
+
+===== قواعد استخراج البراند =====
+- استخرج اسم الشركة المصنعة الحقيقية للمنتج (مثل: QIDI, Bambu Lab, Creality, Anycubic, Elegoo, Apple, Samsung, Xiaomi).
+- ابحث في: عنوان الصفحة، اسم المنتج، JSON-LD "brand", "manufacturer"، meta tags، شعار الموقع، اسم الـdomain.
+- لا تستخدم اسم المتجر العام (مثل Taobao/JD/Amazon). أعطِ البراند الفعلي للمنتج.
+- إذا لم تجد، خمّن من اسم المنتج أو domain (مثل qidi3d.com → QIDI).
+
 
 ===== قواعد استخراج الألوان (مهم جداً) =====
 
@@ -1465,6 +1477,9 @@ ${pageContent.substring(0, 100000)}${extraContext}
           productInfo.name_ar = ai.name_ar || productInfo.name_ar;
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
+          if (typeof ai.brand === 'string' && ai.brand.trim().length > 0) {
+            productInfo.brand = ai.brand.trim().slice(0, 80);
+          }
 
           // SEO short summary (tri-lang) + searchable tags + AI content (why this product)
           if (ai.short_summary && typeof ai.short_summary === 'object') {
@@ -1644,33 +1659,29 @@ ${pageContent.substring(0, 100000)}${extraContext}
       console.log('Search query:', searchQuery);
       
       try {
-        const searchPrompt = `You are a product specifications expert. Search for and provide the packaging dimensions and weight for this product:
+        const searchPrompt = `You are a product specifications expert. Provide the **PACKAGING / CARTON / SHIPPING-BOX dimensions** and **GROSS (shipping) weight including all packaging** for this product. Do NOT return the bare product (net) dimensions or net weight.
 
 Product Name: ${productInfo.name}
 Product URL: ${url}
 
-Your task:
-1. Based on your knowledge, estimate the PACKAGING dimensions (not just the product dimensions) for this type of product
-2. Consider that packaging adds extra space around the product (typically 5-15% larger)
-3. For electronics, consider protective packaging materials
-4. Provide weight including packaging
-
-IMPORTANT RULES:
-- If this is a printer (like Bambu Lab, Creality, etc.), typical packaging is: 50-70cm length, 40-55cm width, 40-60cm height, weight 15-35kg
-- If this is a laptop, typical packaging is: 45-55cm length, 30-40cm width, 10-15cm height, weight 3-5kg
-- If this is a phone, typical packaging is: 18-22cm length, 10-14cm width, 6-10cm height, weight 0.3-0.6kg
-- For other products, estimate based on the product type
+Rules:
+1. Always return the OUTER CARTON / shipping box size (width × depth × height in cm) including foam, accessories box, and outer cardboard — NOT the product itself.
+2. Always return GROSS weight (kg) including the printer/device + foam + accessories + cardboard + tape + labels.
+3. If both Net and Gross are known, return Gross. If both Product and Package dimensions are known, return Package.
+4. Reference values (gross / shipping carton):
+   - QIDI Plus4 / Bambu Lab X1 / similar enclosed FDM 3D printer carton: ~70×60×60 cm, ~28-32 kg gross.
+   - Creality Ender-3 class open-frame printer carton: ~55×50×30 cm, ~9-12 kg gross.
+   - Resin printer (Anycubic Mono / Elegoo Saturn): ~45×35×55 cm, ~12-18 kg gross.
+   - Laptop carton: ~50×35×12 cm, ~3-5 kg.
+   - Phone carton: ~20×12×8 cm, ~0.4-0.6 kg.
+5. For other products, estimate carton size = product size + 5-15 cm per axis, gross weight = net × 1.10-1.25.
 
 Return JSON ONLY:
 {
-  "dimensions": {
-    "length_cm": number,
-    "width_cm": number,
-    "height_cm": number
-  },
+  "dimensions": { "length_cm": number, "width_cm": number, "height_cm": number },
   "weight_kg": number,
   "confidence": "high" | "medium" | "low",
-  "source": "estimated based on product type"
+  "source": "package/carton/gross estimate"
 }`;
 
         const searchResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -1682,7 +1693,7 @@ Return JSON ONLY:
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
             messages: [
-              { role: 'system', content: 'You are a product specifications expert. Estimate packaging dimensions and weight accurately.' },
+              { role: 'system', content: 'You are a product packaging expert. Always return PACKAGE/CARTON dimensions and GROSS weight (with packaging), never bare product dimensions or net weight.' },
               { role: 'user', content: searchPrompt }
             ],
             temperature: 0.1,
@@ -2128,6 +2139,46 @@ Return ONLY JSON:
 
     // Add estimated air shipping cost to product info
     (productInfo as any).estimated_air_shipping_cost = estimatedAirShippingCost;
+
+    // ===== Brand fallbacks: JSON-LD, og:brand, meta, hostname =====
+    if (!productInfo.brand || !String(productInfo.brand).trim()) {
+      try {
+        // JSON-LD brand
+        const ldMatches = pageContent.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+        for (const block of ldMatches) {
+          const inner = block.replace(/<script[^>]*>|<\/script>/gi, '').trim();
+          try {
+            const parsed = JSON.parse(inner);
+            const arr = Array.isArray(parsed) ? parsed : [parsed];
+            for (const node of arr) {
+              const b = node?.brand?.name || (typeof node?.brand === 'string' ? node.brand : null) || node?.manufacturer?.name;
+              if (b && typeof b === 'string') { productInfo.brand = b.trim().slice(0, 80); break; }
+            }
+            if (productInfo.brand) break;
+          } catch (_) { /* skip */ }
+        }
+      } catch (_) { /* skip */ }
+    }
+    if (!productInfo.brand || !String(productInfo.brand).trim()) {
+      const ogBrand = pageContent.match(/<meta[^>]+property=["']og:brand["'][^>]+content=["']([^"']+)["']/i)
+        || pageContent.match(/<meta[^>]+name=["']brand["'][^>]+content=["']([^"']+)["']/i);
+      if (ogBrand && ogBrand[1]) productInfo.brand = ogBrand[1].trim().slice(0, 80);
+    }
+    if (!productInfo.brand || !String(productInfo.brand).trim()) {
+      try {
+        const host = new URL(url).hostname.replace(/^www\./, '');
+        const root = host.split('.')[0] || '';
+        const known: Record<string, string> = {
+          qidi3d: 'QIDI', qidi3dprinter: 'QIDI', qidi3dofficial: 'QIDI', 'qidi-tech': 'QIDI',
+          bambulab: 'Bambu Lab', creality: 'Creality', anycubic: 'Anycubic', elegoo: 'Elegoo',
+          prusa3d: 'Prusa', flashforge: 'FlashForge', snapmaker: 'Snapmaker',
+        };
+        if (known[root]) productInfo.brand = known[root];
+        else if (root && !['taobao','jd','amazon','aliexpress','alibaba','1688','tmall','ebay'].includes(root)) {
+          productInfo.brand = root.charAt(0).toUpperCase() + root.slice(1);
+        }
+      } catch (_) { /* skip */ }
+    }
 
     console.log('=== FINAL EXTRACTION RESULT ===');
     console.log('Main product images:', productInfo.images.length);
