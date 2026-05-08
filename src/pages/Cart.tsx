@@ -28,6 +28,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/lib/i18n';
 import { translateShippingOption, getShippingCategory } from '@/lib/shippingLabel';
+import { getCartCategories, CART_CATEGORY_LABELS_AR } from '@/lib/cartCategory';
 import { buildFriendlyOrderError } from '@/lib/orderErrorMessages';
 import { insertOrderItemsWithRollback } from '@/lib/orderItemsInsert';
 
