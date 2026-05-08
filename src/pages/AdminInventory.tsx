@@ -1221,7 +1221,7 @@ export default function AdminInventory() {
                                   const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
                                   const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
                                   const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
-                                  const tOther = draftItems.reduce((s, i) => s + (i.other_costs || 0) * (i.quantity || 0), 0);
+                                  const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
                                   const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
                                   return (
                                     <TableFooter className="bg-white/[0.03]">
