@@ -147,10 +147,26 @@ const AdminOrders = () => {
       (!item.shipping_option_name_ar || item.shipping_option_name_ar.includes('متاح في المخزون'))
     ));
 
-    if (isDirectSale && manualProductCost <= 0) {
-      const totalCommission = items.reduce((sum: number, item: any) => (
-        sum + ((item.products?.commission_direct_iqd || 0) * (item.quantity || 1))
-      ), 0);
+    if (manualProductCost <= 0) {
+      // Compute commission per item based on its shipping type:
+      // - Direct sale (in-stock) => commission_direct_iqd
+      // - Pre-order Air (سريع/جوي) => commission_air_iqd
+      // - Pre-order Sea (default) => commission_sea_iqd, fallback commission_iqd
+      const totalCommission = items.reduce((sum: number, item: any) => {
+        const p = item.products || {};
+        const qty = item.quantity || 1;
+        const shipName = item.shipping_option_name_ar || '';
+        const isItemDirect = isDirectSale || !shipName || shipName.includes('متاح في المخزون');
+        let perUnit = 0;
+        if (isItemDirect) {
+          perUnit = p.commission_direct_iqd || 0;
+        } else if (shipName.includes('سريع') || shipName.includes('جوي')) {
+          perUnit = p.commission_air_iqd || p.commission_iqd || 0;
+        } else {
+          perUnit = p.commission_sea_iqd || p.commission_iqd || 0;
+        }
+        return sum + perUnit * qty;
+      }, 0);
       setCommissionProfit(totalCommission);
     } else {
       setCommissionProfit(0);
