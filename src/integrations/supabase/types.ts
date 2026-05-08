@@ -12919,6 +12919,35 @@ export type Database = {
         }
         Relationships: []
       }
+      product_offers_admin: {
+        Row: {
+          colors: Json | null
+          cost_price: number | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
+          gift_tickets: number | null
+          id: string | null
+          image_url: string | null
+          images: string[] | null
+          options: Json | null
+          points_reward: number | null
+          price: number | null
+          show_in_cart: boolean | null
+          status: string | null
+          stock_quantity: number | null
+          title: string | null
+          title_ar: string | null
+          title_en: string | null
+          title_ku: string | null
+          total_sold: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       product_offers_public: {
         Row: {
           colors: Json | null
@@ -13242,6 +13271,41 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      _admin_product_offers_full: {
+        Args: never
+        Returns: {
+          colors: Json | null
+          cost_price: number | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
+          gift_tickets: number
+          id: string
+          image_url: string | null
+          images: string[] | null
+          options: Json | null
+          points_reward: number | null
+          price: number
+          show_in_cart: boolean
+          status: string
+          stock_quantity: number | null
+          title: string
+          title_ar: string
+          title_en: string | null
+          title_ku: string | null
+          total_sold: number | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "product_offers"
           isOneToOne: false
           isSetofReturn: true
         }
