@@ -83,22 +83,17 @@ const AdminReviews = () => {
         const pointsToAward = pointsOverride ?? (hasMedia ? mediaPoints : basePoints);
 
         if (pointsToAward > 0) {
-          // Add points transaction
-          await supabase.from('points_transactions').insert({
-            user_id: review.user_id,
-            points: pointsToAward,
-            type: 'earned',
-            source: hasMedia ? 'verified_review' : 'review',
-            description: `جائزة تقييم المنتج`,
-            related_id: review.product_id,
+          // Admin-driven award via edge function (validates admin role + caps)
+          const { error: awardError } = await supabase.functions.invoke('award-points', {
+            body: {
+              source: hasMedia ? 'verified_review' : 'review',
+              amount: pointsToAward,
+              target_user_id: review.user_id,
+              related_id: review.product_id,
+              description: 'جائزة تقييم المنتج',
+            },
           });
-
-          // Atomic server-side increment
-          await supabase.rpc('add_user_points', {
-            p_user_id: review.user_id,
-            p_amount: pointsToAward,
-            p_source: hasMedia ? 'verified_review' : 'review',
-          });
+          if (awardError) throw awardError;
         }
       }
     },

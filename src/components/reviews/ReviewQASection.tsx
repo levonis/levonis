@@ -130,26 +130,21 @@ export default function ReviewQASection({ reviewId, productId, reviewerId, revie
     mutationFn: async ({ questionId, askerId }: { questionId: string; askerId: string }) => {
       if (!user?.id) throw new Error('يجب تسجيل الدخول');
       if (!answerText.trim()) throw new Error('اكتب إجابتك');
-      const { error } = await supabase.from('review_answers').insert({
+      const { data: insertedAnswer, error } = await supabase.from('review_answers').insert({
         question_id: questionId,
         answerer_id: user.id,
         answer: answerText.trim(),
-      });
+      }).select('id').single();
       if (error) throw error;
 
-      // Award 5 points to answerer
-      await supabase.rpc('add_user_points', {
-        p_user_id: user.id,
-        p_amount: 5,
-        p_source: 'qa_answer',
-      });
-
-      await supabase.from('points_transactions').insert({
-        user_id: user.id,
-        points: 5,
-        type: 'earned',
-        source: 'review_answer',
-        description: 'إجابة على سؤال في التقييمات',
+      // Server-validated 5-point award (inserts tx + balance) — deduped by answer id
+      await supabase.functions.invoke('award-points', {
+        body: {
+          source: 'qa_answer',
+          amount: 5,
+          related_id: insertedAnswer?.id,
+          description: 'إجابة على سؤال في التقييمات',
+        },
       });
 
       // Notify the asker

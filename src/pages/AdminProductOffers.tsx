@@ -109,8 +109,8 @@ export default function AdminProductOffers() {
   const { data: offers, isLoading } = useQuery({
     queryKey: ['admin-product-offers'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_offers')
+      const { data, error } = await (supabase as any)
+        .from('product_offers_admin')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;

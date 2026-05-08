@@ -91,22 +91,17 @@ export default function AdminTaskApprovalsTab() {
         .insert({ user_id: userId, task_key: taskKey, points_earned: totalPoints });
       if (taskError) throw taskError;
 
-      // Add points transaction
-      const { error: pointsError } = await supabase
-        .from('points_transactions')
-        .insert({
-          user_id: userId, points: totalPoints, type: 'earned',
-          source: 'daily_task', description: `مهمة (موافقة إدارية): ${task?.title_ar || taskKey}`,
-        });
-      if (pointsError) throw pointsError;
-
-      // Atomic points award via SECURITY DEFINER RPC (race-free)
-      const { error: addPointsError } = await supabase.rpc('add_user_points', {
-        p_user_id: userId,
-        p_amount: totalPoints,
-        p_source: 'daily_task',
+      // Admin award via edge function (validates admin + caps)
+      const { error: awardError } = await supabase.functions.invoke('award-points', {
+        body: {
+          source: 'daily_task',
+          amount: totalPoints,
+          target_user_id: userId,
+          task_key: taskKey,
+          description: `مهمة (موافقة إدارية): ${task?.title_ar || taskKey}`,
+        },
       });
-      if (addPointsError) throw addPointsError;
+      if (awardError) throw awardError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-pending-approvals'] });
