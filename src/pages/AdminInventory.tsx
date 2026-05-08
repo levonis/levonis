@@ -749,6 +749,7 @@ export default function AdminInventory() {
     const prodShipping = Number((product as any)?.shipping_cost_iqd) || 0;
     const prodCommission = Number((product as any)?.commission_iqd) || 0;
     const prodOther = Number((product as any)?.other_costs_iqd) || 0;
+    const prodSale = Number((product as any)?.price) || 0;
     for (const color of colorsToAdd) {
       for (const option of optionsToAdd) {
         newItems.push({
@@ -761,6 +762,7 @@ export default function AdminInventory() {
           shipping_cost: prodShipping,
           commission: prodCommission,
           other_costs: prodOther,
+          sale_price: prodSale,
           line_total: draftItemForm.quantity * (draftItemForm.unit_cost + prodShipping)
         });
       }
