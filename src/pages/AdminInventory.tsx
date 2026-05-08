@@ -25,6 +25,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { adminUpdateProduct } from '@/lib/adminMutations';
+import { useHorizontalWheelScroll } from '@/hooks/useHorizontalWheelScroll';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -380,7 +381,6 @@ const NAV_ITEMS: {id: Section;icon: any;label: string;color: string;}[] = [
 { id: 'shipments', icon: Truck, label: 'الشحنات', color: NEON.blue },
 { id: 'inventory', icon: Package, label: 'المخزون المباشر', color: NEON.emerald }];
 
-
 // ====== MAIN COMPONENT ======
 export default function AdminInventory() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -391,6 +391,8 @@ export default function AdminInventory() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
+  const draftTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
+  const productsTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
 
   // Draft creation/edit state
   const [showDraftForm, setShowDraftForm] = useState(false);
@@ -1173,7 +1175,7 @@ export default function AdminInventory() {
                             تصدير CSV
                           </Button>
                         </div>
-                        <div className="rounded-xl border border-white/[0.05] overflow-x-auto">
+                        <div ref={draftTableScrollRef} className="rounded-xl border border-white/[0.05] overflow-x-auto">
                               <Table className="min-w-[1100px]">
                                 <TableHeader>
                                   <TableRow className="border-white/[0.05] hover:bg-transparent">
@@ -1541,7 +1543,7 @@ export default function AdminInventory() {
                 </GlassCard>
 
                 <GlassCard className="overflow-hidden">
-                  <div className="overflow-x-auto">
+                  <div ref={productsTableScrollRef} className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-white/[0.05] hover:bg-transparent">
