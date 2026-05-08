@@ -1185,7 +1185,7 @@ export default function AdminInventory() {
                                     <TableHead className="text-white/40 text-[10px] text-center w-32">الربح</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-24">الكمية</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-32">المجموع ($)</TableHead>
-                                    <TableHead className="sticky left-0 z-20 w-16 min-w-16 bg-background/95 text-center text-[10px] text-white/40 backdrop-blur-md">حذف</TableHead>
+                                    <TableHead className="w-16 min-w-16 bg-background/95 text-center text-[10px] text-white/40">حذف</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1241,7 +1241,7 @@ export default function AdminInventory() {
                                       <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>
                                         ${(item.line_total || 0).toLocaleString()}
                                       </TableCell>
-                                      <TableCell className="sticky left-0 z-10 w-16 min-w-16 bg-background/95 text-center backdrop-blur-md">
+                                      <TableCell className="w-16 min-w-16 bg-background/95 text-center">
                                         <button type="button" aria-label="حذف" onClick={() => removeItemFromDraft(i)} className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/10 text-destructive transition-colors hover:bg-destructive/20">
                                           <Trash2 className="h-3.5 w-3.5" />
                                         </button>
@@ -1266,7 +1266,7 @@ export default function AdminInventory() {
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tComm)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{tQty}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.purple }}>${tLine.toLocaleString()}</TableCell>
-                                        <TableCell className="sticky left-0 z-10 w-16 min-w-16 bg-background/95 backdrop-blur-md" />
+                                        <TableCell className="w-16 min-w-16 bg-background/95" />
                                       </TableRow>
                                     </TableFooter>
                                   );
