@@ -3053,3 +3053,8 @@ html.is-scrolling [class*="backdrop-blur"] {
 
 /* Promote frequently-painted floating layers to their own GPU layer */
 .glass-floating { contain: layout paint; }
+
+/* Number inputs in admin tables: hide spinners so full digits stay visible */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.no-spinner { -moz-appearance: textfield; }
