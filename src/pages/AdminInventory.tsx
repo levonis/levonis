@@ -1237,9 +1237,6 @@ export default function AdminInventory() {
                                       <TableCell className="text-center">
                                         <Input type="number" min={0} value={item.commission || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, commission: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
-                                      <TableCell className="text-center text-[11px] font-mono font-bold" style={{ color: NEON.emerald }} title="الربح = العمولة × الكمية">
-                                        {formatPrice((item.commission || 0) * item.quantity)}
-                                      </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * it.unit_cost } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
@@ -1269,8 +1266,7 @@ export default function AdminInventory() {
                                         <TableCell />
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.cyan }}>${tUnit.toLocaleString()}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tShip)}</TableCell>
-                                        <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{formatPrice(tComm)}</TableCell>
-                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tProfit)}</TableCell>
+                                        <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.emerald }}>{formatPrice(tComm)}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center text-white/70">{tQty}</TableCell>
                                         <TableCell className="text-[10px] font-mono font-bold text-center" style={{ color: NEON.purple }}>${tLine.toLocaleString()}</TableCell>
                                         <TableCell />
