@@ -821,79 +821,81 @@ export default function AdminInventory() {
     return { colors: colorNames, options: optionNames };
   }, [products]);
 
-  // ====== EXPORT INVENTORY TO PDF ======
-  // Defined as a regular function (not useCallback) so it always closes over fresh state.
-  const exportInventoryPdf = async () => {
+  // ====== EXPORT DRAFT TO PDF ======
+  const exportDraftPdf = async (draft: any) => {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { default: jsPDF } = await import('jspdf');
 
+      const items: DraftItem[] = (draft?.items || []) as DraftItem[];
+      if (items.length === 0) {
+        toast.error('لا توجد عناصر للتصدير');
+        return;
+      }
+
       const fmt = (n: number) => (Number(n) || 0).toLocaleString('en-US');
       const dateStr = new Date().toLocaleDateString('ar-IQ');
+      const createdStr = draft?.created_at ? format(new Date(draft.created_at), 'dd/MM/yyyy HH:mm', { locale: ar }) : '';
+      const title = draft?.title || 'مسودة بدون عنوان';
 
-      const totalStock = filteredProducts.reduce((s, p) => s + (Number(p.direct_stock) || 0), 0);
-      const totalCost = filteredProducts.reduce((s, p) => s + (Number(p.cost_price) || 0) * (Number(p.direct_stock) || 0), 0);
-      const totalValue = filteredProducts.reduce((s, p) => s + (Number(p.price) || 0) * (Number(p.direct_stock) || 0), 0);
-      const lowCount = filteredProducts.filter((p) => { const s = Number(p.direct_stock) || 0; return s > 0 && s <= LOW_STOCK_THRESHOLD; }).length;
-      const outCount = filteredProducts.filter((p) => (Number(p.direct_stock) || 0) <= 0).length;
+      const totalQty = items.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
+      const totalUnitCost = items.reduce((s, i) => s + (Number(i.unit_cost) || 0) * (Number(i.quantity) || 0), 0);
+      const totalShipping = items.reduce((s, i) => s + (Number(i.shipping_cost) || 0) * (Number(i.quantity) || 0), 0);
+      const totalCommission = items.reduce((s, i) => s + (Number(i.commission) || 0) * (Number(i.quantity) || 0), 0);
+      const totalLine = items.reduce((s, i) => s + (Number(i.line_total) || 0), 0);
 
-      const rowsHtml = filteredProducts.map((p, i) => {
-        const stock = Number(p.direct_stock) || 0;
-        const cost = Number(p.cost_price) || 0;
-        const price = Number(p.price) || 0;
-        const lineCost = cost * stock;
-        const status = stock <= 0 ? '<span style="color:#dc2626;font-weight:bold">نفذ</span>'
-          : stock <= LOW_STOCK_THRESHOLD ? '<span style="color:#d97706;font-weight:bold">منخفض</span>'
-          : '<span style="color:#059669;font-weight:bold">متوفر</span>';
-        const incoming = pendingShipmentsByProduct[p.id]?.qty || 0;
+      const rowsHtml = items.map((it, i) => {
         const bg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
         return `<tr>
           <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;text-align:center;color:#64748b;font-size:11px">${i + 1}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#1e293b">${(p.name_ar || '').replace(/</g, '&lt;')}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569">${(p as any).categories?.name_ar || '—'}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#0369a1;direction:ltr;text-align:right;font-family:monospace">${fmt(price)}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#7c3aed;direction:ltr;text-align:right;font-family:monospace">${cost > 0 ? fmt(cost) : '—'}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#1e293b;direction:ltr;text-align:center;font-family:monospace;font-weight:bold">${fmt(stock)}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#059669;direction:ltr;text-align:right;font-family:monospace">${fmt(lineCost)}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;text-align:center">${status}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#0891b2;direction:ltr;text-align:center;font-family:monospace">${incoming > 0 ? '+' + fmt(incoming) : '—'}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#1e293b">${(it.product_name || '').replace(/</g, '&lt;')}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center">${it.color || '—'}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center">${it.option || '—'}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#1e293b;direction:ltr;text-align:center;font-family:monospace;font-weight:bold">${fmt(it.quantity)}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#7c3aed;direction:ltr;text-align:right;font-family:monospace">${fmt(it.unit_cost)}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#0369a1;direction:ltr;text-align:right;font-family:monospace">${fmt(it.shipping_cost || 0)}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#059669;direction:ltr;text-align:right;font-family:monospace">${fmt(it.commission || 0)}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#ea580c;direction:ltr;text-align:right;font-family:monospace;font-weight:bold">${fmt(it.line_total)}</td>
         </tr>`;
       }).join('');
 
       const html = `
         <div style="padding:24px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;background:#fff;color:#1e293b;width:1240px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0891b2;padding-bottom:14px;margin-bottom:18px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #7c3aed;padding-bottom:14px;margin-bottom:18px">
             <div>
-              <h1 style="margin:0 0 4px;font-size:26px;color:#0f172a">تقرير المخزون المباشر</h1>
-              <div style="font-size:12px;color:#64748b">تاريخ التصدير: ${dateStr} &nbsp;|&nbsp; ${filteredProducts.length} منتج</div>
+              <h1 style="margin:0 0 4px;font-size:26px;color:#0f172a">${title.replace(/</g, '&lt;')}</h1>
+              <div style="font-size:12px;color:#64748b">تاريخ التصدير: ${dateStr}${createdStr ? ` &nbsp;|&nbsp; تاريخ الإنشاء: ${createdStr}` : ''} &nbsp;|&nbsp; ${items.length} عنصر</div>
             </div>
-            <div style="text-align:left;font-size:11px;color:#94a3b8">Levonis · Inventory Report</div>
+            <div style="text-align:left;font-size:11px;color:#94a3b8">Levonis · Purchase Draft</div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#f0fdfa"><div style="font-size:10px;color:#64748b;margin-bottom:4px">إجمالي المنتجات</div><div style="font-size:18px;font-weight:bold;color:#0f766e;direction:ltr;text-align:right;font-family:monospace">${fmt(filteredProducts.length)}</div></div>
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#eff6ff"><div style="font-size:10px;color:#64748b;margin-bottom:4px">إجمالي الوحدات</div><div style="font-size:18px;font-weight:bold;color:#1d4ed8;direction:ltr;text-align:right;font-family:monospace">${fmt(totalStock)}</div></div>
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#f5f3ff"><div style="font-size:10px;color:#64748b;margin-bottom:4px">قيمة المخزون (تكلفة)</div><div style="font-size:18px;font-weight:bold;color:#6d28d9;direction:ltr;text-align:right;font-family:monospace">${fmt(totalCost)}</div></div>
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#ecfdf5"><div style="font-size:10px;color:#64748b;margin-bottom:4px">قيمة المخزون (بيع)</div><div style="font-size:18px;font-weight:bold;color:#047857;direction:ltr;text-align:right;font-family:monospace">${fmt(totalValue)}</div></div>
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#fef2f2"><div style="font-size:10px;color:#64748b;margin-bottom:4px">منخفض / نفذ</div><div style="font-size:18px;font-weight:bold;color:#b91c1c;direction:ltr;text-align:right;font-family:monospace">${fmt(lowCount)} / ${fmt(outCount)}</div></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#eff6ff"><div style="font-size:10px;color:#64748b;margin-bottom:4px">إجمالي الكمية</div><div style="font-size:18px;font-weight:bold;color:#1d4ed8;direction:ltr;text-align:right;font-family:monospace">${fmt(totalQty)}</div></div>
+            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#f5f3ff"><div style="font-size:10px;color:#64748b;margin-bottom:4px">تكلفة الشراء</div><div style="font-size:18px;font-weight:bold;color:#6d28d9;direction:ltr;text-align:right;font-family:monospace">${fmt(totalUnitCost)}</div></div>
+            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#f0f9ff"><div style="font-size:10px;color:#64748b;margin-bottom:4px">إجمالي الشحن</div><div style="font-size:18px;font-weight:bold;color:#0369a1;direction:ltr;text-align:right;font-family:monospace">${fmt(totalShipping)}</div></div>
+            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#fff7ed"><div style="font-size:10px;color:#64748b;margin-bottom:4px">المجموع الكلي</div><div style="font-size:18px;font-weight:bold;color:#ea580c;direction:ltr;text-align:right;font-family:monospace">${fmt(totalLine)}</div></div>
           </div>
 
           <table style="border-collapse:collapse;width:100%;direction:rtl">
             <thead>
               <tr>
-                ${['#','المنتج','الفئة','السعر','التكلفة','المخزون','قيمة التكلفة','الحالة','شحنات قادمة'].map(h => `<th style="background:#0891b2;color:#fff;padding:10px;border:1px solid #0e7490;font-size:12px;white-space:nowrap">${h}</th>`).join('')}
+                ${['#','المنتج','اللون','الخيار','الكمية','تكلفة الوحدة','الشحن','الربح','المجموع'].map(h => `<th style="background:#7c3aed;color:#fff;padding:10px;border:1px solid #6d28d9;font-size:12px;white-space:nowrap">${h}</th>`).join('')}
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
             <tfoot>
               <tr>
-                <td colspan="5" style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px">المجموع الكلي</td>
-                <td style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px;direction:ltr;text-align:center;font-family:monospace">${fmt(totalStock)}</td>
-                <td style="background:#fff7ed;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:13px;color:#ea580c;direction:ltr;text-align:right;font-family:monospace">${fmt(totalCost)}</td>
-                <td colspan="2" style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1"></td>
+                <td colspan="4" style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px">الإجمالي</td>
+                <td style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px;direction:ltr;text-align:center;font-family:monospace">${fmt(totalQty)}</td>
+                <td style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px;color:#6d28d9;direction:ltr;text-align:right;font-family:monospace">${fmt(totalUnitCost)}</td>
+                <td style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px;color:#0369a1;direction:ltr;text-align:right;font-family:monospace">${fmt(totalShipping)}</td>
+                <td style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px;color:#059669;direction:ltr;text-align:right;font-family:monospace">${fmt(totalCommission)}</td>
+                <td style="background:#fff7ed;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:13px;color:#ea580c;direction:ltr;text-align:right;font-family:monospace">${fmt(totalLine)}</td>
               </tr>
             </tfoot>
           </table>
+
+          ${draft?.notes ? `<div style="margin-top:16px;padding:12px;border:1px solid #e2e8f0;border-radius:8px;background:#fafafa"><div style="font-size:11px;color:#64748b;margin-bottom:4px;font-weight:bold">ملاحظات</div><div style="font-size:12px;color:#1e293b;white-space:pre-wrap">${String(draft.notes).replace(/</g, '&lt;')}</div></div>` : ''}
 
           <div style="margin-top:14px;text-align:center;font-size:10px;color:#94a3b8">© ${new Date().getFullYear()} Levonis — تم التوليد تلقائياً</div>
         </div>`;
@@ -931,13 +933,14 @@ export default function AdminInventory() {
             srcY += cur; pageIdx++;
           }
         }
-        pdf.save(`inventory-${new Date().toISOString().slice(0, 10)}.pdf`);
-        toast.success('تم تصدير المخزون كـ PDF');
+        const safeTitle = (title || 'draft').replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+        pdf.save(`${safeTitle}-${new Date().toISOString().slice(0, 10)}.pdf`);
+        toast.success('تم تصدير المسودة كـ PDF');
       } finally {
         document.body.removeChild(container);
       }
     } catch (e) {
-      console.error('Inventory PDF export error:', e);
+      console.error('Draft PDF export error:', e);
       toast.error('حدث خطأ أثناء تصدير PDF');
     }
   };
