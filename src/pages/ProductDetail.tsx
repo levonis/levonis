@@ -162,7 +162,20 @@ const ProductDetail = () => {
       if (!product) return [];
       const { data, error } = await supabase.from('product_options').select('*').eq('product_id', product.id).order('name_ar');
       if (error) throw error;
-      return data || [];
+      // Dedupe by normalized name_ar to avoid duplicate options in UI
+      const seen = new Map<string, any>();
+      for (const opt of (data || [])) {
+        const key = String(opt.name_ar ?? '').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF\u200E\u200F]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (!key) { seen.set(`__noname_${opt.id}`, opt); continue; }
+        const existing = seen.get(key);
+        if (!existing) { seen.set(key, opt); continue; }
+        // Prefer the one with higher stock_quantity, then with image, then newer
+        const pickNew =
+          (Number(opt.stock_quantity ?? 0) > Number(existing.stock_quantity ?? 0)) ||
+          (Number(opt.stock_quantity ?? 0) === Number(existing.stock_quantity ?? 0) && !!opt.image_url && !existing.image_url);
+        if (pickNew) seen.set(key, opt);
+      }
+      return Array.from(seen.values());
     },
     enabled: !!product
   });
