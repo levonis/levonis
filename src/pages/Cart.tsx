@@ -1021,6 +1021,8 @@ const Cart = () => {
   const codFee = useMemo(() => {
     if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
     const tiers = partialPaymentSettings?.fee_tiers || [];
+    const fallbackCodType = (partialPaymentSettings?.cod_default_fee_type || codDefaults?.type || 'percentage') as 'percentage' | 'fixed';
+    const fallbackCodValue = Number(partialPaymentSettings?.cod_default_fee_value ?? codDefaults?.value ?? 0);
     return items.reduce((sum: number, item: any) => {
       const product = item.products;
       if (!product) return sum;
@@ -1049,8 +1051,11 @@ const Cart = () => {
       const tier = tiers.length > 0
         ? (tiers.find(t => lineTotal >= t.min_amount && lineTotal <= t.max_amount) || tiers[tiers.length - 1])
         : null;
-      const codType = (tier?.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed';
-      const codVal = Number(tier?.cod_fee_value ?? 0);
+      const productCodValue = product.cod_fee_value == null ? null : Number(product.cod_fee_value);
+      const codType = (product.cod_fee_type || tier?.cod_fee_type || fallbackCodType) as 'percentage' | 'fixed';
+      const codVal = productCodValue != null && productCodValue > 0
+        ? productCodValue
+        : Number(tier?.cod_fee_value ?? fallbackCodValue);
       if (!codVal || codVal <= 0) return sum;
       const fee = codType === 'percentage' ? Math.ceil(lineTotal * codVal / 100) : Math.ceil(codVal * qty);
       return sum + fee;
