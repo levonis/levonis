@@ -774,6 +774,36 @@ export default function AdminInventory() {
   const removeItemFromDraft = (index: number) => setDraftItems((prev) => prev.filter((_, i) => i !== index));
   const draftGrandTotal = useMemo(() => draftItems.reduce((s, i) => s + i.line_total, 0), [draftItems]);
 
+  const exportDraftItemsCsv = useCallback(() => {
+    if (draftItems.length === 0) return;
+    const headers = ['المنتج', 'اللون', 'الخيار', 'تكلفة الوحدة', 'الشحن', 'العمولة', 'الربح', 'الكمية', 'المجموع'];
+    const esc = (v: any) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = draftItems.map((it) => {
+      const profit = ((it.sale_price || 0) - (it.unit_cost || 0) - (it.shipping_cost || 0) - (it.commission || 0)) * it.quantity;
+      return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, profit, it.quantity, it.line_total].map(esc).join(',');
+    });
+    const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
+    const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
+    const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
+    const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
+    const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
+    const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
+    const totalRow = ['الإجمالي', '', '', tUnit, tShip, tComm, tProfit, tQty, tLine].map(esc).join(',');
+    const csv = '\uFEFF' + [headers.join(','), ...rows, totalRow].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventory-draft-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [draftItems]);
+
   // Helper: get available colors and options for a draft item's product
   const getDraftProductVariants = useCallback((productId: string, selectedColor?: string) => {
     const product = products.find((p) => p.id === productId);
