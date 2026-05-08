@@ -1187,6 +1187,8 @@ export const ku: TranslationKeys = {
   cart_terms_required_title: 'مەرج و یاساکان',
   cart_terms_required_desc: 'پێویستە مەرج و یاساکان قبووڵ بکەیت بۆ ناردنی داواکاری',
   cart_mixed_shipping_title: 'ناتوانرێت جۆری گواستنەوە تێکەڵ بکرێت',
+  cart_mixed_categories_title: 'ناتوانرێت جۆرە جیاوازەکانی بەرهەم لە یەک داواکاریدا تێکەڵ بکرێن',
+  cart_mixed_categories_desc: 'ئەم جۆرانە ناتوانرێت پێکەوە بکڕدرێن، تکایە هەر جۆرێک بە جیا داواکاری بکە:',
   cart_mixed_shipping_desc: 'سەبەتەکەت کاڵای گواستنەوەی ئاسمانی ✈️ و دەریایی 🚢 پێکەوە تێدایە. تکایە دوو داواکاری جیاواز بکە یان جۆری گواستنەوە یەکخە.',
   cart_address_required_title: 'ناونیشان پێویستە',
   cart_address_required_desc2: 'تکایە سەرەتا ناونیشانی گەیاندن هەڵبژێرە یان زیادی بکە',

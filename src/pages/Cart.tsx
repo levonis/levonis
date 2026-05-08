@@ -28,6 +28,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/lib/i18n';
 import { translateShippingOption, getShippingCategory } from '@/lib/shippingLabel';
+import { getCartCategories, CART_CATEGORY_LABELS_AR } from '@/lib/cartCategory';
 import { buildFriendlyOrderError } from '@/lib/orderErrorMessages';
 import { insertOrderItemsWithRollback } from '@/lib/orderItemsInsert';
 
@@ -1346,18 +1347,15 @@ const Cart = () => {
       return;
     }
 
-    // Block mixed Air + Sea shipping in the same order
+    // Block mixing different cart categories (direct, preorder air/sea, community,
+    // bundles, offers, random filament, gifts). All 8 are mutually exclusive.
     {
-      const cats = new Set(
-        (items || [])
-          .filter((it: any) => !it.is_gift)
-          .map((it: any) => getShippingCategory(it.shipping_option_name_ar))
-          .filter((c) => c === 'air' || c === 'sea')
-      );
-      if (cats.has('air') && cats.has('sea')) {
+      const cats = getCartCategories(items || []);
+      if (cats.size > 1) {
+        const labels = Array.from(cats).map((c) => CART_CATEGORY_LABELS_AR[c]).join(' + ');
         toast({
-          title: t('cart_mixed_shipping_title'),
-          description: t('cart_mixed_shipping_desc'),
+          title: t('cart_mixed_categories_title'),
+          description: `${t('cart_mixed_categories_desc')}\n${labels}`,
           variant: "destructive",
         });
         return;
