@@ -25,6 +25,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { adminUpdateProduct } from '@/lib/adminMutations';
+import { useHorizontalWheelScroll } from '@/hooks/useHorizontalWheelScroll';
 
 const LOW_STOCK_THRESHOLD = 5;
 
