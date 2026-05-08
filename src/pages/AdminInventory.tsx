@@ -1191,6 +1191,15 @@ export default function AdminInventory() {
                                         <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
+                                        <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Input type="number" min={0} value={item.commission || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, commission: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Input type="number" min={0} value={item.other_costs || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, other_costs: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                      </TableCell>
+                                      <TableCell className="text-center">
                                         <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: it.unit_cost * val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>{formatPrice(item.line_total)}</TableCell>
