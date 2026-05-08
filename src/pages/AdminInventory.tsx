@@ -380,7 +380,7 @@ const NAV_ITEMS: {id: Section;icon: any;label: string;color: string;}[] = [
 
 // ====== MAIN COMPONENT ======
 export default function AdminInventory() {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
