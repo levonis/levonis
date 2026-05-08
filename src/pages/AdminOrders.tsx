@@ -199,7 +199,7 @@ const AdminOrders = () => {
       if (productIds.length > 0) {
         const { data: prodData } = await (supabase as any)
           .from('products_admin')
-          .select('id, name_ar, image_url, price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd')
+          .select('id, name_ar, image_url, price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd, commission_air_iqd, commission_sea_iqd, commission_iqd')
           .in('id', productIds);
         ((prodData as any[]) || []).forEach((p) => productMap.set(p.id, p));
       }
