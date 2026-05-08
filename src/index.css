@@ -3028,14 +3028,33 @@ body.chat-fullscreen .community-messages-main {
   .backdrop-blur-xl { --tw-backdrop-blur: blur(12px) !important; }
 }
 
-/* 3. Kill backdrop-filter while the user is scrolling — biggest perf win */
+/* 3. Kill backdrop-filter + heavy effects while the user is scrolling — biggest perf win */
 html.is-scrolling .glass-floating,
 html.is-scrolling .glass-panel,
 html.is-scrolling .glass-trigger,
 html.is-scrolling .glass-tile,
-html.is-scrolling [class*="backdrop-blur"] {
+html.is-scrolling .glass-icon-btn,
+html.is-scrolling .glass-bubble-other,
+html.is-scrolling .glass-bubble-me,
+html.is-scrolling [class*="backdrop-blur"],
+html.is-scrolling [class*="backdrop-filter"] {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
+}
+/* 3b. While scrolling, suppress decorative animations & transitions to free the main thread */
+html.is-scrolling *,
+html.is-scrolling *::before,
+html.is-scrolling *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+/* 3c. Mobile: also drop heavy box-shadows during scroll (composite cost on low-end GPUs) */
+@media (max-width: 768px) {
+  html.is-scrolling .shadow-xl,
+  html.is-scrolling .shadow-2xl,
+  html.is-scrolling [class*="shadow-glow"] {
+    box-shadow: none !important;
+  }
 }
 
 /* 4. Reduced motion: drop decorative animations & heavy blur */
