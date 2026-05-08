@@ -159,7 +159,15 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
   useEffect(() => {
     const handleAutofill = (event: Event) => {
-      const detail = (event as CustomEvent<{ originalPriceUsd?: number; originalPriceIqd?: number; priceUsd?: number }>).detail;
+      const detail = (event as CustomEvent<{
+        originalPriceUsd?: number;
+        originalPriceIqd?: number;
+        priceUsd?: number;
+        length_cm?: number;
+        width_cm?: number;
+        height_cm?: number;
+        weight_kg?: number;
+      }>).detail;
       const rate = shippingSettings?.usd_to_iqd_rate || 0;
       if (detail?.originalPriceIqd && detail.originalPriceIqd > 0) {
         setOriginalPriceIqd(Math.round(detail.originalPriceIqd));
@@ -169,6 +177,11 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       if (detail?.priceUsd && detail.priceUsd > 0) {
         setPriceUsd(detail.priceUsd);
       }
+      // Packaging dimensions / gross weight from extraction
+      if (typeof detail?.length_cm === 'number' && detail.length_cm > 0) setLengthCm(detail.length_cm);
+      if (typeof detail?.width_cm === 'number' && detail.width_cm > 0) setWidthCm(detail.width_cm);
+      if (typeof detail?.height_cm === 'number' && detail.height_cm > 0) setHeightCm(detail.height_cm);
+      if (typeof detail?.weight_kg === 'number' && detail.weight_kg > 0) setWeightKg(String(detail.weight_kg));
     };
 
     window.addEventListener('admin-product-pricing-autofill', handleAutofill);
