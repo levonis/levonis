@@ -745,6 +745,9 @@ export default function AdminInventory() {
     const optionsToAdd = draftItemForm.options.length > 0 ? draftItemForm.options : [''];
     
     const newItems: DraftItem[] = [];
+    const prodShipping = Number((product as any)?.shipping_cost_iqd) || 0;
+    const prodCommission = Number((product as any)?.commission_iqd) || 0;
+    const prodOther = Number((product as any)?.other_costs_iqd) || 0;
     for (const color of colorsToAdd) {
       for (const option of optionsToAdd) {
         newItems.push({
@@ -754,6 +757,9 @@ export default function AdminInventory() {
           option,
           quantity: draftItemForm.quantity,
           unit_cost: draftItemForm.unit_cost,
+          shipping_cost: prodShipping,
+          commission: prodCommission,
+          other_costs: prodOther,
           line_total: draftItemForm.quantity * draftItemForm.unit_cost
         });
       }
