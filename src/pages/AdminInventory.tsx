@@ -699,11 +699,24 @@ export default function AdminInventory() {
       const { error: mergeErr } = await supabase.from('future_shipments').update({ status: 'merged', merged_at: new Date().toISOString() }).eq('id', shipment.id);
       if (mergeErr) throw mergeErr;
     },
-    onSuccess: () => {
+    onSuccess: (_data, shipment: any) => {
       queryClient.invalidateQueries({ queryKey: ['inventory-products'] });
       queryClient.invalidateQueries({ queryKey: ['future-shipments'] });
       queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
-      toast.success('تم استلام الشحنة وإضافتها للمخزون');
+      const items = (shipment?.items || []) as DraftItem[];
+      const totalQty = items.reduce((s, it) => s + Number(it.quantity || 0), 0);
+      const lines = items.slice(0, 5).map((it) => {
+        const prod = products.find((p) => p.id === it.product_id);
+        const pname = prod?.name_ar || 'منتج';
+        const c = it.color && it.color !== 'none' ? ` • ${it.color}` : '';
+        const o = it.option && it.option !== 'none' ? ` • ${it.option}` : '';
+        return `${pname}${c}${o}: +${it.quantity}`;
+      });
+      const more = items.length > 5 ? `\n+${items.length - 5} منتج إضافي` : '';
+      toast.success(`تم تحديث المخزون (${totalQty} وحدة)`, {
+        description: lines.join('\n') + more,
+        duration: 6000
+      });
     },
     onError: (err: any) => toast.error(err.message || 'خطأ في استلام الشحنة')
   });
