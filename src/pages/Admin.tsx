@@ -618,9 +618,10 @@ const Admin = () => {
       });
       toast.success('تم حذف المنتج بنجاح');
     },
-    onError: (error) => {
-      toast.error('حدث خطأ أثناء حذف المنتج');
-      console.error(error);
+    onError: (error: any) => {
+      const msg = error?.message || error?.details || error?.hint || 'حدث خطأ أثناء حذف المنتج';
+      toast.error(msg, { duration: 7000 });
+      console.error('[deleteProduct]', error);
     }
   });
 
