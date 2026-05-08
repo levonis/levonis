@@ -1040,7 +1040,7 @@ export default function AdminInventory() {
                                   <ProductSearchDropdown
                                 products={products}
                                 value={draftItemForm.product_id}
-                                onSelect={(p) => setDraftItemForm((f) => ({ ...f, product_id: p.id || '', colors: [], options: [] }))} />
+                                onSelect={(p) => setDraftItemForm((f) => ({ ...f, product_id: p.id || '', colors: [], options: [], unit_cost: f.unit_cost > 0 ? f.unit_cost : (Number((p as any).cost_price) || 0) }))} />
                               
                                 </div>
                               </div>
