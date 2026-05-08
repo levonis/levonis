@@ -1189,6 +1189,8 @@ export type TranslationKeys = {
   cart_login_required_to_checkout_desc: string;
   cart_terms_required_title: string;
   cart_terms_required_desc: string;
+  cart_mixed_shipping_title: string;
+  cart_mixed_shipping_desc: string;
   cart_address_required_title: string;
   cart_address_required_desc2: string;
   cart_wallet_insufficient_title: string;
