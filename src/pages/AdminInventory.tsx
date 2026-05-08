@@ -1185,7 +1185,7 @@ export default function AdminInventory() {
                                     <TableHead className="text-white/40 text-[10px] text-center w-32">الربح</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-24">الكمية</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-32">المجموع ($)</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] w-12 text-center">حذف</TableHead>
+                                    <TableHead className="sticky left-0 z-20 w-16 min-w-16 bg-background/95 text-center text-[10px] text-white/40 backdrop-blur-md">حذف</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1241,9 +1241,9 @@ export default function AdminInventory() {
                                       <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>
                                         ${(item.line_total || 0).toLocaleString()}
                                       </TableCell>
-                                      <TableCell className="text-center">
-                                        <button onClick={() => removeItemFromDraft(i)} className="p-1 rounded hover:bg-red-500/20 transition-colors">
-                                          <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                                      <TableCell className="sticky left-0 z-10 w-16 min-w-16 bg-background/95 text-center backdrop-blur-md">
+                                        <button type="button" aria-label="حذف" onClick={() => removeItemFromDraft(i)} className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/10 text-destructive transition-colors hover:bg-destructive/20">
+                                          <Trash2 className="h-3.5 w-3.5" />
                                         </button>
                                       </TableCell>
                                     </TableRow>
@@ -1254,7 +1254,6 @@ export default function AdminInventory() {
                                   const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
                                   const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
                                   const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
-                                  const tProfit = tComm;
                                   const tLine = draftItems.reduce((s, i) => s + (i.line_total || 0), 0);
                                   return (
                                     <TableFooter className="bg-white/[0.03]">
