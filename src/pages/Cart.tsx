@@ -1043,7 +1043,9 @@ const Cart = () => {
           const rawDirect = liveDirect + optAdj;
           const directUnitPrice = product.round_up_price ? Math.ceil(rawDirect / 250) * 250 : rawDirect;
           const feePerUnit = Math.max(0, directUnitPrice - preorderUnitPrice);
-          return sum + (feePerUnit * qty);
+          if (feePerUnit > 0) return sum + (feePerUnit * qty);
+          // إذا كان سعر البيع المباشر المحسوب أقل من سعر الطلب الحالي بسبب خيار/حزمة،
+          // لا نلغي عمولة COD؛ نكمل للمسار الافتراضي ليحسبها من الشريحة المناسبة.
         }
       }
       // المسار الافتراضي: شرائح COD المخصصة
@@ -2000,6 +2002,7 @@ const Cart = () => {
         subtotal: orderSubtotal,
         paid_amount: isPreOrderCod ? 0 : paidNow,
         remaining_amount: orderRemaining + orderDeliveryFee,
+        cod_fee: isPreOrderCod ? codFee : 0,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
