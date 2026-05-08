@@ -2144,6 +2144,46 @@ Return ONLY JSON:
     // Add estimated air shipping cost to product info
     (productInfo as any).estimated_air_shipping_cost = estimatedAirShippingCost;
 
+    // ===== Brand fallbacks: JSON-LD, og:brand, meta, hostname =====
+    if (!productInfo.brand || !String(productInfo.brand).trim()) {
+      try {
+        // JSON-LD brand
+        const ldMatches = pageContent.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+        for (const block of ldMatches) {
+          const inner = block.replace(/<script[^>]*>|<\/script>/gi, '').trim();
+          try {
+            const parsed = JSON.parse(inner);
+            const arr = Array.isArray(parsed) ? parsed : [parsed];
+            for (const node of arr) {
+              const b = node?.brand?.name || (typeof node?.brand === 'string' ? node.brand : null) || node?.manufacturer?.name;
+              if (b && typeof b === 'string') { productInfo.brand = b.trim().slice(0, 80); break; }
+            }
+            if (productInfo.brand) break;
+          } catch (_) { /* skip */ }
+        }
+      } catch (_) { /* skip */ }
+    }
+    if (!productInfo.brand || !String(productInfo.brand).trim()) {
+      const ogBrand = pageContent.match(/<meta[^>]+property=["']og:brand["'][^>]+content=["']([^"']+)["']/i)
+        || pageContent.match(/<meta[^>]+name=["']brand["'][^>]+content=["']([^"']+)["']/i);
+      if (ogBrand && ogBrand[1]) productInfo.brand = ogBrand[1].trim().slice(0, 80);
+    }
+    if (!productInfo.brand || !String(productInfo.brand).trim()) {
+      try {
+        const host = new URL(url).hostname.replace(/^www\./, '');
+        const root = host.split('.')[0] || '';
+        const known: Record<string, string> = {
+          qidi3d: 'QIDI', qidi3dprinter: 'QIDI', qidi3dofficial: 'QIDI', 'qidi-tech': 'QIDI',
+          bambulab: 'Bambu Lab', creality: 'Creality', anycubic: 'Anycubic', elegoo: 'Elegoo',
+          prusa3d: 'Prusa', flashforge: 'FlashForge', snapmaker: 'Snapmaker',
+        };
+        if (known[root]) productInfo.brand = known[root];
+        else if (root && !['taobao','jd','amazon','aliexpress','alibaba','1688','tmall','ebay'].includes(root)) {
+          productInfo.brand = root.charAt(0).toUpperCase() + root.slice(1);
+        }
+      } catch (_) { /* skip */ }
+    }
+
     console.log('=== FINAL EXTRACTION RESULT ===');
     console.log('Main product images:', productInfo.images.length);
     console.log('Colors:', productInfo.colors.length);
