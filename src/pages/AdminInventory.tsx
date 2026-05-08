@@ -381,9 +381,6 @@ const NAV_ITEMS: {id: Section;icon: any;label: string;color: string;}[] = [
 { id: 'shipments', icon: Truck, label: 'الشحنات', color: NEON.blue },
 { id: 'inventory', icon: Package, label: 'المخزون المباشر', color: NEON.emerald }];
 
-  const draftTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
-  const productsTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
-
 // ====== MAIN COMPONENT ======
 export default function AdminInventory() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -394,6 +391,8 @@ export default function AdminInventory() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
+  const draftTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
+  const productsTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
 
   // Draft creation/edit state
   const [showDraftForm, setShowDraftForm] = useState(false);
