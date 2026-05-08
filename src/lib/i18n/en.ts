@@ -1187,6 +1187,8 @@ export const en: TranslationKeys = {
   cart_terms_required_title: 'Terms & conditions',
   cart_terms_required_desc: 'You must accept the terms and conditions to place your order',
   cart_mixed_shipping_title: 'Cannot mix shipping types',
+  cart_mixed_categories_title: 'Cannot mix product categories in one order',
+  cart_mixed_categories_desc: 'These categories cannot be ordered together. Please check out each category separately:',
   cart_mixed_shipping_desc: 'Your cart has items with both Air ✈️ and Sea 🚢 shipping. Please place two separate orders or unify the shipping type for all items.',
   cart_address_required_title: 'Address required',
   cart_address_required_desc2: 'Please choose or add a delivery address first',
