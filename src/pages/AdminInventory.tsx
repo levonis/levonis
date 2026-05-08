@@ -760,7 +760,7 @@ export default function AdminInventory() {
           shipping_cost: prodShipping,
           commission: prodCommission,
           other_costs: prodOther,
-          line_total: draftItemForm.quantity * draftItemForm.unit_cost
+          line_total: draftItemForm.quantity * (draftItemForm.unit_cost + prodShipping + prodOther)
         });
       }
     }
@@ -1188,21 +1188,26 @@ export default function AdminInventory() {
                                         })()}
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: it.quantity * (val + (it.shipping_cost || 0) + (it.other_costs || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val, line_total: it.quantity * (it.unit_cost + val + (it.other_costs || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={0} value={item.commission || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, commission: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={0} value={item.other_costs || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, other_costs: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={0} value={item.other_costs || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, other_costs: val, line_total: it.quantity * (it.unit_cost + (it.shipping_cost || 0) + val) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: it.unit_cost * val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: val * (it.unit_cost + (it.shipping_cost || 0) + (it.other_costs || 0)) } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
-                                      <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>{formatPrice(item.line_total)}</TableCell>
+                                      <TableCell className="text-xs font-mono font-bold text-center" style={{ color: NEON.purple }}>
+                                        <div>{formatPrice(item.line_total)}</div>
+                                        <div className="text-[9px] font-normal mt-0.5" style={{ color: NEON.emerald }} title="صافي الربح = العمولة × الكمية">
+                                          صافي الربح: {formatPrice((item.commission || 0) * item.quantity)}
+                                        </div>
+                                      </TableCell>
                                       <TableCell className="text-center">
                                         <button onClick={() => removeItemFromDraft(i)} className="p-1 rounded hover:bg-red-500/20 transition-colors">
                                           <Trash2 className="h-3 w-3 text-red-400/60" />
