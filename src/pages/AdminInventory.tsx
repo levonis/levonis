@@ -789,7 +789,7 @@ export default function AdminInventory() {
       return [it.product_name, it.color || '-', it.option || '-', it.unit_cost, it.shipping_cost || 0, it.commission || 0, profit, it.quantity, it.line_total].map(esc).join(',');
     });
     const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
-    const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * usdToIqd * (i.quantity || 0), 0);
+    const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
     const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
     const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
     const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) * usdToIqd - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
@@ -1258,7 +1258,7 @@ export default function AdminInventory() {
                                 </TableBody>
                                 {(() => {
                                   const tQty = draftItems.reduce((s, i) => s + (i.quantity || 0), 0);
-                                  const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * usdToIqd * (i.quantity || 0), 0);
+                                  const tUnit = draftItems.reduce((s, i) => s + (i.unit_cost || 0) * (i.quantity || 0), 0);
                                   const tShip = draftItems.reduce((s, i) => s + (i.shipping_cost || 0) * (i.quantity || 0), 0);
                                   const tComm = draftItems.reduce((s, i) => s + (i.commission || 0) * (i.quantity || 0), 0);
                                   const tProfit = draftItems.reduce((s, i) => s + ((i.sale_price || 0) - (i.unit_cost || 0) * usdToIqd - (i.shipping_cost || 0) - (i.commission || 0)) * (i.quantity || 0), 0);
