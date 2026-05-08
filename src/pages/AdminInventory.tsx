@@ -46,6 +46,9 @@ interface DraftItem {
   option: string;
   quantity: number;
   unit_cost: number;
+  shipping_cost: number;
+  commission: number;
+  other_costs: number;
   line_total: number;
 }
 
@@ -423,7 +426,7 @@ export default function AdminInventory() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['inventory-products'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('products_admin').select('id, name_ar, price, cost_price, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar), product_options(id, name_ar)').order('name_ar');
+      const { data, error } = await (supabase as any).from('products_admin').select('id, name_ar, price, cost_price, shipping_cost_iqd, commission_iqd, other_costs_iqd, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar), product_options(id, name_ar)').order('name_ar');
       if (error) throw error;
       return data || [];
     },
@@ -742,6 +745,9 @@ export default function AdminInventory() {
     const optionsToAdd = draftItemForm.options.length > 0 ? draftItemForm.options : [''];
     
     const newItems: DraftItem[] = [];
+    const prodShipping = Number((product as any)?.shipping_cost_iqd) || 0;
+    const prodCommission = Number((product as any)?.commission_iqd) || 0;
+    const prodOther = Number((product as any)?.other_costs_iqd) || 0;
     for (const color of colorsToAdd) {
       for (const option of optionsToAdd) {
         newItems.push({
@@ -751,6 +757,9 @@ export default function AdminInventory() {
           option,
           quantity: draftItemForm.quantity,
           unit_cost: draftItemForm.unit_cost,
+          shipping_cost: prodShipping,
+          commission: prodCommission,
+          other_costs: prodOther,
           line_total: draftItemForm.quantity * draftItemForm.unit_cost
         });
       }
@@ -1129,10 +1138,13 @@ export default function AdminInventory() {
                                 <TableHeader>
                                   <TableRow className="border-white/[0.05] hover:bg-transparent">
                                     <TableHead className="text-white/40 text-[10px] text-right">المنتج</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">اللون</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-28">الخيار</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-24">تكلفة الوحدة</TableHead>
-                                    <TableHead className="text-white/40 text-[10px] text-center w-20">الكمية</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-24">اللون</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-24">الخيار</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-20">تكلفة الوحدة</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-20">الشحن</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-20">العمولة</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-20">تكاليف أخرى</TableHead>
+                                    <TableHead className="text-white/40 text-[10px] text-center w-16">الكمية</TableHead>
                                     <TableHead className="text-white/40 text-[10px] text-center w-24">المجموع</TableHead>
                                     <TableHead className="text-white/40 text-[10px] w-10"></TableHead>
                                   </TableRow>
@@ -1177,6 +1189,15 @@ export default function AdminInventory() {
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Input type="number" min={0} value={item.shipping_cost || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, shipping_cost: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Input type="number" min={0} value={item.commission || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, commission: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Input type="number" min={0} value={item.other_costs || 0} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, other_costs: val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: it.unit_cost * val } : it)); }} className="h-7 w-full text-xs font-mono bg-white/5 border-white/10 text-white/70 text-center" />
