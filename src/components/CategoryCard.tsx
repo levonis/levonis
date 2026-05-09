@@ -35,6 +35,10 @@ const CategoryCard = ({
   const showVideo = !!mediaUrl && (mediaType === "video" || (mediaType == null && isVideoUrl(mediaUrl)));
   const showImage = !!mediaUrl && !showVideo;
   const useFullMedia = !!mediaUrl && !!mediaTransparent;
+  const optimizedImageSrc = useMemo(
+    () => (showImage ? resizeSupabaseImage(mediaUrl!, useFullMedia ? 400 : 200, 70) || mediaUrl! : mediaUrl),
+    [mediaUrl, showImage, useFullMedia]
+  );
 
   const linkRef = useRef<HTMLAnchorElement>(null);
   const [inView, setInView] = useState(false);
