@@ -216,6 +216,43 @@ function AppContent() {
     }
   }, [navigate, location.pathname]);
 
+  // Idle prefetch: warm up the most-likely next routes once first paint settled
+  // and the network is idle. Cheap on 4G+, skipped on Save-Data / 2G.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const conn = (navigator as any).connection;
+    if (conn?.saveData) return;
+    if (conn?.effectiveType && /2g/.test(conn.effectiveType)) return;
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: any) => number)
+      | undefined;
+    const run = () => {
+      const path = location.pathname;
+      const tasks: Array<() => Promise<unknown>> = [];
+      if (path === "/" || path.startsWith("/category")) {
+        tasks.push(() => import("./pages/ProductDetail"));
+        tasks.push(() => import("./pages/Cart"));
+      }
+      if (path.startsWith("/product/")) {
+        tasks.push(() => import("./pages/Cart"));
+        tasks.push(() => import("./pages/CategoryDetail"));
+      }
+      if (path === "/cart") {
+        tasks.push(() => import("./pages/UserInfo"));
+        tasks.push(() => import("./pages/UserAddresses"));
+      }
+      tasks.forEach((t) => t().catch(() => {}));
+    };
+    const id = ric ? ric(run, { timeout: 3000 }) : window.setTimeout(run as any, 1800);
+    return () => {
+      if (ric && (window as any).cancelIdleCallback) {
+        (window as any).cancelIdleCallback(id);
+      } else {
+        clearTimeout(id as any);
+      }
+    };
+  }, [location.pathname]);
+
   // Padding mirrors island visibility so the layout breathes in/out smoothly.
   const mainPaddingTop = hideChrome || !islandVisible ? 0 : 64;
 
