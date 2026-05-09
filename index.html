@@ -224,9 +224,12 @@
       // instead of looping cache wipes (which makes things worse on flaky networks).
       (function () {
         var IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-        var SHOW_RECOVERY_AFTER = IS_MOBILE ? 6000 : 8000;
-        var FORCE_RELOAD_AFTER = IS_MOBILE ? 25000 : 30000;
-        var MAX_AUTO_RECOVERIES = 2;
+        // Be generous: many IQ mobile networks take 10-20s for first paint.
+        // Showing the "slow" UI too early scares users into hammering retry,
+        // which wipes caches and makes the next load even slower.
+        var SHOW_RECOVERY_AFTER = IS_MOBILE ? 15000 : 12000;
+        var FORCE_RELOAD_AFTER = IS_MOBILE ? 60000 : 45000;
+        var MAX_AUTO_RECOVERIES = 1;
 
         window.__levoMounted = false;
 
