@@ -36,6 +36,11 @@ export default defineConfig(({ mode }) => ({
           'vendor-daypicker',
           'vendor-canvg',
           'vendor-charts',
+          'vendor-form',
+          'vendor-image-crop',
+          'vendor-resizable',
+          'vendor-cmdk',
+          'vendor-otp',
         ];
         return deps.filter((d) => !HEAVY.some((h) => d.includes(h)));
       },
