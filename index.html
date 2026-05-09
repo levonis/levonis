@@ -84,8 +84,11 @@
       })();
     </script>
 
-    <!-- Preload only the most critical font weight to reduce CLS without blocking FCP -->
+    <!-- Preload critical font weights to remove them from the LCP-blocking
+         network chain (Lighthouse showed cairo-700 at 4.3s discovery). With
+         Cloudflare's 30-day edge cache the cost is paid only on first visit. -->
     <link rel="preload" href="/fonts/cairo-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/cairo-700.woff2" as="font" type="font/woff2" crossorigin>
 
     <!-- Inline @font-face so the browser discovers Cairo BEFORE the large render-blocking
          CSS bundle is parsed. Combined with `font-display: swap`, this lets the FCP
