@@ -169,6 +169,7 @@ import PageFade from "@/components/PageFade";
 import TopProgressBar from "@/components/TopProgressBar";
 import PrefetchOnHover from "@/components/PrefetchOnHover";
 import IdleRoutePrefetcher from "@/components/IdleRoutePrefetcher";
+import ViewTransitions from "@/components/ViewTransitions";
 
 
 function AppContent() {
@@ -268,6 +269,7 @@ function AppContent() {
       <TopProgressBar />
       <PrefetchOnHover />
       <IdleRoutePrefetcher />
+      <ViewTransitions />
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>

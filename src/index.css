@@ -2583,3 +2583,26 @@ html.is-scrolling *::after {
 .no-spinner::-webkit-outer-spin-button,
 .no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .no-spinner { -moz-appearance: textfield; }
+
+/* ===== View Transitions (native page transitions) =====
+   Activated automatically on browsers that support
+   document.startViewTransition (Chromium / Safari TP). Other browsers
+   keep using the existing PageFade CSS animation as a fallback. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 180ms cubic-bezier(0.4, 0, 0.2, 1) both vt-old;
+  }
+  ::view-transition-new(root) {
+    animation: 240ms cubic-bezier(0.16, 1, 0.3, 1) both vt-new;
+  }
+  @keyframes vt-old {
+    to { opacity: 0; transform: translateY(-4px) scale(0.995); }
+  }
+  @keyframes vt-new {
+    from { opacity: 0; transform: translateY(6px) scale(1.005); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
