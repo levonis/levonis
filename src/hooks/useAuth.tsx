@@ -21,6 +21,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Hard safety net: never let the app stay stuck on the loading screen
+    // for more than 3s — even if Supabase auth never resolves (corrupted
+    // sb-* localStorage, blocked network, slow cookie sync, etc.).
+    const hardTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -29,6 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Unblock the app IMMEDIATELY once we know the session — do NOT wait
         // for the admin role check (slow networks would hang the whole UI).
         setLoading(false);
+        clearTimeout(hardTimeout);
         if (session?.user) {
           // Fire-and-forget; isAdmin updates when it resolves.
           checkAdminStatus(session.user.id).catch(() => {});
@@ -38,22 +46,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // THEN check for existing session — wrapped in try/catch because a
+    // corrupted sb-* localStorage entry can throw synchronously and would
+    // otherwise leave `loading` stuck at `true` forever (white screen after
+    // login on some users' devices).
+    try {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        clearTimeout(hardTimeout);
+        if (session?.user) {
+          checkAdminStatus(session.user.id).catch(() => {});
+        } else {
+          setIsAdmin(false);
+        }
+      }).catch((err) => {
+        console.error('[useAuth] getSession failed:', err);
+        // If the stored session is corrupt, wipe it so the next login is clean.
+        try {
+          Object.keys(localStorage)
+            .filter((k) => k.startsWith('sb-') || k.includes('supabase'))
+            .forEach((k) => localStorage.removeItem(k));
+        } catch {}
+        setLoading(false);
+        clearTimeout(hardTimeout);
+      });
+    } catch (err) {
+      console.error('[useAuth] getSession threw:', err);
       setLoading(false);
-      if (session?.user) {
-        checkAdminStatus(session.user.id).catch(() => {});
-      } else {
-        setIsAdmin(false);
-      }
-    }).catch(() => {
-      // Even if getSession fails (e.g., network), don't keep the app stuck.
-      setLoading(false);
-    });
+      clearTimeout(hardTimeout);
+    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(hardTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkAdminStatus = async (userId: string) => {
