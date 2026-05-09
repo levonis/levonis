@@ -170,6 +170,7 @@ import TopProgressBar from "@/components/TopProgressBar";
 import PrefetchOnHover from "@/components/PrefetchOnHover";
 import IdleRoutePrefetcher from "@/components/IdleRoutePrefetcher";
 import ViewTransitions from "@/components/ViewTransitions";
+import ImageQualityBoost from "@/components/ImageQualityBoost";
 
 
 function AppContent() {
@@ -270,6 +271,7 @@ function AppContent() {
       <PrefetchOnHover />
       <IdleRoutePrefetcher />
       <ViewTransitions />
+      <ImageQualityBoost />
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
