@@ -26,7 +26,10 @@ export function computeUnifiedCardPrice(
   if (hasDirect) {
     let directBase: number | null = null;
     if (product?.link_direct_commission_to_cod) {
-      const fromServer = liveDirectMap?.get(product.id);
+      const fromServer =
+        liveDirectMap && typeof (liveDirectMap as any).get === 'function'
+          ? (liveDirectMap as Map<string, number>).get(product.id)
+          : (liveDirectMap as any)?.[product.id];
       if (fromServer != null && fromServer > 0) directBase = fromServer;
       else if (codDefaults) {
         const live = computeLinkedDirectSalePrice(
