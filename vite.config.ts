@@ -23,24 +23,12 @@ export default defineConfig(({ mode }) => ({
     // improves LCP on the homepage (saves ~493 KiB of unused JS preloaded eagerly).
     modulePreload: {
       resolveDependencies: (_filename, deps) => {
-        // Trim heavy chunks from the eager modulepreload graph. They load only when
-        // a route that imports them is visited.
         const HEAVY = [
-          'vendor-three',
           'vendor-html2canvas',
           'vendor-jspdf',
-          'vendor-qr',
           'vendor-sanitize',
-          'vendor-carousel',
           'vendor-capacitor',
-          'vendor-daypicker',
           'vendor-canvg',
-          'vendor-charts',
-          'vendor-form',
-          'vendor-image-crop',
-          'vendor-resizable',
-          'vendor-cmdk',
-          'vendor-otp',
         ];
         return deps.filter((d) => !HEAVY.some((h) => d.includes(h)));
       },
