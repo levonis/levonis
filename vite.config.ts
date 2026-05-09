@@ -47,8 +47,12 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('html2canvas')) return 'vendor-html2canvas';
           if (id.includes('node_modules/jspdf/') || id.includes('node_modules/jspdf-autotable/')) return 'vendor-jspdf';
           if (id.includes('node_modules/canvg/')) return 'vendor-canvg';
-          if (id.includes('node_modules/three/')) return 'vendor-three';
-          if (id.includes('html5-qrcode') || id.includes('jsqr')) return 'vendor-qr';
+          // NOTE: do NOT manualChunk three/html5-qrcode. Naming them caused Rollup
+          // to emit bare side-effect imports (`import "./vendor-three-..."`) at the
+          // top of the entry, eagerly loading 275KB on every page load. Leaving
+          // them unnamed lets Rollup co-locate them with the dynamic-importer
+          // chunks so they only load when a game route or the printer activation
+          // panel is opened.
           if (id.includes('@supabase') || id.includes('postgrest') || id.includes('gotrue') || id.includes('realtime-js')) return 'vendor-supabase';
           if (id.includes('date-fns') || id.includes('dayjs')) return 'vendor-date';
           if (id.includes('dompurify') || id.includes('sanitize-html')) return 'vendor-sanitize';
