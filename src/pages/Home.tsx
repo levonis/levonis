@@ -209,8 +209,8 @@ const Home = () => {
           {categoriesLoading || mainSectionsLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-card/50 rounded-xl p-3 md:p-4 border border-border/40 animate-pulse h-[140px] md:h-[172px]">
-                  <div className="w-8 h-8 md:w-12 md:h-12 bg-muted rounded-xl mb-2 mx-auto" />
+                <div key={i} className="bg-card/50 rounded-2xl p-3 sm:p-4 border border-border/40 animate-pulse h-[160px] sm:h-[172px]">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-muted rounded-2xl mb-2 mx-auto" />
                   <div className="h-3 bg-muted rounded mb-2 w-3/4 mx-auto" />
                 </div>
               ))}

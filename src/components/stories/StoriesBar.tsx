@@ -17,7 +17,7 @@ export default function StoriesBar() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
 
-  const { data: sections = [] } = useQuery({
+  const { data: sections = [], isLoading } = useQuery({
     queryKey: ['story-sections-with-videos'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -48,6 +48,10 @@ export default function StoriesBar() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Reserve vertical space while loading to prevent CLS; only collapse if confirmed empty
+  if (isLoading) {
+    return <div className="w-full" style={{ minHeight: 124 }} aria-hidden="true" />;
+  }
   if (sections.length === 0) return null;
 
   const handleOpen = (index: number) => {
