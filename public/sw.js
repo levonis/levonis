@@ -1,10 +1,11 @@
-const CACHE_NAME = 'levonis-v15';
+const CACHE_NAME = 'levonis-v16';
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
 // Vite hashed assets (JS/CSS) live under /assets/ with content hashes — safe to cache forever
 const HASHED_ASSET_PATH = /^\/assets\/.+\.(js|css)$/i;
 const IS_PREVIEW_HOST =
   self.location.hostname.includes('lovableproject.com') ||
   self.location.hostname.startsWith('id-preview--');
+const SW_DISABLED = true;
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -12,14 +13,12 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    // Wipe stale caches from previous versions (keep current).
+    // Emergency kill switch: remove all old caches and unregister the worker.
     const names = await caches.keys();
-    await Promise.all(
-      names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
-    );
+    await Promise.all(names.map((n) => caches.delete(n)));
 
-    // Safety valve: preview hosts should never keep a controlling SW
-    if (IS_PREVIEW_HOST) {
+    // Safety valve: temporarily disable SW everywhere until production is stable.
+    if (SW_DISABLED || IS_PREVIEW_HOST) {
       await self.registration.unregister();
     }
 
@@ -32,7 +31,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (IS_PREVIEW_HOST) return;
+  if (SW_DISABLED || IS_PREVIEW_HOST) return;
 
   const { request } = event;
   const url = new URL(request.url);
