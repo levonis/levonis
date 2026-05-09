@@ -896,6 +896,30 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
   return map;
 }
 
+// Build a map of normalized propertyValue -> propertyKey (axis name) by scanning
+// the RSC payload. Lets us tell which axis ("Type", "Size", "Color", ...) each
+// <li value="..."> belongs to so we can group multi-axis Bambu products correctly.
+export function buildBambuVariantAxisMap(html: string): Map<string, string> {
+  const axes = new Map<string, string>();
+  const setIfValid = (rawKey: string, rawValue: string) => {
+    const key = String(rawKey || '').trim();
+    const norm = normalizeVariantName(rawValue);
+    if (!key || !norm) return;
+    if (!axes.has(norm)) axes.set(norm, key);
+  };
+  // Plain JSON form: {"propertyKey":"Type","propertyValue":"Standard Flow",...}
+  const plain = /"propertyKey"\s*:\s*"([^"]+)"\s*,\s*"propertyValue"\s*:\s*"([^"]+)"/g;
+  for (const mm of html.matchAll(plain)) setIfValid(mm[1], mm[2]);
+  const plainRev = /"propertyValue"\s*:\s*"([^"]+)"\s*,\s*"propertyKey"\s*:\s*"([^"]+)"/g;
+  for (const mm of html.matchAll(plainRev)) setIfValid(mm[2], mm[1]);
+  // Escaped form inside an RSC payload string.
+  const esc = /\\"propertyKey\\"\s*:\s*\\"([^\\"]+)\\"\s*,\s*\\"propertyValue\\"\s*:\s*\\"([^\\"]+)\\"/g;
+  for (const mm of html.matchAll(esc)) setIfValid(mm[1], mm[2]);
+  const escRev = /\\"propertyValue\\"\s*:\s*\\"([^\\"]+)\\"\s*,\s*\\"propertyKey\\"\s*:\s*\\"([^\\"]+)\\"/g;
+  for (const mm of html.matchAll(escRev)) setIfValid(mm[2], mm[1]);
+  return axes;
+}
+
 // Robust parser: extracts every <li value="..."> block in HTML, classifies
 // color (has <img>) vs non-color option (text only). Maps each variant to its
 // real product image (not the swatch) when one is available in the RSC payload.
