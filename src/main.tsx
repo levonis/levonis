@@ -40,8 +40,10 @@ declare global {
   }
 }
 
-// Capacitor: initialize native platform UI (status bar, splash, back button, keyboard)
-import('@capacitor/core').then(({ Capacitor }) => {
+// Capacitor: initialize native platform UI — deferred to idle so the web
+// path never pays for downloading @capacitor/core during first paint.
+idle(() => { import('@capacitor/core').then(({ Capacitor }) => {
+  if (!Capacitor.isNativePlatform()) return;
   if (!Capacitor.isNativePlatform()) return;
   // Mark the document so CSS can target native vs web
   document.documentElement.classList.add('is-native', `platform-${Capacitor.getPlatform()}`);
