@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useRef, useState } from 'react';
 import StoryViewer from './StoryViewer';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 
 interface StorySection {
   id: string;
@@ -73,11 +74,15 @@ export default function StoriesBar() {
                 <div className="w-full h-full rounded-full border-2 border-background overflow-hidden bg-muted">
                   {section.thumbnail_url ? (
                     <img
-                      src={section.thumbnail_url}
+                      src={resizeSupabaseImage(section.thumbnail_url, 200, 70) || section.thumbnail_url}
                       alt={section.title_ar}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      decoding="async"
+                      width={76}
+                      height={76}
                     />
+
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground text-lg font-bold">
                       {section.title_ar.charAt(0)}

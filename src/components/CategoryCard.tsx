@@ -1,6 +1,7 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import DirectSaleRibbon from "./ui/DirectSaleRibbon";
+import { resizeSupabaseImage } from "@/lib/imageUtils";
 
 interface CategoryCardProps {
   name: string;
@@ -34,6 +35,10 @@ const CategoryCard = ({
   const showVideo = !!mediaUrl && (mediaType === "video" || (mediaType == null && isVideoUrl(mediaUrl)));
   const showImage = !!mediaUrl && !showVideo;
   const useFullMedia = !!mediaUrl && !!mediaTransparent;
+  const optimizedImageSrc = useMemo(
+    () => (showImage ? resizeSupabaseImage(mediaUrl!, useFullMedia ? 400 : 200, 70) || mediaUrl! : mediaUrl),
+    [mediaUrl, showImage, useFullMedia]
+  );
 
   const linkRef = useRef<HTMLAnchorElement>(null);
   const [inView, setInView] = useState(false);
@@ -88,7 +93,7 @@ const CategoryCard = ({
             />
           ) : inView && showImage ? (
             <img
-              src={mediaUrl!}
+              src={optimizedImageSrc!}
               alt=""
               className="w-full h-full object-cover scale-[1.02]"
               loading="lazy"
@@ -147,7 +152,7 @@ const CategoryCard = ({
               />
             ) : inView && showImage ? (
               <img
-                src={mediaUrl!}
+                src={optimizedImageSrc!}
                 alt=""
                 className="w-full h-full object-cover"
                 loading="lazy"
