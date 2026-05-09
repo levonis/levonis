@@ -36,6 +36,11 @@ export default defineConfig(({ mode }) => ({
           'vendor-daypicker',
           'vendor-canvg',
           'vendor-charts',
+          'vendor-form',
+          'vendor-image-crop',
+          'vendor-resizable',
+          'vendor-cmdk',
+          'vendor-otp',
         ];
         return deps.filter((d) => !HEAVY.some((h) => d.includes(h)));
       },
@@ -69,6 +74,18 @@ export default defineConfig(({ mode }) => ({
           // Keep tslib + scheduler + react* together in vendor-react to be safe.
           if (id.includes('node_modules/framer-motion/')) return 'vendor-motion';
           if (id.includes('node_modules/@radix-ui/')) return 'vendor-radix';
+          // Peel off libs that are NOT needed on the homepage critical path.
+          // They remain statically importable but ship as separate chunks so the
+          // initial vendor-react payload shrinks (improves FCP/LCP on first load).
+          if (id.includes('node_modules/react-hook-form/') || id.includes('node_modules/@hookform/')) return 'vendor-form';
+          if (id.includes('node_modules/react-image-crop/')) return 'vendor-image-crop';
+          if (id.includes('node_modules/react-resizable-panels/')) return 'vendor-resizable';
+          if (id.includes('node_modules/cmdk/')) return 'vendor-cmdk';
+          if (id.includes('node_modules/input-otp/')) return 'vendor-otp';
+          if (id.includes('node_modules/react-day-picker/')) return 'vendor-daypicker';
+          if (id.includes('node_modules/embla-carousel')) return 'vendor-carousel';
+          if (id.includes('node_modules/@tanstack/')) return 'vendor-query';
+          if (id.includes('node_modules/react-router')) return 'vendor-router';
           return 'vendor-react';
         },
       },
