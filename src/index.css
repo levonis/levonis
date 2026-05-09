@@ -843,9 +843,7 @@
   }
 }
 
-/* ================================
-   ADMIN DASHBOARD STYLES - GLASSMORPHISM 3D UI
-   ================================ */
+/* Admin styles moved to src/styles/admin.css — lazy-loaded by AdminLayout */
 
 /* Admin page container */
 .admin-page {
