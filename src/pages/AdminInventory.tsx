@@ -976,13 +976,24 @@ export default function AdminInventory() {
 
       // Fetch English names for products, colors, options
       const productIds = Array.from(new Set(items.map((i) => i.product_id).filter(Boolean)));
-      const { data: prodRows } = await (supabase as any)
-        .from('products_admin')
-        .select('id, name_ar, name_en, colors, product_options(id, name, name_ar)')
-        .in('id', productIds);
-
+      const [prodRowsRes, optRowsRes] = await Promise.all([
+        (supabase as any)
+          .from('products_admin')
+          .select('id, name_ar, name_en, colors')
+          .in('id', productIds),
+        supabase
+          .from('product_options')
+          .select('id, product_id, name, name_ar')
+          .in('product_id', productIds),
+      ]);
+      const prodRows = prodRowsRes.data || [];
+      const optRows = optRowsRes.data || [];
       const prodMap = new Map<string, any>();
-      (prodRows || []).forEach((p: any) => prodMap.set(p.id, p));
+      prodRows.forEach((p: any) => prodMap.set(p.id, { ...p, product_options: [] }));
+      optRows.forEach((o: any) => {
+        const p = prodMap.get(o.product_id);
+        if (p) p.product_options.push({ id: o.id, name: o.name, name_ar: o.name_ar });
+      });
 
       const translateColor = (productId: string, colorName: string): string => {
         if (!colorName) return '—';
