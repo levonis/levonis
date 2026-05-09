@@ -30,7 +30,11 @@ export default function GachaLanding({ onBack }: Props) {
   };
 
   if (view === "machine" && selectedMachineId) {
-    return <GachaMachineDetail machineId={selectedMachineId} onBack={() => setView("landing")} />;
+    return (
+      <Suspense fallback={<div className="py-20 text-center text-muted-foreground">جاري التحميل...</div>}>
+        <GachaMachineDetail machineId={selectedMachineId} onBack={() => setView("landing")} />
+      </Suspense>
+    );
   }
   if (view === "collection") {
     return <GachaCollection onBack={() => setView("landing")} />;
