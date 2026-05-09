@@ -626,6 +626,12 @@ const bambuOptionArMap: Record<string, string> = {
   '0.4 mm': '0.4 ملم',
   '0.6 mm': '0.6 ملم',
   '0.8 mm': '0.8 ملم',
+  'standard flow': 'تدفق قياسي',
+  'high flow': 'تدفق عالي',
+  'stainless steel': 'ستانلس ستيل',
+  'hardened steel': 'فولاذ مقوّى',
+  'left': 'يسار',
+  'right': 'يمين',
 };
 
 // Translate while PRESERVING SKU code like "(13108)"
@@ -649,9 +655,22 @@ function translateBambuColorName(name: string): string {
 function translateBambuOption(name: string): string {
   const lower = name.toLowerCase().trim();
   if (bambuOptionArMap[lower]) return bambuOptionArMap[lower];
-  for (const [key, ar] of Object.entries(bambuOptionArMap)) {
-    if (lower.includes(key)) return ar;
+  // Compound labels (e.g. "0.2mm Stainless Steel"): translate every recognized
+  // fragment, then concatenate. Falls back to original name if no fragment matches.
+  let working = lower.replace(/(\d)mm\b/g, '$1 mm'); // normalize "0.2mm" -> "0.2 mm"
+  const parts: string[] = [];
+  let matched = false;
+  // Sort keys longest-first so multi-word entries match before single-word.
+  const keys = Object.keys(bambuOptionArMap).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    const idx = working.indexOf(key);
+    if (idx !== -1) {
+      parts.push(bambuOptionArMap[key]);
+      working = (working.slice(0, idx) + ' ' + working.slice(idx + key.length)).replace(/\s+/g, ' ').trim();
+      matched = true;
+    }
   }
+  if (matched) return parts.join(' ');
   return name;
 }
 
@@ -877,6 +896,30 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
   return map;
 }
 
+// Build a map of normalized propertyValue -> propertyKey (axis name) by scanning
+// the RSC payload. Lets us tell which axis ("Type", "Size", "Color", ...) each
+// <li value="..."> belongs to so we can group multi-axis Bambu products correctly.
+export function buildBambuVariantAxisMap(html: string): Map<string, string> {
+  const axes = new Map<string, string>();
+  const setIfValid = (rawKey: string, rawValue: string) => {
+    const key = String(rawKey || '').trim();
+    const norm = normalizeVariantName(rawValue);
+    if (!key || !norm) return;
+    if (!axes.has(norm)) axes.set(norm, key);
+  };
+  // Plain JSON form: {"propertyKey":"Type","propertyValue":"Standard Flow",...}
+  const plain = /"propertyKey"\s*:\s*"([^"]+)"\s*,\s*"propertyValue"\s*:\s*"([^"]+)"/g;
+  for (const mm of html.matchAll(plain)) setIfValid(mm[1], mm[2]);
+  const plainRev = /"propertyValue"\s*:\s*"([^"]+)"\s*,\s*"propertyKey"\s*:\s*"([^"]+)"/g;
+  for (const mm of html.matchAll(plainRev)) setIfValid(mm[2], mm[1]);
+  // Escaped form inside an RSC payload string.
+  const esc = /\\"propertyKey\\"\s*:\s*\\"([^\\"]+)\\"\s*,\s*\\"propertyValue\\"\s*:\s*\\"([^\\"]+)\\"/g;
+  for (const mm of html.matchAll(esc)) setIfValid(mm[1], mm[2]);
+  const escRev = /\\"propertyValue\\"\s*:\s*\\"([^\\"]+)\\"\s*,\s*\\"propertyKey\\"\s*:\s*\\"([^\\"]+)\\"/g;
+  for (const mm of html.matchAll(escRev)) setIfValid(mm[2], mm[1]);
+  return axes;
+}
+
 // Robust parser: extracts every <li value="..."> block in HTML, classifies
 // color (has <img>) vs non-color option (text only). Maps each variant to its
 // real product image (not the swatch) when one is available in the RSC payload.
@@ -886,58 +929,108 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
   const seenColorNames = new Set<string>();
   const seenOptionNames = new Set<string>();
   const variantImages = buildBambuVariantImageMap(html);
+  const variantAxes = buildBambuVariantAxisMap(html);
 
+  // First pass: collect every <li value="..."> and group by axis (RSC propertyKey).
+  type LiEntry = { rawName: string; key: string; swatchUrl: string | null; axis: string | null };
+  const entries: LiEntry[] = [];
+  const seenKeys = new Set<string>();
   const liPattern = /<li\s+[^>]*\bvalue="([^"]+)"[^>]*>([\s\S]*?)<\/li>/gi;
   let m: RegExpExecArray | null;
-  const colorImageJobs: Array<{ idx: number; url: string }> = [];
-
   while ((m = liPattern.exec(html)) !== null) {
     const rawName = m[1].trim();
     const body = m[2];
     if (!rawName || rawName.length > 80) continue;
-
-    // Skip bogus values (numbers like quantity selectors)
     if (/^\d+$/.test(rawName)) continue;
-
-    const imgMatch = body.match(/<img[^>]*\bsrc="([^"]+)"/i);
-    const looksLikeColor = !!imgMatch && /(?:store(?:-fe)?|store-fe)\.bblcdn\.(?:com|eu|net)/i.test(imgMatch[1]);
+    if (/^\$|^¥|^€|^د\.ع/i.test(rawName)) continue;
     const key = normalizeVariantName(rawName);
-
-    if (looksLikeColor) {
-      if (seenColorNames.has(key)) continue;
-      seenColorNames.add(key);
-      let swatchUrl = imgMatch![1].trim();
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    const imgMatch = body.match(/<img[^>]*\bsrc="([^"]+)"/i);
+    const isSwatch = !!imgMatch && /(?:store(?:-fe)?|store-fe)\.bblcdn\.(?:com|eu|net)/i.test(imgMatch[1]);
+    let swatchUrl: string | null = null;
+    if (isSwatch) {
+      swatchUrl = imgMatch![1].trim();
       if (swatchUrl.startsWith('//')) swatchUrl = 'https:' + swatchUrl;
-      // Prefer the variant's main product photo; fall back to the swatch only
-      // when no main image is available.
-      const productImg = variantImages.get(key) || null;
-      const finalImg = productImg || (swatchUrl.startsWith('http') ? swatchUrl : null);
+    }
+    entries.push({ rawName, key, swatchUrl, axis: variantAxes.get(key) || null });
+  }
+
+  // Decide which axis becomes "colors" and which becomes "options".
+  // Default per-entry classifier: swatch image -> color, else option.
+  const colorImageJobs: Array<{ idx: number; url: string }> = [];
+
+  // Group entries by axis name (entries with no axis info land in `__unknown__`).
+  const byAxis = new Map<string, LiEntry[]>();
+  for (const e of entries) {
+    const a = e.axis || '__unknown__';
+    if (!byAxis.has(a)) byAxis.set(a, []);
+    byAxis.get(a)!.push(e);
+  }
+
+  const knownAxes = [...byAxis.keys()].filter((a) => a !== '__unknown__');
+  const colorAxis = knownAxes.find((a) => /^color$/i.test(a)) || null;
+  const sizePattern = /(?:mm|flow|kg|g\b|stainless|hardened|nozzle|size|capacity|left|right)/i;
+
+  // Map axis name -> "color" | "option"
+  const axisRole = new Map<string, 'color' | 'option'>();
+  if (colorAxis) {
+    // Filament-style page: keep current behavior (Color axis -> colors, others -> options).
+    for (const a of knownAxes) axisRole.set(a, a === colorAxis ? 'color' : 'option');
+  } else if (knownAxes.length === 2) {
+    // No real Color axis but two non-color axes (e.g. H2C Hotend: Type + Size).
+    // Bigger axis or the one whose values look like sizes/nozzles -> colors.
+    const [a, b] = knownAxes;
+    const aEntries = byAxis.get(a)!;
+    const bEntries = byAxis.get(b)!;
+    const aLooksSize = aEntries.some((e) => sizePattern.test(e.rawName));
+    const bLooksSize = bEntries.some((e) => sizePattern.test(e.rawName));
+    let colorPick: string;
+    if (aLooksSize && !bLooksSize) colorPick = a;
+    else if (bLooksSize && !aLooksSize) colorPick = b;
+    else colorPick = aEntries.length >= bEntries.length ? a : b;
+    axisRole.set(colorPick, 'color');
+    axisRole.set(colorPick === a ? b : a, 'option');
+  }
+  // For 1 or 3+ axes with no Color axis, leave axisRole empty -> per-entry fallback.
+
+  for (const e of entries) {
+    const role = e.axis ? axisRole.get(e.axis) : undefined;
+    // Per-entry fallback when axis info is missing/ambiguous: swatch -> color, else option.
+    const isColor = role ? role === 'color' : !!e.swatchUrl;
+
+    if (isColor) {
+      if (seenColorNames.has(e.key)) continue;
+      seenColorNames.add(e.key);
+      const productImg = variantImages.get(e.key) || null;
+      const finalImg = productImg || (e.swatchUrl && e.swatchUrl.startsWith('http') ? e.swatchUrl : null);
       const idx = colors.length;
+      // Pick the right Arabic translator: real color names use the color map;
+      // size-style values (no swatch) use the option map.
+      const isSwatchColor = !!e.swatchUrl && (!e.axis || /^color$/i.test(e.axis));
       colors.push({
-        name: rawName,
-        name_ar: translateBambuColorName(rawName),
+        name: e.rawName,
+        name_ar: isSwatchColor ? translateBambuColorName(e.rawName) : translateBambuOption(e.rawName),
         hex_code: null,
         image_url: finalImg,
       });
-      // Always sample hex from the swatch — it's a flat color and yields an accurate hex.
-      if (swatchUrl.startsWith('http')) {
-        colorImageJobs.push({ idx, url: swatchUrl });
+      // Only sample hex when the swatch really represents a color value.
+      if (isSwatchColor && e.swatchUrl && e.swatchUrl.startsWith('http')) {
+        colorImageJobs.push({ idx, url: e.swatchUrl });
       }
     } else {
-      if (seenOptionNames.has(key)) continue;
-      seenOptionNames.add(key);
-      // Filter out things that look like prices or quantities
-      if (/^\$|^¥|^€|^د\.ع/i.test(rawName)) continue;
-      const productImg = variantImages.get(key) || null;
+      if (seenOptionNames.has(e.key)) continue;
+      seenOptionNames.add(e.key);
+      const productImg = variantImages.get(e.key) || null;
       options.push({
-        name: rawName,
-        name_ar: translateBambuOption(rawName),
+        name: e.rawName,
+        name_ar: translateBambuOption(e.rawName),
         image_url: productImg,
       });
     }
   }
 
-  // Sample hex codes in parallel from swatch PNGs
+  // Sample hex codes in parallel from swatch PNGs (color-axis entries only).
   if (colorImageJobs.length > 0) {
     console.log(`Bambu: sampling ${colorImageJobs.length} swatch hex codes in parallel`);
     const sampled = await Promise.all(colorImageJobs.map(j => sampleSwatchColor(j.url)));
@@ -946,7 +1039,7 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
     });
   }
 
-  console.log(`Bambu unified parser: ${colors.length} colors (${variantImages.size} variant images mapped), ${options.length} options`);
+  console.log(`Bambu unified parser: ${colors.length} colors, ${options.length} options, axes=${JSON.stringify([...byAxis.entries()].map(([a, v]) => [a, v.length]))}`);
   return { colors, options };
 }
 
