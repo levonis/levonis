@@ -157,6 +157,7 @@ const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection
 const AdminLoyaltyCodeRedemptions = lazy(() => import("./pages/AdminLoyaltyCodeRedemptions"));
 const AdminUserCardCycles = lazy(() => import("./pages/AdminUserCardCycles"));
 const AdminProtectionPlanBenefits = lazy(() => import("./pages/AdminProtectionPlanBenefits"));
+const AdminChunkErrors = lazy(() => import("./pages/AdminChunkErrors"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const About = lazy(() => import("./pages/About"));
 const Privacy = lazy(() => import("./pages/Privacy"));
