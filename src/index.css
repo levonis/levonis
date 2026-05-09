@@ -77,7 +77,7 @@
   font-style: normal;
   font-weight: 300;
   font-display: swap;
-  src: url('/fonts/UniSIRWAN_Qabas_Light.ttf') format('woff2');
+  src: url('/fonts/UniSIRWAN_Qabas_Light.ttf') format('truetype');
 }
 
 @font-face {
@@ -85,7 +85,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/UniSIRWAN_Qabas_Regular.ttf') format('woff2');
+  src: url('/fonts/UniSIRWAN_Qabas_Regular.ttf') format('truetype');
 }
 
 @font-face {
@@ -93,7 +93,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/UniSIRWAN_Qabas_Bold.ttf') format('woff2');
+  src: url('/fonts/UniSIRWAN_Qabas_Bold.ttf') format('truetype');
 }
 
 @font-face {
@@ -101,7 +101,7 @@
   font-style: normal;
   font-weight: 900;
   font-display: swap;
-  src: url('/fonts/UniSIRWAN_Qabas_Bold.ttf') format('woff2');
+  src: url('/fonts/UniSIRWAN_Qabas_Bold.ttf') format('truetype');
 }
 
 @tailwind base;
