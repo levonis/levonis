@@ -166,6 +166,8 @@ const Faq = lazy(() => import("./pages/Faq"));
 
 import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
 import PageFade from "@/components/PageFade";
+import TopProgressBar from "@/components/TopProgressBar";
+import PrefetchOnHover from "@/components/PrefetchOnHover";
 
 
 function AppContent() {
@@ -262,6 +264,8 @@ function AppContent() {
     <>
       <AppBackground />
       <ScrollRestoration />
+      <TopProgressBar />
+      <PrefetchOnHover />
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
