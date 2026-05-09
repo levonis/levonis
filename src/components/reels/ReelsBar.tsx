@@ -18,7 +18,7 @@ export default function ReelsBar() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  const { data: reels = [] } = useQuery({
+  const { data: reels = [], isLoading } = useQuery({
     queryKey: ['home-reels-bar'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -38,6 +38,10 @@ export default function ReelsBar() {
     gcTime: 10 * 60 * 1000,
   });
 
+  // Reserve vertical space while loading to prevent CLS; only collapse if confirmed empty
+  if (isLoading) {
+    return <div className="w-full" style={{ minHeight: 230 }} aria-hidden="true" />;
+  }
   if (reels.length === 0) return null;
 
   const formatCount = (n: number) => {
