@@ -23,24 +23,12 @@ export default defineConfig(({ mode }) => ({
     // improves LCP on the homepage (saves ~493 KiB of unused JS preloaded eagerly).
     modulePreload: {
       resolveDependencies: (_filename, deps) => {
-        // Trim heavy chunks from the eager modulepreload graph. They load only when
-        // a route that imports them is visited.
         const HEAVY = [
-          'vendor-three',
           'vendor-html2canvas',
           'vendor-jspdf',
-          'vendor-qr',
           'vendor-sanitize',
-          'vendor-carousel',
           'vendor-capacitor',
-          'vendor-daypicker',
           'vendor-canvg',
-          'vendor-charts',
-          'vendor-form',
-          'vendor-image-crop',
-          'vendor-resizable',
-          'vendor-cmdk',
-          'vendor-otp',
         ];
         return deps.filter((d) => !HEAVY.some((h) => d.includes(h)));
       },
@@ -49,44 +37,17 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: (id) => {
           if (!id.includes('node_modules')) return undefined;
-          // Heavy, route-lazy libs (no React top-level side effects)
+          // Only split libs that are SAFE (no internal circular deps that break in prod).
+          // recharts/d3, framer-motion, @radix-ui all have internal cross-imports that
+          // TDZ-crash when split into separate chunks — leave them with vendor-react.
           if (id.includes('html2canvas')) return 'vendor-html2canvas';
           if (id.includes('node_modules/jspdf/') || id.includes('node_modules/jspdf-autotable/')) return 'vendor-jspdf';
           if (id.includes('node_modules/canvg/')) return 'vendor-canvg';
-          // NOTE: do NOT manualChunk three/html5-qrcode. Naming them caused Rollup
-          // to emit bare side-effect imports (`import "./vendor-three-..."`) at the
-          // top of the entry, eagerly loading 275KB on every page load. Leaving
-          // them unnamed lets Rollup co-locate them with the dynamic-importer
-          // chunks so they only load when a game route or the printer activation
-          // panel is opened.
           if (id.includes('@supabase') || id.includes('postgrest') || id.includes('gotrue') || id.includes('realtime-js')) return 'vendor-supabase';
-          if (id.includes('date-fns') || id.includes('dayjs')) return 'vendor-date';
           if (id.includes('dompurify') || id.includes('sanitize-html')) return 'vendor-sanitize';
           if (id.includes('@capacitor')) return 'vendor-capacitor';
-          // Pure-function icon library — safe to peel off (no React top-level side effects beyond forwardRef wrap)
           if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
-          // Recharts + d3 — only used on admin/analytics pages
-          if (id.includes('node_modules/recharts/') || id.includes('node_modules/d3-')) return 'vendor-charts';
-          // Phase 3 split: framer-motion and @radix-ui peeled off vendor-react.
-          // Both are statically imported by app code, so Rollup wires them as
-          // sibling imports of vendor-react — they are fetched in parallel and
-          // execute after React (which they import from), avoiding TDZ.
-          // Keep tslib + scheduler + react* together in vendor-react to be safe.
-          if (id.includes('node_modules/framer-motion/')) return 'vendor-motion';
-          if (id.includes('node_modules/@radix-ui/')) return 'vendor-radix';
-          // Peel off libs that are NOT needed on the homepage critical path.
-          // They remain statically importable but ship as separate chunks so the
-          // initial vendor-react payload shrinks (improves FCP/LCP on first load).
-          if (id.includes('node_modules/react-hook-form/') || id.includes('node_modules/@hookform/')) return 'vendor-form';
-          if (id.includes('node_modules/react-image-crop/')) return 'vendor-image-crop';
-          if (id.includes('node_modules/react-resizable-panels/')) return 'vendor-resizable';
-          if (id.includes('node_modules/cmdk/')) return 'vendor-cmdk';
-          if (id.includes('node_modules/input-otp/')) return 'vendor-otp';
-          if (id.includes('node_modules/react-day-picker/')) return 'vendor-daypicker';
-          if (id.includes('node_modules/embla-carousel')) return 'vendor-carousel';
-          if (id.includes('node_modules/@tanstack/')) return 'vendor-query';
-          if (id.includes('node_modules/react-router')) return 'vendor-router';
-          return 'vendor-react';
+          return undefined;
         },
       },
     },
