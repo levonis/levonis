@@ -117,19 +117,18 @@
   <meta name="apple-mobile-web-app-title" content="LEVONIS">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=levo-20260428">
   <script>
-    // SW + cache cleanup for users stuck on old chunk hashes.
-    // Preview hosts must never keep a controlling SW; production runs one-shot per version
-    // so repeat visits keep the performance cache.
+    // Preview hosts MUST NEVER keep a controlling SW (Lovable iframe + hot reload).
+    // On production, the SW (registered from main.tsx) handles its own version migration
+    // by namespacing caches by VERSION. We only do an emergency cleanup if the
+    // user appended ?_swkill=1 to the URL.
     (function () {
       var host = window.location.hostname || '';
       var isPreviewHost = host.indexOf('lovableproject.com') !== -1 ||
         host.indexOf('id-preview--') === 0 ||
         (host.indexOf('lovable.app') !== -1 && host.indexOf('levonis.lovable.app') === -1);
-      try {
-        if (!isPreviewHost && localStorage.getItem('__levo_sw_cleaned_v16') === '1') return;
-        if (!isPreviewHost) localStorage.setItem('__levo_sw_cleaned_v16', '1');
-      } catch (e) {}
+      var killSw = window.location.search.indexOf('_swkill=1') !== -1;
       try { localStorage.removeItem('__levo_recovery_attempts'); } catch (e) {}
+      if (!isPreviewHost && !killSw) return;
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           regs.forEach(function (r) { r.unregister(); });
