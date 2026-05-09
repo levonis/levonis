@@ -4,10 +4,19 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { installFriendlyFunctionErrorMessages } from "@/lib/functionErrors";
-import { installScrollPerformance } from "@/lib/scrollPerformance";
 
 installFriendlyFunctionErrorMessages();
-installScrollPerformance();
+
+// Defer non-critical perf instrumentation until the browser is idle so it
+// never competes with first paint on slow devices.
+const idle = (cb: () => void) => {
+  const ric = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: any) => number);
+  if (ric) ric(cb, { timeout: 2000 });
+  else setTimeout(cb, 1500);
+};
+idle(() => {
+  import("@/lib/scrollPerformance").then((m) => m.installScrollPerformance()).catch(() => {});
+});
 
 // Service Worker registration is temporarily disabled while recovering from
 // stale production-cache issues. index.html still unregisters old workers.
