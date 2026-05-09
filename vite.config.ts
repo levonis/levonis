@@ -59,9 +59,10 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('@capacitor')) return 'vendor-capacitor';
           // Pure-function icon library — safe to peel off (no React top-level side effects beyond forwardRef wrap)
           if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
-          // KEEP: recharts/d3 + framer-motion + radix all bundled with React core to
-          // avoid production TDZ. Past attempts to split them caused
-          // "Cannot access before initialization" stuck on splash.
+          // Recharts + d3 — only used on admin/analytics pages
+          if (id.includes('node_modules/recharts/') || id.includes('node_modules/d3-')) return 'vendor-charts';
+          // KEEP: framer-motion + radix bundled with React core to avoid production
+          // TDZ. Past attempts to split them caused "Cannot access before initialization".
           return 'vendor-react';
         },
       },
