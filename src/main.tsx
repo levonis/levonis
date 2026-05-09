@@ -18,9 +18,25 @@ idle(() => {
   import("@/lib/scrollPerformance").then((m) => m.installScrollPerformance()).catch(() => {});
 });
 
-// Service Worker registration is temporarily disabled while recovering from
-// stale production-cache issues. index.html still unregisters old workers.
-
+// Service Worker registration — production hosts only. Preview/lovable.app
+// staging unregister themselves inside sw.js to avoid trapping the iframe.
+if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+  const host = window.location.hostname;
+  const isPreviewHost =
+    host.includes('lovableproject.com') ||
+    host.startsWith('id-preview--') ||
+    (host.includes('lovable.app') && !host.includes('levonis.lovable.app'));
+  const killSw = window.location.search.includes('_swkill=1');
+  if (!isPreviewHost && !killSw) {
+    const register = () => {
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/', updateViaCache: 'none' })
+        .catch(() => {});
+    };
+    if (document.readyState === 'complete') idle(register);
+    else window.addEventListener('load', () => idle(register));
+  }
+}
 
 // Telegram Mini App: expand viewport to full height
 declare global {
