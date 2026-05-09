@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { ArrowRight, Package, ShoppingBag, History, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGachaMachines, useGachaSettings } from "./useGachaData";
 import GameBalanceBar from "@/components/games/GameBalanceBar";
 import GachaMachineCard from "./GachaMachineCard";
-import GachaMachineDetail from "./GachaMachineDetail";
+// Lazy: pulls in three.js (vendor-three). Defer until a machine is opened.
+const GachaMachineDetail = lazy(() => import("./GachaMachineDetail"));
 import GachaCollection from "./GachaCollection";
 import GachaMarketplace from "./GachaMarketplace";
 import GachaSpinHistory from "./GachaSpinHistory";
