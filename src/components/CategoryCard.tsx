@@ -1,6 +1,7 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import DirectSaleRibbon from "./ui/DirectSaleRibbon";
+import { resizeSupabaseImage } from "@/lib/imageUtils";
 
 interface CategoryCardProps {
   name: string;
