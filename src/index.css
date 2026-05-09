@@ -1877,10 +1877,43 @@ a, button, [role="button"], input, select, textarea, label {
   -webkit-touch-callout: none;
 }
 
+/* Remove the legacy 300ms tap delay on touch devices for all interactive
+   elements. Using `manipulation` keeps panning/pinch-zoom while killing
+   the double-tap-to-zoom wait that makes taps feel sluggish. */
+a, button, [role="button"], [role="link"], [role="tab"], [role="menuitem"],
+[role="option"], [role="switch"], [role="checkbox"], [role="radio"],
+summary, label, input[type="button"], input[type="submit"], input[type="reset"] {
+  touch-action: manipulation;
+}
+
 input,
 select,
 textarea {
   touch-action: manipulation;
+  /* iOS auto-zooms when focused inputs have font-size < 16px. Pin to 16px
+     on coarse pointers to prevent the disruptive zoom-in on focus. */
+}
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+}
+
+/* Instant tactile feedback on press — a tiny scale-down feels native and
+   confirms the tap before the route/state change lands. Skipped for users
+   who prefer reduced motion. */
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  a:active, button:active, [role="button"]:active, [role="tab"]:active,
+  [role="menuitem"]:active, [role="option"]:active, summary:active {
+    transform: scale(0.97);
+    transition: transform 60ms ease-out;
+  }
+}
+a, button, [role="button"], [role="tab"], [role="menuitem"],
+[role="option"], summary {
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .overflow-x-auto {
