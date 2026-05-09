@@ -655,9 +655,22 @@ function translateBambuColorName(name: string): string {
 function translateBambuOption(name: string): string {
   const lower = name.toLowerCase().trim();
   if (bambuOptionArMap[lower]) return bambuOptionArMap[lower];
-  for (const [key, ar] of Object.entries(bambuOptionArMap)) {
-    if (lower.includes(key)) return ar;
+  // Compound labels (e.g. "0.2mm Stainless Steel"): translate every recognized
+  // fragment, then concatenate. Falls back to original name if no fragment matches.
+  let working = lower.replace(/(\d)mm\b/g, '$1 mm'); // normalize "0.2mm" -> "0.2 mm"
+  const parts: string[] = [];
+  let matched = false;
+  // Sort keys longest-first so multi-word entries match before single-word.
+  const keys = Object.keys(bambuOptionArMap).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    const idx = working.indexOf(key);
+    if (idx !== -1) {
+      parts.push(bambuOptionArMap[key]);
+      working = (working.slice(0, idx) + ' ' + working.slice(idx + key.length)).replace(/\s+/g, ' ').trim();
+      matched = true;
+    }
   }
+  if (matched) return parts.join(' ');
   return name;
 }
 
