@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import '@/styles/admin.css';
 import { supabase } from '@/integrations/supabase/client';
 import { ShieldAlert, ShieldCheck, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
