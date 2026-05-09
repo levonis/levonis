@@ -93,7 +93,7 @@ const CategoryCard = ({
             />
           ) : inView && showImage ? (
             <img
-              src={mediaUrl!}
+              src={optimizedImageSrc!}
               alt=""
               className="w-full h-full object-cover scale-[1.02]"
               loading="lazy"
