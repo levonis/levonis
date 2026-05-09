@@ -52,6 +52,14 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('date-fns') || id.includes('dayjs')) return 'vendor-date';
           if (id.includes('dompurify') || id.includes('sanitize-html')) return 'vendor-sanitize';
           if (id.includes('@capacitor')) return 'vendor-capacitor';
+          // Recharts + d3 deps: only used by admin financials/inventory pages.
+          // Splitting them out of vendor-react removes ~100 KiB gzip from initial homepage load.
+          // Safe because recharts is imported only via lazy admin routes.
+          if (
+            id.includes('node_modules/recharts') ||
+            id.includes('node_modules/victory-vendor') ||
+            /node_modules\/d3-(array|color|ease|format|interpolate|path|scale|shape|time|time-format)/.test(id)
+          ) return 'vendor-charts';
           // CRITICAL: Bundle React + ALL OTHER node_modules together to guarantee load order.
           // Many libs import React at module top-level — splitting causes
           // "Cannot read properties of undefined (reading 'createContext'/'forwardRef'/'useLayoutEffect')"
