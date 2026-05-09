@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { ADMIN_BASE_PATH } from '@/config/adminConfig';
+import '@/styles/admin.css';
 
 interface AdminLayoutProps {
   children: ReactNode;
