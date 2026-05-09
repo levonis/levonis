@@ -445,30 +445,39 @@
         var _origShow = showRecovery;
         showRecovery = function (m) { reportMountTimeout(); return _origShow(m); };
 
+        // Only treat SAME-ORIGIN asset failures as chunk errors. Third-party
+        // scripts (Meta Pixel/fbevents.js, telegram, analytics) often fail on
+        // restrictive networks and MUST NOT trigger a cache wipe + reload.
+        function isSameOriginAsset(src) {
+          if (!src) return false;
+          try {
+            var u = new URL(src, window.location.href);
+            return u.origin === window.location.origin;
+          } catch (e) { return false; }
+        }
         window.addEventListener('error', function (e) {
+          // Once React has mounted, any later asset failure is non-fatal.
+          if (window.__levoMounted) return;
           var msg = (e && e.message) || '';
           var src = (e && e.target && (e.target.src || e.target.href)) || '';
-          var isChunkErr =
+          var isDynImport =
             msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
-            msg.indexOf('Importing a module script failed') !== -1 ||
-            (src && /\.(js|mjs)(\?|$)/.test(src));
-          if (!isChunkErr) return;
+            msg.indexOf('Importing a module script failed') !== -1;
+          var isOwnAsset = src && /\.(js|mjs)(\?|$)/.test(src) && isSameOriginAsset(src);
+          if (!isDynImport && !isOwnAsset) return;
           try { window.__levoReportError && window.__levoReportError(src ? 'resource' : 'chunk', msg || 'asset failed to load', src || null); } catch (er) {}
-          if (!window.__levoMounted) {
-            showRecovery();
-            selfHealOnce();
-          }
+          showRecovery();
+          selfHealOnce();
         }, true);
         window.addEventListener('unhandledrejection', function (e) {
+          if (window.__levoMounted) return;
           var msg = (e && e.reason && (e.reason.message || String(e.reason))) || '';
           if (msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
               msg.indexOf('Importing a module script failed') !== -1 ||
               msg.indexOf('error loading dynamically imported module') !== -1) {
             try { window.__levoReportError && window.__levoReportError('unhandledrejection', msg, null); } catch (er) {}
-            if (!window.__levoMounted) {
-              showRecovery();
-              selfHealOnce();
-            }
+            showRecovery();
+            selfHealOnce();
           }
         });
       })();
