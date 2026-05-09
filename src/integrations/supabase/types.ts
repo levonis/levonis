@@ -1275,6 +1275,75 @@ export type Database = {
           },
         ]
       }
+      chunk_load_errors: {
+        Row: {
+          asset_url: string | null
+          created_at: string
+          downlink: number | null
+          error_type: string | null
+          id: string
+          is_mobile: boolean | null
+          language: string | null
+          message: string | null
+          ms_since_load: number | null
+          network_type: string | null
+          platform: string | null
+          recovery_attempts: number | null
+          referrer: string | null
+          rtt: number | null
+          save_data: boolean | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+          viewport_height: number | null
+          viewport_width: number | null
+        }
+        Insert: {
+          asset_url?: string | null
+          created_at?: string
+          downlink?: number | null
+          error_type?: string | null
+          id?: string
+          is_mobile?: boolean | null
+          language?: string | null
+          message?: string | null
+          ms_since_load?: number | null
+          network_type?: string | null
+          platform?: string | null
+          recovery_attempts?: number | null
+          referrer?: string | null
+          rtt?: number | null
+          save_data?: boolean | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewport_height?: number | null
+          viewport_width?: number | null
+        }
+        Update: {
+          asset_url?: string | null
+          created_at?: string
+          downlink?: number | null
+          error_type?: string | null
+          id?: string
+          is_mobile?: boolean | null
+          language?: string | null
+          message?: string | null
+          ms_since_load?: number | null
+          network_type?: string | null
+          platform?: string | null
+          recovery_attempts?: number | null
+          referrer?: string | null
+          rtt?: number | null
+          save_data?: boolean | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewport_height?: number | null
+          viewport_width?: number | null
+        }
+        Relationships: []
+      }
       client_error_logs: {
         Row: {
           context: Json | null
