@@ -168,6 +168,7 @@ import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
 import PageFade from "@/components/PageFade";
 import TopProgressBar from "@/components/TopProgressBar";
 import PrefetchOnHover from "@/components/PrefetchOnHover";
+import IdleRoutePrefetcher from "@/components/IdleRoutePrefetcher";
 
 
 function AppContent() {
@@ -266,6 +267,7 @@ function AppContent() {
       <ScrollRestoration />
       <TopProgressBar />
       <PrefetchOnHover />
+      <IdleRoutePrefetcher />
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
