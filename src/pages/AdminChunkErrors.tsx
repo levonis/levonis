@@ -113,7 +113,7 @@ export default function AdminChunkErrors() {
           {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
         </Button>
         <Button variant="outline" size="sm" onClick={() => purge.mutate()} disabled={purge.isPending}>
-          <Trash2 className="w-4 h-4 me-1" /> تنظيف >7 أيام
+          <Trash2 className="w-4 h-4 me-1" /> {'تنظيف > 7 أيام'}
         </Button>
       </div>
 
