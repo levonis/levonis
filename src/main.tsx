@@ -9,9 +9,31 @@ import { installScrollPerformance } from "@/lib/scrollPerformance";
 installFriendlyFunctionErrorMessages();
 installScrollPerformance();
 
-// Service Worker kill-switch removed — it was wiping caches on every load,
-// forcing every asset to be re-downloaded and making the site very slow.
-// Old stuck users have already self-healed via the index.html one-shot cleaner.
+// Service Worker registration — production only, never inside iframes or
+// Lovable preview hosts (per PWA guidelines). Caches hashed JS/CSS + static
+// media for instant repeat-visit loads. The SW itself (public/sw.js) already
+// guards against caching HTML and Supabase REST/auth/functions paths.
+if (
+  typeof window !== 'undefined' &&
+  'serviceWorker' in navigator &&
+  import.meta.env.PROD
+) {
+  const isInIframe = (() => {
+    try { return window.self !== window.top; } catch { return true; }
+  })();
+  const host = window.location.hostname;
+  const isPreviewHost =
+    host.includes('id-preview--') ||
+    host.includes('lovableproject.com') ||
+    host.includes('lovable.app');
+
+  if (!isInIframe && !isPreviewHost) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+}
+
 
 // Telegram Mini App: expand viewport to full height
 declare global {
