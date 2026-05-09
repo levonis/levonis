@@ -117,13 +117,17 @@
   <meta name="apple-mobile-web-app-title" content="LEVONIS">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=levo-20260428">
   <script>
-    // One-shot SW + cache cleanup for users stuck on old chunk hashes.
-    // Runs ONCE per browser (guarded by localStorage flag) instead of every load,
-    // so it doesn't destroy the cache and slow down repeat visits.
+    // SW + cache cleanup for users stuck on old chunk hashes.
+    // Preview hosts must never keep a controlling SW; production runs one-shot per version
+    // so repeat visits keep the performance cache.
     (function () {
+      var host = window.location.hostname || '';
+      var isPreviewHost = host.indexOf('lovableproject.com') !== -1 ||
+        host.indexOf('id-preview--') === 0 ||
+        (host.indexOf('lovable.app') !== -1 && host.indexOf('levonis.lovable.app') === -1);
       try {
-        if (localStorage.getItem('__levo_sw_cleaned_v14') === '1') return;
-        localStorage.setItem('__levo_sw_cleaned_v14', '1');
+        if (!isPreviewHost && localStorage.getItem('__levo_sw_cleaned_v15') === '1') return;
+        if (!isPreviewHost) localStorage.setItem('__levo_sw_cleaned_v15', '1');
       } catch (e) {}
       try { localStorage.removeItem('__levo_recovery_attempts'); } catch (e) {}
       if ('serviceWorker' in navigator) {
@@ -390,7 +394,7 @@
         // means a stale Service Worker is serving a stale index.html that points to
         // chunk hashes that no longer exist after a deploy. Auto-nuke SW + caches
         // and reload ONCE — far faster than the 25s force-reload timer.
-        var SELF_HEAL_KEY = '__levo_self_healed_v13';
+        var SELF_HEAL_KEY = '__levo_self_healed_v15';
         function selfHealOnce() {
           if (window.__levoMounted) return;
           try { if (sessionStorage.getItem(SELF_HEAL_KEY)) return; } catch (e) {}
