@@ -390,6 +390,16 @@
           try { sessionStorage.setItem(SELF_HEAL_KEY, '1'); } catch (e) {}
           window.__levoRecover();
         }
+        // Report mount-timeout once when recovery UI is shown
+        var REPORTED_TIMEOUT = false;
+        function reportMountTimeout() {
+          if (REPORTED_TIMEOUT) return;
+          REPORTED_TIMEOUT = true;
+          try { window.__levoReportError && window.__levoReportError('mount-timeout', 'React did not mount before SHOW_RECOVERY_AFTER', null); } catch (e) {}
+        }
+        var _origShow = showRecovery;
+        showRecovery = function (m) { reportMountTimeout(); return _origShow(m); };
+
         window.addEventListener('error', function (e) {
           var msg = (e && e.message) || '';
           var src = (e && e.target && (e.target.src || e.target.href)) || '';
@@ -398,6 +408,7 @@
             msg.indexOf('Importing a module script failed') !== -1 ||
             (src && /\.(js|mjs)(\?|$)/.test(src));
           if (!isChunkErr) return;
+          try { window.__levoReportError && window.__levoReportError(src ? 'resource' : 'chunk', msg || 'asset failed to load', src || null); } catch (er) {}
           if (!window.__levoMounted) {
             showRecovery();
             selfHealOnce();
@@ -408,6 +419,7 @@
           if (msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
               msg.indexOf('Importing a module script failed') !== -1 ||
               msg.indexOf('error loading dynamically imported module') !== -1) {
+            try { window.__levoReportError && window.__levoReportError('unhandledrejection', msg, null); } catch (er) {}
             if (!window.__levoMounted) {
               showRecovery();
               selfHealOnce();
