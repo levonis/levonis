@@ -219,6 +219,82 @@
       </div>
     </div>
     <script>
+      // ===== Chunk error reporter — POSTs to Supabase chunk_load_errors table =====
+      (function () {
+        var REPORT_URL = 'https://sajlfpygebpqwzpotrsg.supabase.co/rest/v1/chunk_load_errors';
+        var REPORT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhamxmcHlnZWJwcXd6cG90cnNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTgwNjMsImV4cCI6MjA3NzY3NDA2M30.s4OmffUCWqYJqxo--zH7RjRXZ_CoUYEkoSKWW50CSGg';
+        var T0 = Date.now();
+        var SENT = {}; // dedupe by error_type+asset
+        var REPORTED_COUNT = 0;
+        var MAX_REPORTS = 5;
+        var IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+        function platformOf(ua) {
+          if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+          if (/Android/i.test(ua)) return 'android';
+          if (/Windows/i.test(ua)) return 'windows';
+          if (/Mac OS X/i.test(ua)) return 'macos';
+          if (/Linux/i.test(ua)) return 'linux';
+          return 'other';
+        }
+
+        window.__levoReportError = function (errorType, message, assetUrl) {
+          try {
+            if (REPORTED_COUNT >= MAX_REPORTS) return;
+            var key = (errorType || '') + '|' + (assetUrl || '') + '|' + (message || '').slice(0, 80);
+            if (SENT[key]) return;
+            SENT[key] = 1;
+            REPORTED_COUNT++;
+
+            var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
+            var attempts = 0;
+            try { attempts = parseInt(localStorage.getItem('__levo_recovery_attempts') || '0', 10) || 0; } catch (e) {}
+
+            var body = JSON.stringify({
+              url: location.href,
+              asset_url: assetUrl || null,
+              message: (message || '').slice(0, 500),
+              error_type: errorType || 'unknown',
+              user_agent: navigator.userAgent,
+              platform: platformOf(navigator.userAgent),
+              is_mobile: IS_MOBILE,
+              network_type: conn ? (conn.effectiveType || null) : null,
+              downlink: conn ? (typeof conn.downlink === 'number' ? conn.downlink : null) : null,
+              rtt: conn ? (typeof conn.rtt === 'number' ? conn.rtt : null) : null,
+              save_data: conn ? !!conn.saveData : null,
+              viewport_width: window.innerWidth || (window.screen && window.screen.width) || null,
+              viewport_height: window.innerHeight || (window.screen && window.screen.height) || null,
+              language: navigator.language || null,
+              referrer: document.referrer || null,
+              recovery_attempts: attempts,
+              ms_since_load: Date.now() - T0,
+            });
+
+            // Prefer sendBeacon (survives unload), fallback to fetch keepalive
+            var blob = new Blob([body], { type: 'application/json' });
+            var sent = false;
+            // sendBeacon can't set headers — Supabase REST needs apikey, so skip it
+            try {
+              fetch(REPORT_URL, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  apikey: REPORT_KEY,
+                  Authorization: 'Bearer ' + REPORT_KEY,
+                  Prefer: 'return=minimal',
+                },
+                body: body,
+                keepalive: true,
+                credentials: 'omit',
+                mode: 'cors',
+              }).catch(function () {});
+              sent = true;
+            } catch (e) {}
+          } catch (e) {}
+        };
+      })();
+    </script>
+    <script>
       // Safety net: if React doesn't mount in time, show recovery UI.
       // Auto-recover only twice — after that show a clear "slow connection" message
       // instead of looping cache wipes (which makes things worse on flaky networks).
