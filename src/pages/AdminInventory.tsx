@@ -429,9 +429,26 @@ export default function AdminInventory() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['inventory-products'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('products_admin').select('id, name_ar, price, cost_price, shipping_cost_iqd, commission_iqd, commission_direct_iqd, other_costs_iqd, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar), product_options(id, name_ar)').order('name_ar');
-      if (error) throw error;
-      return data || [];
+      const [prodRes, catRes, optRes] = await Promise.all([
+        (supabase as any).from('products_admin').select('id, name_ar, price, cost_price, shipping_cost_iqd, commission_iqd, commission_direct_iqd, other_costs_iqd, direct_stock, image_url, category_id, colors').order('name_ar'),
+        supabase.from('categories').select('id, name_ar'),
+        supabase.from('product_options').select('id, product_id, name_ar'),
+      ]);
+      if (prodRes.error) throw prodRes.error;
+      if (catRes.error) throw catRes.error;
+      if (optRes.error) throw optRes.error;
+      const catMap = new Map((catRes.data || []).map((c: any) => [c.id, c]));
+      const optMap = new Map<string, any[]>();
+      (optRes.data || []).forEach((o: any) => {
+        const arr = optMap.get(o.product_id) || [];
+        arr.push({ id: o.id, name_ar: o.name_ar });
+        optMap.set(o.product_id, arr);
+      });
+      return (prodRes.data || []).map((p: any) => ({
+        ...p,
+        categories: catMap.get(p.category_id) || null,
+        product_options: optMap.get(p.id) || [],
+      }));
     },
     enabled: isAdmin
   });
