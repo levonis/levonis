@@ -1639,6 +1639,11 @@ export default function AdminInventory() {
                               onClick={() => exportDraftPdf(draft)}>
                                     <Download className="h-3 w-3 ml-1" /> PDF
                                   </Button>
+                                  <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
+                              style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
+                              onClick={() => exportDraftPdfEn(draft)}>
+                                    <Download className="h-3 w-3 ml-1" /> PDF (EN)
+                                  </Button>
                                  <button onClick={() => deleteDraftMutation.mutate(draft.id)} className="p-1.5 rounded-lg hover:bg-red-500/15 transition-colors">
                                    <Trash2 className="h-3.5 w-3.5 text-red-400/50" />
                                  </button>
