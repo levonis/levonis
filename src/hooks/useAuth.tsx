@@ -26,13 +26,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Keep auth loading until the role check finishes so admin pages don't mount with isAdmin=false
+        // Unblock the app IMMEDIATELY once we know the session — do NOT wait
+        // for the admin role check (slow networks would hang the whole UI).
+        setLoading(false);
         if (session?.user) {
-          checkAdminStatus(session.user.id).finally(() => setLoading(false));
+          // Fire-and-forget; isAdmin updates when it resolves.
+          checkAdminStatus(session.user.id).catch(() => {});
         } else {
           setIsAdmin(false);
-          setLoading(false);
         }
       }
     );
@@ -41,13 +42,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+      setLoading(false);
       if (session?.user) {
-        checkAdminStatus(session.user.id).finally(() => setLoading(false));
+        checkAdminStatus(session.user.id).catch(() => {});
       } else {
         setIsAdmin(false);
-        setLoading(false);
       }
+    }).catch(() => {
+      // Even if getSession fails (e.g., network), don't keep the app stuck.
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
