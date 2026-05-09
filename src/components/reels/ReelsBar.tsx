@@ -77,12 +77,16 @@ export default function ReelsBar() {
             >
               {reel.thumbnail_url ? (
                 <img
-                  src={reel.thumbnail_url}
+                  src={resizeSupabaseImage(reel.thumbnail_url, 300, 70) || reel.thumbnail_url}
                   alt=""
                   className="w-full h-full object-cover pointer-events-none"
                   loading="lazy"
+                  decoding="async"
+                  width={120}
+                  height={190}
                   draggable={false}
                 />
+
               ) : (
                 <video
                   src={reel.video_url}
