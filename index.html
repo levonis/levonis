@@ -51,10 +51,26 @@
               // Use screen.width instead of window.innerWidth — the latter forces a
               // synchronous layout this early in page load (large LH "forced reflow" hit).
               var sw = (window.screen && window.screen.width) || 800;
-              var w = sw > 900 ? 1200 : 800;
-              if (src.indexOf('/storage/v1/object/public/') !== -1) {
-                src = src.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
-                  + (src.indexOf('?') === -1 ? '?' : '&') + 'width=' + w + '&quality=75&resize=contain';
+              // Mobile uses width=800; desktop uses width=900 (matches BannerImage's
+              // non-first slides which never become LCP). Keep 800 to match React.
+              var w = 800;
+              // Build URL identical to resizeSupabaseImage(src, 800, 70):
+              // params order: width, quality, resize, format=webp
+              if (src.indexOf('/storage/v1/object/public/') !== -1 || src.indexOf('/storage/v1/render/image/public/') !== -1) {
+                var base = src.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+                var qIdx = base.indexOf('?');
+                var path = qIdx === -1 ? base : base.slice(0, qIdx);
+                var existingQs = qIdx === -1 ? '' : base.slice(qIdx + 1);
+                // Strip any pre-existing width/quality/resize/format params to mirror resizeSupabaseImage
+                var kept = existingQs ? existingQs.split('&').filter(function (p) {
+                  var k = p.split('=')[0];
+                  return k && k !== 'width' && k !== 'height' && k !== 'quality' && k !== 'resize' && k !== 'format';
+                }) : [];
+                kept.push('width=' + w);
+                kept.push('quality=70');
+                kept.push('resize=contain');
+                kept.push('format=webp');
+                src = path + '?' + kept.join('&');
               }
               var link = document.createElement('link');
               link.rel = 'preload';
