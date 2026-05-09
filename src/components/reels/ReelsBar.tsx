@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/lib/i18n';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 
 interface ReelThumb {
   id: string;
