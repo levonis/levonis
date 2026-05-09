@@ -945,6 +945,153 @@ export default function AdminInventory() {
     }
   };
 
+  // ====== ENGLISH PDF EXPORT (Product, Color, Option, Price, Quantity, Total) ======
+  const exportDraftPdfEn = async (draft: any) => {
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { default: jsPDF } = await import('jspdf');
+
+      const items: DraftItem[] = (draft?.items || []) as DraftItem[];
+      if (items.length === 0) {
+        toast.error('No items to export');
+        return;
+      }
+
+      // Fetch English names for products, colors, options
+      const productIds = Array.from(new Set(items.map((i) => i.product_id).filter(Boolean)));
+      const { data: prodRows } = await (supabase as any)
+        .from('products_admin')
+        .select('id, name_ar, name_en, colors, product_options(id, name, name_ar)')
+        .in('id', productIds);
+
+      const prodMap = new Map<string, any>();
+      (prodRows || []).forEach((p: any) => prodMap.set(p.id, p));
+
+      const translateColor = (productId: string, colorName: string): string => {
+        if (!colorName) return '—';
+        const p = prodMap.get(productId);
+        const colors = parseProductColors(p?.colors);
+        const match = colors.find((c: any) =>
+          (c?.name_ar && c.name_ar === colorName) ||
+          (c?.name && c.name === colorName) ||
+          (c?.color && c.color === colorName)
+        );
+        return (match?.name || match?.color || colorName) as string;
+      };
+
+      const translateOption = (productId: string, optionName: string): string => {
+        if (!optionName) return '—';
+        const p = prodMap.get(productId);
+        const opts: any[] = p?.product_options || [];
+        const match = opts.find((o: any) => o?.name_ar === optionName || o?.name === optionName);
+        return (match?.name || optionName) as string;
+      };
+
+      const fmt = (n: number) => (Number(n) || 0).toLocaleString('en-US');
+      const dateStr = new Date().toLocaleDateString('en-US');
+      const titleSrc = draft?.title || 'Untitled Draft';
+      const product0 = prodMap.get(items[0]?.product_id);
+      const titleEn = product0?.name_en || titleSrc;
+
+      let totalQty = 0;
+      let totalSum = 0;
+
+      const rowsHtml = items.map((it, i) => {
+        const bg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+        const p = prodMap.get(it.product_id);
+        const productEn = p?.name_en || it.product_name || '';
+        const colorEn = translateColor(it.product_id, it.color);
+        const optionEn = translateOption(it.product_id, it.option);
+        const price = Number(it.unit_cost) || 0;
+        const qty = Number(it.quantity) || 0;
+        const lineTotal = price * qty;
+        totalQty += qty;
+        totalSum += lineTotal;
+        return `<tr>
+          <td style="background:${bg};padding:7px 10px;border:1px solid #e2e8f0;text-align:center;color:#64748b;font-size:11px">${i + 1}</td>
+          <td style="background:${bg};padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#1e293b">${String(productEn).replace(/</g, '&lt;')}</td>
+          <td style="background:${bg};padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center">${String(colorEn).replace(/</g, '&lt;')}</td>
+          <td style="background:${bg};padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center">${String(optionEn).replace(/</g, '&lt;')}</td>
+          <td style="background:${bg};padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#7c3aed;text-align:right;font-family:monospace">${fmt(price)}</td>
+          <td style="background:${bg};padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#1e293b;text-align:center;font-family:monospace;font-weight:bold">${fmt(qty)}</td>
+          <td style="background:${bg};padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#ea580c;text-align:right;font-family:monospace;font-weight:bold">${fmt(lineTotal)}</td>
+        </tr>`;
+      }).join('');
+
+      const html = `
+        <div style="padding:24px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:ltr;background:#fff;color:#1e293b;width:1100px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #7c3aed;padding-bottom:14px;margin-bottom:18px">
+            <div>
+              <h1 style="margin:0 0 4px;font-size:24px;color:#0f172a">${String(titleEn).replace(/</g, '&lt;')}</h1>
+              <div style="font-size:12px;color:#64748b">Export Date: ${dateStr} &nbsp;|&nbsp; ${items.length} item${items.length === 1 ? '' : 's'}</div>
+            </div>
+            <div style="text-align:right;font-size:11px;color:#94a3b8">Levonis · Purchase Draft</div>
+          </div>
+
+          <table style="border-collapse:collapse;width:100%;direction:ltr">
+            <thead>
+              <tr>
+                ${['#','Product','Color','Option','Price','Quantity','Total'].map(h => `<th style="background:#7c3aed;color:#fff;padding:10px;border:1px solid #6d28d9;font-size:12px;white-space:nowrap">${h}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5" style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px;text-align:right">Grand Total</td>
+                <td style="background:#f1f5f9;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:12px;text-align:center;font-family:monospace">${fmt(totalQty)}</td>
+                <td style="background:#fff7ed;padding:10px;border:1px solid #cbd5e1;font-weight:bold;font-size:13px;color:#ea580c;text-align:right;font-family:monospace">${fmt(totalSum)}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div style="margin-top:14px;text-align:center;font-size:10px;color:#94a3b8">© ${new Date().getFullYear()} Levonis — Auto-generated</div>
+        </div>`;
+
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;left:-99999px;top:0;z-index:-1';
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      try {
+        const canvas = await html2canvas(container.firstElementChild as HTMLElement, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const margin = 8;
+        const usableW = pageW - margin * 2;
+        const usableH = pageH - margin * 2;
+        const scaleFactor = usableW / canvas.width;
+        const fullH = canvas.height * scaleFactor;
+
+        if (fullH <= usableH) {
+          pdf.addImage(imgData, 'PNG', margin, margin, usableW, fullH);
+        } else {
+          const sliceH = Math.floor(usableH / scaleFactor);
+          let srcY = 0;
+          let pageIdx = 0;
+          while (srcY < canvas.height) {
+            if (pageIdx > 0) pdf.addPage();
+            const cur = Math.min(sliceH, canvas.height - srcY);
+            const sc = document.createElement('canvas');
+            sc.width = canvas.width; sc.height = cur;
+            sc.getContext('2d')!.drawImage(canvas, 0, srcY, canvas.width, cur, 0, 0, canvas.width, cur);
+            pdf.addImage(sc.toDataURL('image/png'), 'PNG', margin, margin, usableW, cur * scaleFactor);
+            srcY += cur; pageIdx++;
+          }
+        }
+        const safeTitle = String(titleEn || 'draft').replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+        pdf.save(`${safeTitle}-EN-${new Date().toISOString().slice(0, 10)}.pdf`);
+        toast.success('Draft exported as English PDF');
+      } finally {
+        document.body.removeChild(container);
+      }
+    } catch (e) {
+      console.error('Draft EN PDF export error:', e);
+      toast.error('Failed to export English PDF');
+    }
+  };
+
   // ====== COMPUTED ======
   const pendingShipments = useMemo(() => shipments.filter((s) => s.status === 'pending'), [shipments]);
   const mergedShipments = useMemo(() => shipments.filter((s) => s.status === 'merged'), [shipments]);
@@ -1491,6 +1638,11 @@ export default function AdminInventory() {
                               style={{ background: `linear-gradient(135deg, ${NEON.emerald}25, ${NEON.emerald}10)`, borderColor: `${NEON.emerald}30` }}
                               onClick={() => exportDraftPdf(draft)}>
                                     <Download className="h-3 w-3 ml-1" /> PDF
+                                  </Button>
+                                  <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
+                              style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
+                              onClick={() => exportDraftPdfEn(draft)}>
+                                    <Download className="h-3 w-3 ml-1" /> PDF (EN)
                                   </Button>
                                  <button onClick={() => deleteDraftMutation.mutate(draft.id)} className="p-1.5 rounded-lg hover:bg-red-500/15 transition-colors">
                                    <Trash2 className="h-3.5 w-3.5 text-red-400/50" />
