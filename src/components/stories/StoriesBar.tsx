@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useRef, useState } from 'react';
 import StoryViewer from './StoryViewer';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 
 interface StorySection {
   id: string;
