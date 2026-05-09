@@ -1,4 +1,4 @@
-const VERSION = 'v17';
+const VERSION = 'v18';
 const STATIC_CACHE = `levonis-static-${VERSION}`;
 const HTML_CACHE = `levonis-html-${VERSION}`;
 
