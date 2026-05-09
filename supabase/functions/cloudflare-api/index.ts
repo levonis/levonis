@@ -127,6 +127,31 @@ serve(async (req: Request) => {
         body = JSON.stringify({ files: params.urls });
         break;
 
+      // ===== Page Rules =====
+      case "pagerules_list":
+        url = `${CF_API}/zones/${ZONE_ID}/pagerules`;
+        break;
+
+      case "pagerule_create": {
+        if (!params?.targets || !params?.actions) throw new Error("targets and actions required");
+        url = `${CF_API}/zones/${ZONE_ID}/pagerules`;
+        method = "POST";
+        body = JSON.stringify({
+          targets: params.targets,
+          actions: params.actions,
+          priority: params.priority ?? 1,
+          status: params.status ?? "active",
+        });
+        break;
+      }
+
+      case "pagerule_delete": {
+        if (!params?.id) throw new Error("Page rule ID required");
+        url = `${CF_API}/zones/${ZONE_ID}/pagerules/${params.id}`;
+        method = "DELETE";
+        break;
+      }
+
       // ===== Analytics =====
       case "analytics_dashboard":
         url = `${CF_API}/zones/${ZONE_ID}/analytics/dashboard?since=${params?.since || "-1440"}&until=${params?.until || "0"}`;
