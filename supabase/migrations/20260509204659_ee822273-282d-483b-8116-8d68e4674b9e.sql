@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public._admin_products_full() TO authenticated;
