@@ -1,4 +1,5 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useMemo } from 'react';
+import { resizeSupabaseImage, buildResponsiveSrcSet } from '@/lib/imageUtils';
 
 interface ImageWithLoaderProps {
   src: string;
@@ -9,56 +10,76 @@ interface ImageWithLoaderProps {
   width?: number;
   height?: number;
   quality?: number; // 1-100, default 75
+  /** Custom widths for the responsive srcSet. Defaults to a sensible ladder around `width`. */
+  srcSetWidths?: number[];
+  /** Custom `sizes` attribute. Defaults to "(max-width: 640px) 50vw, 25vw" for cards. */
+  sizes?: string;
+}
+
+const SNAP_WIDTHS = [120, 200, 300, 400, 600, 800, 1000, 1200, 1600];
+function snapWidth(w?: number) {
+  if (!w) return 600;
+  return SNAP_WIDTHS.find((s) => s >= w) ?? SNAP_WIDTHS[SNAP_WIDTHS.length - 1];
 }
 
 /**
- * ImageWithLoader - Image with loading animation and compression hints
- * Uses native lazy loading + quality hints for smaller file sizes
+ * ImageWithLoader — auto-routes Supabase storage URLs through the WebP
+ * render endpoint, builds a responsive srcSet, and shows a shimmer until
+ * the image is decoded.
  */
-const ImageWithLoader = memo(({ 
-  src, 
-  alt, 
+const ImageWithLoader = memo(({
+  src,
+  alt,
   className = '',
   containerClassName = '',
   priority = false,
   width,
   height,
-  quality = 75
+  quality = 75,
+  srcSetWidths,
+  sizes,
 }: ImageWithLoaderProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const handleLoad = useCallback(() => {
-    setIsLoaded(true);
-  }, []);
-
+  const handleLoad = useCallback(() => setIsLoaded(true), []);
   const handleError = useCallback(() => {
     setHasError(true);
     setIsLoaded(true);
   }, []);
 
-  // Add quality parameter to Supabase storage URLs
-  const optimizedSrc = src?.includes('supabase.co/storage') 
-    ? `${src}${src.includes('?') ? '&' : '?'}quality=${quality}` 
-    : src;
+  const baseWidth = snapWidth(width);
+  const widths = useMemo(() => {
+    if (srcSetWidths && srcSetWidths.length) return srcSetWidths;
+    return Array.from(new Set([Math.max(120, Math.round(baseWidth / 2)), baseWidth, baseWidth * 2]))
+      .filter((w) => w <= 1920);
+  }, [srcSetWidths, baseWidth]);
+
+  const optimizedSrc = useMemo(
+    () => resizeSupabaseImage(src, baseWidth, quality) ?? src,
+    [src, baseWidth, quality]
+  );
+  const srcSet = useMemo(
+    () => buildResponsiveSrcSet(src, widths, quality),
+    [src, widths, quality]
+  );
 
   return (
     <div className={`relative overflow-hidden ${containerClassName}`}>
-      {/* Loading skeleton */}
       {!isLoaded && (
         <div className="absolute inset-0 bg-muted/30 animate-skeleton-shimmer skeleton-gradient" />
       )}
-      
-      {/* Error state */}
+
       {hasError && (
         <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
           <span className="text-muted-foreground text-xs">✕</span>
         </div>
       )}
-      
-      {/* Actual image */}
+
       <img
         src={optimizedSrc}
+        srcSet={srcSet}
+        sizes={sizes ?? '(max-width: 640px) 50vw, 25vw'}
         alt={alt}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
@@ -68,10 +89,7 @@ const ImageWithLoader = memo(({
         onLoad={handleLoad}
         onError={handleError}
         className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'} ${className}`}
-        style={{
-          // Request smaller image size based on container
-          maxWidth: width ? `${width}px` : undefined,
-        }}
+        style={{ maxWidth: width ? `${width}px` : undefined }}
       />
     </div>
   );
