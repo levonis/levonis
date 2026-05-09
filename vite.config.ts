@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => ({
           'vendor-capacitor',
           'vendor-daypicker',
           'vendor-canvg',
+          'vendor-charts',
         ];
         return deps.filter((d) => !HEAVY.some((h) => d.includes(h)));
       },
