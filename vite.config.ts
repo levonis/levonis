@@ -23,17 +23,18 @@ export default defineConfig(({ mode }) => ({
     // improves LCP on the homepage (saves ~493 KiB of unused JS preloaded eagerly).
     modulePreload: {
       resolveDependencies: (_filename, deps) => {
+        // Trim heavy chunks from the eager modulepreload graph. They load only when
+        // a route that imports them is visited.
         const HEAVY = [
           'vendor-three',
           'vendor-html2canvas',
           'vendor-jspdf',
           'vendor-qr',
-          'vendor-charts',
-          'vendor-motion',
           'vendor-sanitize',
           'vendor-carousel',
           'vendor-capacitor',
           'vendor-daypicker',
+          'vendor-canvg',
         ];
         return deps.filter((d) => !HEAVY.some((h) => d.includes(h)));
       },
@@ -42,7 +43,7 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: (id) => {
           if (!id.includes('node_modules')) return undefined;
-          // Heavy, lazy-loaded libs into their own chunks (NONE import React at top level)
+          // Heavy, route-lazy libs (no React top-level side effects)
           if (id.includes('html2canvas')) return 'vendor-html2canvas';
           if (id.includes('node_modules/jspdf/') || id.includes('node_modules/jspdf-autotable/')) return 'vendor-jspdf';
           if (id.includes('node_modules/canvg/')) return 'vendor-canvg';
@@ -52,20 +53,18 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('date-fns') || id.includes('dayjs')) return 'vendor-date';
           if (id.includes('dompurify') || id.includes('sanitize-html')) return 'vendor-sanitize';
           if (id.includes('@capacitor')) return 'vendor-capacitor';
-          // Keep Recharts + d3 with the main vendor chunk. Splitting them caused a
-          // production-only TDZ crash ("Cannot access before initialization") that
-          // left users stuck on the LEVONIS fallback before React could mount.
-          // CRITICAL: Bundle React + ALL OTHER node_modules together to guarantee load order.
-          // Many libs import React at module top-level — splitting causes
-          // "Cannot read properties of undefined (reading 'createContext'/'forwardRef'/'useLayoutEffect')"
-          // when React loads after them. One big vendor-react chunk is safer than breakage.
+          // Pure-function icon library — safe to peel off (no React top-level side effects beyond forwardRef wrap)
+          if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
+          // KEEP: recharts/d3 + framer-motion + radix all bundled with React core to
+          // avoid production TDZ. Past attempts to split them caused
+          // "Cannot access before initialization" stuck on splash.
           return 'vendor-react';
         },
       },
     },
   },
   esbuild: mode === 'production'
-    ? { drop: ['console', 'debugger'] }
+    ? { drop: ['console', 'debugger'], legalComments: 'none' }
     : undefined,
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
