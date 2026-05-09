@@ -126,8 +126,8 @@
         host.indexOf('id-preview--') === 0 ||
         (host.indexOf('lovable.app') !== -1 && host.indexOf('levonis.lovable.app') === -1);
       try {
-        if (!isPreviewHost && localStorage.getItem('__levo_sw_cleaned_v15') === '1') return;
-        if (!isPreviewHost) localStorage.setItem('__levo_sw_cleaned_v15', '1');
+        if (!isPreviewHost && localStorage.getItem('__levo_sw_cleaned_v16') === '1') return;
+        if (!isPreviewHost) localStorage.setItem('__levo_sw_cleaned_v16', '1');
       } catch (e) {}
       try { localStorage.removeItem('__levo_recovery_attempts'); } catch (e) {}
       if ('serviceWorker' in navigator) {
@@ -394,7 +394,7 @@
         // means a stale Service Worker is serving a stale index.html that points to
         // chunk hashes that no longer exist after a deploy. Auto-nuke SW + caches
         // and reload ONCE — far faster than the 25s force-reload timer.
-        var SELF_HEAL_KEY = '__levo_self_healed_v15';
+        var SELF_HEAL_KEY = '__levo_self_healed_v16';
         function selfHealOnce() {
           if (window.__levoMounted) return;
           try { if (sessionStorage.getItem(SELF_HEAL_KEY)) return; } catch (e) {}
