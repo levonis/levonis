@@ -62,8 +62,13 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
           // Recharts + d3 — only used on admin/analytics pages
           if (id.includes('node_modules/recharts/') || id.includes('node_modules/d3-')) return 'vendor-charts';
-          // KEEP: framer-motion + radix bundled with React core to avoid production
-          // TDZ. Past attempts to split them caused "Cannot access before initialization".
+          // Phase 3 split: framer-motion and @radix-ui peeled off vendor-react.
+          // Both are statically imported by app code, so Rollup wires them as
+          // sibling imports of vendor-react — they are fetched in parallel and
+          // execute after React (which they import from), avoiding TDZ.
+          // Keep tslib + scheduler + react* together in vendor-react to be safe.
+          if (id.includes('node_modules/framer-motion/')) return 'vendor-motion';
+          if (id.includes('node_modules/@radix-ui/')) return 'vendor-radix';
           return 'vendor-react';
         },
       },
