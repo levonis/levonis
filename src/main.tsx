@@ -96,7 +96,7 @@ idle(() => { import('@capacitor/core').then(({ Capacitor }) => {
       document.body.classList.remove('keyboard-open');
     });
   }).catch(() => {});
-}).catch(() => {});
+}).catch(() => {}); });
 
 // Telegram WebApp SDK is loaded only inside Telegram (see index.html).
 // Poll briefly, then give up so we never keep timers alive on regular browsers.
