@@ -626,6 +626,12 @@ const bambuOptionArMap: Record<string, string> = {
   '0.4 mm': '0.4 ملم',
   '0.6 mm': '0.6 ملم',
   '0.8 mm': '0.8 ملم',
+  'standard flow': 'تدفق قياسي',
+  'high flow': 'تدفق عالي',
+  'stainless steel': 'ستانلس ستيل',
+  'hardened steel': 'فولاذ مقوّى',
+  'left': 'يسار',
+  'right': 'يمين',
 };
 
 // Translate while PRESERVING SKU code like "(13108)"
