@@ -1,7 +1,6 @@
 // Defers non-critical hooks until the browser is idle, to keep the
 // initial JS execution path lean on slow mobile connections.
 import { useEffect, useState } from "react";
-import { Capacitor } from "@capacitor/core";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { useOnlineHeartbeat } from "@/hooks/useOnlineHeartbeat";
@@ -13,16 +12,28 @@ function NativeNotificationPrompt() {
   const { permission, requestPermission } = useNotificationPermission();
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
     if (permission !== "default") return;
     if (localStorage.getItem(NATIVE_PERM_ASKED_KEY)) return;
 
-    const t = setTimeout(() => {
-      localStorage.setItem(NATIVE_PERM_ASKED_KEY, "1");
-      requestPermission().catch(() => {});
-    }, 1500);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    // Dynamically import @capacitor/core so web sessions never download
+    // the vendor-capacitor chunk during first paint.
+    import("@capacitor/core")
+      .then(({ Capacitor }) => {
+        if (cancelled) return;
+        if (!Capacitor.isNativePlatform()) return;
+        timer = setTimeout(() => {
+          localStorage.setItem(NATIVE_PERM_ASKED_KEY, "1");
+          requestPermission().catch(() => {});
+        }, 1500);
+      })
+      .catch(() => {});
 
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [permission, requestPermission]);
 
   return null;
