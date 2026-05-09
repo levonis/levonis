@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levonis-v13';
+const CACHE_NAME = 'levonis-v14';
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
 // Vite hashed assets (JS/CSS) live under /assets/ with content hashes — safe to cache forever
 const HASHED_ASSET_PATH = /^\/assets\/.+\.(js|css)$/i;
@@ -12,10 +12,11 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    // Wipe ALL old caches (not just non-matching names) — old versions may
-    // have cached index.html with stale chunk hashes, causing blank screens.
+    // Wipe stale caches from previous versions (keep current).
     const names = await caches.keys();
-    await Promise.all(names.map((n) => caches.delete(n)));
+    await Promise.all(
+      names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
+    );
 
     // Safety valve: preview hosts should never keep a controlling SW
     if (IS_PREVIEW_HOST) {
@@ -23,12 +24,10 @@ self.addEventListener('activate', (event) => {
     }
 
     await clients.claim();
-
-    // Force all open tabs to reload with fresh HTML/assets
-    const allClients = await clients.matchAll({ type: 'window' });
-    allClients.forEach((client) => {
-      try { client.navigate(client.url); } catch {}
-    });
+    // NOTE: Do NOT force-navigate clients here. It caused a reload loop on
+    // slow networks where the page was still hydrating when SW activated.
+    // Hashed assets are immutable — fresh HTML on the next normal navigation
+    // is enough to pick up new chunks.
   })());
 });
 
