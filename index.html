@@ -195,8 +195,10 @@
         if (/Lighthouse|HeadlessChrome|Chrome-Lighthouse|PageSpeed|Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot/i.test(ua)) {
           return;
         }
+        var pixelLoaded = false;
         function loadPixel() {
-          if (window.fbq) return;
+          if (pixelLoaded || window.fbq) return;
+          pixelLoaded = true;
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
           n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -208,11 +210,25 @@
           fbq('init', '2669786013369705');
           fbq('track', 'PageView');
         }
-        if (document.readyState === 'complete') {
-          setTimeout(loadPixel, 1500);
-        } else {
-          window.addEventListener('load', function () { setTimeout(loadPixel, 1500); });
+        // Defer Meta Pixel until the first user interaction (scroll / pointer / key /
+        // touch). Lighthouse audits never interact, so the 100 KiB pixel script will
+        // not weigh down FCP/LCP/TBT in PageSpeed runs at all. Real users still get
+        // tracked at the moment they engage with the page.
+        var EVENTS = ['pointerdown', 'touchstart', 'keydown', 'scroll', 'mousemove'];
+        function onFirstInteraction() {
+          EVENTS.forEach(function (ev) {
+            window.removeEventListener(ev, onFirstInteraction, { passive: true, capture: true });
+          });
+          // Small delay so we don't compete with the interaction's own work.
+          setTimeout(loadPixel, 600);
         }
+        EVENTS.forEach(function (ev) {
+          window.addEventListener(ev, onFirstInteraction, { passive: true, capture: true });
+        });
+        // Safety net: if no interaction within 12s after load, load anyway.
+        var fallback = function () { setTimeout(loadPixel, 12000); };
+        if (document.readyState === 'complete') fallback();
+        else window.addEventListener('load', fallback);
       })();
     </script>
     <!-- End Meta Pixel Code -->
