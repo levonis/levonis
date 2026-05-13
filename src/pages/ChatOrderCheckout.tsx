@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifyWalletDeducted } from '@/lib/walletNotifications';
+import { linkWalletDeductionToOrder } from '@/lib/walletAuditLog';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -144,14 +145,17 @@ export default function ChatOrderCheckout() {
       };
 
       // Deduct wallet (idempotent — order.id makes the operation safely retryable)
+      let walletTxId: string | null = null;
+      const walletBalanceBefore = walletBalance ?? null;
       if (amountToPay > 0) {
-        const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
+        const { data: walletTxResult, error: walletError } = await supabase.rpc('deduct_wallet_balance', {
           p_user_id: user.id,
           p_amount: amountToPay,
           p_description: `دفع طلب محادثة #${order.id.slice(0, 8)}`,
           p_idempotency_key: `chat_order:${order.id}:${paymentMethod}`,
         });
         if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
+        walletTxId = (walletTxResult as unknown as string) || null;
         notifyWalletDeducted({
           userId: user.id,
           amount: amountToPay,
@@ -160,6 +164,7 @@ export default function ChatOrderCheckout() {
           relatedId: order.id,
         });
       }
+
 
 
       const { error: orderError } = await supabase
@@ -178,6 +183,25 @@ export default function ChatOrderCheckout() {
         })
         .eq('id', order.id);
       if (orderError) throw orderError;
+
+      // Audit log: link wallet deduction to chat order with breakdown
+      if (walletTxId && amountToPay > 0) {
+        await linkWalletDeductionToOrder({
+          transactionId: walletTxId,
+          orderId: order.id,
+          breakdown: {
+            source: 'chat_order',
+            subtotal: amountToPay,
+            delivery_fee: 0,
+            discount: 0,
+            coupon_code: null,
+            balance_before: walletBalanceBefore ?? undefined,
+            balance_after: walletBalanceBefore != null ? walletBalanceBefore - amountToPay : undefined,
+            notes: `طلب محادثة #${order.id.slice(0, 8)} — ${paymentMethod === 'wallet' ? 'دفع كامل من المحفظة' : `دفع جزئي ${partialPercent}%`} — عمولة ${commissionAmount.toLocaleString()} د.ع`,
+          },
+          balanceBefore: walletBalanceBefore,
+        });
+      }
 
       await supabase.from('listing_messages').insert({
         conversation_id: order.conversation_id,
