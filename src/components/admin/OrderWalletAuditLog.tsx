@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ADMIN_BASE_PATH } from "@/lib/adminPath";
+import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 
 interface Props {
   orderId: string;
