@@ -3375,6 +3375,18 @@ const Cart = () => {
                     </div>
                   )}
                   
+                  {taxAmount > 0 && (
+                    <div className="flex justify-between text-foreground animate-fade-in">
+                      <span className="flex items-center gap-1">
+                        ضريبة مؤقتة (10%)
+                        <span className="text-[9px] text-muted-foreground">(تُطبَّق على جميع أنواع الشحن)</span>
+                      </span>
+                      <span className="font-bold text-amber-600">
+                        +<AnimatedPrice value={taxAmount} formatFn={formatPrice} /> {t('pd_currency_iqd')}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
                     {(cardFreeShippingApplied || hardwareFreeShippingApplied || isFreeDeliveryApplied) ? (
