@@ -32,6 +32,7 @@ import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { calcAutoOrderProductCost } from '@/lib/orderFinancials';
 import AdminOrderItemEditor from '@/components/admin/AdminOrderItemEditor';
 import { adminCreateOrder, adminUpdateOrder } from '@/lib/adminMutations';
+import OrderWalletAuditLog from '@/components/admin/OrderWalletAuditLog';
 const directStatusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
   { value: 'confirmed', label: 'تم التأكيد' },
