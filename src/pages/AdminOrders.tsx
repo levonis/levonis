@@ -1540,6 +1540,9 @@ const AdminOrders = () => {
                 );
               })()}
 
+              {/* Wallet deduction audit log linked to this order */}
+              <OrderWalletAuditLog orderId={editingOrder.id} formatPrice={formatPrice} />
+
               {/* Status */}
               {(() => {
                 const orderType = editingOrder.order_type || (checkIfPreOrder(editingOrder.order_items || []) ? 'preorder' : 'direct');
