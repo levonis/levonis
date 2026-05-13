@@ -1142,13 +1142,44 @@ const AdminOrders = () => {
                 icon={<Package className="h-5 w-5" />}
                 title={`ملخص منتجات الطلبات المسبقة النشطة (${activeOrders.length} طلب • ${totalQty} قطعة)`}
                 actions={rows.length > 0 ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { navigator.clipboard.writeText(copyText); toast.success('تم نسخ الملخص'); }}
-                  >
-                    نسخ الكل
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const data = rows.map((r, i) => ({
+                          '#': i + 1,
+                          'المنتج': r.name,
+                          'اللون': r.color || '—',
+                          'الخيار': r.option || '—',
+                          'هدية': r.isGift ? 'نعم' : 'لا',
+                          'العدد': r.qty,
+                          'عدد الطلبات': r.orders.size,
+                        }));
+                        data.push({
+                          '#': '' as any,
+                          'المنتج': 'الإجمالي',
+                          'اللون': '',
+                          'الخيار': '',
+                          'هدية': '',
+                          'العدد': totalQty,
+                          'عدد الطلبات': activeOrders.length,
+                        });
+                        const date = new Date().toISOString().slice(0, 10);
+                        exportToExcel(data, { filename: `preorder-products-summary-${date}.xlsx` });
+                        toast.success('تم تصدير الملخص');
+                      }}
+                    >
+                      تصدير Excel
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { navigator.clipboard.writeText(copyText); toast.success('تم نسخ الملخص'); }}
+                    >
+                      نسخ الكل
+                    </Button>
+                  </div>
                 ) : undefined}
               />
               <AdminCardContent>
