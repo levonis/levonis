@@ -184,6 +184,25 @@ export default function ChatOrderCheckout() {
         .eq('id', order.id);
       if (orderError) throw orderError;
 
+      // Audit log: link wallet deduction to chat order with breakdown
+      if (walletTxId && amountToPay > 0) {
+        await linkWalletDeductionToOrder({
+          transactionId: walletTxId,
+          orderId: order.id,
+          breakdown: {
+            source: 'chat_order',
+            subtotal: amountToPay,
+            delivery_fee: 0,
+            discount: 0,
+            coupon_code: null,
+            balance_before: walletBalanceBefore ?? undefined,
+            balance_after: walletBalanceBefore != null ? walletBalanceBefore - amountToPay : undefined,
+            notes: `طلب محادثة #${order.id.slice(0, 8)} — ${paymentMethod === 'wallet' ? 'دفع كامل من المحفظة' : `دفع جزئي ${partialPercent}%`} — عمولة ${commissionAmount.toLocaleString()} د.ع`,
+          },
+          balanceBefore: walletBalanceBefore,
+        });
+      }
+
       await supabase.from('listing_messages').insert({
         conversation_id: order.conversation_id,
         sender_id: user.id,
