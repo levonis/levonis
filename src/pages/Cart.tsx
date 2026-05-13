@@ -1751,7 +1751,29 @@ const Cart = () => {
         }
       }
 
-      // Random filament: always link selection to order (admin sees it).
+      // Audit log: link the wallet deduction to this order with full breakdown.
+      if (walletTxId && walletDeductionAmount > 0) {
+        const deliveryFromWallet = includeDeliveryInWallet
+          ? Math.max(0, walletDeductionAmount - orderSubtotal)
+          : 0;
+        const subtotalFromWallet = walletDeductionAmount - deliveryFromWallet;
+        await linkWalletDeductionToOrder({
+          transactionId: walletTxId,
+          orderId: orderResult.id,
+          breakdown: {
+            source: 'cart_direct_sale',
+            subtotal: Math.max(0, subtotalFromWallet),
+            delivery_fee: Math.max(0, deliveryFromWallet),
+            discount: appliedCoupon ? calculateDiscount() : 0,
+            coupon_code: appliedCoupon?.code || null,
+            balance_before: walletBalanceBefore ?? undefined,
+            balance_after: walletBalanceBefore != null ? walletBalanceBefore - walletDeductionAmount : undefined,
+            notes: `طلب بيع مباشر ${orderNumber} — طريقة التوصيل: ${selectedDeliveryMethod}`,
+          },
+          balanceBefore: walletBalanceBefore,
+        });
+      }
+
       // Reveal real product/color to user ONLY when fully paid via wallet (no COD at all).
       try {
         await supabase.rpc('link_random_filament_to_order' as any, { p_order_id: orderResult.id });
