@@ -1477,8 +1477,13 @@ const AdminOrders = () => {
                     )}
 
                     <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between items-center text-[11px] text-muted-foreground">
+                        <span>عدد القطع</span>
+                        <span>{itemsCount}{giftsCount > 0 && <span className="text-emerald-600 mx-1">(منها {giftsCount} هدية 🎁)</span>}</span>
+                      </div>
+
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">سعر المنتجات</span>
+                        <span className="text-muted-foreground">سعر المنتجات (Subtotal)</span>
                         <span className="font-medium">{formatPrice(subtotal || totalAmt)}</span>
                       </div>
 
@@ -1487,10 +1492,15 @@ const AdminOrders = () => {
                           <span>التوصيل {originalDelivery > 0 && <span className="text-[10px] line-through text-muted-foreground">{formatPrice(originalDelivery)}</span>}</span>
                           <span className="font-bold">مجاني عبر الكوبون</span>
                         </div>
-                      ) : deliveryCalc > 0 && (
+                      ) : deliveryCalc > 0 ? (
                         <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">التوصيل</span>
+                          <span className="text-muted-foreground">رسوم التوصيل</span>
                           <span className="font-medium">{formatPrice(deliveryCalc)}</span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between items-center text-emerald-600">
+                          <span>التوصيل</span>
+                          <span className="font-bold">مجاني</span>
                         </div>
                       )}
 
@@ -1501,48 +1511,80 @@ const AdminOrders = () => {
                         </div>
                       )}
 
-                      {Number((editingOrder as any).card_discount_amount) > 0 && (
+                      {cardDiscountAmt > 0 && (
                         <div className="flex justify-between items-center text-amber-600">
                           <span className="flex items-center gap-1">
                             💳 خصم بطاقة {(editingOrder as any).card_discount_level_name || 'ولاء'}
                           </span>
-                          <span className="font-medium">- {formatPrice(Number((editingOrder as any).card_discount_amount))}</span>
+                          <span className="font-medium">- {formatPrice(cardDiscountAmt)}</span>
+                        </div>
+                      )}
+
+                      {totalSavings > 0 && (
+                        <div className="flex justify-between items-center text-[11px] text-emerald-700 bg-emerald-500/5 rounded px-2 py-1">
+                          <span>إجمالي التوفير للزبون</span>
+                          <span className="font-bold">{formatPrice(totalSavings)}</span>
                         </div>
                       )}
 
                       <div className="border-t border-border/40 my-1" />
 
-                      <div className="flex justify-between items-center font-bold">
-                        <span>المجموع الكلي</span>
+                      <div className="flex justify-between items-center font-bold text-base">
+                        <span>المجموع النهائي</span>
                         <span>{formatPrice(totalAmt)}</span>
                       </div>
 
-                      {walletPaid > 0 ? (
-                        <>
-                          <div className="border-t border-border/40 my-1" />
-                          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 space-y-1">
-                            <div className="flex justify-between items-center text-emerald-700 text-xs font-bold">
-                              <span>💳 تفاصيل الدفع من المحفظة</span>
-                              <span>- {formatPrice(walletPaid)}</span>
+                      {walletPaid > 0 && (
+                        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 space-y-1 mt-2">
+                          <div className="flex justify-between items-center text-emerald-700 text-xs font-bold">
+                            <span>💳 مدفوع من المحفظة</span>
+                            <span>- {formatPrice(walletPaid)}</span>
+                          </div>
+                          {(editingOrder as any).wallet_balance_before != null && (
+                            <div className="text-[10px] text-muted-foreground flex justify-between">
+                              <span>الرصيد قبل: {formatPrice(Number((editingOrder as any).wallet_balance_before))}</span>
+                              <span>← بعد: {formatPrice(Math.max(0, Number((editingOrder as any).wallet_balance_before) - walletPaid))}</span>
                             </div>
-                            {(editingOrder as any).wallet_balance_before != null && (
-                              <div className="text-[10px] text-muted-foreground flex justify-between">
-                                <span>قبل: {formatPrice(Number((editingOrder as any).wallet_balance_before))}</span>
-                                <span>← بعد: {formatPrice(Math.max(0, Number((editingOrder as any).wallet_balance_before) - walletPaid))}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex justify-between items-center font-bold text-amber-600 mt-1">
-                            <span>💵 المتبقي نقداً</span>
-                            <span>{formatPrice(remainingAmt)}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex justify-between items-center font-bold text-amber-600 mt-1">
-                          <span>💵 المبلغ المطلوب نقداً</span>
-                          <span>{formatPrice(totalAmt)}</span>
+                          )}
                         </div>
                       )}
+
+                      <div className="text-[10px] text-muted-foreground flex justify-between mt-1">
+                        <span>طريقة الدفع</span>
+                        <span className="font-medium">
+                          {paymentMethod === 'wallet' ? 'محفظة' : paymentMethod === 'cash_on_delivery' ? 'الدفع عند الاستلام' : paymentMethod}
+                        </span>
+                      </div>
+
+                      {/* === Delivery Slip Amount (most important) === */}
+                      <div className={`mt-3 rounded-xl border-2 p-3 ${isFullyPaid ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-amber-500/60 bg-amber-500/10'}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-xs font-bold">
+                            <Truck className="h-4 w-4" />
+                            <span>{isFullyPaid ? 'مدفوع بالكامل — لا يطلب من الزبون' : 'المبلغ المطلوب على ورقة التوصيل'}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[10px]"
+                            onClick={() => {
+                              navigator.clipboard.writeText(String(slipAmount));
+                              toast.success('تم نسخ المبلغ');
+                            }}
+                          >
+                            نسخ
+                          </Button>
+                        </div>
+                        <div className={`text-2xl font-extrabold mt-1 text-center ${isFullyPaid ? 'text-emerald-700' : 'text-amber-700'}`}>
+                          {isFullyPaid ? '✓ 0 د.ع' : `${formatPrice(slipAmount)} د.ع`}
+                        </div>
+                        {!isFullyPaid && walletPaid > 0 && (
+                          <div className="text-[10px] text-center text-muted-foreground mt-1">
+                            ({formatPrice(totalAmt)} − {formatPrice(walletPaid)} مدفوع مسبقاً)
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
