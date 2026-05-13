@@ -1138,7 +1138,7 @@ const AdminOrders = () => {
               <AdminCardHeader
                 icon={<Package className="h-5 w-5" />}
                 title={`ملخص منتجات الطلبات المسبقة النشطة (${activeOrders.length} طلب • ${totalQty} قطعة)`}
-                action={rows.length > 0 ? (
+                actions={rows.length > 0 ? (
                   <Button
                     variant="outline"
                     size="sm"
