@@ -12272,10 +12272,13 @@ export type Database = {
           admin_notes: string | null
           amount: number
           balance_after: number | null
+          balance_before: number | null
+          breakdown: Json | null
           created_at: string
           description: string | null
           id: string
           idempotency_key: string | null
+          order_id: string | null
           payment_method: string | null
           payment_proof_url: string | null
           status: string
@@ -12288,10 +12291,13 @@ export type Database = {
           admin_notes?: string | null
           amount: number
           balance_after?: number | null
+          balance_before?: number | null
+          breakdown?: Json | null
           created_at?: string
           description?: string | null
           id?: string
           idempotency_key?: string | null
+          order_id?: string | null
           payment_method?: string | null
           payment_proof_url?: string | null
           status?: string
@@ -12304,10 +12310,13 @@ export type Database = {
           admin_notes?: string | null
           amount?: number
           balance_after?: number | null
+          balance_before?: number | null
+          breakdown?: Json | null
           created_at?: string
           description?: string | null
           id?: string
           idempotency_key?: string | null
+          order_id?: string | null
           payment_method?: string | null
           payment_proof_url?: string | null
           status?: string
@@ -14095,6 +14104,20 @@ export type Database = {
         Args: { p_merchant_user_id: string }
         Returns: number
       }
+      get_order_wallet_log: {
+        Args: { p_order_id: string }
+        Returns: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          breakdown: Json
+          created_at: string
+          description: string
+          id: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_price_protection_current_price: {
         Args: { p_order_item_id: string }
         Returns: number
@@ -14214,6 +14237,15 @@ export type Database = {
       }
       link_random_filament_to_order: {
         Args: { p_order_id: string }
+        Returns: undefined
+      }
+      link_wallet_tx_to_order: {
+        Args: {
+          p_balance_before?: number
+          p_breakdown: Json
+          p_order_id: string
+          p_transaction_id: string
+        }
         Returns: undefined
       }
       log_client_error: {
