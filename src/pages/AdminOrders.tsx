@@ -1099,6 +1099,93 @@ const AdminOrders = () => {
         </AdminCard>
       </AdminSection>
 
+      {/* Preorder Products Aggregated Summary */}
+      {orderTab === 'preorder' && (() => {
+        const activeOrders = baseOrders.filter(o => !['cancelled', 'delivered'].includes(o.status));
+        const map = new Map<string, { name: string; option: string; color: string; qty: number; isGift: boolean; orders: Set<string> }>();
+        for (const o of activeOrders) {
+          const items = ((o as any).order_items || []) as any[];
+          for (const it of items) {
+            if (it?.shipping_option_name_ar) continue;
+            const name = String(it?.product_name_ar || it?.product_name || 'منتج').trim();
+            const option = String(it?.selected_option || '').trim();
+            const color = String(it?.selected_color || '').trim();
+            const isGift = !!it?.is_gift;
+            const key = `${name}||${option}||${color}||${isGift ? '1' : '0'}`;
+            const q = Number(it?.quantity) || 0;
+            const existing = map.get(key);
+            if (existing) {
+              existing.qty += q;
+              existing.orders.add(o.id);
+            } else {
+              map.set(key, { name, option, color, qty: q, isGift, orders: new Set([o.id]) });
+            }
+          }
+        }
+        const rows = Array.from(map.values()).sort((a, b) => b.qty - a.qty);
+        const totalQty = rows.reduce((s, r) => s + r.qty, 0);
+        const copyText = rows.map(r => {
+          const parts = [r.name];
+          if (r.color) parts.push(`لون ${r.color}`);
+          if (r.option) parts.push(`خيار ${r.option}`);
+          parts.push(`عدد ${r.qty}`);
+          return (r.isGift ? '🎁 ' : '') + parts.join(' • ');
+        }).join('\n');
+
+        return (
+          <AdminSection className="mt-6">
+            <AdminCard>
+              <AdminCardHeader
+                icon={<Package className="h-5 w-5" />}
+                title={`ملخص منتجات الطلبات المسبقة النشطة (${activeOrders.length} طلب • ${totalQty} قطعة)`}
+                action={rows.length > 0 ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { navigator.clipboard.writeText(copyText); toast.success('تم نسخ الملخص'); }}
+                  >
+                    نسخ الكل
+                  </Button>
+                ) : undefined}
+              />
+              <AdminCardContent>
+                {rows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">لا توجد منتجات نشطة في الطلبات المسبقة</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {rows.map((r, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0 text-sm">
+                          {r.isGift && <Gift className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                          <span className="font-bold truncate">{r.name}</span>
+                          {r.color && (
+                            <Badge variant="outline" className="text-[10px] shrink-0">
+                              لون: <span className="font-semibold mx-1">{r.color}</span>
+                            </Badge>
+                          )}
+                          {r.option && (
+                            <Badge variant="outline" className="text-[10px] shrink-0">
+                              خيار: <span className="font-semibold mx-1">{r.option}</span>
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground shrink-0">({r.orders.size} طلب)</span>
+                        </div>
+                        <div className="text-base font-extrabold text-primary shrink-0 tabular-nums">
+                          ×{r.qty}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </AdminCardContent>
+            </AdminCard>
+          </AdminSection>
+        );
+      })()}
+
       {/* Orders Table */}
       <AdminSection className="mt-6">
         <AdminCard hover={false}>
