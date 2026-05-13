@@ -72,6 +72,16 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, orderId, timeU
               )}
             </div>
 
+            {/* Invoice breakdown */}
+            {(orderId || orderNumber) && (
+              <div className={cn(
+                "w-full transition-all duration-500 delay-100",
+                step >= 2 ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+              )}>
+                <OrderInvoiceBreakdown orderId={orderId} orderNumber={orderNumber} />
+              </div>
+            )}
+
             {/* Info cards */}
             <div className={cn(
               "w-full space-y-3 transition-all duration-500 delay-200",
