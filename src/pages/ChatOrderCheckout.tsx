@@ -145,14 +145,17 @@ export default function ChatOrderCheckout() {
       };
 
       // Deduct wallet (idempotent — order.id makes the operation safely retryable)
+      let walletTxId: string | null = null;
+      const walletBalanceBefore = walletBalance ?? null;
       if (amountToPay > 0) {
-        const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
+        const { data: walletTxResult, error: walletError } = await supabase.rpc('deduct_wallet_balance', {
           p_user_id: user.id,
           p_amount: amountToPay,
           p_description: `دفع طلب محادثة #${order.id.slice(0, 8)}`,
           p_idempotency_key: `chat_order:${order.id}:${paymentMethod}`,
         });
         if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
+        walletTxId = (walletTxResult as unknown as string) || null;
         notifyWalletDeducted({
           userId: user.id,
           amount: amountToPay,
@@ -161,6 +164,7 @@ export default function ChatOrderCheckout() {
           relatedId: order.id,
         });
       }
+
 
 
       const { error: orderError } = await supabase
