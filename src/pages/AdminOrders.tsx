@@ -1106,7 +1106,9 @@ const AdminOrders = () => {
         for (const o of activeOrders) {
           const items = ((o as any).order_items || []) as any[];
           for (const it of items) {
-            if (it?.shipping_option_name_ar) continue;
+            // Skip pure shipping-fee rows (no product attached) — actual products may also carry
+            // shipping_option_name_ar as their selected shipping mode, so we filter by product_id only.
+            if (!it?.product_id && it?.shipping_option_name_ar) continue;
             const name = String(it?.product_name_ar || it?.product_name || 'منتج').trim();
             const option = String(it?.selected_option || '').trim();
             const color = String(it?.selected_color || '').trim();
