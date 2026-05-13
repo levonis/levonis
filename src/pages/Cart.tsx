@@ -4074,6 +4074,7 @@ const Cart = () => {
         open={showOrderSuccess}
         onClose={() => setShowOrderSuccess(false)}
         orderNumber={successOrderNumber}
+        orderId={successOrderId}
         timeUntilCutoff={(() => {
           const now = new Date();
           const cutoff = new Date();
