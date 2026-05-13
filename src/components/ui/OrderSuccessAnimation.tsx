@@ -3,11 +3,13 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { CheckCircle2, Package, Clock, Truck, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import OrderInvoiceBreakdown from '@/components/orders/OrderInvoiceBreakdown';
 
 interface OrderSuccessAnimationProps {
   open: boolean;
   onClose: () => void;
   orderNumber?: string;
+  orderId?: string;
   timeUntilCutoff?: string | null;
 }
 
