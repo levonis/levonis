@@ -28,8 +28,9 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, orderId, timeU
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
         dir="rtl"
-        className="max-w-sm mx-auto p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden"
+        className="max-w-sm mx-auto p-0 !overflow-hidden !max-h-none border-0 bg-transparent shadow-none [&>button]:hidden"
       >
+        <div className="max-h-[85vh] overflow-y-auto">
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border/50 shadow-2xl">
           {/* Animated background circles */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
