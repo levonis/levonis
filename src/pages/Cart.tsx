@@ -1008,7 +1008,9 @@ const Cart = () => {
   const allItemsSupportCod = hasPreOrderItems && !hasRandomFilamentItems && items.length > 0 && items.every((item: any) => {
     return item.products?.cod_enabled === true;
   });
-  const showCodOption = allItemsSupportCod;
+  // مؤقتاً: تعطيل الدفع عند الاستلام بالكامل
+  const TEMP_DISABLE_COD = true;
+  const showCodOption = TEMP_DISABLE_COD ? false : allItemsSupportCod;
 
   // إعادة ضبط الخيار إذا اختفى الشرط، وإجبار الدفع الكامل عند وجود فلمنت عشوائي
   useEffect(() => {
