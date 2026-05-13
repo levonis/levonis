@@ -25,7 +25,7 @@ export default function OrderTrackingCard({ orderNumber, orderId, isMe, timestam
   return (
     <div className={cn("flex my-2", isMe ? "justify-start" : "justify-end")}>
       <div className={cn(
-        "w-[280px] rounded-2xl overflow-hidden shadow-lg border",
+        "w-[300px] rounded-2xl overflow-hidden shadow-lg border",
         "bg-gradient-to-b from-card to-background"
       )}>
         {/* Header */}
