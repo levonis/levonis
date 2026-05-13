@@ -191,6 +191,24 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
         });
 
       if (error) throw error;
+
+      // Notify admin via Telegram (non-blocking)
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username, phone_number')
+          .eq('id', user!.id)
+          .maybeSingle();
+        const userName = profile?.full_name || profile?.username || 'مستخدم';
+        const phone = profile?.phone_number ? `\n📞 الهاتف: ${profile.phone_number}` : '';
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `💰 <b>طلب تعبئة محفظة جديد</b>\n\n👤 المستخدم: ${userName}${phone}\n💵 المبلغ: ${Math.round(amount).toLocaleString()} د.ع\n💳 طريقة الدفع: ${paymentMethod}\n🧾 إثبات الدفع: ${proofUrl}\n\n⏳ بانتظار المراجعة`,
+          },
+        });
+      } catch (e) {
+        console.error('Telegram admin notification failed (deposit):', e);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
