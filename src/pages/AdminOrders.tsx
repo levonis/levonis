@@ -1437,7 +1437,8 @@ const AdminOrders = () => {
                 const subtotal = Number(editingOrder.subtotal) || 0;
                 const totalAmt = Number(editingOrder.total_amount) || 0;
                 const discountAmt = Number(editingOrder.discount_amount) || 0;
-                const deliveryCalc = subtotal > 0 ? Math.max(0, totalAmt - subtotal + discountAmt) : 0;
+                const cardDiscountAmt = Number((editingOrder as any).card_discount_amount) || 0;
+                const deliveryCalc = subtotal > 0 ? Math.max(0, totalAmt - subtotal + discountAmt + cardDiscountAmt) : 0;
                 const walletPaid = Number(editingOrder.customer_paid_amount) || Number(editingOrder.paid_amount) || 0;
                 const remainingAmt = Number(editingOrder.remaining_amount) ?? Math.max(0, totalAmt - walletPaid);
                 const couponCode = (editingOrder as any).coupon_code || null;
@@ -1446,6 +1447,13 @@ const AdminOrders = () => {
                 const originalDelivery = Number((editingOrder as any).original_delivery_fee) || 0;
                 const isReferralFreeDelivery = !!referralCouponId && deliveryCalc === 0;
                 const isReferralCommissionOnly = !!referralCouponId && deliveryCalc > 0;
+                const items = (editingOrder.order_items || []) as any[];
+                const itemsCount = items.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
+                const giftsCount = items.filter((it: any) => it?.is_gift).reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
+                const totalSavings = discountAmt + cardDiscountAmt + (isReferralFreeDelivery ? originalDelivery : 0);
+                const paymentMethod = (editingOrder as any).payment_method || 'cash_on_delivery';
+                const isFullyPaid = walletPaid >= totalAmt && totalAmt > 0;
+                const slipAmount = Math.max(0, remainingAmt);
 
                 return (
                   <div className="p-3 rounded-xl border border-border/60 bg-muted/20 space-y-2">
