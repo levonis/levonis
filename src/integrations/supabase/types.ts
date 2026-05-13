@@ -14114,7 +14114,10 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          idempotency_key: string
+          payment_method: string
           status: string
+          type: string
           user_id: string
         }[]
       }
