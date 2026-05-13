@@ -13,7 +13,7 @@ interface OrderSuccessAnimationProps {
   timeUntilCutoff?: string | null;
 }
 
-const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutoff }: OrderSuccessAnimationProps) => {
+const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, orderId, timeUntilCutoff }: OrderSuccessAnimationProps) => {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
