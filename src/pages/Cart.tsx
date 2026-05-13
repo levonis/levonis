@@ -142,6 +142,7 @@ const Cart = () => {
   const [isDirectSaleProcessing, setIsDirectSaleProcessing] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [successOrderNumber, setSuccessOrderNumber] = useState<string>('');
+  const [successOrderId, setSuccessOrderId] = useState<string | undefined>(undefined);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [removingItemIds, setRemovingItemIds] = useState<Set<string>>(new Set());
   const [showAddressSwitcher, setShowAddressSwitcher] = useState(false);
@@ -1938,6 +1939,7 @@ const Cart = () => {
       await clearCart();
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
+      setSuccessOrderId(orderResult.id);
       setShowOrderSuccess(true);
       // Meta Pixel + CAPI: Purchase (non-blocking)
       try {
@@ -4072,6 +4074,7 @@ const Cart = () => {
         open={showOrderSuccess}
         onClose={() => setShowOrderSuccess(false)}
         orderNumber={successOrderNumber}
+        orderId={successOrderId}
         timeUntilCutoff={(() => {
           const now = new Date();
           const cutoff = new Date();

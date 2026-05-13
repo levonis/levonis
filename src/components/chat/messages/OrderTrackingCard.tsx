@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import OrderInvoiceBreakdown from '@/components/orders/OrderInvoiceBreakdown';
 
 interface OrderTrackingCardProps {
   orderNumber: string;
@@ -24,7 +25,7 @@ export default function OrderTrackingCard({ orderNumber, orderId, isMe, timestam
   return (
     <div className={cn("flex my-2", isMe ? "justify-start" : "justify-end")}>
       <div className={cn(
-        "w-[280px] rounded-2xl overflow-hidden shadow-lg border",
+        "w-[300px] rounded-2xl overflow-hidden shadow-lg border",
         "bg-gradient-to-b from-card to-background"
       )}>
         {/* Header */}
@@ -71,6 +72,11 @@ export default function OrderTrackingCard({ orderNumber, orderId, isMe, timestam
           <p className="text-xs text-muted-foreground text-center">
             تم استلام طلبك بنجاح وسيتم تحديث الحالة
           </p>
+
+          {/* Invoice breakdown */}
+          {(orderId || orderNumber) && (
+            <OrderInvoiceBreakdown orderId={orderId} orderNumber={orderNumber} compact />
+          )}
         </div>
 
         {/* Action Button */}

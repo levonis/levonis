@@ -3,15 +3,17 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { CheckCircle2, Package, Clock, Truck, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import OrderInvoiceBreakdown from '@/components/orders/OrderInvoiceBreakdown';
 
 interface OrderSuccessAnimationProps {
   open: boolean;
   onClose: () => void;
   orderNumber?: string;
+  orderId?: string;
   timeUntilCutoff?: string | null;
 }
 
-const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutoff }: OrderSuccessAnimationProps) => {
+const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, orderId, timeUntilCutoff }: OrderSuccessAnimationProps) => {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -26,8 +28,9 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutof
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
         dir="rtl"
-        className="max-w-sm mx-auto p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden"
+        className="max-w-sm mx-auto p-0 !overflow-hidden !max-h-none border-0 bg-transparent shadow-none [&>button]:hidden"
       >
+        <div className="max-h-[85vh] overflow-y-auto">
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border/50 shadow-2xl">
           {/* Animated background circles */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -68,6 +71,16 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutof
                 </p>
               )}
             </div>
+
+            {/* Invoice breakdown */}
+            {(orderId || orderNumber) && (
+              <div className={cn(
+                "w-full transition-all duration-500 delay-100",
+                step >= 2 ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+              )}>
+                <OrderInvoiceBreakdown orderId={orderId} orderNumber={orderNumber} />
+              </div>
+            )}
 
             {/* Info cards */}
             <div className={cn(
@@ -131,6 +144,7 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutof
               </Button>
             </div>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
