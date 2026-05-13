@@ -72,6 +72,11 @@ export default function OrderTrackingCard({ orderNumber, orderId, isMe, timestam
           <p className="text-xs text-muted-foreground text-center">
             تم استلام طلبك بنجاح وسيتم تحديث الحالة
           </p>
+
+          {/* Invoice breakdown */}
+          {(orderId || orderNumber) && (
+            <OrderInvoiceBreakdown orderId={orderId} orderNumber={orderNumber} compact />
+          )}
         </div>
 
         {/* Action Button */}
