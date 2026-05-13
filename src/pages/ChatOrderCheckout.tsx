@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifyWalletDeducted } from '@/lib/walletNotifications';
+import { linkWalletDeductionToOrder } from '@/lib/walletAuditLog';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
