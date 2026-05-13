@@ -1939,6 +1939,7 @@ const Cart = () => {
       await clearCart();
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
+      setSuccessOrderId(orderResult.id);
       setShowOrderSuccess(true);
       // Meta Pixel + CAPI: Purchase (non-blocking)
       try {
