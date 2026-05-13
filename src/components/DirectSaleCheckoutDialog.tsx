@@ -92,7 +92,8 @@ const DirectSaleCheckoutDialog = ({
   const grandTotal = totalAmount + deliveryFee;
   // افتراضياً: التوصيل يُدفع عند الاستلام ولا يُخصم من المحفظة.
   // استثناء: عند فرض الدفع من المحفظة (فلمنت عشوائي)، التوصيل أيضاً يُحسم من المحفظة مسبقاً.
-  const walletCap = forceWalletPayment ? grandTotal : totalAmount;
+  // عند اختيار الدفع من المحفظة → يشمل التوصيل أيضاً
+  const walletCap = (forceWalletPayment || useWallet) ? grandTotal : totalAmount;
   const walletDeduction = useWallet ? Math.min(walletBalance, walletCap) : 0;
   const codAmount = grandTotal - walletDeduction;
   const insufficientWallet = forceWalletPayment && walletBalance < grandTotal;
