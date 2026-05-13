@@ -135,6 +135,7 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, orderId, timeU
             </div>
           </div>
         </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
