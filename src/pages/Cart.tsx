@@ -979,8 +979,10 @@ const Cart = () => {
   const subscriptionDiscountAmount = (useHardwareOverCard && useSubscriptionContrib) ? (subscriptionBenefits?.totalDiscount || 0) : 0;
   const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
   
-  // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
-  const subtotalWithTax = subtotalAfterDiscount;
+  // ضريبة مؤقتة 10% على جميع أنواع الشحن (طلب مسبق + بيع مباشر)
+  const TEMP_TAX_RATE = 0.10;
+  const taxAmount = Math.max(0, Math.ceil(subtotalAfterDiscount * TEMP_TAX_RATE));
+  const subtotalWithTax = subtotalAfterDiscount + taxAmount;
   
   // حساب رسوم الدفع الجزئي بناءً على الشرائح فقط (لا رجوع للإعدادات القديمة)
   const partialPaymentTier = useMemo(() => {
@@ -1006,7 +1008,9 @@ const Cart = () => {
   const allItemsSupportCod = hasPreOrderItems && !hasRandomFilamentItems && items.length > 0 && items.every((item: any) => {
     return item.products?.cod_enabled === true;
   });
-  const showCodOption = allItemsSupportCod;
+  // مؤقتاً: تعطيل الدفع عند الاستلام بالكامل
+  const TEMP_DISABLE_COD = true;
+  const showCodOption = TEMP_DISABLE_COD ? false : allItemsSupportCod;
 
   // إعادة ضبط الخيار إذا اختفى الشرط، وإجبار الدفع الكامل عند وجود فلمنت عشوائي
   useEffect(() => {
@@ -3368,6 +3372,18 @@ const Cart = () => {
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+                  
+                  {taxAmount > 0 && (
+                    <div className="flex justify-between text-foreground animate-fade-in">
+                      <span className="flex items-center gap-1">
+                        ضريبة مؤقتة (10%)
+                        <span className="text-[9px] text-muted-foreground">(تُطبَّق على جميع أنواع الشحن)</span>
+                      </span>
+                      <span className="font-bold text-amber-600">
+                        +<AnimatedPrice value={taxAmount} formatFn={formatPrice} /> {t('pd_currency_iqd')}
+                      </span>
                     </div>
                   )}
                   
