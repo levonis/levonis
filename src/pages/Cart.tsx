@@ -130,6 +130,7 @@ const Cart = () => {
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'half' | 'cod'>('full');
+  const [extraDonation, setExtraDonation] = useState<number>(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showWalletDialog, setShowWalletDialog] = useState(false);
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
