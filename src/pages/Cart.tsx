@@ -3394,7 +3394,70 @@ const Cart = () => {
                       </span>
                     </div>
                   )}
-                  
+
+                  {/* ملاحظة التبرع التلقائي 1% */}
+                  {autoDonationAmount > 0 && (
+                    <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 px-3 py-2.5 text-[11px] leading-relaxed text-rose-700 dark:text-rose-300 animate-fade-in">
+                      <div className="flex items-start gap-2">
+                        <span className="text-base leading-none">❤️</span>
+                        <div className="flex-1">
+                          <div className="font-bold mb-0.5">سيتم التبرع بـ {formatPrice(autoDonationAmount)} {t('pd_currency_iqd')} من هذا الطلب</div>
+                          <div className="text-[10px] opacity-80">يعادل 1% من قيمة طلبك ويُخصم من أرباح المنصة لدعم الأعمال الخيرية. لا يُضاف على مبلغك.</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* تبرع إضافي اختياري */}
+                  <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm px-3 py-2.5 space-y-2 animate-fade-in">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <span>🤝</span>
+                        <span>تبرع إضافي اختياري</span>
+                      </div>
+                      {extraDonationAmount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setExtraDonation(0)}
+                          className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          إلغاء
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[1000, 2000, 5000, 10000].map((amt) => (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => setExtraDonation(amt)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border ${
+                            extraDonationAmount === amt
+                              ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                              : 'bg-background/60 text-foreground border-border/50 hover:border-primary/40'
+                          }`}
+                        >
+                          {formatPrice(amt)}
+                        </button>
+                      ))}
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        placeholder="مبلغ آخر"
+                        value={extraDonation || ''}
+                        onChange={(e) => setExtraDonation(Math.max(0, Number(e.target.value) || 0))}
+                        className="flex-1 min-w-[80px] h-7 px-2 rounded-lg text-[11px] bg-background/60 border border-border/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
+                      />
+                    </div>
+                    {extraDonationAmount > 0 && (
+                      <div className="flex justify-between items-center text-[11px] pt-1 border-t border-border/30">
+                        <span className="text-muted-foreground">سيُضاف على إجمالي الدفع</span>
+                        <span className="font-bold text-rose-600">+{formatPrice(extraDonationAmount)} {t('pd_currency_iqd')}</span>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
                     {(cardFreeShippingApplied || hardwareFreeShippingApplied || isFreeDeliveryApplied) ? (
