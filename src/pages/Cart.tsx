@@ -1523,17 +1523,19 @@ const Cart = () => {
       const orderInsertData = {
         user_id: user.id,
         order_number: orderNumber,
-        total_amount: orderSubtotal + deliveryFeeCalc,
+        total_amount: orderSubtotal + deliveryFeeCalc + extraDonationAmount,
         subtotal: orderSubtotal,
         paid_amount: walletDeductionAmount,
-        remaining_amount: codRemaining,
+        remaining_amount: codRemaining + extraDonationAmount,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
         status: 'confirmed',
-        payment_status: codRemaining <= 0 ? 'paid' : 'cod',
+        payment_status: (codRemaining + extraDonationAmount) <= 0 ? 'paid' : 'cod',
         order_type: 'direct',
         delivery_method: selectedDeliveryMethod,
+        auto_donation_amount: autoDonationAmount,
+        extra_donation_amount: extraDonationAmount,
       } as any;
 
       const { data: orderResult, error: orderError } = await supabase
