@@ -1096,15 +1096,16 @@ const Cart = () => {
     : 0;
 
   // المطلوب الآن: في COD لا شيء. خلاف ذلك: ما تبقى بعد خصم المحفظة (يشمل التوصيل إذا كانت المحفظة تغطيه).
-  const grandTotal = isCodPayment
+  const grandTotalBase = isCodPayment
     ? 0
     : walletIncludesDelivery
       ? Math.max(0, walletRequiredAmount - walletDeduction)
       : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
+  const grandTotal = grandTotalBase + extraDonationAmount;
 
   // المبلغ المتبقي عند الاستلام (يشمل رسوم COD والتوصيل في حالة COD، أو رسوم الدفع الجزئي)
   const remainingAmount = isCodPayment
-    ? subtotalWithTax + codFee + deliveryFee
+    ? subtotalWithTax + codFee + deliveryFee + extraDonationAmount
     : (hasPreOrderItems && preOrderPaymentOption === 'half'
         ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee + deliveryFee
         : 0);
