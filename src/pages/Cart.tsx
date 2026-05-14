@@ -3419,6 +3419,13 @@ const Cart = () => {
                           1% من قيمة طلبك يُخصم من أرباح المنصة كتبرع لمؤسسة العين/ودور الأيتام — لا يُضاف على مبلغك.
                           يمكنك المساهمة بمبلغ إضافي اختياري:
                         </p>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/donations')}
+                          className="text-[10px] text-primary hover:underline"
+                        >
+                          عرض إثبات التبرعات والسجل المباشر ←
+                        </button>
                         <div className="flex flex-wrap gap-1">
                           {[1000, 2000, 5000, 10000].map((amt) => (
                             <button
