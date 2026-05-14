@@ -984,6 +984,12 @@ const Cart = () => {
   const TEMP_TAX_RATE = 0;
   const taxAmount = 0;
   const subtotalWithTax = subtotalAfterDiscount;
+
+  // التبرعات: 1% تلقائي من قيمة المنتجات بعد الخصم (تُخصم من أرباح المنصة، لا تُضاف على المستخدم)
+  // + تبرع إضافي اختياري يكتبه المستخدم (يُضاف على إجمالي الدفع)
+  const autoDonationAmount = Math.round(subtotalAfterDiscount * 0.01);
+  const extraDonationAmount = Math.max(0, Math.round(extraDonation || 0));
+  const donationTotal = autoDonationAmount + extraDonationAmount;
   
   // حساب رسوم الدفع الجزئي بناءً على الشرائح فقط (لا رجوع للإعدادات القديمة)
   const partialPaymentTier = useMemo(() => {
