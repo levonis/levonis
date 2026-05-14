@@ -152,14 +152,23 @@ const calcReferralCommission = (order: OrderWithDetails): number => {
   return Number((order as any).referral_owner_earnings_iqd) || 0;
 };
 
-// Profit (commission) = total_amount - all costs - referral commission (delivered only)
+// Donation amount (1% auto + optional extra) - excluded from platform profit
+const calcDonationAmount = (order: OrderWithDetails): number => {
+  return (Number((order as any).auto_donation_amount) || 0)
+    + (Number((order as any).extra_donation_amount) || 0);
+};
+
+// Profit (commission) = total_amount - all costs - referral commission - donations (delivered only)
 const calcOrderProfit = (
   order: OrderWithDetails,
   usdToIqdRate: number,
   deliveryMethods: Array<{ method_key: string; actual_cost: number }> = []
 ): number => {
   if (order.status !== 'delivered') return 0;
-  return toNumber(order.total_amount) - calcOrderCost(order, usdToIqdRate, deliveryMethods) - calcReferralCommission(order);
+  return toNumber(order.total_amount)
+    - calcOrderCost(order, usdToIqdRate, deliveryMethods)
+    - calcReferralCommission(order)
+    - calcDonationAmount(order);
 };
 
 const AdminFinancials = () => {
