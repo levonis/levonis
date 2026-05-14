@@ -2058,10 +2058,10 @@ const Cart = () => {
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
       const orderData = {
-        total_amount: orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0),
+        total_amount: orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0) + extraDonationAmount,
         subtotal: orderSubtotal,
-        paid_amount: isPreOrderCod ? 0 : paidNow,
-        remaining_amount: orderRemaining + orderDeliveryFee,
+        paid_amount: isPreOrderCod ? 0 : (paidNow + extraDonationAmount),
+        remaining_amount: orderRemaining + orderDeliveryFee + (isPreOrderCod ? extraDonationAmount : 0),
         cod_fee: isPreOrderCod ? codFee : 0,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
@@ -2072,6 +2072,8 @@ const Cart = () => {
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
         payment_method: isPreOrderCod ? 'cod' : 'wallet',
         payment_status: isPreOrderCod ? 'cod' : (isPreOrderWithPartialPayment ? 'partial' : 'paid'),
+        auto_donation_amount: autoDonationAmount,
+        extra_donation_amount: extraDonationAmount,
       } as any;
       if (appliedReferral) {
         orderData.referral_coupon_id = appliedReferral.coupon_id;
