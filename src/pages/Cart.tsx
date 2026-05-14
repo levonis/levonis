@@ -979,10 +979,10 @@ const Cart = () => {
   const subscriptionDiscountAmount = (useHardwareOverCard && useSubscriptionContrib) ? (subscriptionBenefits?.totalDiscount || 0) : 0;
   const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
   
-  // ضريبة مؤقتة 10% على جميع أنواع الشحن (طلب مسبق + بيع مباشر)
-  const TEMP_TAX_RATE = 0.10;
-  const taxAmount = Math.max(0, Math.ceil(subtotalAfterDiscount * TEMP_TAX_RATE));
-  const subtotalWithTax = subtotalAfterDiscount + taxAmount;
+  // الضريبة ملغاة نهائياً
+  const TEMP_TAX_RATE = 0;
+  const taxAmount = 0;
+  const subtotalWithTax = subtotalAfterDiscount;
   
   // حساب رسوم الدفع الجزئي بناءً على الشرائح فقط (لا رجوع للإعدادات القديمة)
   const partialPaymentTier = useMemo(() => {
