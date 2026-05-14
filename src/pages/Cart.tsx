@@ -3401,17 +3401,23 @@ const Cart = () => {
 
                   {/* صف هادئ يجمع التبرع التلقائي + التبرع الإضافي الاختياري */}
                   {(autoDonationAmount > 0 || true) && (
-                    <details className="group text-[10px] animate-fade-in [&_summary::-webkit-details-marker]:hidden">
-                      <summary className="flex items-center justify-between gap-2 cursor-pointer list-none py-1">
-                        <span className="flex items-center gap-1.5 text-muted-foreground/60">
-                          <span>تبرع <span className="text-muted-foreground/80">{formatPrice(autoDonationAmount)}</span> لمؤسسة العين/ودور الأيتام</span>
+                    <details className="group rounded-lg border border-border/40 bg-muted/20 px-3 py-2 text-[11px] animate-fade-in [&_summary::-webkit-details-marker]:hidden">
+                      <summary className="flex items-center justify-between gap-2 cursor-pointer list-none">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="opacity-70">🤲</span>
+                          <span>
+                            تبرع <span className="font-semibold text-foreground/80">{formatPrice(autoDonationAmount)} {t('pd_currency_iqd')}</span>
+                            <span className="opacity-70"> لمؤسسة العين/ودور الأيتام</span>
+                          </span>
                         </span>
-                        <ChevronDown className="h-3 w-3 text-muted-foreground/40 transition-transform duration-200 group-open:rotate-180" />
+                        <span className="text-[10px] text-muted-foreground/70 group-open:hidden">إضافة المزيد</span>
+                        <span className="text-[10px] text-muted-foreground/70 hidden group-open:inline">إخفاء</span>
                       </summary>
 
-                      <div className="mt-1 pt-2 border-t border-border/20 space-y-2">
-                        <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
-                          1% من قيمة طلبك يُخصم من أرباح المنصة كتبرع لمؤسسة العين/ودور الأيتام — لا يُضاف على مبلغك. يمكنك المساهمة بمبلغ إضافي:
+                      <div className="mt-2 pt-2 border-t border-border/30 space-y-2">
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          1% من قيمة طلبك يُخصم من أرباح المنصة كتبرع لمؤسسة العين/ودور الأيتام — لا يُضاف على مبلغك.
+                          يمكنك المساهمة بمبلغ إضافي اختياري:
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {[1000, 2000, 5000, 10000].map((amt) => (
@@ -3421,8 +3427,8 @@ const Cart = () => {
                               onClick={() => setExtraDonation(extraDonationAmount === amt ? 0 : amt)}
                               className={`px-2 py-0.5 rounded-md text-[10px] transition-all border ${
                                 extraDonationAmount === amt
-                                  ? 'bg-foreground/70 text-background border-foreground/70'
-                                  : 'bg-transparent text-muted-foreground/60 border-border/40 hover:border-foreground/20 hover:text-muted-foreground'
+                                  ? 'bg-foreground/80 text-background border-foreground/80'
+                                  : 'bg-transparent text-muted-foreground border-border/50 hover:border-foreground/30 hover:text-foreground'
                               }`}
                             >
                               {formatPrice(amt)}
@@ -3435,13 +3441,13 @@ const Cart = () => {
                             placeholder="مبلغ آخر"
                             value={extraDonation || ''}
                             onChange={(e) => setExtraDonation(Math.max(0, Number(e.target.value) || 0))}
-                            className="flex-1 min-w-[70px] h-5 px-2 rounded-md text-[10px] bg-transparent border border-border/40 focus:border-foreground/30 focus:outline-none text-foreground/70 placeholder:text-muted-foreground/40"
+                            className="flex-1 min-w-[70px] h-6 px-2 rounded-md text-[10px] bg-transparent border border-border/50 focus:border-foreground/40 focus:outline-none text-foreground placeholder:text-muted-foreground/60"
                           />
                         </div>
                         {extraDonationAmount > 0 && (
-                          <div className="flex justify-between items-center text-[10px] text-muted-foreground/60">
+                          <div className="flex justify-between items-center text-[10px] text-muted-foreground">
                             <span>سيُضاف على إجمالي الدفع</span>
-                            <span className="text-muted-foreground/80">+{formatPrice(extraDonationAmount)} {t('pd_currency_iqd')}</span>
+                            <span className="font-semibold text-foreground/80">+{formatPrice(extraDonationAmount)} {t('pd_currency_iqd')}</span>
                           </div>
                         )}
                       </div>
