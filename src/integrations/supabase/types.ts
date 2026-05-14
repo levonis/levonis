@@ -7527,6 +7527,7 @@ export type Database = {
           arrived_iraq_at: string | null
           arrived_warehouse_at: string | null
           auto_confirmed: boolean | null
+          auto_donation_amount: number
           cancelled_at: string | null
           card_discount_amount: number | null
           card_discount_level_name: string | null
@@ -7540,6 +7541,7 @@ export type Database = {
           delivery_method: string | null
           discount_amount: number | null
           estimated_delivery_date: string | null
+          extra_donation_amount: number
           financial_notes: string | null
           governorate: string
           id: string
@@ -7588,6 +7590,7 @@ export type Database = {
           arrived_iraq_at?: string | null
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
+          auto_donation_amount?: number
           cancelled_at?: string | null
           card_discount_amount?: number | null
           card_discount_level_name?: string | null
@@ -7601,6 +7604,7 @@ export type Database = {
           delivery_method?: string | null
           discount_amount?: number | null
           estimated_delivery_date?: string | null
+          extra_donation_amount?: number
           financial_notes?: string | null
           governorate: string
           id?: string
@@ -7649,6 +7653,7 @@ export type Database = {
           arrived_iraq_at?: string | null
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
+          auto_donation_amount?: number
           cancelled_at?: string | null
           card_discount_amount?: number | null
           card_discount_level_name?: string | null
@@ -7662,6 +7667,7 @@ export type Database = {
           delivery_method?: string | null
           discount_amount?: number | null
           estimated_delivery_date?: string | null
+          extra_donation_amount?: number
           financial_notes?: string | null
           governorate?: string
           id?: string
@@ -13296,6 +13302,7 @@ export type Database = {
           arrived_iraq_at: string | null
           arrived_warehouse_at: string | null
           auto_confirmed: boolean | null
+          auto_donation_amount: number
           cancelled_at: string | null
           card_discount_amount: number | null
           card_discount_level_name: string | null
@@ -13309,6 +13316,7 @@ export type Database = {
           delivery_method: string | null
           discount_amount: number | null
           estimated_delivery_date: string | null
+          extra_donation_amount: number
           financial_notes: string | null
           governorate: string
           id: string
@@ -13609,6 +13617,7 @@ export type Database = {
           arrived_iraq_at: string | null
           arrived_warehouse_at: string | null
           auto_confirmed: boolean | null
+          auto_donation_amount: number
           cancelled_at: string | null
           card_discount_amount: number | null
           card_discount_level_name: string | null
@@ -13622,6 +13631,7 @@ export type Database = {
           delivery_method: string | null
           discount_amount: number | null
           estimated_delivery_date: string | null
+          extra_donation_amount: number
           financial_notes: string | null
           governorate: string
           id: string
