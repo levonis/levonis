@@ -2083,7 +2083,7 @@ const Cart = () => {
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
         p_user_id: user.id,
         p_order_data: orderData,
-        p_payment_amount: isPreOrderCod ? 0 : requiredPaymentNow,
+        p_payment_amount: isPreOrderCod ? 0 : (requiredPaymentNow + extraDonationAmount),
       });
 
       if (orderError || !orderId) {
