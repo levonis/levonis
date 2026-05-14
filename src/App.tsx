@@ -59,6 +59,7 @@ const AdminAnnouncements = lazy(() => import("./pages/AdminAnnouncements"));
 const AdminBanners = lazy(() => import("./pages/AdminBanners"));
 const AdminCoupons = lazy(() => import("./pages/AdminCoupons"));
 const MyOrders = lazy(() => import("./pages/MyOrders"));
+const Donations = lazy(() => import("./pages/Donations"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
 const AdminOrders = lazy(() => import("./pages/AdminOrders"));
 const AdminPointsSettings = lazy(() => import("./pages/AdminPointsSettings"));
@@ -307,6 +308,7 @@ function AppContent() {
             <Route path="/categories" element={<Navigate to="/" replace />} />
             <Route path="/category/:slug" element={<CategoryDetail />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/donations" element={<Donations />} />
             <Route path="/bundles" element={<ProductBundles />} />
             <Route path="/bundles/:id" element={<BundleDetail />} />
             <Route path="/user-info" element={<UserInfo />} />

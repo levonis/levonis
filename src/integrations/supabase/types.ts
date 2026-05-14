@@ -3114,6 +3114,39 @@ export type Database = {
           },
         ]
       }
+      donations_log: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          display_name: string | null
+          id: string
+          order_id: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          display_name?: string | null
+          id?: string
+          order_id?: string | null
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          display_name?: string | null
+          id?: string
+          order_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -13978,6 +14011,7 @@ export type Database = {
         Args: { p_new_price: number; p_product_id: string }
         Returns: number
       }
+      donate_from_wallet: { Args: { p_amount: number }; Returns: string }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
       end_crossy_road: {
@@ -14109,6 +14143,14 @@ export type Database = {
         Args: never
         Returns: {
           category_id: string
+        }[]
+      }
+      get_donations_stats: {
+        Args: never
+        Returns: {
+          donor_count: number
+          total_amount: number
+          total_count: number
         }[]
       }
       get_internal_http_secret: { Args: { p_purpose: string }; Returns: string }
