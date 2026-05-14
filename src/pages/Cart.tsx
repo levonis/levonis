@@ -130,6 +130,7 @@ const Cart = () => {
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'half' | 'cod'>('full');
+  const [extraDonation, setExtraDonation] = useState<number>(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showWalletDialog, setShowWalletDialog] = useState(false);
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
@@ -983,6 +984,12 @@ const Cart = () => {
   const TEMP_TAX_RATE = 0;
   const taxAmount = 0;
   const subtotalWithTax = subtotalAfterDiscount;
+
+  // التبرعات: 1% تلقائي من قيمة المنتجات بعد الخصم (تُخصم من أرباح المنصة، لا تُضاف على المستخدم)
+  // + تبرع إضافي اختياري يكتبه المستخدم (يُضاف على إجمالي الدفع)
+  const autoDonationAmount = Math.round(subtotalAfterDiscount * 0.01);
+  const extraDonationAmount = Math.max(0, Math.round(extraDonation || 0));
+  const donationTotal = autoDonationAmount + extraDonationAmount;
   
   // حساب رسوم الدفع الجزئي بناءً على الشرائح فقط (لا رجوع للإعدادات القديمة)
   const partialPaymentTier = useMemo(() => {
@@ -1089,15 +1096,16 @@ const Cart = () => {
     : 0;
 
   // المطلوب الآن: في COD لا شيء. خلاف ذلك: ما تبقى بعد خصم المحفظة (يشمل التوصيل إذا كانت المحفظة تغطيه).
-  const grandTotal = isCodPayment
+  const grandTotalBase = isCodPayment
     ? 0
     : walletIncludesDelivery
       ? Math.max(0, walletRequiredAmount - walletDeduction)
       : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
+  const grandTotal = grandTotalBase + extraDonationAmount;
 
   // المبلغ المتبقي عند الاستلام (يشمل رسوم COD والتوصيل في حالة COD، أو رسوم الدفع الجزئي)
   const remainingAmount = isCodPayment
-    ? subtotalWithTax + codFee + deliveryFee
+    ? subtotalWithTax + codFee + deliveryFee + extraDonationAmount
     : (hasPreOrderItems && preOrderPaymentOption === 'half'
         ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee + deliveryFee
         : 0);
@@ -1515,17 +1523,19 @@ const Cart = () => {
       const orderInsertData = {
         user_id: user.id,
         order_number: orderNumber,
-        total_amount: orderSubtotal + deliveryFeeCalc,
+        total_amount: orderSubtotal + deliveryFeeCalc + extraDonationAmount,
         subtotal: orderSubtotal,
         paid_amount: walletDeductionAmount,
-        remaining_amount: codRemaining,
+        remaining_amount: codRemaining + extraDonationAmount,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
         status: 'confirmed',
-        payment_status: codRemaining <= 0 ? 'paid' : 'cod',
+        payment_status: (codRemaining + extraDonationAmount) <= 0 ? 'paid' : 'cod',
         order_type: 'direct',
         delivery_method: selectedDeliveryMethod,
+        auto_donation_amount: autoDonationAmount,
+        extra_donation_amount: extraDonationAmount,
       } as any;
 
       const { data: orderResult, error: orderError } = await supabase
@@ -2048,10 +2058,10 @@ const Cart = () => {
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
       const orderData = {
-        total_amount: orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0),
+        total_amount: orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0) + extraDonationAmount,
         subtotal: orderSubtotal,
-        paid_amount: isPreOrderCod ? 0 : paidNow,
-        remaining_amount: orderRemaining + orderDeliveryFee,
+        paid_amount: isPreOrderCod ? 0 : (paidNow + extraDonationAmount),
+        remaining_amount: orderRemaining + orderDeliveryFee + (isPreOrderCod ? extraDonationAmount : 0),
         cod_fee: isPreOrderCod ? codFee : 0,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
@@ -2062,6 +2072,8 @@ const Cart = () => {
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
         payment_method: isPreOrderCod ? 'cod' : 'wallet',
         payment_status: isPreOrderCod ? 'cod' : (isPreOrderWithPartialPayment ? 'partial' : 'paid'),
+        auto_donation_amount: autoDonationAmount,
+        extra_donation_amount: extraDonationAmount,
       } as any;
       if (appliedReferral) {
         orderData.referral_coupon_id = appliedReferral.coupon_id;
@@ -2071,7 +2083,7 @@ const Cart = () => {
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
         p_user_id: user.id,
         p_order_data: orderData,
-        p_payment_amount: isPreOrderCod ? 0 : requiredPaymentNow,
+        p_payment_amount: isPreOrderCod ? 0 : (requiredPaymentNow + extraDonationAmount),
       });
 
       if (orderError || !orderId) {
@@ -3386,7 +3398,70 @@ const Cart = () => {
                       </span>
                     </div>
                   )}
-                  
+
+                  {/* ملاحظة التبرع التلقائي 1% */}
+                  {autoDonationAmount > 0 && (
+                    <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 px-3 py-2.5 text-[11px] leading-relaxed text-rose-700 dark:text-rose-300 animate-fade-in">
+                      <div className="flex items-start gap-2">
+                        <span className="text-base leading-none">❤️</span>
+                        <div className="flex-1">
+                          <div className="font-bold mb-0.5">سيتم التبرع بـ {formatPrice(autoDonationAmount)} {t('pd_currency_iqd')} من هذا الطلب</div>
+                          <div className="text-[10px] opacity-80">يعادل 1% من قيمة طلبك ويُخصم من أرباح المنصة لدعم الأعمال الخيرية. لا يُضاف على مبلغك.</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* تبرع إضافي اختياري */}
+                  <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm px-3 py-2.5 space-y-2 animate-fade-in">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <span>🤝</span>
+                        <span>تبرع إضافي اختياري</span>
+                      </div>
+                      {extraDonationAmount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setExtraDonation(0)}
+                          className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          إلغاء
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[1000, 2000, 5000, 10000].map((amt) => (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => setExtraDonation(amt)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border ${
+                            extraDonationAmount === amt
+                              ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                              : 'bg-background/60 text-foreground border-border/50 hover:border-primary/40'
+                          }`}
+                        >
+                          {formatPrice(amt)}
+                        </button>
+                      ))}
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        placeholder="مبلغ آخر"
+                        value={extraDonation || ''}
+                        onChange={(e) => setExtraDonation(Math.max(0, Number(e.target.value) || 0))}
+                        className="flex-1 min-w-[80px] h-7 px-2 rounded-lg text-[11px] bg-background/60 border border-border/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
+                      />
+                    </div>
+                    {extraDonationAmount > 0 && (
+                      <div className="flex justify-between items-center text-[11px] pt-1 border-t border-border/30">
+                        <span className="text-muted-foreground">سيُضاف على إجمالي الدفع</span>
+                        <span className="font-bold text-rose-600">+{formatPrice(extraDonationAmount)} {t('pd_currency_iqd')}</span>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
                     {(cardFreeShippingApplied || hardwareFreeShippingApplied || isFreeDeliveryApplied) ? (
