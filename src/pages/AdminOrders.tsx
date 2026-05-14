@@ -83,6 +83,7 @@ const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('orders');
   const [orderTab, setOrderTab] = useState<'preorder' | 'direct'>('preorder');
   const [preorderShippingTab, setPreorderShippingTab] = useState<'all' | 'sea' | 'air'>('all');
+  const [preorderSummaryOpen, setPreorderSummaryOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
