@@ -1142,81 +1142,108 @@ const AdminOrders = () => {
               <AdminCardHeader
                 icon={<Package className="h-5 w-5" />}
                 title={`ملخص منتجات الطلبات المسبقة النشطة (${activeOrders.length} طلب • ${totalQty} قطعة)`}
-                actions={rows.length > 0 ? (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const data = rows.map((r, i) => ({
-                          '#': i + 1,
-                          'المنتج': r.name,
-                          'اللون': r.color || '—',
-                          'الخيار': r.option || '—',
-                          'هدية': r.isGift ? 'نعم' : 'لا',
-                          'العدد': r.qty,
-                          'عدد الطلبات': r.orders.size,
-                        }));
-                        data.push({
-                          '#': '' as any,
-                          'المنتج': 'الإجمالي',
-                          'اللون': '',
-                          'الخيار': '',
-                          'هدية': '',
-                          'العدد': totalQty,
-                          'عدد الطلبات': activeOrders.length,
-                        });
-                        const date = new Date().toISOString().slice(0, 10);
-                        exportToExcel(data, { filename: `preorder-products-summary-${date}.xlsx` });
-                        toast.success('تم تصدير الملخص');
-                      }}
-                    >
-                      تصدير Excel
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => { navigator.clipboard.writeText(copyText); toast.success('تم نسخ الملخص'); }}
-                    >
-                      نسخ الكل
-                    </Button>
-                  </div>
-                ) : undefined}
+                actions={
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setPreorderSummaryOpen(true)}
+                    disabled={rows.length === 0}
+                  >
+                    عرض التفاصيل
+                  </Button>
+                }
               />
-              <AdminCardContent>
-                {rows.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">لا توجد منتجات نشطة في الطلبات المسبقة</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {rows.map((r, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0 text-sm">
-                          {r.isGift && <Gift className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
-                          <span className="font-bold truncate">{r.name}</span>
-                          {r.color && (
-                            <Badge variant="outline" className="text-[10px] shrink-0">
-                              لون: <span className="font-semibold mx-1">{r.color}</span>
-                            </Badge>
-                          )}
-                          {r.option && (
-                            <Badge variant="outline" className="text-[10px] shrink-0">
-                              خيار: <span className="font-semibold mx-1">{r.option}</span>
-                            </Badge>
-                          )}
-                          <span className="text-[10px] text-muted-foreground shrink-0">({r.orders.size} طلب)</span>
-                        </div>
-                        <div className="text-base font-extrabold text-primary shrink-0 tabular-nums">
-                          ×{r.qty}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </AdminCardContent>
             </AdminCard>
+
+            <Dialog open={preorderSummaryOpen} onOpenChange={setPreorderSummaryOpen}>
+              <DialogContent className="!max-w-2xl !overflow-hidden !max-h-none flex flex-col" style={{ maxHeight: '90vh' }}>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    تفاصيل منتجات الطلبات المسبقة
+                  </DialogTitle>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {activeOrders.length} طلب نشط • {rows.length} منتج فريد • {totalQty} قطعة إجمالية
+                  </div>
+                </DialogHeader>
+
+                <div className="flex-1 overflow-y-auto -mx-1 px-1">
+                  {rows.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">لا توجد منتجات نشطة في الطلبات المسبقة</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {rows.map((r, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-muted/30 border border-border/40"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0 text-sm">
+                            <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">#{idx + 1}</span>
+                            {r.isGift && <Gift className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                            <span className="font-bold">{r.name}</span>
+                            {r.color && (
+                              <Badge variant="outline" className="text-[10px] shrink-0">
+                                لون: <span className="font-semibold mx-1">{r.color}</span>
+                              </Badge>
+                            )}
+                            {r.option && (
+                              <Badge variant="outline" className="text-[10px] shrink-0">
+                                خيار: <span className="font-semibold mx-1">{r.option}</span>
+                              </Badge>
+                            )}
+                            <span className="text-[10px] text-muted-foreground shrink-0">({r.orders.size} طلب)</span>
+                          </div>
+                          <div className="text-base font-extrabold text-primary shrink-0 tabular-nums">
+                            ×{r.qty}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="flex-row !justify-end gap-2 pt-2 border-t border-border/40">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { navigator.clipboard.writeText(copyText); toast.success('تم نسخ الملخص'); }}
+                    disabled={rows.length === 0}
+                  >
+                    نسخ الكل
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      const data = rows.map((r, i) => ({
+                        '#': i + 1,
+                        'المنتج': r.name,
+                        'اللون': r.color || '—',
+                        'الخيار': r.option || '—',
+                        'هدية': r.isGift ? 'نعم' : 'لا',
+                        'العدد': r.qty,
+                        'عدد الطلبات': r.orders.size,
+                      }));
+                      data.push({
+                        '#': '' as any,
+                        'المنتج': 'الإجمالي',
+                        'اللون': '',
+                        'الخيار': '',
+                        'هدية': '',
+                        'العدد': totalQty,
+                        'عدد الطلبات': activeOrders.length,
+                      });
+                      const date = new Date().toISOString().slice(0, 10);
+                      exportToExcel(data, { filename: `preorder-products-summary-${date}.xlsx` });
+                      toast.success('تم تصدير الملخص');
+                    }}
+                    disabled={rows.length === 0}
+                  >
+                    تصدير Excel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </AdminSection>
         );
       })()}
