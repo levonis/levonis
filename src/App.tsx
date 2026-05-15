@@ -71,6 +71,7 @@ const AdminWalletSettings = lazy(() => import("./pages/AdminWalletSettings"));
 const AdminInvoiceTemplates = lazy(() => import("./pages/AdminInvoiceTemplates"));
 const AdminSavedInvoices = lazy(() => import("./pages/AdminSavedInvoices"));
 const AdminFinancials = lazy(() => import("./pages/AdminFinancials"));
+const AdminDonations = lazy(() => import("./pages/AdminDonations"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
 const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 const AdminAppVersions = lazy(() => import("./pages/admin/AdminAppVersions"));
