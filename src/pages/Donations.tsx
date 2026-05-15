@@ -52,6 +52,8 @@ export default function Donations() {
   const [submitting, setSubmitting] = useState(false);
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
+  const [customName, setCustomName] = useState("");
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["donations-stats"],
