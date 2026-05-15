@@ -22,13 +22,17 @@ const timeAgo = (iso: string) => {
   return `قبل ${d} يوم`;
 };
 
-interface DonorRow {
+interface DonationRow {
+  id: string;
   user_id: string | null;
   display_name: string | null;
-  total_amount: number;
-  donation_count: number;
-  last_donation_at: string;
+  amount: number;
+  source: string;
+  order_id: string | null;
+  created_at: string;
 }
+
+const shortOrderId = (id: string) => id.slice(0, 8).toUpperCase();
 
 export default function Donations() {
   const { user } = useAuth();
