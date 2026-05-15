@@ -14011,7 +14011,12 @@ export type Database = {
         Args: { p_new_price: number; p_product_id: string }
         Returns: number
       }
-      donate_from_wallet: { Args: { p_amount: number }; Returns: string }
+      donate_from_wallet:
+        | { Args: { p_amount: number }; Returns: string }
+        | {
+            Args: { p_amount: number; p_display_name?: string }
+            Returns: string
+          }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
       end_crossy_road: {

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Heart, Wallet, Sparkles, Users, Hash } from "lucide-react";
+import { Heart, Wallet, Sparkles, Users, Hash, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { filterContent } from "@/lib/contentFilter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +52,8 @@ export default function Donations() {
   const [submitting, setSubmitting] = useState(false);
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
+  const [customName, setCustomName] = useState("");
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["donations-stats"],
@@ -137,9 +140,34 @@ export default function Donations() {
       toast({ title: "رصيد المحفظة غير كافٍ", variant: "destructive" });
       return;
     }
+
+    let displayName: string | null = null;
+    if (!anonymous) {
+      const trimmed = customName.trim();
+      if (trimmed.length > 0) {
+        if (trimmed.length > 40) {
+          toast({ title: "الاسم طويل جداً (الحد 40 حرفاً)", variant: "destructive" });
+          return;
+        }
+        const check = filterContent(trimmed);
+        if (!check.isClean) {
+          toast({
+            title: "اسم غير مناسب",
+            description: "يرجى اختيار اسم لائق دون كلمات مسيئة.",
+            variant: "destructive",
+          });
+          return;
+        }
+        displayName = trimmed;
+      }
+    }
+
     setSubmitting(true);
     try {
-      const { error } = await supabase.rpc("donate_from_wallet" as any, { p_amount: val });
+      const { error } = await supabase.rpc("donate_from_wallet" as any, {
+        p_amount: val,
+        p_display_name: anonymous ? "متبرع كريم" : displayName,
+      });
       if (error) throw error;
       toast({ title: "🤍 شكراً لتبرعك", description: `تم خصم ${fmt(val)} د.ع من محفظتك` });
       setAmount("");
@@ -261,6 +289,32 @@ export default function Donations() {
               <Heart className="h-4 w-4" />
               تبرّع
             </Button>
+          </div>
+
+          {/* Identity controls */}
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between rounded-xl border border-border/40 bg-background/40 px-3 py-2">
+              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <UserX className="h-3.5 w-3.5 text-muted-foreground" />
+                تبرع كمجهول الهوية
+              </label>
+              <input
+                type="checkbox"
+                checked={anonymous}
+                onChange={(e) => setAnonymous(e.target.checked)}
+                className="h-4 w-4 accent-rose-500 cursor-pointer"
+              />
+            </div>
+            {!anonymous && (
+              <Input
+                type="text"
+                maxLength={40}
+                placeholder="اسم العرض (اختياري) — يظهر في السجل"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                className="text-sm"
+              />
+            )}
           </div>
 
           {!user && (
