@@ -6,6 +6,16 @@ import { Heart, Wallet, Sparkles, Users, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 
 const QUICK = [1000, 2000, 5000, 10000];
@@ -40,6 +50,7 @@ export default function Donations() {
   const [amount, setAmount] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [pulseId, setPulseId] = useState<string | null>(null);
+  const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["donations-stats"],
@@ -223,7 +234,22 @@ export default function Donations() {
               className="text-sm"
             />
             <Button
-              onClick={() => submitWalletDonation(Number(amount))}
+              onClick={() => {
+                const val = Number(amount);
+                if (!user) {
+                  toast({ title: "يرجى تسجيل الدخول", variant: "destructive" });
+                  return;
+                }
+                if (!val || val <= 0) {
+                  toast({ title: "أدخل مبلغاً صحيحاً", variant: "destructive" });
+                  return;
+                }
+                if ((wallet?.balance ?? 0) < val) {
+                  toast({ title: "رصيد المحفظة غير كافٍ", variant: "destructive" });
+                  return;
+                }
+                setConfirmAmount(val);
+              }}
               disabled={submitting || !user || !amount}
               className="gap-1.5"
             >
@@ -377,6 +403,52 @@ export default function Donations() {
           </div>
         </section>
       </main>
+
+      <AlertDialog
+        open={confirmAmount !== null}
+        onOpenChange={(o) => !o && !submitting && setConfirmAmount(null)}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-rose-500 fill-current" />
+              تأكيد التبرع
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 pt-1">
+              <span className="block">
+                سيتم خصم{" "}
+                <span className="font-bold text-rose-500 tabular-nums">
+                  {fmt(confirmAmount ?? 0)} د.ع
+                </span>{" "}
+                من محفظتك وتحويلها إلى{" "}
+                <span className="font-medium text-foreground">
+                  مؤسسة العين/ودور الأيتام
+                </span>
+                .
+              </span>
+              <span className="block text-[11px] text-muted-foreground tabular-nums">
+                الرصيد بعد الخصم:{" "}
+                {fmt(Math.max(0, Number(wallet?.balance ?? 0) - (confirmAmount ?? 0)))} د.ع
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={async (e) => {
+                e.preventDefault();
+                const val = confirmAmount ?? 0;
+                await submitWalletDonation(val);
+                setConfirmAmount(null);
+              }}
+              className="bg-rose-500 text-white hover:bg-rose-600"
+            >
+              {submitting ? "جاري التبرع..." : "تأكيد وتبرّع"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
