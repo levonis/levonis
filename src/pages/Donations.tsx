@@ -239,59 +239,136 @@ export default function Donations() {
           )}
         </section>
 
-        {/* Live feed */}
+        {/* Live timeline */}
         <section className="rounded-3xl border border-border/40 bg-card/60 p-5 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-amber-500" />
-            <h2 className="text-sm font-semibold">سجل آخر 50 عملية تبرع</h2>
+            <h2 className="text-sm font-semibold">سجل التبرعات الزمني</h2>
             <span className="ms-auto inline-flex items-center gap-1 text-[10px] text-emerald-500">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               مباشر
             </span>
           </div>
 
-          <div className="mt-3 space-y-2">
+          <div className="mt-4">
             {feedLoading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full rounded-xl" />
-              ))
+              <div className="space-y-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 w-full rounded-xl" />
+                ))}
+              </div>
             ) : feed && feed.length > 0 ? (
-              feed.map((d) => (
-                <div
-                  key={d.id}
-                  className={`flex items-center gap-3 rounded-xl border border-border/40 bg-background/40 p-3 transition ${
-                    pulseId === d.id ? "ring-2 ring-rose-400/60 scale-[1.01]" : ""
-                  }`}
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
-                    <Heart className="h-4 w-4 fill-current" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 truncate text-sm font-medium">
-                      <span className="truncate">{d.display_name || "متبرع كريم"}</span>
-                      {d.order_id && (
-                        <span className="shrink-0 rounded-md border border-border/50 bg-background/60 px-1.5 py-0.5 text-[9px] font-mono tabular-nums text-muted-foreground">
-                          #{shortOrderId(d.order_id)}
-                        </span>
-                      )}
+              (() => {
+                const sameDay = (a: Date, b: Date) =>
+                  a.getFullYear() === b.getFullYear() &&
+                  a.getMonth() === b.getMonth() &&
+                  a.getDate() === b.getDate();
+                const dayLabel = (iso: string) => {
+                  const d = new Date(iso);
+                  const today = new Date();
+                  const y = new Date();
+                  y.setDate(today.getDate() - 1);
+                  if (sameDay(d, today)) return "اليوم";
+                  if (sameDay(d, y)) return "أمس";
+                  return d.toLocaleDateString("ar-IQ", { day: "numeric", month: "long" });
+                };
+                const hhmm = (iso: string) =>
+                  new Date(iso).toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" });
+
+                const groups: { label: string; items: typeof feed }[] = [];
+                for (const item of feed) {
+                  const label = dayLabel(item.created_at);
+                  const last = groups[groups.length - 1];
+                  if (last && last.label === label) last.items.push(item);
+                  else groups.push({ label, items: [item] });
+                }
+
+                return (
+                  <div className="relative">
+                    <div className="pointer-events-none absolute bottom-0 end-[18px] top-2 w-px bg-gradient-to-b from-rose-400/40 via-border/50 to-transparent" />
+                    <div className="space-y-5">
+                      {groups.map((g) => (
+                        <div key={g.label}>
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-rose-500">
+                              {g.label}
+                            </span>
+                            <div className="h-px flex-1 bg-border/40" />
+                          </div>
+                          <div className="space-y-2">
+                            {g.items.map((d) => {
+                              const isNew = pulseId === d.id;
+                              return (
+                                <div
+                                  key={d.id}
+                                  className={`relative flex items-start gap-3 pe-10 ps-1 ${
+                                    isNew ? "animate-fade-in" : ""
+                                  }`}
+                                >
+                                  <span
+                                    className={`absolute end-[14px] top-3 h-2.5 w-2.5 rounded-full border-2 border-background transition-all duration-500 ${
+                                      isNew
+                                        ? "bg-rose-500 ring-4 ring-rose-400/40 scale-125"
+                                        : "bg-rose-400/70"
+                                    }`}
+                                  />
+                                  <div
+                                    className={`flex-1 rounded-xl border bg-background/40 p-3 transition-all duration-500 ${
+                                      isNew
+                                        ? "border-rose-400/60 shadow-[0_0_24px_hsl(0_85%_60%/0.25)]"
+                                        : "border-border/40"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
+                                        <Heart className="h-3.5 w-3.5 fill-current" />
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 truncate text-sm font-medium">
+                                          <span className="truncate">
+                                            {d.display_name || "متبرع كريم"}
+                                          </span>
+                                          {d.order_id && (
+                                            <span className="shrink-0 rounded-md border border-border/50 bg-background/60 px-1.5 py-0.5 font-mono text-[9px] tabular-nums text-muted-foreground">
+                                              #{shortOrderId(d.order_id)}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="text-sm font-bold tabular-nums text-rose-500">
+                                        +{fmt(Number(d.amount))}
+                                        <span className="ms-1 text-[10px] font-medium text-muted-foreground">
+                                          د.ع
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+                                      <span>
+                                        {d.source === "order_auto" && (
+                                          <span className="text-emerald-600">1% تلقائي من الطلب</span>
+                                        )}
+                                        {d.source === "order_extra" && (
+                                          <span className="text-amber-600">تبرع إضافي مع الطلب</span>
+                                        )}
+                                        {d.source === "wallet_direct" && (
+                                          <span>تبرع مباشر من المحفظة</span>
+                                        )}
+                                      </span>
+                                      <span className="tabular-nums">
+                                        {hhmm(d.created_at)} · {timeAgo(d.created_at)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {d.source === "order_auto" && (
-                        <span className="text-emerald-600">1% تلقائي من الطلب</span>
-                      )}
-                      {d.source === "order_extra" && (
-                        <span className="text-amber-600">تبرع إضافي مع الطلب</span>
-                      )}
-                      {d.source === "wallet_direct" && <span>تبرع مباشر من المحفظة</span>}
-                      {" · "}
-                      {timeAgo(d.created_at)}
-                    </div>
                   </div>
-                  <div className="text-sm font-bold tabular-nums text-rose-500">
-                    +{fmt(Number(d.amount))} د.ع
-                  </div>
-                </div>
-              ))
+                );
+              })()
             ) : (
               <div className="py-8 text-center text-xs text-muted-foreground">
                 لا توجد تبرعات بعد — كن أول المتبرعين 🤍
