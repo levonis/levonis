@@ -34,7 +34,10 @@ interface DonationRow {
   amount: number;
   source: string;
   created_at: string;
+  order_id: string | null;
 }
+
+const shortOrderId = (id: string) => id.slice(0, 8).toUpperCase();
 
 export default function Donations() {
   const { user } = useAuth();
