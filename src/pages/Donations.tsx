@@ -62,13 +62,9 @@ export default function Donations() {
     queryKey: ["donations-feed"],
     staleTime: 10_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("donations_log" as any)
-        .select("id, display_name, amount, source, created_at, order_id")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc("get_recent_donors" as any, { p_limit: 50 });
       if (error) throw error;
-      return (data ?? []) as unknown as DonationRow[];
+      return (data ?? []) as unknown as DonorRow[];
     },
   });
 
