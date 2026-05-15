@@ -270,11 +270,24 @@ export default function Donations() {
                     <Heart className="h-4 w-4 fill-current" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">
-                      {d.display_name || "متبرع كريم"}
+                    <div className="flex items-center gap-1.5 truncate text-sm font-medium">
+                      <span className="truncate">{d.display_name || "متبرع كريم"}</span>
+                      {d.order_id && (
+                        <span className="shrink-0 rounded-md border border-border/50 bg-background/60 px-1.5 py-0.5 text-[9px] font-mono tabular-nums text-muted-foreground">
+                          #{shortOrderId(d.order_id)}
+                        </span>
+                      )}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      {sourceLabel(d.source)} · {timeAgo(d.created_at)}
+                      {d.source === "order_auto" && (
+                        <span className="text-emerald-600">1% تلقائي من الطلب</span>
+                      )}
+                      {d.source === "order_extra" && (
+                        <span className="text-amber-600">تبرع إضافي مع الطلب</span>
+                      )}
+                      {d.source === "wallet_direct" && <span>تبرع مباشر من المحفظة</span>}
+                      {" · "}
+                      {timeAgo(d.created_at)}
                     </div>
                   </div>
                   <div className="text-sm font-bold tabular-nums text-rose-500">
