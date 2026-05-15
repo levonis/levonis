@@ -291,6 +291,32 @@ export default function Donations() {
             </Button>
           </div>
 
+          {/* Identity controls */}
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between rounded-xl border border-border/40 bg-background/40 px-3 py-2">
+              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <UserX className="h-3.5 w-3.5 text-muted-foreground" />
+                تبرع كمجهول الهوية
+              </label>
+              <input
+                type="checkbox"
+                checked={anonymous}
+                onChange={(e) => setAnonymous(e.target.checked)}
+                className="h-4 w-4 accent-rose-500 cursor-pointer"
+              />
+            </div>
+            {!anonymous && (
+              <Input
+                type="text"
+                maxLength={40}
+                placeholder="اسم العرض (اختياري) — يظهر في السجل"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                className="text-sm"
+              />
+            )}
+          </div>
+
           {!user && (
             <p className="mt-2 text-[11px] text-muted-foreground">
               سجّل الدخول للتبرع من محفظتك. التبرعات في الطلبات تعمل بدون تسجيل دخول.
