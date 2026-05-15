@@ -74,6 +74,7 @@ export default function Donations() {
       const { data, error } = await supabase
         .from("donations_log" as any)
         .select("id, user_id, display_name, amount, source, order_id, created_at")
+        .eq("source", "wallet_direct")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
