@@ -403,6 +403,52 @@ export default function Donations() {
           </div>
         </section>
       </main>
+
+      <AlertDialog
+        open={confirmAmount !== null}
+        onOpenChange={(o) => !o && !submitting && setConfirmAmount(null)}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-rose-500 fill-current" />
+              تأكيد التبرع
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 pt-1">
+              <span className="block">
+                سيتم خصم{" "}
+                <span className="font-bold text-rose-500 tabular-nums">
+                  {fmt(confirmAmount ?? 0)} د.ع
+                </span>{" "}
+                من محفظتك وتحويلها إلى{" "}
+                <span className="font-medium text-foreground">
+                  مؤسسة العين/ودور الأيتام
+                </span>
+                .
+              </span>
+              <span className="block text-[11px] text-muted-foreground tabular-nums">
+                الرصيد بعد الخصم:{" "}
+                {fmt(Math.max(0, Number(wallet?.balance ?? 0) - (confirmAmount ?? 0)))} د.ع
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={async (e) => {
+                e.preventDefault();
+                const val = confirmAmount ?? 0;
+                await submitWalletDonation(val);
+                setConfirmAmount(null);
+              }}
+              className="bg-rose-500 text-white hover:bg-rose-600"
+            >
+              {submitting ? "جاري التبرع..." : "تأكيد وتبرّع"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
