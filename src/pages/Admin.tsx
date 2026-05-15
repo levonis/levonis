@@ -2137,6 +2137,7 @@ const Admin = () => {
                 { icon: Receipt, title: 'الفواتير', desc: 'قوالب', path: ADMIN_ROUTES.invoiceTemplates },
                 { icon: FileText, title: 'فواتير محفوظة', desc: 'مراجعة', path: ADMIN_ROUTES.savedInvoices },
                 { icon: TrendingUp, title: 'المالية', desc: 'تحليلات', path: ADMIN_ROUTES.financials },
+                { icon: Heart, title: 'التبرعات', desc: 'سجل ومراجعة', path: ADMIN_ROUTES.donations },
                 { icon: Percent, title: 'دفع جزئي', desc: 'رسوم', path: ADMIN_ROUTES.partialPaymentSettings },
                 { icon: Trophy, title: 'المسابقات', desc: 'سحوبات', path: ADMIN_ROUTES.competitions },
                 { icon: Gift, title: 'العروض', desc: 'منتجات', path: ADMIN_ROUTES.productOffers },
