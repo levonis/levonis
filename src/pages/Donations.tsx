@@ -68,7 +68,7 @@ export default function Donations() {
   });
 
   const { data: feed, isLoading: feedLoading } = useQuery({
-    queryKey: ["donations-feed"],
+    queryKey: ["donations-feed", "wallet-only"],
     staleTime: 10_000,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -108,7 +108,7 @@ export default function Donations() {
             qc.invalidateQueries({ queryKey: ["donations-stats"] });
             return;
           }
-          qc.setQueryData<DonationRow[]>(["donations-feed"], (prev) =>
+          qc.setQueryData<DonationRow[]>(["donations-feed", "wallet-only"], (prev) =>
             prev ? [row, ...prev].slice(0, 50) : [row]
           );
           qc.invalidateQueries({ queryKey: ["donations-stats"] });
