@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Heart, Wallet, Sparkles, Users, Hash } from "lucide-react";
+import { Heart, Wallet, Sparkles, Users, Hash, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { filterContent } from "@/lib/contentFilter";
 import {
   AlertDialog,
   AlertDialogAction,
