@@ -68,7 +68,7 @@ export default function Donations() {
   });
 
   const { data: feed, isLoading: feedLoading } = useQuery({
-    queryKey: ["donations-feed"],
+    queryKey: ["donations-feed", "wallet-only"],
     staleTime: 10_000,
     queryFn: async () => {
       const { data, error } = await supabase
