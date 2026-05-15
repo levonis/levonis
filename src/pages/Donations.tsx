@@ -104,6 +104,10 @@ export default function Donations() {
         { event: "INSERT", schema: "public", table: "donations_log" },
         (payload) => {
           const row = payload.new as DonationRow;
+          if (row?.source !== "wallet_direct") {
+            qc.invalidateQueries({ queryKey: ["donations-stats"] });
+            return;
+          }
           qc.setQueryData<DonationRow[]>(["donations-feed"], (prev) =>
             prev ? [row, ...prev].slice(0, 50) : [row]
           );
