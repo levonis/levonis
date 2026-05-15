@@ -67,7 +67,7 @@ export default function Donations() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("donations_log" as any)
-        .select("id, display_name, amount, source, created_at")
+        .select("id, display_name, amount, source, created_at, order_id")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
