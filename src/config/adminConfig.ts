@@ -32,6 +32,7 @@ export const ADMIN_ROUTES = {
   invoiceTemplates: `${ADMIN_BASE_PATH}/invoice-templates`,
   savedInvoices: `${ADMIN_BASE_PATH}/saved-invoices`,
   financials: `${ADMIN_BASE_PATH}/financials`,
+  donations: `${ADMIN_BASE_PATH}/donations`,
   partialPaymentSettings: `${ADMIN_BASE_PATH}/partial-payment-settings`,
   competitions: `${ADMIN_BASE_PATH}/competitions`,
   productOffers: `${ADMIN_BASE_PATH}/product-offers`,
