@@ -28,16 +28,13 @@ const sourceLabel = (s: string) =>
     ? "تبرع إضافي مع طلب"
     : "1% تلقائي من طلب";
 
-interface DonationRow {
-  id: string;
+interface DonorRow {
+  user_id: string | null;
   display_name: string | null;
-  amount: number;
-  source: string;
-  created_at: string;
-  order_id: string | null;
+  total_amount: number;
+  donation_count: number;
+  last_donation_at: string;
 }
-
-const shortOrderId = (id: string) => id.slice(0, 8).toUpperCase();
 
 export default function Donations() {
   const { user } = useAuth();
