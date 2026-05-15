@@ -71,6 +71,7 @@ const AdminWalletSettings = lazy(() => import("./pages/AdminWalletSettings"));
 const AdminInvoiceTemplates = lazy(() => import("./pages/AdminInvoiceTemplates"));
 const AdminSavedInvoices = lazy(() => import("./pages/AdminSavedInvoices"));
 const AdminFinancials = lazy(() => import("./pages/AdminFinancials"));
+const AdminDonations = lazy(() => import("./pages/AdminDonations"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
 const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 const AdminAppVersions = lazy(() => import("./pages/admin/AdminAppVersions"));
@@ -342,6 +343,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/invoice-templates`} element={<AdminRoute><AdminInvoiceTemplates /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/saved-invoices`} element={<AdminRoute><AdminSavedInvoices /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/financials`} element={<AdminRoute><AdminFinancials /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/donations`} element={<AdminRoute><AdminDonations /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/partial-payment-settings`} element={<AdminRoute><AdminPartialPaymentSettings /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/competitions`} element={<AdminRoute><AdminCompetitions /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/product-offers`} element={<AdminRoute><AdminProductOffers /></AdminRoute>} />
