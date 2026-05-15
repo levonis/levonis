@@ -21,13 +21,6 @@ const timeAgo = (iso: string) => {
   const d = Math.floor(h / 24);
   return `قبل ${d} يوم`;
 };
-const sourceLabel = (s: string) =>
-  s === "wallet_direct"
-    ? "تبرع مباشر من المحفظة"
-    : s === "order_extra"
-    ? "تبرع إضافي مع طلب"
-    : "1% تلقائي من طلب";
-
 interface DonorRow {
   user_id: string | null;
   display_name: string | null;
