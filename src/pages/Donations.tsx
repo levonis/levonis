@@ -91,11 +91,13 @@ export default function Donations() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "donations_log" },
         (payload) => {
-          qc.invalidateQueries({ queryKey: ["donations-feed"] });
+          const row = payload.new as DonationRow;
+          qc.setQueryData<DonationRow[]>(["donations-feed"], (prev) =>
+            prev ? [row, ...prev].slice(0, 50) : [row]
+          );
           qc.invalidateQueries({ queryKey: ["donations-stats"] });
-          const uid = (payload.new as any)?.user_id;
-          if (uid) {
-            setPulseId(uid);
+          if (row?.id) {
+            setPulseId(row.id);
             setTimeout(() => setPulseId(null), 1800);
           }
         }
