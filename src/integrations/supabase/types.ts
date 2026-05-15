@@ -14193,6 +14193,16 @@ export type Database = {
           username: string
         }[]
       }
+      get_recent_donors: {
+        Args: { p_limit?: number }
+        Returns: {
+          display_name: string
+          donation_count: number
+          last_donation_at: string
+          total_amount: number
+          user_id: string
+        }[]
+      }
       get_user_card_cycle: {
         Args: { p_card_id: string }
         Returns: {
