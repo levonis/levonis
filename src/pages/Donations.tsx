@@ -21,23 +21,14 @@ const timeAgo = (iso: string) => {
   const d = Math.floor(h / 24);
   return `قبل ${d} يوم`;
 };
-const sourceLabel = (s: string) =>
-  s === "wallet_direct"
-    ? "تبرع مباشر من المحفظة"
-    : s === "order_extra"
-    ? "تبرع إضافي مع طلب"
-    : "1% تلقائي من طلب";
 
-interface DonationRow {
-  id: string;
+interface DonorRow {
+  user_id: string | null;
   display_name: string | null;
-  amount: number;
-  source: string;
-  created_at: string;
-  order_id: string | null;
+  total_amount: number;
+  donation_count: number;
+  last_donation_at: string;
 }
-
-const shortOrderId = (id: string) => id.slice(0, 8).toUpperCase();
 
 export default function Donations() {
   const { user } = useAuth();
@@ -65,13 +56,9 @@ export default function Donations() {
     queryKey: ["donations-feed"],
     staleTime: 10_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("donations_log" as any)
-        .select("id, display_name, amount, source, created_at, order_id")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc("get_recent_donors" as any, { p_limit: 50 });
       if (error) throw error;
-      return (data ?? []) as unknown as DonationRow[];
+      return (data ?? []) as unknown as DonorRow[];
     },
   });
 
@@ -88,7 +75,7 @@ export default function Donations() {
     },
   });
 
-  // Realtime: live feed + auto-refresh stats
+  // Realtime: invalidate donors list + refresh stats on new donation
   useEffect(() => {
     const ch = supabase
       .channel("donations-live")
@@ -96,13 +83,13 @@ export default function Donations() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "donations_log" },
         (payload) => {
-          const row = payload.new as DonationRow;
-          qc.setQueryData<DonationRow[]>(["donations-feed"], (prev) =>
-            prev ? [row, ...prev].slice(0, 50) : [row]
-          );
+          qc.invalidateQueries({ queryKey: ["donations-feed"] });
           qc.invalidateQueries({ queryKey: ["donations-stats"] });
-          setPulseId(row.id);
-          setTimeout(() => setPulseId(null), 1800);
+          const uid = (payload.new as any)?.user_id;
+          if (uid) {
+            setPulseId(uid);
+            setTimeout(() => setPulseId(null), 1800);
+          }
         }
       )
       .subscribe();
@@ -246,7 +233,7 @@ export default function Donations() {
         <section className="rounded-3xl border border-border/40 bg-card/60 p-5 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-amber-500" />
-            <h2 className="text-sm font-semibold">سجل التبرعات المباشر</h2>
+            <h2 className="text-sm font-semibold">سجل آخر 50 متبرعاً</h2>
             <span className="ms-auto inline-flex items-center gap-1 text-[10px] text-emerald-500">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               مباشر
@@ -261,9 +248,9 @@ export default function Donations() {
             ) : feed && feed.length > 0 ? (
               feed.map((d) => (
                 <div
-                  key={d.id}
+                  key={d.user_id ?? d.display_name ?? Math.random()}
                   className={`flex items-center gap-3 rounded-xl border border-border/40 bg-background/40 p-3 transition ${
-                    pulseId === d.id ? "ring-2 ring-rose-400/60 scale-[1.01]" : ""
+                    pulseId === d.user_id ? "ring-2 ring-rose-400/60 scale-[1.01]" : ""
                   }`}
                 >
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
@@ -272,26 +259,15 @@ export default function Donations() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 truncate text-sm font-medium">
                       <span className="truncate">{d.display_name || "متبرع كريم"}</span>
-                      {d.order_id && (
-                        <span className="shrink-0 rounded-md border border-border/50 bg-background/60 px-1.5 py-0.5 text-[9px] font-mono tabular-nums text-muted-foreground">
-                          #{shortOrderId(d.order_id)}
-                        </span>
-                      )}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      {d.source === "order_auto" && (
-                        <span className="text-emerald-600">1% تلقائي من الطلب</span>
-                      )}
-                      {d.source === "order_extra" && (
-                        <span className="text-amber-600">تبرع إضافي مع الطلب</span>
-                      )}
-                      {d.source === "wallet_direct" && <span>تبرع مباشر من المحفظة</span>}
+                      {fmt(Number(d.donation_count))} عملية تبرع
                       {" · "}
-                      {timeAgo(d.created_at)}
+                      آخر تبرع {timeAgo(d.last_donation_at)}
                     </div>
                   </div>
                   <div className="text-sm font-bold tabular-nums text-rose-500">
-                    +{fmt(Number(d.amount))} د.ع
+                    +{fmt(Number(d.total_amount))} د.ع
                   </div>
                 </div>
               ))
