@@ -234,7 +234,22 @@ export default function Donations() {
               className="text-sm"
             />
             <Button
-              onClick={() => submitWalletDonation(Number(amount))}
+              onClick={() => {
+                const val = Number(amount);
+                if (!user) {
+                  toast({ title: "يرجى تسجيل الدخول", variant: "destructive" });
+                  return;
+                }
+                if (!val || val <= 0) {
+                  toast({ title: "أدخل مبلغاً صحيحاً", variant: "destructive" });
+                  return;
+                }
+                if ((wallet?.balance ?? 0) < val) {
+                  toast({ title: "رصيد المحفظة غير كافٍ", variant: "destructive" });
+                  return;
+                }
+                setConfirmAmount(val);
+              }}
               disabled={submitting || !user || !amount}
               className="gap-1.5"
             >
