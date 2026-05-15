@@ -140,9 +140,34 @@ export default function Donations() {
       toast({ title: "رصيد المحفظة غير كافٍ", variant: "destructive" });
       return;
     }
+
+    let displayName: string | null = null;
+    if (!anonymous) {
+      const trimmed = customName.trim();
+      if (trimmed.length > 0) {
+        if (trimmed.length > 40) {
+          toast({ title: "الاسم طويل جداً (الحد 40 حرفاً)", variant: "destructive" });
+          return;
+        }
+        const check = filterContent(trimmed);
+        if (!check.isClean) {
+          toast({
+            title: "اسم غير مناسب",
+            description: "يرجى اختيار اسم لائق دون كلمات مسيئة.",
+            variant: "destructive",
+          });
+          return;
+        }
+        displayName = trimmed;
+      }
+    }
+
     setSubmitting(true);
     try {
-      const { error } = await supabase.rpc("donate_from_wallet" as any, { p_amount: val });
+      const { error } = await supabase.rpc("donate_from_wallet" as any, {
+        p_amount: val,
+        p_display_name: anonymous ? "متبرع كريم" : displayName,
+      });
       if (error) throw error;
       toast({ title: "🤍 شكراً لتبرعك", description: `تم خصم ${fmt(val)} د.ع من محفظتك` });
       setAmount("");
