@@ -241,12 +241,13 @@ export default function QuoteResultCard({
           <Stat label={t("الوزن", "Weight")} value={`${b.inputs.weight_g}g`} />
           <Stat label={t("الوقت", "Time")} value={`${hours}h ${mins}m`} />
           <Stat label={t("الألوان", "Colors")} value={`${colorCount}`} />
-          <div className="rounded-lg p-2 border border-border/40 bg-card/40">
+          <div className="rounded-lg p-2 glass-panel">
             <div className="text-[10px] text-muted-foreground mb-1">{t("الصعوبة", "Difficulty")}</div>
             <Badge className={`${difficultyColor} border-0`}>
               {score ? `${score}/10` : (m.difficulty === "easy" ? t("سهل", "Easy") : m.difficulty === "hard" ? t("صعب", "Hard") : t("متوسط", "Medium"))}
             </Badge>
           </div>
+
         </div>
 
         {/* Rush + Qty controls */}
