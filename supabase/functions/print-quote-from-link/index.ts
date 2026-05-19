@@ -985,6 +985,7 @@ Deno.serve(async (req) => {
           estimatedWeight: partial.estimatedWeight ?? fs.estimatedWeight ?? null,
           printTime: partial.printTime ?? fs.printTime ?? null,
           colorCount: Math.max(Number(partial.colorCount ?? 1), Number(fs.colorCount ?? 1)),
+          previewFileUrl: partial.previewFileUrl ?? fs.previewFileUrl ?? null,
         };
         engineUsed = engineUsed === "none" ? "fetch" : `${engineUsed}+fetch`;
       }
