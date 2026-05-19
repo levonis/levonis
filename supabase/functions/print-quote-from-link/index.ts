@@ -688,7 +688,7 @@ function confidenceFrom(m: Partial<UnifiedModel>, engine: string): "high" | "med
     (have(m.printTime) ? 1.5 : 0) +
     ((m.printProfiles || []).length > 0 ? 1.5 : 0) +
     (have(m.tags?.length) ? 0.5 : 0);
-  if (engine === "openapi" || score >= 7) return "high";
+  if (engine === "openapi" || engine === "mw-public" || engine === "printables-public" || score >= 7) return "high";
   if (engine === "ai" && score < 4) return "low";
   if (score >= 4) return "medium";
   return "low";
