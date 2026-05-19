@@ -31,7 +31,7 @@ const UAS = [
 // in-memory rate limiter per (user, urlHash) → 30s
 const RECENT = new Map<string, number>();
 const RECENT_TTL = 30_000;
-const ANALYZER_VERSION = 5;
+const ANALYZER_VERSION = 6;
 
 // Timeout wrapper — prevents any single engine from blocking the cascade
 function withTimeout<T>(p: Promise<T>, ms: number, label = "op"): Promise<T | null> {
