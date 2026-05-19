@@ -42,6 +42,10 @@ export default function CommunityQuoteFromLink() {
   const [quoteParams, setQuoteParams] = useState<{ qty: number; rush_tier: "standard" | "fast" | "rush" }>({ qty: 1, rush_tier: "standard" });
 
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+
+  /** Detect direct downloadable model URLs (.stl/.3mf/.obj/.glb/.gltf). */
+  const isDirectModelUrl = (s: string) => /\.(stl|3mf|obj|glb|gltf)(\?.*)?$/i.test(s.trim());
 
   const submitUrl = async () => {
     if (!url.trim()) return;
