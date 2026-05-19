@@ -761,7 +761,15 @@ Deno.serve(async (req) => {
 
     const weight = partial.estimatedWeight ?? 30;
     const minutes = partial.printTime ?? 180;
-    const colorCount = Math.max(Number(partial.colorCount ?? 1), detectColorCount(`${partial.description ?? ""} ${(partial.tags ?? []).join(" ")}`, partial.printProfiles), 1);
+    // Trust OpenAPI color count. Only run text-detection fallback when extraction did NOT come from openapi.
+    const isOpenApi = engineUsed.startsWith("openapi");
+    const colorCount = isOpenApi
+      ? clamp(Math.floor(Number(partial.colorCount ?? 1) || 1), 1, 8)
+      : clamp(Math.max(
+          Number(partial.colorCount ?? 1),
+          detectColorCount(`${partial.description ?? ""} ${(partial.tags ?? []).join(" ")}`, partial.printProfiles),
+          1,
+        ), 1, 8);
     partial.colorCount = colorCount;
     const { breakdown, material } = await computePricing(
       admin, weight, minutes, partial.complexityScore, material_code, colorCount,
