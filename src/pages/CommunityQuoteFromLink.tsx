@@ -222,7 +222,9 @@ export default function CommunityQuoteFromLink() {
 
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="inline-flex items-center justify-center h-9 w-9 rounded-full glass-panel">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </span>
               {t("سعر طباعتك الفوري", "Instant 3D Print Quote")}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
@@ -230,6 +232,7 @@ export default function CommunityQuoteFromLink() {
                  "Paste a model link, or upload an STL/3MF/OBJ for precise analysis and instant pricing.")}
             </p>
           </CardHeader>
+
           <CardContent className="space-y-4">
             <Tabs value={tab} onValueChange={(v) => setTab(v as "link" | "file")}>
               <TabsList className="grid grid-cols-2 w-full glass-panel">
