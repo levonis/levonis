@@ -467,6 +467,7 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
       // Mark engine — when no numeric data, downstream cascade can still try other engines
       // but colorCount (from mmu) and metadata are trusted.
       source: { engine: hasNumericData ? "printables-public" : "printables-public-meta", scrapedAt: new Date().toISOString() },
+      previewFileUrl,
     };
   } catch (e) {
     console.warn("[printables-public] err:", (e as Error)?.message);
