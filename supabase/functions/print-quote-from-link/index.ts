@@ -31,7 +31,7 @@ const UAS = [
 // in-memory rate limiter per (user, urlHash) → 30s
 const RECENT = new Map<string, number>();
 const RECENT_TTL = 30_000;
-const ANALYZER_VERSION = 6;
+const ANALYZER_VERSION = 7;
 
 // Timeout wrapper — prevents any single engine from blocking the cascade
 function withTimeout<T>(p: Promise<T>, ms: number, label = "op"): Promise<T | null> {
@@ -538,7 +538,67 @@ async function tryMakerWorld(url: string, platform: string): Promise<Partial<Uni
   } catch { return null; }
 }
 
+// ---------- Engine 1c: Thingiverse REST API (authenticated; exposes direct STL URLs) ----------
+async function tryThingiverseApi(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
+  if (platform !== "thingiverse") return null;
+  const token = Deno.env.get("THINGIVERSE_API_TOKEN");
+  if (!token) return null;
+  const idMatch = url.match(/thing[:/](\d+)/i);
+  if (!idMatch) return null;
+  const id = idMatch[1];
+  const H = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+  try {
+    const [thingRes, filesRes] = await Promise.all([
+      fetch(`https://api.thingiverse.com/things/${id}`, { headers: H }),
+      fetch(`https://api.thingiverse.com/things/${id}/files`, { headers: H }),
+    ]);
+    if (!thingRes.ok) {
+      console.warn("[thingiverse-api] thing fetch failed", thingRes.status);
+      return null;
+    }
+    const thing: any = await thingRes.json();
+    const files: any[] = filesRes.ok ? await filesRes.json() : [];
+
+    // Pick first STL (preferred) else 3MF/OBJ. Prefer threejs_url (public CDN, viewer-ready).
+    const pickFile = (re: RegExp) => files.find((f) => re.test(String(f?.name || "")));
+    const stl = pickFile(/\.stl$/i) ?? pickFile(/\.3mf$/i) ?? pickFile(/\.obj$/i) ?? files[0];
+    const previewFileUrl: string | null =
+      stl?.threejs_url || stl?.direct_url || stl?.public_url || stl?.download_url || null;
+
+    const images: string[] = Array.isArray(thing.images)
+      ? thing.images.slice(0, 8).map((im: any) => im?.url || im?.sizes?.find?.((s: any) => s.type === "display")?.url).filter(Boolean)
+      : [];
+    const thumbnail = thing?.preview_image || thing?.thumbnail || images[0] || null;
+
+    return {
+      title: thing.name || "",
+      creator: { name: thing?.creator?.name ?? null, url: thing?.creator?.public_url ?? null },
+      description: (thing.description || thing.instructions || "").toString().slice(0, 2000) || null,
+      images,
+      thumbnail,
+      tags: Array.isArray(thing.tags) ? thing.tags.map((t: any) => t?.name).filter(Boolean).slice(0, 20) : [],
+      category: thing?.details_parts?.[0]?.data ?? null,
+      stats: {
+        downloads: Number(thing.download_count) || 0,
+        likes: Number(thing.like_count) || 0,
+        prints: Number(thing.make_count) || 0,
+      },
+      printProfiles: [],
+      bambuCompatible: null,
+      estimatedWeight: null,
+      printTime: null,
+      colorCount: 1,
+      source: { engine: "thingiverse-api", scrapedAt: new Date().toISOString() },
+      previewFileUrl,
+    };
+  } catch (e) {
+    console.warn("[thingiverse-api] error", String(e).slice(0, 200));
+    return null;
+  }
+}
+
 // ---------- Engine 2: Firecrawl ----------
+
 async function tryFirecrawl(url: string): Promise<Partial<UnifiedModel> | null> {
   const apiKey = Deno.env.get("FIRECRAWL_API_KEY");
   if (!apiKey) return null;
@@ -960,6 +1020,20 @@ Deno.serve(async (req) => {
       const mw = await withTimeout(tryMakerWorld(normalized, platform), 8000, "openapi");
       if (mw) { partial = { ...partial, ...mw }; engineUsed = engineUsed === "none" ? "openapi" : `${engineUsed}+openapi`; }
     }
+    // Engine 1c: Thingiverse REST API (gives us direct STL URL via threejs_url)
+    {
+      const tv = await withTimeout(tryThingiverseApi(normalized, platform), 8000, "thingiverse-api");
+      if (tv) {
+        partial = {
+          ...partial,
+          ...tv,
+          // Prefer authoritative fields from API but keep weight/time if other engines later fill them
+          previewFileUrl: tv.previewFileUrl ?? partial.previewFileUrl ?? null,
+        };
+        engineUsed = engineUsed === "none" ? "thingiverse-api" : `${engineUsed}+thingiverse-api`;
+      }
+    }
+
 
     // Snapshot authoritative fields before non-authoritative engines run, so we can re-pin them after.
     const lockedColorCount = engineUsed.includes("printables-public") || engineUsed.includes("mw-public") || engineUsed.includes("openapi")
