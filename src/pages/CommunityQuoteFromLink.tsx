@@ -15,6 +15,7 @@ import { analyzeModelFile, detectExt } from "@/lib/modelAnalysis/analyzeClient";
 import type { ModelMetrics, QualityReport } from "@/lib/modelAnalysis/types";
 import Model3DViewer from "@/components/community/viewer/Model3DViewer";
 import ViewerDialog from "@/components/community/viewer/ViewerDialog";
+import ExtractionLoader from "@/components/community/viewer/ExtractionLoader";
 
 const SUPPORTED_HOSTS = ["thingiverse.com", "printables.com", "makerworld.com", "cults3d.com"];
 
