@@ -220,8 +220,8 @@ export default function CommunityQuoteFromLink() {
           <ArrowLeft className="h-4 w-4" />{t("رجوع", "Back")}
         </Button>
 
-        {/* Outer glass shell wrapping the entire page content */}
-        <div className="glass-panel rounded-3xl p-3 sm:p-4 space-y-4">
+        <div className="space-y-4">
+
 
 
         <Card className="glass-panel">
