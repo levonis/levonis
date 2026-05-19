@@ -1011,7 +1011,7 @@ Deno.serve(async (req) => {
       platform,
       extraction_engine: engineUsed,
       confidence_level: partial.confidenceLevel,
-      expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+      expires_at: new Date(Date.now() + (partial.confidenceLevel === "low" ? 1 : 7) * 24 * 3600 * 1000).toISOString(),
     }, { onConflict: "url" }).then(() => {}, () => {});
 
     // Analytics
