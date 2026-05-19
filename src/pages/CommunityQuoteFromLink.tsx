@@ -108,6 +108,7 @@ export default function CommunityQuoteFromLink() {
     setLoading(true); setResult(null); setProgressPct(0); setProgressStage(t("قراءة الملف", "Reading file"));
     setFileToUpload(file);
     setViewerUrl(null);
+    try {
       const analyzed = await analyzeModelFile(file, {
         onProgress: (stage, pct) => { setProgressStage(stage); setProgressPct(pct); },
       });
