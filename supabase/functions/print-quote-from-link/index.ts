@@ -74,6 +74,17 @@ interface UnifiedModel {
   complexityScore: number;
   confidenceLevel: "high" | "medium" | "low";
   source: { engine: string; scrapedAt: string };
+  /** Direct downloadable model file URL (.stl/.3mf/.obj/.glb/.gltf), when discoverable from the source page or API. */
+  previewFileUrl?: string | null;
+}
+
+/** Find the first direct model-file URL (.stl/.3mf/.obj/.glb/.gltf) in a chunk of HTML/markdown/JSON text. */
+function findDirectModelUrl(text: string): string | null {
+  if (!text) return null;
+  // Prefer STL/3MF/OBJ (printable formats) over GLB/GLTF (preview-only).
+  const rxPrint = /https?:\/\/[^\s"'<>()]+?\.(?:stl|3mf|obj)(?:\?[^\s"'<>()]*)?/i;
+  const rxAny   = /https?:\/\/[^\s"'<>()]+?\.(?:stl|3mf|obj|glb|gltf)(?:\?[^\s"'<>()]*)?/i;
+  return (text.match(rxPrint)?.[0]) ?? (text.match(rxAny)?.[0]) ?? null;
 }
 
 // ---------- helpers ----------
