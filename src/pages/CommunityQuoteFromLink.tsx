@@ -251,13 +251,14 @@ export default function CommunityQuoteFromLink() {
                       className="ps-10 glass-panel" dir="ltr"
                     />
                   </div>
-                  <Button onClick={submitUrl} disabled={loading || !url.trim()} className="glass-trigger">
+                  <Button onClick={submitUrl} disabled={loading || !url.trim()} className="glass-trigger rounded-full">
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("احسب", "Quote")}
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
                   {SUPPORTED_HOSTS.map((h) => (
-                    <span key={h} className="glass-panel px-2 py-0.5 rounded-full border border-border/40">{h}</span>
+                    <span key={h} className="glass-panel px-2 py-0.5 rounded-full">{h}</span>
+
                   ))}
                 </div>
               </TabsContent>
