@@ -193,13 +193,10 @@ export default function QuoteResultCard({
   return (
     <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl overflow-hidden">
       <div className="aspect-video w-full bg-muted relative">
-        {m.thumbnail ? (
-          <img src={m.thumbnail} alt={m.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <Sparkles className="h-10 w-10" />
-          </div>
-        )}
+        <ThumbnailWithFallback
+          candidates={[m.thumbnail, ...((result.unified?.images as string[] | undefined) ?? [])].filter(Boolean) as string[]}
+          alt={m.name}
+        />
         <Badge className="absolute top-2 end-2" variant="secondary">{sourceLabel}</Badge>
         <Badge className="absolute top-2 start-2 bg-primary/15 text-primary border-0" variant="secondary">
           {processBadge.toUpperCase()}
