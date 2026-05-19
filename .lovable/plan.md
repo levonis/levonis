@@ -1,70 +1,92 @@
-# خطة إصلاح دقة وسرعة الاستخراج وشفافية السعر — `/community/auto-levo`
+# Premium 3D Model Viewer — المرحلة 1
 
-## التشخيص (ما اكتشفته فعلياً)
+عارض احترافي للنماذج (STL / 3MF / OBJ / GLB) يندمج داخل صفحة `/community/auto-levo`، بأسلوب CAD احترافي مع زجاجية أبل (Glassmorphism) ووضع داكن افتراضي.
 
-اختبرت الرابط الذي قدمته: `https://www.printables.com/model/1434993-skeleton-hand-bookstop`
+## النطاق (Phase 1 فقط)
 
-1. **محرّك MakerWorld OpenAPI لا يعمل على Printables** — هو خاص بـ makerworld.com فقط، فيسقط الكود مباشرة على Firecrawl/HTML scraping.
-2. **Printables تحجب طلبات curl (403)** بدون User-Agent متصفح حقيقي — لذلك `tryFetchScrape` يفشل غالباً، ويعتمد على Firecrawl + AI fallback، وهنا تحصل الأخطاء.
-3. **Printables عندها GraphQL API عام مجاني** (`https://api.printables.com/graphql/`) لم يُستخدم إطلاقاً في الكود الحالي. الحقول المتاحة:
-   - `print.printDuration` / `weight` / `usedMaterial` (قد تكون null لبعض النماذج)
-   - `userGcodePrintDurationMin/Max` و `userGcodeWeightMin/Max` و `userGcodeMaterials` (مصفوفة IDs للمواد)
-   - `mmu` (Boolean: multi-material أم لا)
-   - `materials { name }` لقائمة الفلامنت
-4. **سبب أخطاء "120g/3 ألوان"**: لأن المستخرج الحالي يقرأ أول رقم بـ "g" يجده في HTML (قد يكون من إعلان جانبي/profile مختلف)، ويعدّ "الألوان" بناءً على ذكر كلمات لون في الوصف لا بناءً على بيانات G-code الفعلية.
-5. **شفافية السعر**: لا يوجد breakdown ظاهر للمستخدم (وزن × سعر/غ + وقت × أجرة/ساعة + هامش + تقريب)، فقط الرقم النهائي.
+يشمل:
+- رفع/سحب وإفلات الملف (يُعاد استخدام نفس ملف المستخدم الحالي بدل رفع منفصل)
+- عرض حي مع دوران/تكبير/تحريك (OrbitControls)
+- زر دوران تلقائي
+- وضع Solid / Wireframe
+- إضاءة HDRI + ظلال ناعمة + Contact Shadows
+- منصة طباعة (Build Plate) قابلة للضبط (افتراضي 256×256 mm)
+- صندوق إحاطة (Bounding Box) مع أبعاد حقيقية بالـ mm/cm
+- طبقة قياس بسيطة (نقرتان لقياس مسافة بين نقطتين على السطح)
+- تصدير لقطة شاشة PNG
+- دعم اللمس (pinch zoom / swipe rotate عبر OrbitControls)
+- لوحات زجاجية شفافة + dark mode افتراضي + انتقالات ناعمة
 
-## الإصلاحات
+مؤجل للمرحلة 2 (لا يُنفّذ الآن):
+- Exploded view, Layer preview, Overhang highlight, Orientation optimizer
+- Mesh decimation متقدم, Web Worker, AR, رابط مشاركة دائم
 
-### 1) محرّك Printables الرسمي عبر GraphQL (دقة الأرقام)
-في `supabase/functions/print-quote-from-link/index.ts`:
-- إضافة `tryPrintablesPublic(url)` يُستدعى **قبل** Firecrawl/AI لأي رابط printables.com.
-- يستخرج ID النموذج من المسار (`/model/{id}-…`).
-- يستعلم GraphQL ويعيد:
-  - `estimatedWeight` = `print.weight` ?? متوسط(`userGcodeWeightMin/Max`) ?? null
-  - `printTime` (دقائق) = `print.printDuration/60` ?? متوسط min/max
-  - `colorCount` = `mmu ? max(materials.length, userGcodeMaterials.length, 2) : 1`
-  - عنوان، صاحب النموذج، صورة (من `previewFile`)، tags
-- `engineUsed = "printables-public"` مع `confidence: high`.
-- رفع `ANALYZER_VERSION` من 4 → **5** لتجاوز الكاش القديم الخاطئ.
+## أين يظهر
 
-### 2) تحسين دقة الـ HTML fallback (للنماذج التي ليس لها بيانات في API)
-- إضافة Next.js `__NEXT_DATA__` parser لـ Printables (يحوي نفس بيانات GraphQL).
-- إزالة عدّ الألوان من الوصف الحر؛ الاعتماد فقط على `mmu`/materials.
-- مطابقة الوزن بنمط أكثر صرامة: `/(\d{2,4})\s*g\s*(?:filament|of\s+filament|used)?/i` مع التحقق أن الرقم بين 20–10000.
+داخل `src/pages/CommunityQuoteFromLink.tsx`:
+- بعد تحميل/تحليل الملف، تظهر بطاقة جديدة "معاينة ثلاثية الأبعاد" فوق/بجانب بطاقة `QuoteResultCard`.
+- زر **"عرض النموذج"** يفتح Dialog ملء الشاشة (fullscreen viewer) لتجربة CAD-like.
+- يُستخدم نفس `File` الذي رفعه المستخدم (موجود مسبقاً في `fileToUpload`) — لا رفع إضافي.
 
-### 3) تسريع الاستجابة
-- تقليل عدد محاولات `fetchHtmlRotating` من 3 → 2 لـ Printables (لأن المحرّك الجديد لا يحتاجها).
-- موازاة استدعاء GraphQL + جلب صفحة OG metadata (للصورة) عبر `Promise.all`.
-- تقصير TTL للكاش الخاطئ: إذا كان `confidence === "low"` نخزّن لمدة 1 يوم فقط بدلاً من 7.
-- إضافة timeout صريح 8 ثوانٍ لكل محرّك حتى لا يعلق Firecrawl طويلاً.
+## البنية التقنية
 
-### 4) شفافية السعر (UI)
-في `src/components/community/QuoteResultCard.tsx`:
-- إضافة قسم قابل للطي "تفاصيل الحساب" يعرض:
-  ```
-  الفلامنت:   543g × 90 IQD/g  = 48,870
-  وقت الطباعة: 12.1h × 1,500   = 18,150
-  هامش الجودة: +10%             = 6,702
-  ─────────────────────────────────
-  الإجمالي قبل التقريب:        73,722
-  بعد التقريب لـ 250 IQD:      73,750
-  ```
-- إضافة شارة "مصدر البيانات: Printables API" بجانب السعر لزيادة الثقة.
-- إذا `confidence === "low"`، تظهر رسالة "قد لا تكون الأرقام دقيقة — راجع المصدر" + رابط مباشر للصفحة الأصلية.
+تثبيت الحزم:
+```
+three@^0.160
+@react-three/fiber@^8.18
+@react-three/drei@^9.122
+```
+ملاحظة: تثبيت إصدارات React-18 المتوافقة (مذكورة في knowledge).
 
-### 5) اختبار التحقق
-بعد النشر: اختبار الرابط مرة أخرى يجب أن يُعيد:
-- الوزن ≈ 200–210g (أو range إن وُجد)
-- الوقت ≈ 12h
-- الألوان = 1 (لأن `mmu = false` في هذا النموذج)
-- engine = `printables-public`
+ملفات جديدة:
+- `src/components/community/viewer/Model3DViewer.tsx` — مكوّن React Three Fiber الرئيسي (Canvas + Suspense + Environment + Stage + Controls + Plate + BBox + Measurement).
+- `src/components/community/viewer/loaders.ts` — تحميل STL/OBJ/3MF/GLB عبر loaders من drei/three-stdlib، يعيد `THREE.BufferGeometry` + أبعاد.
+- `src/components/community/viewer/ViewerToolbar.tsx` — شريط أدوات زجاجي (Solid/Wireframe, Auto-rotate, Measure, Screenshot, Reset View, BBox toggle, Plate toggle).
+- `src/components/community/viewer/ViewerDialog.tsx` — Dialog ملء الشاشة باستخدام `glass-panel`.
+- `src/components/community/viewer/BuildPlate.tsx` — شبكة منصة الطباعة (PlaneGeometry + GridHelper) مع تسمية الأبعاد.
+- `src/components/community/viewer/MeasurementOverlay.tsx` — Raycaster لنقطتين + خط + تسمية المسافة بالـ mm.
 
-## الملفات المتأثرة
-- `supabase/functions/print-quote-from-link/index.ts` (إضافة محرّك Printables، رفع version، تسريع)
-- `src/components/community/QuoteResultCard.tsx` (breakdown السعر + badge المصدر + ثقة)
-- `src/i18n/{ar,en,ku}.ts` (مفاتيح "تفاصيل الحساب"، "مصدر البيانات"، إلخ)
+تعديلات:
+- `src/pages/CommunityQuoteFromLink.tsx` — تمرير `fileToUpload` و `analysis.metrics` إلى `Model3DViewer` + إضافة زر فتح Dialog.
+- `src/i18n/*` — مفاتيح ترجمة (ar/en/ku) للأزرار والتسميات.
 
-## ما لن أغيّره
-- منطق التسعير نفسه (المعدلات والهامش) — فقط طريقة عرضه.
-- تصميم الزجاج (glassmorphism) الحالي — يبقى كما هو.
+## ASCII Layout
+
+```text
++---------------------------------------------+
+|  glass toolbar:  [Solid][Wire][Auto][Meas]  |
+|                  [BBox][Plate][Shot][Reset] |
++---------------------------------------------+
+|                                             |
+|         <Canvas R3F>                        |
+|         HDRI env + soft shadows             |
+|           Model (centered, scaled mm→m/1000)|
+|           BoundingBox helper                |
+|           BuildPlate 256×256 grid           |
+|         OrbitControls (touch enabled)       |
+|                                             |
++---------------------------------------------+
+|  glass footer: 124.3 × 88.1 × 42.0 mm       |
++---------------------------------------------+
+```
+
+## تفاصيل سلوكية
+
+- وحدة العرض: الأبعاد بالـ mm (نقسم على 1000 لتحويلها لمتر داخل المشهد، أو نستخدم مقياس مباشر).
+- اللون والمواد: `meshStandardMaterial` افتراضي، تبديل سريع إلى wireframe.
+- الإضاءة: `Environment preset="city"` من drei + `ContactShadows` + ambient خفيف.
+- الكاميرا: `PerspectiveCamera` مع `OrbitControls` (damping=0.08, touch enabled).
+- الأداء: `Suspense fallback` + توقف render عند عدم التفاعل (`frameloop="demand"`)، حد رفع 200MB مع تحذير عند >50MB ("قد يستغرق وقتاً").
+- اللمس: OrbitControls يدعم pinch + drag للموبايل افتراضياً.
+- اللقطة: `gl.domElement.toDataURL('image/png')` + تحميل تلقائي.
+- الزجاجية: `.glass-panel` للوحات و `.glass-trigger` للأزرار (موجودة في `index.css`).
+- i18n: لا نصوص hardcoded، نضيف مفاتيح في ar/en/ku.
+
+## معايير القبول
+
+- رفع ملف STL/3MF/OBJ/GLB حتى 200MB يفتح في العارض دون كسر الصفحة.
+- التدوير/التكبير/التحريك يعمل على الديسكتوب والموبايل.
+- التبديل Solid/Wireframe، Auto-rotate، BBox، Plate يعمل فورياً.
+- أبعاد BBox الظاهرة تطابق `analysis.metrics` (بفارق ≤ 0.5mm).
+- لقطة الشاشة تُحمَّل بنجاح بدقة Canvas الحالية.
+- اللوحات تتبع نمط Glassmorphism الموجود في المشروع.
