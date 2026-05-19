@@ -267,11 +267,14 @@ export default function CommunityQuoteFromLink() {
                 <label className="block">
                   <input type="file" accept=".stl,.3mf,.obj" className="hidden"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-                  <div className="glass-panel border-2 border-dashed border-border/60 rounded-xl p-6 text-center cursor-pointer hover:bg-muted/30 transition">
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <div className="glass-panel border-2 border-dashed border-foreground/15 rounded-xl p-6 text-center cursor-pointer hover:bg-foreground/[0.04] transition">
+                    <span className="inline-flex items-center justify-center h-12 w-12 rounded-full glass-panel mb-2">
+                      <Upload className="h-6 w-6 text-primary" />
+                    </span>
                     <p className="text-sm font-medium">{t("اضغط لرفع ملف STL / 3MF / OBJ", "Click to upload STL / 3MF / OBJ")}</p>
                     <p className="text-xs text-muted-foreground mt-1">{t("الحد الأقصى 100MB · تحليل محلي في المتصفح", "Up to 100MB · Analyzed locally in your browser")}</p>
                   </div>
+
                 </label>
                 {loading && progressPct > 0 && (
                   <div className="space-y-1">
