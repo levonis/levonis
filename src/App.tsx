@@ -122,6 +122,7 @@ const AdminRedeemableProducts = lazy(() => import("./pages/AdminRedeemableProduc
 const AdminCartRequests = lazy(() => import("./pages/AdminCartRequests"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const CommunityHome = lazy(() => import("./pages/CommunityHome"));
+const CommunityQuoteFromLink = lazy(() => import("./pages/CommunityQuoteFromLink"));
 const OffersStoragePage = lazy(() => import("./pages/OffersStoragePage"));
 const ChatOrderCheckout = lazy(() => import("./pages/ChatOrderCheckout"));
 const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
