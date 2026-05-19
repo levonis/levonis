@@ -90,8 +90,9 @@ Deno.test("FDM: produces a sane breakdown with positive components and sorted ra
 });
 
 Deno.test("FDM: infill override increases weight & material cost", () => {
-  const low = computeQuote({ metrics: simpleMetrics(), material: PLA, machine: fdmMachine, config: baseConfig, infill_pct_override: 10 });
-  const high = computeQuote({ metrics: simpleMetrics(), material: PLA, machine: fdmMachine, config: baseConfig, infill_pct_override: 100 });
+  const big = simpleMetrics(150, 80);
+  const low = computeQuote({ metrics: big, material: PLA, machine: fdmMachine, config: baseConfig, infill_pct_override: 10 });
+  const high = computeQuote({ metrics: big, material: PLA, machine: fdmMachine, config: baseConfig, infill_pct_override: 100 });
   assert(high.weight_g > low.weight_g);
   assert(high.components.material > low.components.material);
   assert(high.recommended > low.recommended);
