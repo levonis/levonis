@@ -79,9 +79,19 @@ export default function AdminPrintMaterials() {
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">إدارة مواد الطباعة ثلاثية الأبعاد</h1>
-        <p className="text-sm text-muted-foreground mt-1">كثافة، سعر/كجم، وافتراضيات لكل فلامنت — تُستخدم في حساب السعر الفوري.</p>
+        <h1 className="text-2xl font-bold">إدارة طباعة 3D — المواد والتسعير</h1>
+        <p className="text-sm text-muted-foreground mt-1">المواد، الماكينات، ومحرك التسعير الصناعي الكامل.</p>
       </div>
+
+      <Tabs defaultValue="materials">
+        <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+          <TabsTrigger value="materials">المواد والماكينات</TabsTrigger>
+          <TabsTrigger value="engine">محرك التسعير</TabsTrigger>
+          <TabsTrigger value="quotations">عروض الأسعار</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="materials" className="space-y-6 pt-4">
+
 
       <Card>
         <CardHeader><CardTitle>المواد (Filaments)</CardTitle></CardHeader>
