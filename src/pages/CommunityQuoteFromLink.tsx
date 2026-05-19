@@ -167,6 +167,13 @@ export default function CommunityQuoteFromLink() {
         .from("community_print_requests").insert(insertPayload).select("id").single();
       if (error) throw error;
 
+      // Mark url-analytics conversion (non-blocking)
+      if (result.url_hash) {
+        supabase.functions.invoke("print-quote-from-link", {
+          body: { mark_converted: { url_hash: result.url_hash } },
+        }).catch(() => {});
+      }
+
       toast({
         title: t("تم إنشاء طلب الطباعة", "Print request created"),
         description: t("سيتم نشره للتجار للموافقة عليه", "It will be sent to traders for approval"),

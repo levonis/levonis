@@ -12,6 +12,17 @@ export interface QuoteResult {
   source: "scrape" | "ai" | "cached" | "file" | "geometry";
   sourceUrl?: string;
   sourceFileName?: string;
+  url_hash?: string;
+  cacheHit?: boolean;
+  unified?: {
+    sourcePlatform?: string;
+    creator?: { name: string | null; url: string | null };
+    tags?: string[];
+    stats?: { downloads: number; likes: number; prints: number };
+    printProfiles?: Array<{ name: string; filament_g?: number | null; print_minutes?: number | null }>;
+    confidenceLevel?: "high" | "medium" | "low";
+    complexityScore?: number;
+  };
   model: {
     name: string;
     thumbnail: string | null;
@@ -34,7 +45,6 @@ export interface QuoteResult {
     price_max: number;
     inputs: { weight_g: number; print_minutes: number; difficulty: string };
   };
-  // Only present for geometry-based quotes:
   metrics?: ModelMetrics;
   quality?: QualityReport;
   material?: { code: string; name_en: string; name_ar: string };
@@ -79,6 +89,16 @@ export default function QuoteResultCard({ result, onCreate, creating, onUseFile,
     : result.source === "file" ? t("من الملف", "From file")
     : t("من الرابط", "From link");
 
+  const conf = result.unified?.confidenceLevel;
+  const confColor = conf === "high"
+    ? "bg-green-500/15 text-green-600 dark:text-green-400"
+    : conf === "low"
+      ? "bg-red-500/15 text-red-600 dark:text-red-400"
+      : "bg-amber-500/15 text-amber-600 dark:text-amber-400";
+  const confLabel = conf === "high" ? t("ثقة عالية", "High confidence")
+    : conf === "low" ? t("ثقة منخفضة", "Low confidence")
+    : conf ? t("ثقة متوسطة", "Medium confidence") : null;
+
   return (
     <Card className="glass-panel overflow-hidden">
       <div className="aspect-video w-full bg-muted relative">
@@ -90,14 +110,31 @@ export default function QuoteResultCard({ result, onCreate, creating, onUseFile,
           </div>
         )}
         <Badge className="absolute top-2 end-2" variant="secondary">{sourceLabel}</Badge>
+        {result.cacheHit && (
+          <Badge className="absolute top-2 start-2 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-0" variant="secondary">
+            {t("من الكاش", "Cached")}
+          </Badge>
+        )}
       </div>
 
       <CardContent className="p-4 space-y-3">
         <div>
           <h3 className="font-semibold text-lg leading-tight">{m.name}</h3>
+          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+            {result.unified?.creator?.name && (
+              <span>{t("بواسطة", "by")} <span className="font-medium text-foreground">{result.unified.creator.name}</span></span>
+            )}
+            {result.unified?.stats && (result.unified.stats.downloads > 0 || result.unified.stats.likes > 0) && (
+              <>
+                {result.unified.stats.downloads > 0 && <span>· ⬇ {result.unified.stats.downloads.toLocaleString()}</span>}
+                {result.unified.stats.likes > 0 && <span>· ♥ {result.unified.stats.likes.toLocaleString()}</span>}
+              </>
+            )}
+            {confLabel && <Badge className={`${confColor} border-0`} variant="secondary">{confLabel}</Badge>}
+          </div>
           {result.sourceUrl && (
             <a href={result.sourceUrl} target="_blank" rel="noreferrer"
-              className="text-xs text-primary inline-flex items-center gap-1 mt-0.5">
+              className="text-xs text-primary inline-flex items-center gap-1 mt-1">
               {t("الرابط الأصلي", "Original link")} <ExternalLink className="h-3 w-3" />
             </a>
           )}

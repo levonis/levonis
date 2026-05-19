@@ -1,135 +1,175 @@
 
-## Goal
+# نظام استخراج بيانات النماذج ثلاثية الأبعاد من الروابط
 
-أضف نظام تحليل حقيقي لملفات STL/3MF/OBJ في صفحة `/community/quote-from-link` بحيث يستطيع المستخدم اختيار **رابط نموذج** أو **رفع ملف** للحصول على تسعير دقيق مبني على هندسة الملف الفعلية، مع لوحة أدمن لإدارة المواد.
+## نظرة عامة
+تطوير `print-quote-from-link` الحالية إلى نظام إنتاجي شامل يستخرج بيانات النموذج من MakerWorld/Printables/Thingiverse، يحسب التسعير في نفس النداء، مع كاش وتحليلات أدمن.
 
-## نطاق الميزة
+## 1) المنصات المدعومة وأنماط الروابط
+- MakerWorld: `makerworld.com/{lang}/models/{id}` — سيُجرَّب OpenAPI الرسمي أولاً (إن توفر مفتاح)
+- Printables: `printables.com/{lang}/model/{id}-{slug}`
+- Thingiverse: `thingiverse.com/thing:{id}`
+- روابط أخرى → تُمرَّر مباشرة لـ Firecrawl كـ generic
 
-- لا تعديل على تدفق التجار/العروض/المحادثة الموجود.
-- يضيف مسار "Upload file" بجانب "Paste link" داخل نفس الصفحة (تبويبان داخل نفس الكارد).
-- التحليل بالكامل داخل المتصفح في Web Worker (لا رفع للملف على السيرفر إلا عند إنشاء طلب طباعة فعلي).
-- Edge function `print-quote-from-link` يبقى كما هو للروابط، ويُضاف edge function جديد `price-3d-model` يستقبل المقاييس المحسوبة محليًا ويرجع التسعير + caching.
-
-## تدفق المستخدم
-
-1. على `/community/quote-from-link` يظهر تبويبان: **رابط** / **ملف**.
-2. تبويب الملف: سحب وإفلات STL/3MF/OBJ (حد 100MB، رسالة واضحة إن تجاوز).
-3. شريط تقدم متعدد المراحل: قراءة → تحميل هندسة → حساب مقاييس → فحص جودة → حساب السعر.
-4. النتيجة تظهر في نفس `QuoteResultCard` الحالي + قسم إضافي "تقرير الجودة" يعرض: عدد المثلثات، عدد الحواف غير الصالحة (non-manifold)، نسبة Normals المقلوبة، نسبة Overhangs > 45°، أقل سماكة جدار مكتشفة، توصية الدعامات (نعم/لا).
-5. زر "إنشاء طلب طباعة" يرفع الملف لـ Supabase Storage في bucket `print-quote-files` ثم يُنشئ صفًا في `community_print_requests` بنفس الحقول الحالية + `quote_source='file_quote'` + `file_url`.
-6. عند فشل التحليل (ملف تالف/كبير جدًا/تجاوز ذاكرة الـ Worker): fallback يطلب من المستخدم إدخال الوزن/الوقت يدويًا أو يستدعي `print-quote-from-link` مع `file_meta` (نفس fallback AI الموجود).
-
-## محرك التحليل (Web Worker)
-
-ملف `src/workers/modelAnalyzer.worker.ts` يحمّل `three` + `three/examples/jsm/loaders/STLLoader` + `OBJLoader` + `3MFLoader` ديناميكيًا (lazy)، ويعالج بـ Transferable ArrayBuffer.
-
-### المقاييس الأساسية
-- **الحجم (cm³)**: مجموع `signed volume` لكل tetrahedron من المركز إلى المثلث (`|v1·(v2×v3)|/6`).
-- **المساحة (cm²)**: مجموع `0.5·|edge1×edge2|` لكل مثلث.
-- **Bounding box**: `geometry.computeBoundingBox()` → X/Y/Z mm.
-- **عدد المثلثات**: من index/position.
-- **Complexity score 0–100**: تركيبة من (triangle_count log scale, surface_area/volume ratio, overhang_pct).
-
-### فحوصات الجودة
-- **Non-manifold**: بناء HashMap للحواف `min(a,b)|max(a,b)` وعدّ الحواف التي ليست مشتركة بين مثلثين بالضبط.
-- **Normals مقلوبة**: نسبة المثلثات التي `dot(face_normal, (centroid - mesh_center))` سالبة (heuristic للأشكال المغلقة).
-- **Overhangs**: عدّ المثلثات التي زاوية normal مع `-Z` < 45° مقسوم على الإجمالي.
-- **سماكة الجدار**: ray casting من مركز كل مثلث على عكس normal باستخدام `THREE.Raycaster` على عينة 500 مثلث (مع `BVH` من `three-mesh-bvh` للسرعة) → أقل مسافة = أقل سماكة.
-
-### تسعير
-- **الوزن (g)** = `volume_cm3 × density × (0.2 + 0.8·infill_pct)` (تقريب shell+infill).
-- **وقت الطباعة (min)** = `(volume_cm3 × infill_factor) / (nozzle_flow_rate_cm3_per_min)` + `surface_area_cm2 / shell_speed_cm2_per_min` + `bbox_z_mm / layer_height_mm × travel_overhead_sec / 60`.
-- **التكلفة الأساس** = `weight_g/1000 × material_cost_per_kg + machine_hours × hourly_cost + complexity_fee` ثم نفس مسار `quote_pricing` الحالي (`platform_fee_pct`, `profit_margin_pct`, تقريب لـ 250 IQD).
-
-## قاعدة البيانات (migration واحدة)
+## 2) منطق الاستخراج الهجين (Cascade 3 مستويات)
 
 ```text
-print_materials (
-  id uuid pk, code text unique,          -- 'pla'|'petg'|'abs'|'tpu'
-  name_ar/en/ku text,
-  density_g_cm3 numeric,                  -- PLA 1.24, PETG 1.27, ABS 1.04, TPU 1.21
-  cost_per_kg_iqd integer,
-  shrinkage_pct numeric,                  -- PLA 0.2, ABS 0.8...
-  default_infill_pct numeric default 20,
-  default_layer_height_mm numeric default 0.2,
-  default_nozzle_mm numeric default 0.4,
-  default_print_speed_mm_s numeric default 60,
-  is_active boolean default true,
-  display_order int
-)
-+ seed 4 صفوف بقيم صناعية، RLS: قراءة عامة، كتابة admin فقط.
-
-print_machine_profiles (
-  id uuid pk, name text,
-  hourly_cost_iqd integer,
-  nozzle_flow_rate_cm3_min numeric default 8,
-  travel_overhead_per_layer_sec numeric default 1.5,
-  is_default boolean
-)
-+ seed صف افتراضي.
-
-print_quote_cache: تضاف 3 أعمدة nullable:
-  file_hash text unique,                  -- sha256 من ArrayBuffer
-  analysis_payload jsonb,                 -- المقاييس الكاملة
-  material_code text
+┌──────────────────────────────────────────┐
+│ POST /functions/v1/print-quote-from-link │
+└────────────┬─────────────────────────────┘
+             ↓
+   [1] فحص الكاش (print_url_cache, age < 7d, url_hash=sha256)
+             ↓ miss
+   [2] MakerWorld OpenAPI (إن كان مكرويرلد + مفتاح موجود)
+             ↓ fail/skip
+   [3] Firecrawl scrape (formats: markdown + json schema + screenshot)
+             ↓ fail/blocked
+   [4] fetch + Cheerio (HTML parsing مع rotating headers)
+             ↓ low-confidence
+   [5] AI fallback (Lovable AI: google/gemini-3-flash-preview)
+             ↓
+   [6] احتساب التسعير (print_materials + machine_profiles + quote_pricing)
+             ↓
+   [7] حفظ في الكاش + إدراج analytics row
+             ↓
+   إرجاع JSON موحّد
 ```
 
-## Edge Function: `price-3d-model`
+كل مستوى يضيف للحقول الموجودة ولا يستبدلها. `confidenceLevel` يُحسب من عدد الحقول المؤكدة:
+- `high` (≥85%): OpenAPI أو Firecrawl JSON كامل
+- `medium` (50–84%): scraping ناجح لكن ينقص filament/printTime
+- `low` (<50%): AI تقدير فقط
 
-- Input: `{ metrics: { volume_cm3, surface_area_cm2, bbox_mm, triangle_count, overhang_pct, min_wall_mm, non_manifold_edges, complexity }, material_code, infill_pct?, file_hash? }`
-- يتحقق من JWT (مستخدم مسجل دخول).
-- يقرأ `print_materials` + `print_machine_profiles` + `community_settings.quote_pricing`.
-- يحسب التسعير على السيرفر (لا نثق بالعميل في الأرقام النهائية).
-- يكتب/يقرأ من `print_quote_cache.file_hash`.
-- يرجع نفس شكل response الحالي + `quality_report` + `support_required`.
+## 3) شكل الـ JSON الموحّد
 
-## واجهة الأدمن
+```json
+{
+  "sourcePlatform": "makerworld|printables|thingiverse|other",
+  "title": "string",
+  "creator": { "name": "string", "url": "string" },
+  "description": "string (markdown, max 4000 chars)",
+  "images": ["url1","url2"],
+  "thumbnail": "url",
+  "tags": ["..."],
+  "category": "string",
+  "stats": { "downloads": 0, "likes": 0, "prints": 0 },
+  "printProfiles": [
+    { "name": "0.20mm Standard", "filamentG": 42.5, "printMinutes": 215, "layerHeight": 0.2, "infill": 15, "supports": false, "ams": false }
+  ],
+  "bambuCompatible": true,
+  "estimatedWeight": 42.5,
+  "printTime": 215,
+  "complexityScore": 67,
+  "confidenceLevel": "high|medium|low",
+  "source": { "engine": "firecrawl|openapi|fetch|ai", "scrapedAt": "ISO" },
+  "pricing": {
+    "materialCode": "PLA",
+    "weightG": 42.5,
+    "basePriceIqd": 8000,
+    "platformFeeIqd": 136,
+    "finalPriceIqd": 8250,
+    "currency": "IQD"
+  }
+}
+```
 
-صفحة جديدة `/admin/print-materials` (محمية بـ `AdminRoute`، تُضاف في `adminConfig.ts` تحت قسم "Community"):
-- جدول المواد القابل للتعديل المباشر (كثافة، سعر/كجم، انكماش، افتراضيات).
-- بطاقة "Machine profile" لتعديل التكلفة بالساعة و flow rate.
-- معاينة مباشرة: أدخل حجم/مادة وشوف السعر المحسوب فورًا.
+## 4) قاعدة البيانات (Migration)
 
-## الواجهة الأمامية — تغييرات ملموسة
+### `print_url_cache` (تحديث للجدول الموجود)
+```text
+id uuid pk
+url_hash text unique (sha256 الرابط بعد التطبيع)
+source_url text
+platform text  (makerworld|printables|thingiverse|other)
+analysis_payload jsonb  (الـ JSON الكامل أعلاه)
+extraction_engine text  (openapi|firecrawl|fetch|ai)
+confidence_level text
+cached_until timestamptz  (NOW + 7 days)
+created_at, updated_at
+```
+RLS: قراءة عامة (anon)، كتابة service_role فقط (تتم من الـ edge function).
 
-| ملف | تغيير |
-|---|---|
-| `src/pages/CommunityQuoteFromLink.tsx` | إضافة Tabs (Link/File)، حالة الملف، استدعاء الـ Worker، حالة `qualityReport`. |
-| `src/workers/modelAnalyzer.worker.ts` | جديد — كل منطق التحليل. |
-| `src/lib/modelAnalysis/types.ts` | جديد — أنواع `ModelMetrics`, `QualityReport`. |
-| `src/lib/modelAnalysis/analyzeClient.ts` | جديد — wrapper يفتح Worker، يحسب sha256، يرسل ArrayBuffer كـ Transferable، يعرض progress. |
-| `src/components/community/QuoteResultCard.tsx` | إضافة قسم "تقرير الجودة" قابل للطي + اختيار المادة من dropdown يعيد حساب السعر. |
-| `src/components/community/MaterialPicker.tsx` | جديد — يقرأ `print_materials` ويعرض الأسعار/الكثافات. |
-| `src/components/community/QualityReportPanel.tsx` | جديد — badges glass-panel لكل فحص (PASS/WARN/FAIL). |
-| `src/pages/AdminPrintMaterials.tsx` | جديد — لوحة الأدمن. |
-| `src/App.tsx` | route جديد + lazy import. |
-| `src/config/adminConfig.ts` | إضافة عنصر القائمة. |
-| `supabase/functions/price-3d-model/index.ts` | جديد. |
-| `supabase/migrations/...` | جداول + RLS + storage bucket `print-quote-files` (private، RLS على المالك). |
-| ملفات i18n `ar/en/ku` | مفاتيح جديدة للتحليل والجودة والمواد. |
+### `print_url_analytics` (جديد)
+```text
+id uuid pk
+url_hash text  (FK soft to cache)
+source_url text
+platform text
+user_id uuid nullable  (auth.uid)
+engine_used text
+confidence_level text
+cache_hit boolean
+duration_ms int
+converted_to_request boolean default false  (true لو أنشأ طلب طباعة بعدها)
+created_at timestamptz
+```
+RLS: insert من المستخدمين المصادَقين، select للأدمن فقط.
 
-## الحزم المطلوبة
+### Index على `(platform, created_at desc)` و `(url_hash, created_at desc)` للوحة التحليلات.
 
-- `three@^0.160` (موجود غالبًا — سأتحقق قبل التثبيت).
-- `three-mesh-bvh@^0.7` (لتسريع ray casting لسماكة الجدار).
-- `three/examples/jsm/loaders/3MFLoader` يحتاج `fflate` (peer dep خفيفة).
+## 5) Edge Functions
 
-## الأداء والحدود
+### تحديث `print-quote-from-link/index.ts`
+- استقبال `{ url, materialCode? }`
+- توحيد الرابط (إزالة UTM/تطبيع language locale)
+- حساب `url_hash`
+- تنفيذ الـ cascade أعلاه
+- استدعاء داخلي لمنطق التسعير (إعادة استخدام كود `price-3d-model`)
+- كتابة الكاش + analytics
+- إرجاع JSON الموحّد + `cacheHit: true|false`
 
-- حد الملف 100MB قبل التحليل (warning عند 50MB).
-- العمل في Worker مع `OffscreenCanvas`/Transferable لتفادي تجميد الواجهة.
-- ray casting لعينة 500 مثلث فقط (ليس كل المثلثات).
-- caching بـ `file_hash` (sha256 من المحتوى الخام) → إعادة فتح نفس الملف فوريًا.
+أدوات داخلية في نفس الملف:
+- `parseMakerWorldOpenApi(id)` — لو `MAKERWORLD_API_KEY` موجود
+- `scrapeWithFirecrawl(url)` — يطلب formats: `markdown`, `json` (مع schema للحقول المطلوبة), `screenshot`
+- `scrapeWithFetch(url, platform)` — rotating User-Agent من قائمة 8 متصفحات، retry 3 مرات مع backoff، cheerio selectors لكل منصة
+- `aiEstimate(partialData, url)` — Lovable AI لتعبئة الفجوات (وزن/زمن/تعقيد فقط، لا يخترع عنوان)
+- `computeComplexity({ printMinutes, filamentG, tagCount, supports })`
 
-## خارج النطاق (مستبعد صراحة)
+### مفاتيح مطلوبة (يطلبها الأدمن لاحقاً عند الحاجة)
+- `FIRECRAWL_API_KEY` — موجود مسبقاً عبر الـ connector، نتأكد منه
+- `MAKERWORLD_API_KEY` — اختياري؛ لو ناقص يتم تخطي المستوى 2 بصمت
 
-- تقطيع حقيقي layer-by-layer (gcode).
-- معاينة 3D للنموذج (يمكن لاحقًا).
-- تعديل المنطق التجاري للتجار/العروض/المحادثة.
+## 6) لوحة التحليلات للأدمن
 
-## أسئلة مفتوحة قبل البناء
+### صفحة جديدة: `src/pages/AdminUrlAnalytics.tsx`
+- مسار: `${ADMIN_BASE_PATH}/url-analytics` (تسجيل في `App.tsx` + `adminConfig.ts` + `Admin.tsx`)
+- بطاقات KPIs: إجمالي التحليلات، Cache Hit Rate، متوسط الزمن، Conversion Rate (تحليل → طلب طباعة)
+- جدول "أكثر النماذج تحليلاً" (group by url_hash, count desc)
+- مخطط Pie/Bar لتوزيع المنصات
+- مخطط Line آخر 30 يوم
+- فلاتر: المنصة، نطاق التاريخ، مستوى الثقة
 
-1. هل أعرض **معاينة 3D** للنموذج بعد التحليل (Three.js canvas صغير دوّار)؟ مفيدة بصريًا لكن تزيد الحجم.
-2. حد الـ file size: 100MB كافي أم تريد 50MB لحماية الذاكرة على الموبايل؟
-3. التسعير: هل المستخدم يختار المادة (PLA/PETG/ABS/TPU) ويعيد حساب السعر، أم نعرض 4 أسعار جنبًا إلى جنب؟
-4. عند إنشاء طلب طباعة، هل أرفع ملف STL كأصل قابل للتحميل للتجار فقط، أم نكتفي بالمقاييس + thumbnail؟
+كل البيانات عبر `supabase.rpc('get_url_analytics_summary', {...})` للأداء.
+
+### تتبع التحويل (Conversion)
+- عند إنشاء طلب طباعة من نتيجة تحليل، يُرسل العميل `url_hash` المرتبط
+- edge function تُحدّث `converted_to_request=true` في آخر سطر analytics لنفس `(user_id, url_hash)`
+
+## 7) واجهة المستخدم (تعديل بسيط فقط)
+
+تعديل `src/pages/CommunityQuoteFromLink.tsx` و `QuoteResultCard.tsx`:
+- إضافة شارة `confidenceLevel` (high/medium/low) باللون الأخضر/الأصفر/الأحمر مع tooltip
+- عرض `creator.name` + `stats.downloads` + `stats.likes` بشكل خفيف فوق العنوان
+- عرض dropdown `printProfiles` لو وُجد أكثر من واحد لإعادة احتساب السعر
+- شارة "محفوظ من الكاش" خفيفة لو `cacheHit=true`
+- لا تغيير على تبويب "ملف" (Web Worker) الموجود
+
+## 8) الحماية من إساءة الاستخدام
+- التحقق من JWT في الـ edge function (Lovable Cloud verify_jwt = true)
+- ضغط في الذاكرة: Map داخل الـ edge function (TTL 30s) لمنع نفس المستخدم من ضرب نفس الـ URL أكثر من مرة في 30 ثانية
+- Zod validation لـ `{ url: z.string().url().max(2048), materialCode: z.string().regex(/^[A-Z]{2,8}$/).optional() }`
+
+## 9) خارج النطاق
+- تشغيل Puppeteer/Playwright فعلي (لا يعمل في Edge Functions؛ نستبدله بـ Firecrawl وهو نفس الجودة بدون بنية تحتية)
+- استخراج ملفات STL من الرابط مباشرة (الإستخدام يبقى للروابط فقط، الملف للتبويب الثاني)
+- تخزين الصور محلياً (نستخدم روابط CDN الأصلية)
+
+## 10) خطة التنفيذ بالتسلسل
+1. Migration لـ `print_url_cache` (update) + `print_url_analytics` (new) + RPC `get_url_analytics_summary`
+2. تحديث `supabase/functions/print-quote-from-link/index.ts` بالـ cascade الكامل
+3. تعديل خفيف على `CommunityQuoteFromLink.tsx` + `QuoteResultCard.tsx` لشارات الثقة والمنشئ
+4. صفحة `AdminUrlAnalytics.tsx` + تسجيلها في الراوتر والـ admin nav
+5. ربط `converted_to_request` بعد إنشاء طلب الطباعة
+
+## أسئلة معلّقة (يمكن الإجابة بعد الموافقة)
+1. هل تريد لوحة التحليلات الآن أم لاحقاً (لتقليل حجم هذه المرحلة)؟
+2. هل لديك بالفعل `MAKERWORLD_API_KEY` لإضافته كـ secret، أم نتخطى مستوى OpenAPI ونعتمد Firecrawl فقط؟

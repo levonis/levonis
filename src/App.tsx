@@ -161,6 +161,7 @@ const AdminLoyaltyCodeRedemptions = lazy(() => import("./pages/AdminLoyaltyCodeR
 const AdminUserCardCycles = lazy(() => import("./pages/AdminUserCardCycles"));
 const AdminProtectionPlanBenefits = lazy(() => import("./pages/AdminProtectionPlanBenefits"));
 const AdminChunkErrors = lazy(() => import("./pages/AdminChunkErrors"));
+const AdminUrlAnalytics = lazy(() => import("./pages/AdminUrlAnalytics"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const About = lazy(() => import("./pages/About"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -330,6 +331,7 @@ function AppContent() {
             
             {/* Secure Admin Routes - Using obfuscated path */}
             <Route path={ADMIN_BASE_PATH} element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/url-analytics`} element={<AdminRoute><AdminUrlAnalytics /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/notifications`} element={<AdminRoute><AdminNotifications /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/announcements`} element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/banners`} element={<AdminRoute><AdminBanners /></AdminRoute>} />
