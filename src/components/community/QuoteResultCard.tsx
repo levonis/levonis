@@ -40,6 +40,7 @@ export interface QuoteResult {
     difficulty_score?: number;
     color_count?: number;
     process?: "fdm" | "resin" | "sls";
+    preview_file_url?: string | null;
   };
   breakdown: {
     filament_cost: number;
