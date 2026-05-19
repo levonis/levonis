@@ -211,7 +211,8 @@ export default function Model3DViewer({ file, url, className, language = "en" }:
       <Canvas
         shadows
         dpr={[1, 2]}
-        gl={{ preserveDrawingBuffer: true, antialias: true }}
+        gl={{ preserveDrawingBuffer: true, antialias: true, localClippingEnabled: true }}
+        onCreated={({ gl }) => { gl.localClippingEnabled = true; }}
         style={{ background: "linear-gradient(180deg, #0b1220 0%, #05070d 100%)" }}
       >
         <PerspectiveCamera makeDefault position={[300, 250, 350]} fov={40} near={0.1} far={5000} />
