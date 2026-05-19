@@ -210,6 +210,47 @@ async function fetchHtmlRotating(url: string, retries = 3): Promise<string | nul
 }
 
 // ---------- Engine 1: MakerWorld OpenAPI (best when key available) ----------
+// Extract distinct filament slots actually used (weight > 0) and total weight
+// Handles several MakerWorld payload shapes: filaments[], filament_slots[], bom[]
+function summarizeFilaments(p: any): { totalWeight: number | null; colorCount: number | null } {
+  const arr: any[] = Array.isArray(p?.filaments) ? p.filaments
+    : Array.isArray(p?.filament_slots) ? p.filament_slots
+    : Array.isArray(p?.bom) ? p.bom
+    : Array.isArray(p?.materials) ? p.materials
+    : [];
+  if (!arr.length) return { totalWeight: null, colorCount: null };
+  let total = 0;
+  const usedSlots: string[] = [];
+  for (const f of arr) {
+    const w = Number(f?.weight_g ?? f?.weight ?? f?.grams ?? f?.filament_weight_g ?? 0) || 0;
+    if (w > 0.1) {
+      total += w;
+      const key = `${f?.type ?? f?.material ?? "?"}|${f?.color ?? f?.color_hex ?? f?.hex ?? usedSlots.length}`;
+      usedSlots.push(key);
+    }
+  }
+  // de-duplicate identical (material+color) slots — same color reused in AMS counts as 1
+  const distinct = new Set(usedSlots).size;
+  return {
+    totalWeight: total > 0 ? Math.round(total) : null,
+    colorCount: distinct > 0 ? distinct : null,
+  };
+}
+
+function pickBestProfile(profiles: any[]): any | null {
+  if (!Array.isArray(profiles) || !profiles.length) return null;
+  // Prefer default, else most popular (likes/downloads/prints), else first
+  const sorted = [...profiles].sort((a, b) => {
+    const ad = (a?.is_default || a?.default) ? 1 : 0;
+    const bd = (b?.is_default || b?.default) ? 1 : 0;
+    if (ad !== bd) return bd - ad;
+    const ap = Number(a?.like_count ?? a?.download_count ?? a?.print_count ?? 0);
+    const bp = Number(b?.like_count ?? b?.download_count ?? b?.print_count ?? 0);
+    return bp - ap;
+  });
+  return sorted[0];
+}
+
 async function tryMakerWorld(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
   if (platform !== "makerworld") return null;
   const idMatch = url.match(/\/models\/(\d+)/);
@@ -223,19 +264,35 @@ async function tryMakerWorld(url: string, platform: string): Promise<Partial<Uni
     });
     if (!res.ok) return null;
     const j = await res.json();
-    const profiles: PrintProfile[] = (j?.print_profiles || []).map((p: any) => ({
-      name: p.name || "Profile",
-      filament_g: Number(p.filament_weight_g) || null,
-      print_minutes: Number(p.print_time_minutes) || null,
-      layer_height: Number(p.layer_height_mm) || null,
-      infill: Number(p.infill_pct) || null,
-      supports: !!p.supports,
-      ams: !!p.uses_ams,
-      color_count: Number(p.color_count ?? p.colorCount ?? 0) || null,
-    }));
-    const bestFil = profiles.find((p) => p.filament_g)?.filament_g ?? null;
-    const bestTime = profiles.find((p) => p.print_minutes)?.print_minutes ?? null;
-    const colorCount = Math.max(...profiles.map((p) => Number(p.color_count ?? 1)), 1);
+    const rawProfiles: any[] = j?.print_profiles || j?.printProfiles || [];
+    const profiles: PrintProfile[] = rawProfiles.map((p: any) => {
+      const filSummary = summarizeFilaments(p);
+      const apiColorCount = Number(p.color_count ?? p.colorCount ?? p.filament_count ?? 0);
+      return {
+        name: p.name || "Profile",
+        filament_g: filSummary.totalWeight ?? Number(p.filament_weight_g ?? p.total_filament_g) || null,
+        print_minutes: Number(p.print_time_minutes ?? p.print_time_min ?? p.printTime) || null,
+        layer_height: Number(p.layer_height_mm ?? p.layerHeight) || null,
+        infill: Number(p.infill_pct ?? p.sparseInfillDensity) || null,
+        supports: !!(p.supports ?? p.useSupports),
+        ams: !!(p.uses_ams ?? p.useAms),
+        // Prefer distinct-slot count from filaments[] over potentially-inflated API field (often AMS slot count = 16)
+        color_count: filSummary.colorCount ?? (apiColorCount > 0 && apiColorCount <= 8 ? apiColorCount : null),
+      };
+    });
+    const best = pickBestProfile(rawProfiles);
+    const bestSummary = best ? summarizeFilaments(best) : { totalWeight: null, colorCount: null };
+    const bestFil = bestSummary.totalWeight
+      ?? Number(best?.filament_weight_g ?? best?.total_filament_g)
+      ?? profiles.find((p) => p.filament_g)?.filament_g
+      ?? null;
+    const bestTime = Number(best?.print_time_minutes ?? best?.print_time_min ?? best?.printTime)
+      || profiles.find((p) => p.print_minutes)?.print_minutes
+      || null;
+    const bestColors = bestSummary.colorCount
+      ?? (best?.color_count && best.color_count <= 8 ? Number(best.color_count) : null)
+      ?? Math.max(...profiles.map((p) => Number(p.color_count ?? 1)).filter((n) => n > 0 && n <= 8), 1);
+
     return {
       title: j.title || j.name,
       creator: { name: j.designer?.name ?? null, url: j.designer?.profile_url ?? null },
@@ -251,9 +308,9 @@ async function tryMakerWorld(url: string, platform: string): Promise<Partial<Uni
       },
       printProfiles: profiles,
       bambuCompatible: true,
-      estimatedWeight: bestFil,
-      printTime: bestTime,
-      colorCount,
+      estimatedWeight: bestFil ? (bestFil as number) : null,
+      printTime: bestTime ? (bestTime as number) : null,
+      colorCount: clamp(Math.floor(Number(bestColors) || 1), 1, 8),
       source: { engine: "openapi", scrapedAt: new Date().toISOString() },
     };
   } catch { return null; }
