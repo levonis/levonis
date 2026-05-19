@@ -129,6 +129,9 @@ export default function PricingEngineTab() {
           <F label="حد أدنى للطلب IQD" value={cfg.base.min_order_iqd} onChange={(v) => setBase("min_order_iqd", v)} />
           <F label="تقريب IQD" value={cfg.base.round_to_iqd} onChange={(v) => setBase("round_to_iqd", v)} />
           <F label="رسوم تعقيد قاعدية IQD" value={cfg.base.base_complexity_fee} onChange={(v) => setBase("base_complexity_fee", v)} />
+          <F label="تعدد الألوان: ثابت لكل لون IQD" value={cfg.base.multi_color_fixed_iqd ?? 1000} onChange={(v) => setBase("multi_color_fixed_iqd", v)} />
+          <F label="تعدد الألوان: لكل ساعة IQD" value={cfg.base.multi_color_per_hour_iqd ?? 350} onChange={(v) => setBase("multi_color_per_hour_iqd", v)} />
+          <F label="هدر مادة لكل لون %" step="0.01" value={cfg.base.multi_color_material_waste_pct ?? 0.06} onChange={(v) => setBase("multi_color_material_waste_pct", v)} />
         </CardContent>
       </Card>
 

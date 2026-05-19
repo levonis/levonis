@@ -38,6 +38,7 @@ export interface QuoteResult {
     recommended_printer: string | null;
     difficulty: "easy" | "medium" | "hard" | null;
     difficulty_score?: number;
+    color_count?: number;
     process?: "fdm" | "resin" | "sls";
   };
   breakdown: {
@@ -56,6 +57,7 @@ export interface QuoteResult {
     rush_days?: number;
     qty?: number;
     parts_count?: number;
+    color_count?: number;
     rush_options?: RushOption[];
     bulk_preview?: Array<{ min_qty: number; discount_pct: number; preview_iqd_per_unit: number }>;
     inputs: { weight_g: number; print_minutes: number; difficulty: string };
@@ -101,6 +103,7 @@ export default function QuoteResultCard({
   const rushTier = b.rush_tier ?? "standard";
   const score = m.difficulty_score;
   const processBadge = m.process ?? "fdm";
+  const colorCount = b.color_count ?? m.color_count ?? 1;
 
   const difficultyColor =
     m.difficulty === "hard"
@@ -234,9 +237,10 @@ export default function QuoteResultCard({
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-4 gap-2 text-center">
           <Stat label={t("الوزن", "Weight")} value={`${b.inputs.weight_g}g`} />
           <Stat label={t("الوقت", "Time")} value={`${hours}h ${mins}m`} />
+          <Stat label={t("الألوان", "Colors")} value={`${colorCount}`} />
           <div className="rounded-lg p-2 border border-border/40 bg-card/40">
             <div className="text-[10px] text-muted-foreground mb-1">{t("الصعوبة", "Difficulty")}</div>
             <Badge className={`${difficultyColor} border-0`}>
@@ -356,6 +360,7 @@ export default function QuoteResultCard({
               <tr><td style={cellL}>{t("المادة", "Material")}</td><td style={cellR}>{result.material?.name_en ?? "-"}</td></tr>
               <tr><td style={cellL}>{t("الوزن", "Weight")}</td><td style={cellR}>{b.inputs.weight_g} g</td></tr>
               <tr><td style={cellL}>{t("وقت الطباعة", "Print time")}</td><td style={cellR}>{hours}h {mins}m</td></tr>
+              <tr><td style={cellL}>{t("الألوان", "Colors")}</td><td style={cellR}>{colorCount}</td></tr>
               <tr><td style={cellL}>{t("الكمية", "Quantity")}</td><td style={cellR}>{qty}</td></tr>
               <tr><td style={cellL}>{t("سرعة التسليم", "Delivery speed")}</td><td style={cellR}>{rushTier} ({b.rush_days} {t("يوم", "days")})</td></tr>
               <tr><td style={cellL}>{t("الصعوبة", "Difficulty")}</td><td style={cellR}>{score ?? m.difficulty}/10</td></tr>

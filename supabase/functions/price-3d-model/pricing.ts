@@ -61,6 +61,7 @@ export interface QuoteInputs {
   qty?: number;
   rush_tier?: "standard" | "fast" | "rush";
   parts_count?: number;
+  color_count?: number;
   infill_pct_override?: number;
 }
 
@@ -111,6 +112,7 @@ export interface QuoteResult {
     labor: number;
     packaging: number;
     wash_cure: number;
+    multi_color: number;
     failure_risk: number;
     complexity_fee: number;
   };
@@ -121,6 +123,7 @@ export interface QuoteResult {
     rush: number;
     load_balancing: number;
     bulk_discount_pct: number;
+    extra_colors: number;
   };
   platform_fee: number;
   profit_margin: number;
@@ -141,6 +144,7 @@ export function computeQuote(inp: QuoteInputs): QuoteResult {
     ? (inp.rush_tier as "standard" | "fast" | "rush")
     : "standard";
   const partsCount = clamp(Math.floor(inp.parts_count ?? metrics.parts_count ?? 1), 1, 50);
+  const colorCount = clamp(Math.floor(inp.color_count ?? 1), 1, 16);
 
   const processType = (material.process_type as string) ?? "fdm";
 
@@ -178,6 +182,10 @@ export function computeQuote(inp: QuoteInputs): QuoteResult {
   const minOrder = Number(base.min_order_iqd ?? 5000);
   const roundStep = Number(base.round_to_iqd ?? 250);
   const baseComplexityFee = Number(base.base_complexity_fee ?? 1500);
+  const extraColors = Math.max(0, colorCount - 1);
+  const multiColorFixed = Number(base.multi_color_fixed_iqd ?? 1000);
+  const multiColorPerHour = Number(base.multi_color_per_hour_iqd ?? 350);
+  const multiColorMaterialWastePct = Number(base.multi_color_material_waste_pct ?? 0.06);
 
   let weight_g = 0;
   let print_minutes = 0;
@@ -223,6 +231,9 @@ export function computeQuote(inp: QuoteInputs): QuoteResult {
   const multipartLabor = (partsCount - 1) * Number(risk.multipart_labor_per_part_iqd ?? 0) * qty;
   const packagingCost = packaging * qty;
   const washCureCost = processType === "resin" ? Number(proc.wash_cure_iqd ?? 0) * qty : 0;
+  const multiColorCost = processType === "fdm"
+    ? extraColors * (multiColorFixed * qty + multiColorPerHour * print_hours * qty + materialCost * multiColorMaterialWastePct)
+    : 0;
 
   const rawSubtotal =
     materialCost +
@@ -234,6 +245,7 @@ export function computeQuote(inp: QuoteInputs): QuoteResult {
     multipartLabor +
     packagingCost +
     washCureCost +
+    multiColorCost +
     baseComplexityFee;
 
   const failureRiskCost = rawSubtotal * failureRate;
@@ -291,6 +303,7 @@ export function computeQuote(inp: QuoteInputs): QuoteResult {
       labor: laborCost + multipartLabor,
       packaging: packagingCost,
       wash_cure: washCureCost,
+      multi_color: multiColorCost,
       failure_risk: failureRiskCost,
       complexity_fee: baseComplexityFee,
     },
@@ -301,6 +314,7 @@ export function computeQuote(inp: QuoteInputs): QuoteResult {
       rush: rushMult,
       load_balancing: loadMult,
       bulk_discount_pct: bulkDiscountPct,
+      extra_colors: extraColors,
     },
     platform_fee: platformFee,
     profit_margin: profitMargin,

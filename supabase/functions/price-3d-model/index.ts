@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
       ? body.rush_tier
       : "standard") as "standard" | "fast" | "rush";
     const partsCount = clamp(Math.floor(Number(body.parts_count ?? metrics?.parts_count ?? 1)), 1, 50);
+    const colorCount = clamp(Math.floor(Number(body.color_count ?? 1)), 1, 16);
 
     if (!metrics || typeof metrics.volume_cm3 !== "number" || metrics.volume_cm3 <= 0) {
       return new Response(JSON.stringify({ error: "Invalid metrics" }), {
@@ -105,7 +106,8 @@ Deno.serve(async (req) => {
         cached.material_code === materialCode &&
         new Date(cached.expires_at as string).getTime() > Date.now() &&
         (cached.payload as any)?.breakdown?.rush_tier === rushTier &&
-        (cached.payload as any)?.breakdown?.qty === qty
+        (cached.payload as any)?.breakdown?.qty === qty &&
+        Number((cached.payload as any)?.breakdown?.color_count ?? 1) === colorCount
       ) {
         return new Response(JSON.stringify({ source: "cached", ...(cached.payload as object) }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -176,6 +178,10 @@ Deno.serve(async (req) => {
     const minOrder = Number(base.min_order_iqd ?? 5000);
     const roundStep = Number(base.round_to_iqd ?? 250);
     const baseComplexityFee = Number(base.base_complexity_fee ?? 1500);
+    const extraColors = Math.max(0, colorCount - 1);
+    const multiColorFixed = Number(base.multi_color_fixed_iqd ?? 1000);
+    const multiColorPerHour = Number(base.multi_color_per_hour_iqd ?? 350);
+    const multiColorMaterialWastePct = Number(base.multi_color_material_waste_pct ?? 0.06);
 
     // === Weight & print time per process ===
     let weight_g = 0;
@@ -227,6 +233,9 @@ Deno.serve(async (req) => {
     const multipartLabor = (partsCount - 1) * Number(risk.multipart_labor_per_part_iqd ?? 0) * qty;
     const packagingCost = packaging * qty;
     const washCureCost = processType === "resin" ? Number(proc.wash_cure_iqd ?? 0) * qty : 0;
+    const multiColorCost = processType === "fdm"
+      ? extraColors * (multiColorFixed * qty + multiColorPerHour * print_hours * qty + materialCost * multiColorMaterialWastePct)
+      : 0;
 
     const rawSubtotal =
       materialCost +
@@ -238,6 +247,7 @@ Deno.serve(async (req) => {
       multipartLabor +
       packagingCost +
       washCureCost +
+      multiColorCost +
       baseComplexityFee;
 
     const failureRiskCost = rawSubtotal * failureRate;
@@ -310,6 +320,7 @@ Deno.serve(async (req) => {
         recommended_printer: machine?.name ?? null,
         difficulty: tier,
         difficulty_score: score,
+        color_count: colorCount,
         process: processType,
       },
       breakdown: {
@@ -333,6 +344,7 @@ Deno.serve(async (req) => {
           { key: "labor", label_ar: "العمل اليدوي", label_en: "Labor", value: round(laborCost + multipartLabor, roundStep) },
           { key: "packaging", label_ar: "التغليف", label_en: "Packaging", value: round(packagingCost, roundStep) },
           ...(washCureCost > 0 ? [{ key: "wash_cure", label_ar: "غسيل ومعالجة", label_en: "Wash & cure", value: round(washCureCost, roundStep) }] : []),
+          ...(multiColorCost > 0 ? [{ key: "multi_color", label_ar: "تعدد الألوان", label_en: "Multi-color", value: round(multiColorCost, roundStep) }] : []),
           { key: "failure_risk", label_ar: "احتمال الفشل", label_en: "Failure risk", value: round(failureRiskCost, roundStep) },
           { key: "complexity_fee", label_ar: "رسم التعقيد", label_en: "Complexity fee", value: round(baseComplexityFee, roundStep) },
         ],
@@ -343,6 +355,7 @@ Deno.serve(async (req) => {
           rush: rushMult,
           load_balancing: loadMult,
           bulk_discount_pct: bulkDiscountPct,
+          extra_colors: extraColors,
         },
         platform_fee_amount: round(platformFee, roundStep),
         profit_margin_amount: round(profitMargin, roundStep),
@@ -350,6 +363,7 @@ Deno.serve(async (req) => {
         rush_days: rushDays,
         qty,
         parts_count: partsCount,
+        color_count: colorCount,
         rush_options: rushOptions,
         bulk_preview: bulkPreview,
         inputs: { weight_g: Math.round(weight_g), print_minutes, difficulty: tier },
