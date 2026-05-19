@@ -1679,8 +1679,13 @@ export type Database = {
           customer_governorate: string | null
           delivered_at: string | null
           description: string
+          difficulty: string | null
           escrow_amount: number | null
           escrow_held_at: string | null
+          estimated_price_max: number | null
+          estimated_price_min: number | null
+          estimated_print_minutes: number | null
+          estimated_weight_g: number | null
           id: string
           image_url: string | null
           images: string[] | null
@@ -1692,6 +1697,9 @@ export type Database = {
           payment_commission_rate: number | null
           payment_method: string | null
           quantity: number | null
+          quote_breakdown: Json | null
+          quote_source: string | null
+          quote_url: string | null
           reference_links: string[] | null
           size: string
           status: string
@@ -1712,8 +1720,13 @@ export type Database = {
           customer_governorate?: string | null
           delivered_at?: string | null
           description: string
+          difficulty?: string | null
           escrow_amount?: number | null
           escrow_held_at?: string | null
+          estimated_price_max?: number | null
+          estimated_price_min?: number | null
+          estimated_print_minutes?: number | null
+          estimated_weight_g?: number | null
           id?: string
           image_url?: string | null
           images?: string[] | null
@@ -1725,6 +1738,9 @@ export type Database = {
           payment_commission_rate?: number | null
           payment_method?: string | null
           quantity?: number | null
+          quote_breakdown?: Json | null
+          quote_source?: string | null
+          quote_url?: string | null
           reference_links?: string[] | null
           size: string
           status?: string
@@ -1745,8 +1761,13 @@ export type Database = {
           customer_governorate?: string | null
           delivered_at?: string | null
           description?: string
+          difficulty?: string | null
           escrow_amount?: number | null
           escrow_held_at?: string | null
+          estimated_price_max?: number | null
+          estimated_price_min?: number | null
+          estimated_print_minutes?: number | null
+          estimated_weight_g?: number | null
           id?: string
           image_url?: string | null
           images?: string[] | null
@@ -1758,6 +1779,9 @@ export type Database = {
           payment_commission_rate?: number | null
           payment_method?: string | null
           quantity?: number | null
+          quote_breakdown?: Json | null
+          quote_source?: string | null
+          quote_url?: string | null
           reference_links?: string[] | null
           size?: string
           status?: string
@@ -8307,6 +8331,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      print_quote_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          payload: Json
+          source: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          payload: Json
+          source?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          payload?: Json
+          source?: string
+          url?: string
+        }
+        Relationships: []
       }
       print_ratings: {
         Row: {
