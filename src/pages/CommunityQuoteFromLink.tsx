@@ -317,7 +317,9 @@ export default function CommunityQuoteFromLink() {
 
           </div>
         )}
+        </div>
       </div>
     </div>
+
   );
 }
