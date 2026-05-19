@@ -348,7 +348,107 @@ async function tryMakerWorldPublic(url: string, platform: string): Promise<Parti
   } catch { return null; }
 }
 
-// ---------- Engine 1: MakerWorld OpenAPI (best when key available) ----------
+// ---------- Engine 0b: Printables PUBLIC GraphQL API (no key) ----------
+// Hits api.printables.com GraphQL. Top-level fields may be null for older models;
+// fall back to user-uploaded G-code stats (userGcodeWeightMin/Max, userGcodePrintDurationMin/Max).
+async function tryPrintablesPublic(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
+  if (platform !== "printables") return null;
+  const idMatch = url.match(/\/model\/(\d+)/);
+  if (!idMatch) return null;
+  const printId = idMatch[1];
+
+  const query = `{
+    print(id:${printId}){
+      id name summary description
+      printDuration weight usedMaterial
+      mmu materials{name}
+      userGcodePrintDurationMin userGcodePrintDurationMax
+      userGcodeWeightMin userGcodeWeightMax
+      userGcodeMaterials userGcodePrinters
+      downloadCount likesCount makesCount
+      user{publicUsername handle}
+      tags
+      images{filePath}
+      previewFile{__typename ... on PrintImageType{filePath}}
+    }
+  }`;
+
+  try {
+    const res = await fetch("https://api.printables.com/graphql/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) return null;
+    const json: any = await res.json();
+    const p = json?.data?.print;
+    if (!p) return null;
+
+    // Weight: prefer official, else average of user G-code min/max range
+    const officialWeight = Number(p.weight) || null;
+    const userMinW = Number(p.userGcodeWeightMin) || null;
+    const userMaxW = Number(p.userGcodeWeightMax) || null;
+    const avgUserWeight = (userMinW && userMaxW) ? Math.round((userMinW + userMaxW) / 2)
+      : (userMinW ?? userMaxW ?? null);
+    const totalWeight = officialWeight ?? avgUserWeight;
+
+    // Print time in MINUTES. printDuration is seconds; userGcodePrintDuration is hours.
+    const officialMinutes = p.printDuration ? Math.round(Number(p.printDuration) / 60) : null;
+    const userMinH = Number(p.userGcodePrintDurationMin) || null;
+    const userMaxH = Number(p.userGcodePrintDurationMax) || null;
+    const avgUserMinutes = (userMinH && userMaxH) ? Math.round(((userMinH + userMaxH) / 2) * 60)
+      : (userMinH ? Math.round(userMinH * 60) : (userMaxH ? Math.round(userMaxH * 60) : null));
+    const printMinutes = officialMinutes ?? avgUserMinutes;
+
+    // Color count: strictly from official `mmu` flag + materials list. No description-guess.
+    const matCount = Array.isArray(p.materials) ? p.materials.length : 0;
+    const userMatCount = Array.isArray(p.userGcodeMaterials) ? p.userGcodeMaterials.length : 0;
+    const colorCount = clamp(
+      p.mmu ? Math.max(matCount, userMatCount, 2) : 1,
+      1, 8,
+    );
+
+    const thumb: string | null = (p.previewFile?.filePath
+      ? `https://media.printables.com/media/prints/${printId}/images/${p.previewFile.filePath}`
+      : null);
+    const images: string[] = Array.isArray(p.images)
+      ? p.images.slice(0, 8).map((im: any) => `https://media.printables.com/media/prints/${printId}/images/${im.filePath}`)
+      : (thumb ? [thumb] : []);
+
+    const creatorName = p.user?.publicUsername ?? p.user?.handle ?? null;
+
+    return {
+      title: p.name || "",
+      creator: {
+        name: creatorName,
+        url: creatorName ? `https://www.printables.com/@${creatorName}` : null,
+      },
+      description: typeof p.summary === "string"
+        ? p.summary.slice(0, 1500)
+        : (typeof p.description === "string" ? p.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 1500) : null),
+      images,
+      thumbnail: thumb,
+      tags: Array.isArray(p.tags) ? p.tags.slice(0, 12).map((t: any) => typeof t === "string" ? t : (t?.name ?? "")).filter(Boolean) : [],
+      category: null,
+      stats: {
+        downloads: Number(p.downloadCount) || 0,
+        likes: Number(p.likesCount) || 0,
+        prints: Number(p.makesCount) || 0,
+      },
+      printProfiles: [],
+      bambuCompatible: null,
+      estimatedWeight: totalWeight,
+      printTime: printMinutes,
+      colorCount,
+      source: { engine: "printables-public", scrapedAt: new Date().toISOString() },
+    };
+  } catch (e) {
+    console.warn("[printables-public] err:", (e as Error)?.message);
+    return null;
+  }
+}
+
+
 async function tryMakerWorld(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
   if (platform !== "makerworld") return null;
   const idMatch = url.match(/\/models\/(\d+)/);
