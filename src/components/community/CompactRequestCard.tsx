@@ -27,6 +27,9 @@ interface PrintRequest {
   accepted_offer_id: string | null;
   quantity?: number;
   customer_governorate?: string;
+  quote_source?: string | null;
+  estimated_price_min?: number | null;
+  estimated_price_max?: number | null;
 }
 
 interface CompactRequestCardProps {
