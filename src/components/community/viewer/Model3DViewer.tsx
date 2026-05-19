@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react";
 import { loadModelFromFile, computeBoundsMM, fetchModelAsFile } from "./loaders";
 import ViewerToolbar from "./ViewerToolbar";
 import BuildPlate from "./BuildPlate";
-import { applyOverhangColors, applyExploded, autoOrient } from "./analysisHelpers";
+import { applyOverhangColors, applyExploded, autoOrient, applyDecimation } from "./analysisHelpers";
 
 interface Props {
   file?: File | null;
