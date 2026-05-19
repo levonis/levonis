@@ -31,7 +31,19 @@ const UAS = [
 // in-memory rate limiter per (user, urlHash) → 30s
 const RECENT = new Map<string, number>();
 const RECENT_TTL = 30_000;
-const ANALYZER_VERSION = 4;
+const ANALYZER_VERSION = 5;
+
+// Timeout wrapper — prevents any single engine from blocking the cascade
+function withTimeout<T>(p: Promise<T>, ms: number, label = "op"): Promise<T | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      console.warn(`[timeout] ${label} exceeded ${ms}ms`);
+      resolve(null as unknown as T);
+    }, ms);
+    p.then((v) => { clearTimeout(timer); resolve(v); })
+     .catch((e) => { clearTimeout(timer); console.warn(`[err] ${label}:`, e?.message); resolve(null as unknown as T); });
+  });
+}
 
 interface Creator { name: string | null; url: string | null }
 interface PrintProfile {
@@ -336,7 +348,117 @@ async function tryMakerWorldPublic(url: string, platform: string): Promise<Parti
   } catch { return null; }
 }
 
-// ---------- Engine 1: MakerWorld OpenAPI (best when key available) ----------
+// ---------- Engine 0b: Printables PUBLIC GraphQL API (no key) ----------
+// Hits api.printables.com GraphQL. Top-level fields may be null for older models;
+// fall back to user-uploaded G-code stats (userGcodeWeightMin/Max, userGcodePrintDurationMin/Max).
+async function tryPrintablesPublic(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
+  if (platform !== "printables") return null;
+  const idMatch = url.match(/\/model\/(\d+)/);
+  if (!idMatch) return null;
+  const printId = idMatch[1];
+
+  const query = `{
+    print(id:${printId}){
+      id name summary description
+      printDuration weight usedMaterial
+      mmu materials{name}
+      userGcodePrintDurationMin userGcodePrintDurationMax
+      userGcodeWeightMin userGcodeWeightMax
+      userGcodeMaterials userGcodePrinters
+      downloadCount likesCount makesCount
+      user{publicUsername handle}
+      tags{name}
+      image{filePath}
+      images{filePath}
+    }
+  }`;
+
+  try {
+    const res = await fetch("https://api.printables.com/graphql/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) return null;
+    const json: any = await res.json();
+    if (json?.errors) {
+      console.warn("[printables-public] gql errors:", JSON.stringify(json.errors).slice(0, 300));
+    }
+    const p = json?.data?.print;
+    if (!p) return null;
+
+    // Weight: prefer official, else average of user G-code min/max range
+    const officialWeight = Number(p.weight) || null;
+    const userMinW = Number(p.userGcodeWeightMin) || null;
+    const userMaxW = Number(p.userGcodeWeightMax) || null;
+    const avgUserWeight = (userMinW && userMaxW) ? Math.round((userMinW + userMaxW) / 2)
+      : (userMinW ?? userMaxW ?? null);
+    const totalWeight = officialWeight ?? avgUserWeight;
+
+    // Print time in MINUTES. printDuration is seconds; userGcodePrintDuration is hours.
+    const officialMinutes = p.printDuration ? Math.round(Number(p.printDuration) / 60) : null;
+    const userMinH = Number(p.userGcodePrintDurationMin) || null;
+    const userMaxH = Number(p.userGcodePrintDurationMax) || null;
+    const avgUserMinutes = (userMinH && userMaxH) ? Math.round(((userMinH + userMaxH) / 2) * 60)
+      : (userMinH ? Math.round(userMinH * 60) : (userMaxH ? Math.round(userMaxH * 60) : null));
+    const printMinutes = officialMinutes ?? avgUserMinutes;
+
+    // Color count: strictly from official `mmu` flag + materials list. No description-guess.
+    const matCount = Array.isArray(p.materials) ? p.materials.length : 0;
+    const userMatCount = Array.isArray(p.userGcodeMaterials) ? p.userGcodeMaterials.length : 0;
+    const colorCount = clamp(
+      p.mmu ? Math.max(matCount, userMatCount, 2) : 1,
+      1, 8,
+    );
+
+    const toMediaUrl = (fp: string | null | undefined): string | null =>
+      fp ? `https://media.printables.com/${fp.replace(/^\/+/, "")}` : null;
+    const thumb = toMediaUrl(p.image?.filePath) ?? toMediaUrl(p.images?.[0]?.filePath);
+    const images: string[] = Array.isArray(p.images)
+      ? p.images.slice(0, 8).map((im: any) => toMediaUrl(im?.filePath)).filter(Boolean) as string[]
+      : (thumb ? [thumb] : []);
+
+    const creatorName = p.user?.publicUsername ?? p.user?.handle ?? null;
+
+    // If API has no weight/time/mmu data at all, signal to cascade that we only enriched metadata
+    // (so HTML scrape/AI can still fill numbers), but lock colorCount=1 since mmu is authoritative.
+    const hasNumericData = totalWeight !== null || printMinutes !== null;
+
+    return {
+      title: p.name || "",
+      creator: {
+        name: creatorName,
+        url: creatorName ? `https://www.printables.com/@${creatorName}` : null,
+      },
+      description: typeof p.summary === "string"
+        ? p.summary.slice(0, 1500)
+        : (typeof p.description === "string" ? p.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 1500) : null),
+      images,
+      thumbnail: thumb,
+      tags: Array.isArray(p.tags) ? p.tags.slice(0, 12).map((t: any) => typeof t === "string" ? t : (t?.name ?? "")).filter(Boolean) : [],
+      category: null,
+      stats: {
+        downloads: Number(p.downloadCount) || 0,
+        likes: Number(p.likesCount) || 0,
+        prints: Number(p.makesCount) || 0,
+      },
+      printProfiles: [],
+      bambuCompatible: null,
+      estimatedWeight: totalWeight,
+      printTime: printMinutes,
+      colorCount,
+      // Mark engine — when no numeric data, downstream cascade can still try other engines
+      // but colorCount (from mmu) and metadata are trusted.
+      source: { engine: hasNumericData ? "printables-public" : "printables-public-meta", scrapedAt: new Date().toISOString() },
+    };
+  } catch (e) {
+    console.warn("[printables-public] err:", (e as Error)?.message);
+    return null;
+  }
+}
+
+
+
 async function tryMakerWorld(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
   if (platform !== "makerworld") return null;
   const idMatch = url.match(/\/models\/(\d+)/);
@@ -576,7 +698,7 @@ function confidenceFrom(m: Partial<UnifiedModel>, engine: string): "high" | "med
     (have(m.printTime) ? 1.5 : 0) +
     ((m.printProfiles || []).length > 0 ? 1.5 : 0) +
     (have(m.tags?.length) ? 0.5 : 0);
-  if (engine === "openapi" || score >= 7) return "high";
+  if (engine === "openapi" || engine === "mw-public" || engine === "printables-public" || score >= 7) return "high";
   if (engine === "ai" && score < 4) return "low";
   if (score >= 4) return "medium";
   return "low";
@@ -805,21 +927,36 @@ Deno.serve(async (req) => {
     };
 
     let engineUsed = "none";
-    // Engine 0: public MakerWorld JSON (no key, most accurate)
-    const mwp = await tryMakerWorldPublic(normalized, platform);
+    // Engine 0a: public MakerWorld JSON (no key, most accurate for makerworld)
+    const mwp = await withTimeout(tryMakerWorldPublic(normalized, platform), 8000, "mw-public");
     if (mwp) { partial = { ...partial, ...mwp }; engineUsed = "mw-public"; }
+    // Engine 0b: public Printables GraphQL (no key, most accurate for printables)
     if (!partial.estimatedWeight) {
-      const mw = await tryMakerWorld(normalized, platform);
+      const pp = await withTimeout(tryPrintablesPublic(normalized, platform), 8000, "printables-public");
+      if (pp) {
+        partial = { ...partial, ...pp };
+        engineUsed = engineUsed === "none" ? "printables-public" : `${engineUsed}+printables-public`;
+      }
+    }
+    if (!partial.estimatedWeight) {
+      const mw = await withTimeout(tryMakerWorld(normalized, platform), 8000, "openapi");
       if (mw) { partial = { ...partial, ...mw }; engineUsed = engineUsed === "none" ? "openapi" : `${engineUsed}+openapi`; }
     }
 
+    // Snapshot authoritative fields before non-authoritative engines run, so we can re-pin them after.
+    const lockedColorCount = engineUsed.includes("printables-public") || engineUsed.includes("mw-public") || engineUsed.includes("openapi")
+      ? partial.colorCount : null;
+    const lockedTitle = engineUsed.includes("printables-public") || engineUsed.includes("mw-public") ? partial.title : null;
+    const lockedThumb = engineUsed.includes("printables-public") || engineUsed.includes("mw-public") ? partial.thumbnail : null;
+
     if (!partial.title || !partial.estimatedWeight) {
-      const fc = await tryFirecrawl(normalized);
+      const fc = await withTimeout(tryFirecrawl(normalized), 12000, "firecrawl");
       if (fc) {
         partial = { ...partial, ...fc, images: fc.images?.length ? fc.images : partial.images };
-        engineUsed = engineUsed === "openapi" ? "openapi+firecrawl" : "firecrawl";
+        engineUsed = engineUsed === "none" ? "firecrawl" : `${engineUsed}+firecrawl`;
       }
     }
+
     if (!partial.title || !partial.thumbnail || !partial.estimatedWeight || engineUsed.includes("firecrawl")) {
       const fs = await tryFetchScrape(normalized);
       if (fs) {
@@ -842,6 +979,12 @@ Deno.serve(async (req) => {
       engineUsed = engineUsed === "none" ? "ai" : `${engineUsed}+ai`;
     }
 
+    // Re-pin authoritative fields (mmu-derived color count, official title/thumbnail)
+    if (lockedColorCount !== null) partial.colorCount = lockedColorCount;
+    if (lockedTitle) partial.title = lockedTitle;
+    if (lockedThumb) partial.thumbnail = lockedThumb;
+
+
     if (!partial.title) partial.title = "3D Model";
     partial.sourcePlatform = platform;
     partial.complexityScore = computeComplexity(partial);
@@ -850,9 +993,9 @@ Deno.serve(async (req) => {
 
     const weight = partial.estimatedWeight ?? 30;
     const minutes = partial.printTime ?? 180;
-    // Trust OpenAPI color count. Only run text-detection fallback when extraction did NOT come from openapi.
-    const isOpenApi = engineUsed.startsWith("openapi") || engineUsed.startsWith("mw-public");
-    const colorCount = isOpenApi
+    // Trust authoritative engines for color count. Printables `mmu` flag is authoritative even when numeric data is null.
+    const isAuthoritative = engineUsed.startsWith("openapi") || engineUsed.startsWith("mw-public") || engineUsed.includes("printables-public");
+    const colorCount = isAuthoritative
       ? clamp(Math.floor(Number(partial.colorCount ?? 1) || 1), 1, 8)
       : clamp(Math.max(
           Number(partial.colorCount ?? 1),
@@ -890,7 +1033,7 @@ Deno.serve(async (req) => {
       platform,
       extraction_engine: engineUsed,
       confidence_level: partial.confidenceLevel,
-      expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+      expires_at: new Date(Date.now() + (partial.confidenceLevel === "low" ? 1 : 7) * 24 * 3600 * 1000).toISOString(),
     }, { onConflict: "url" }).then(() => {}, () => {});
 
     // Analytics
