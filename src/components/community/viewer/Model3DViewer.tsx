@@ -116,9 +116,28 @@ export default function Model3DViewer({ file, url, className, language = "en" }:
   const [showPlate, setShowPlate] = useState(true);
   const [overhang, setOverhang] = useState(false);
   const [explode, setExplode] = useState(0);
+  const [layerCut, setLayerCut] = useState(0); // 0..100 (% from top to hide)
+  const [decimate, setDecimate] = useState(false);
+  const [decimating, setDecimating] = useState(false);
 
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
   const sourceName = file?.name || url?.split("/").pop() || "model";
+
+  // Single clipping plane that cuts horizontally at layerCut % of model height.
+  const clippingPlane = useMemo(() => {
+    if (!dims || layerCut <= 0) return null;
+    const topY = dims.y * (1 - layerCut / 100);
+    // Plane equation: normal · p + constant >= 0 keeps fragments. Normal (0,-1,0) keeps y <= topY.
+    return new THREE.Plane(new THREE.Vector3(0, -1, 0), topY);
+  }, [dims, layerCut]);
+
+  // Re-apply decimation toggle.
+  useEffect(() => {
+    if (!group) return;
+    setDecimating(true);
+    applyDecimation(group, decimate, 0.4)
+      .finally(() => setDecimating(false));
+  }, [group, decimate]);
 
   useEffect(() => {
     let cancelled = false;
