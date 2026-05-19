@@ -381,7 +381,6 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
       tags{name}
       image{filePath}
       images{filePath}
-      stls{filePath name fileSize}
     }
   }`;
 
@@ -432,10 +431,9 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
 
     const creatorName = p.user?.publicUsername ?? p.user?.handle ?? null;
 
-    // First downloadable STL (preferred over 3MF/OBJ for viewer compatibility)
-    const stlList: any[] = Array.isArray(p.stls) ? p.stls : [];
-    const firstStl = stlList.find((s) => s?.filePath && /\.stl(\?|$)/i.test(s.filePath)) ?? stlList[0];
-    const previewFileUrl = firstStl?.filePath ? toMediaUrl(firstStl.filePath) : null;
+    // Printables requires an authenticated signed URL to download STL files (privateFile field).
+    // Direct file URLs aren't surfacable via the public GraphQL — leave previewFileUrl null here.
+    const previewFileUrl: string | null = null;
 
     // If API has no weight/time/mmu data at all, signal to cascade that we only enriched metadata
     // (so HTML scrape/AI can still fill numbers), but lock colorCount=1 since mmu is authoritative.
