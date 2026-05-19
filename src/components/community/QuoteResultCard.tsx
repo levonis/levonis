@@ -241,17 +241,18 @@ export default function QuoteResultCard({
           <Stat label={t("الوزن", "Weight")} value={`${b.inputs.weight_g}g`} />
           <Stat label={t("الوقت", "Time")} value={`${hours}h ${mins}m`} />
           <Stat label={t("الألوان", "Colors")} value={`${colorCount}`} />
-          <div className="rounded-lg p-2 border border-border/40 bg-card/40">
+          <div className="rounded-lg p-2 glass-panel">
             <div className="text-[10px] text-muted-foreground mb-1">{t("الصعوبة", "Difficulty")}</div>
             <Badge className={`${difficultyColor} border-0`}>
               {score ? `${score}/10` : (m.difficulty === "easy" ? t("سهل", "Easy") : m.difficulty === "hard" ? t("صعب", "Hard") : t("متوسط", "Medium"))}
             </Badge>
           </div>
+
         </div>
 
         {/* Rush + Qty controls */}
         {onParamsChange && (
-          <div className="space-y-2 rounded-xl border border-border/40 p-3 bg-card/40">
+          <div className="space-y-2 rounded-xl p-3 glass-panel">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-medium">{t("سرعة التسليم", "Delivery speed")}</span>
               {paramsChanging && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -259,9 +260,9 @@ export default function QuoteResultCard({
             <div className="grid grid-cols-3 gap-1.5">
               {(b.rush_options ?? []).map((opt) => (
                 <button key={opt.tier} onClick={() => setRush(opt.tier)} disabled={paramsChanging}
-                  className={`rounded-lg px-2 py-1.5 text-[11px] border transition ${rushTier === opt.tier
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border/40 bg-card/30 hover:bg-card/60"}`}>
+                  className={`glass-trigger rounded-lg px-2 py-1.5 text-[11px] transition ${rushTier === opt.tier
+                    ? "ring-1 ring-primary/60 bg-primary/10 text-primary"
+                    : ""}`}>
                   <div className="font-semibold flex items-center justify-center gap-1">
                     {opt.tier === "rush" && <Zap className="h-3 w-3" />}
                     {opt.tier === "standard" ? t("قياسي", "Standard") : opt.tier === "fast" ? t("سريع", "Fast") : t("عاجل", "Rush")}
@@ -274,10 +275,10 @@ export default function QuoteResultCard({
               <span className="text-xs font-medium">{t("الكمية", "Quantity")}</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => setQty(qty - 1)} disabled={paramsChanging || qty <= 1}
-                  className="h-7 w-7 rounded-md border border-border/40 hover:bg-card/60">-</button>
+                  className="h-7 w-7 rounded-full glass-trigger">-</button>
                 <span className="w-10 text-center font-semibold text-sm">{qty}</span>
                 <button onClick={() => setQty(qty + 1)} disabled={paramsChanging}
-                  className="h-7 w-7 rounded-md border border-border/40 hover:bg-card/60">+</button>
+                  className="h-7 w-7 rounded-full glass-trigger">+</button>
               </div>
             </div>
             {(b.multipliers?.bulk_discount_pct ?? 0) > 0 && (
@@ -286,9 +287,11 @@ export default function QuoteResultCard({
               </div>
             )}
           </div>
+
         )}
 
-        <div className="rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 p-4">
+        <div className="rounded-xl glass-panel ring-1 ring-primary/25 p-4 relative overflow-hidden">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/15 to-primary/0" />
           <div className="text-xs text-muted-foreground mb-1">{t("نطاق السعر المقدّر", "Estimated price range")}</div>
           <div className="text-2xl font-bold text-primary">
             {fmt(b.price_min)} – {fmt(b.price_max)} <span className="text-sm font-normal">IQD</span>
@@ -298,10 +301,11 @@ export default function QuoteResultCard({
           </div>
         </div>
 
+
         {hasGeometry && (
           <>
             <button onClick={() => setShowQuality((s) => !s)}
-              className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition">
+              className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg glass-trigger">
               <span className="font-medium">{t("تقرير جودة النموذج", "Model quality report")}</span>
               {showQuality ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
@@ -310,13 +314,14 @@ export default function QuoteResultCard({
         )}
 
         <button onClick={() => setShowBreakdown((s) => !s)}
-          className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition">
+          className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg glass-trigger">
           <span className="font-medium">{t("شفافية السعر", "Price transparency")}</span>
           {showBreakdown ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
 
+
         {showBreakdown && (
-          <div className="space-y-1.5 text-sm bg-muted/20 rounded-lg p-3 border border-border/40">
+          <div className="space-y-1.5 text-sm glass-panel rounded-lg p-3">
             {components.map((c) => (
               <Row key={c.key} label={isAr ? c.label_ar : c.label_en} value={c.value} />
             ))}
@@ -336,18 +341,19 @@ export default function QuoteResultCard({
         )}
 
         <div className="flex gap-2 pt-1">
-          <Button className="flex-1" onClick={onCreate} disabled={creating}>
+          <Button className="flex-1 glass-trigger rounded-full" onClick={onCreate} disabled={creating}>
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : t("إنشاء طلب طباعة", "Create Print Request")}
           </Button>
-          <Button variant="outline" onClick={downloadPdf} disabled={downloading} title={t("تنزيل PDF", "Download PDF")}>
+          <Button variant="outline" onClick={downloadPdf} disabled={downloading} title={t("تنزيل PDF", "Download PDF")} className="glass-trigger rounded-full">
             {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
           </Button>
           {!result.sourceFileName && (
-            <Button variant="outline" onClick={onUseFile} title={t("استخدام ملف", "Use file")}>
+            <Button variant="outline" onClick={onUseFile} title={t("استخدام ملف", "Use file")} className="glass-trigger rounded-full">
               <Upload className="h-4 w-4" />
             </Button>
           )}
         </div>
+
 
         {/* Hidden printable for PDF */}
         <div ref={printableRef} style={{ display: "none", width: 794, padding: 32, background: "#fff", color: "#111", fontFamily: "system-ui, -apple-system, sans-serif" }}>
@@ -391,7 +397,7 @@ const cellR = { padding: "6px 8px", borderBottom: "1px solid #eee", textAlign: "
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg p-2 border border-border/40 bg-card/40">
+    <div className="rounded-lg p-2 glass-panel">
       <div className="text-[10px] text-muted-foreground mb-1">{label}</div>
       <div className="font-semibold text-sm">{value}</div>
     </div>

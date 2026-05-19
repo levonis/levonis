@@ -205,16 +205,26 @@ export default function CommunityQuoteFromLink() {
   };
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 relative overflow-hidden">
+      {/* Glass aurora background */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-32 -start-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl" />
+        <div className="absolute top-1/3 -end-24 h-96 w-96 rounded-full bg-accent/25 blur-3xl" />
+        <div className="absolute bottom-0 start-1/4 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+      </div>
+
       <div className="container mx-auto max-w-2xl px-4 py-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4 gap-2 glass-trigger">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4 gap-2 glass-trigger rounded-full">
           <ArrowLeft className="h-4 w-4" />{t("رجوع", "Back")}
         </Button>
 
         <Card className="glass-panel">
+
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="inline-flex items-center justify-center h-9 w-9 rounded-full glass-panel">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </span>
               {t("سعر طباعتك الفوري", "Instant 3D Print Quote")}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
@@ -222,6 +232,7 @@ export default function CommunityQuoteFromLink() {
                  "Paste a model link, or upload an STL/3MF/OBJ for precise analysis and instant pricing.")}
             </p>
           </CardHeader>
+
           <CardContent className="space-y-4">
             <Tabs value={tab} onValueChange={(v) => setTab(v as "link" | "file")}>
               <TabsList className="grid grid-cols-2 w-full glass-panel">
@@ -240,13 +251,14 @@ export default function CommunityQuoteFromLink() {
                       className="ps-10 glass-panel" dir="ltr"
                     />
                   </div>
-                  <Button onClick={submitUrl} disabled={loading || !url.trim()} className="glass-trigger">
+                  <Button onClick={submitUrl} disabled={loading || !url.trim()} className="glass-trigger rounded-full">
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("احسب", "Quote")}
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
                   {SUPPORTED_HOSTS.map((h) => (
-                    <span key={h} className="glass-panel px-2 py-0.5 rounded-full border border-border/40">{h}</span>
+                    <span key={h} className="glass-panel px-2 py-0.5 rounded-full">{h}</span>
+
                   ))}
                 </div>
               </TabsContent>
@@ -255,11 +267,14 @@ export default function CommunityQuoteFromLink() {
                 <label className="block">
                   <input type="file" accept=".stl,.3mf,.obj" className="hidden"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-                  <div className="glass-panel border-2 border-dashed border-border/60 rounded-xl p-6 text-center cursor-pointer hover:bg-muted/30 transition">
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <div className="glass-panel border-2 border-dashed border-foreground/15 rounded-xl p-6 text-center cursor-pointer hover:bg-foreground/[0.04] transition">
+                    <span className="inline-flex items-center justify-center h-12 w-12 rounded-full glass-panel mb-2">
+                      <Upload className="h-6 w-6 text-primary" />
+                    </span>
                     <p className="text-sm font-medium">{t("اضغط لرفع ملف STL / 3MF / OBJ", "Click to upload STL / 3MF / OBJ")}</p>
                     <p className="text-xs text-muted-foreground mt-1">{t("الحد الأقصى 100MB · تحليل محلي في المتصفح", "Up to 100MB · Analyzed locally in your browser")}</p>
                   </div>
+
                 </label>
                 {loading && progressPct > 0 && (
                   <div className="space-y-1">
