@@ -917,6 +917,7 @@ Deno.serve(async (req) => {
           dimensions_mm: null, recommended_printer: null,
           difficulty: breakdown.inputs.difficulty,
           color_count: colorCount,
+          preview_file_url: m.previewFileUrl ?? cachedPayload.model?.preview_file_url ?? null,
         },
         breakdown, material,
       };
