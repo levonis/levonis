@@ -213,8 +213,9 @@ Deno.test("difficultyTier boundaries", () => {
 });
 
 Deno.test("Support required adds a non-zero supports cost", () => {
-  const noSup = computeQuote({ metrics: simpleMetrics(), material: PLA, machine: fdmMachine, config: baseConfig });
-  const withSup = computeQuote({ metrics: simpleMetrics(), quality: { support_required: true }, material: PLA, machine: fdmMachine, config: baseConfig });
+  const big = simpleMetrics(150, 80);
+  const noSup = computeQuote({ metrics: big, material: PLA, machine: fdmMachine, config: baseConfig });
+  const withSup = computeQuote({ metrics: big, quality: { support_required: true }, material: PLA, machine: fdmMachine, config: baseConfig });
   assertEquals(noSup.components.supports, 0);
   assert(withSup.components.supports > 0);
   assert(withSup.final > noSup.final);
