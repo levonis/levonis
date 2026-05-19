@@ -336,6 +336,29 @@ export default function CommunityQuoteFromLink() {
                   </div>
                 </CardContent>
               </Card>
+            {!fileToUpload && !viewerUrl && result.sourceUrl && (
+              <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-xl rounded-3xl">
+                <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <span className="inline-flex items-center justify-center h-10 w-10 rounded-full glass-panel shrink-0">
+                    <Box className="h-5 w-5 text-primary" />
+                  </span>
+                  <div className="flex-1 text-sm">
+                    <p className="font-medium">
+                      {t("المعاينة ثلاثية الأبعاد تتطلب ملف النموذج", "3D preview needs the actual model file")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t(
+                        "صفحات Printables/Thingiverse لا تكشف الملف مباشرة. حمّل ملف STL/3MF/OBJ من الرابط ثم ارفعه هنا لتفعيل المعاينة.",
+                        "Printables/Thingiverse pages don't expose the file directly. Download the STL/3MF/OBJ from the link, then upload it here to enable the 3D preview.",
+                      )}
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={() => setTab("file")} className="glass-trigger rounded-full gap-1.5 shrink-0">
+                    <Upload className="h-4 w-4" />
+                    {t("ارفع الملف", "Upload file")}
+                  </Button>
+                </CardContent>
+              </Card>
             )}
 
             <QuoteResultCard
