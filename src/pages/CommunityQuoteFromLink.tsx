@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Link2, Sparkles, Upload, Loader2, FileBox } from "lucide-react";
+import { ArrowLeft, Link2, Sparkles, Upload, Loader2, FileBox, Box, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import QuoteResultCard, { QuoteResult } from "@/components/community/QuoteResult
 import { useLanguage } from "@/lib/i18n";
 import { analyzeModelFile, detectExt } from "@/lib/modelAnalysis/analyzeClient";
 import type { ModelMetrics, QualityReport } from "@/lib/modelAnalysis/types";
+import Model3DViewer from "@/components/community/viewer/Model3DViewer";
+import ViewerDialog from "@/components/community/viewer/ViewerDialog";
 
 const SUPPORTED_HOSTS = ["thingiverse.com", "printables.com", "makerworld.com", "cults3d.com"];
 
