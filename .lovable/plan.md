@@ -1,104 +1,94 @@
-# خطة تسريع LEVONIS — 4 مراحل
 
-الهدف: تقليل وقت الفتح الأول إلى < 2s على 4G، وحجم JS الأولي إلى < 250KB gzip، ونقل التنقل بين الصفحات إلى < 300ms.
+## Goal
 
-كل مرحلة مستقلة وقابلة للنشر والتحقق قبل المرحلة التالية. لن أبدأ المرحلة التالية إلا بعد تأكيدك أن الموقع يعمل.
+A new entry point on the community for customers to get an instant price quote by pasting a 3D model link, then publish it as a community print request that merchants can accept and message the customer to start preparing. The existing `/community` flow stays untouched.
 
----
+## Scope (non‑breaking)
 
-## المرحلة 1 — تقليل JS الأولي (آمنة، أكبر مكسب)
+- Reuses existing tables `community_print_requests`, `print_offers`, `community_settings`, `community_messages`.
+- Adds a new "quote_source" tag and a few estimation columns so quote-from-URL requests are distinguishable but flow through the same merchant pipeline.
+- Adds one new admin page section, one new customer page, one new edge function, and a small "Quote from Link" entry card on `CommunityHome`.
 
-**المشكلة:** كل `node_modules` مدمج في chunk واحد عملاق `vendor-react` (~800KB+ gzip) لأن أي تقسيم سابق سبب TDZ. الحل: تقسيم محسوب يحترم ترتيب React.
+## User Flow
 
-1. **تقسيم vendor بأمان** في `vite.config.ts`:
-   - `vendor-react-core` = react + react-dom + jsx-runtime + scheduler (يُحمَّل أولاً)
-   - `vendor-router` = react-router-dom
-   - `vendor-query` = @tanstack/* (موجود بالفعل في الصفحة الأولى)
-   - `vendor-radix` = @radix-ui/* (يُستخدم في كل مكان)
-   - `vendor-motion` = framer-motion (lazy فقط — لا يُستورد في Home)
-   - `vendor-icons` = lucide-react
-   - باقي ما تبقى → `vendor-misc`
-   - الحفاظ على chunks الثقيلة الحالية (three, jspdf, html2canvas, qr, charts) كما هي.
-   - **اختبار TDZ**: build + فتح `dist/index.html` في Chrome headless للتأكد من المنت.
+1. On `/community`, a new card "احسب سعر طباعتك من رابط" → opens `/community/quote-from-link`.
+2. Customer pastes URL (Thingiverse / Printables / MakerWorld / Cults).
+3. Submit → edge function `print-quote-from-link`:
+   - If cached for URL → return cached result.
+   - Otherwise try metadata scrape (oEmbed / OG tags / Firecrawl-style fetch) for: title, thumbnail, filament weight (g), print time, dimensions, recommended printer.
+   - If scrape misses any required field → Lovable AI Gateway estimates missing fields from title + scraped description + dimensions (category, complexity, weight, time).
+   - Compute price using admin settings.
+4. Result card shows: thumbnail, name, weight, time, difficulty, **price range (min–max ±15%)**, "Price transparency" expandable breakdown, source-link button, **Create Print Request** button.
+5. Fallback: if URL parsing fails, show "Upload STL/3MF instead" → reuses existing custom-request file upload flow with the same quote endpoint (file size → weight heuristic).
+6. Create Print Request → inserts row in `community_print_requests` with `quote_source='url_quote'`, prefilled title/notes/image, `estimated_price_min/max`, `reference_links=[url]`, `status='pending_review'`. Then redirects to existing tracking page.
+7. The request appears on `/community/requests` browse like other requests, with a "عرض سعر فوري" badge. Merchants accept via existing `print_offers` flow (one bid each), and on accept the existing accept-offer dialog already opens a chat — we just preselect the quoted price.
 
-2. **حذف imports غير ضرورية من المسار الحرج**:
-   - مراجعة `App.tsx` (500 سطر) — التأكد أن `Toaster`, `Sonner`, `TooltipProvider`, `HelmetProvider`, `PersistQueryClient` لا تسحب مكتبات ضخمة.
-   - تأجيل `installScrollPerformance` إلى `requestIdleCallback`.
-   - تأجيل Capacitor imports إلى بعد المنت (موجود لكن يحدث فوراً).
+## Pricing Formula
 
-3. **`drop console` فقط في prod** (موجود) + تفعيل `pure_funcs` لإزالة `console.warn`.
+```
+filament_cost   = weight_g / 1000 * filament_price_per_kg
+machine_cost    = print_time_hours * hourly_machine_cost
+complexity_fee  = base_complexity_fee * { easy:1, medium:1.5, hard:2.2 }
+subtotal        = filament_cost + machine_cost + complexity_fee
+platform_fee    = subtotal * platform_fee_pct
+profit_margin   = subtotal * profit_margin_pct
+final           = subtotal + platform_fee + profit_margin
+price_min/max   = final * 0.9  /  final * 1.15  (rounded to 250 IQD)
+```
 
-**التحقق:** `bun run build` ثم قراءة حجم `dist/assets/*.js` ومقارنة قبل/بعد. اختبار preview للتأكد من عدم تكرار TDZ.
+All values from `community_settings` (key = `quote_pricing`). Existing IQD/250 rounding rule applies.
 
----
+## Database (one migration)
 
-## المرحلة 2 — Service Worker آمن + caching قوي
+- New `community_settings` row `quote_pricing` (jsonb):
+  ```
+  { filament_price_per_kg, hourly_machine_cost, base_complexity_fee,
+    platform_fee_pct, profit_margin_pct, min_range_pct, max_range_pct }
+  ```
+- `community_print_requests` add columns (nullable, no breakage):
+  - `quote_source text` (`'url_quote' | 'file_quote' | null`)
+  - `quote_url text`
+  - `estimated_weight_g numeric`
+  - `estimated_print_minutes integer`
+  - `difficulty text` (`'easy'|'medium'|'hard'`)
+  - `estimated_price_min integer`
+  - `estimated_price_max integer`
+  - `quote_breakdown jsonb`
+- New table `print_quote_cache` (`url text unique`, `payload jsonb`, `expires_at`) for the dedupe/caching rule in step 10.
+- RLS: cache readable by authenticated, writable only by service role (edge function).
 
-SW حالياً معطل (kill switch). إعادة تفعيله بنمط آمن:
+## Edge Function: `print-quote-from-link`
 
-1. **SW جديد بـ Workbox-style بسيط** (لا workbox dep):
-   - `network-first` لـ HTML/`/` (مع fallback لكاش)
-   - `cache-first` لـ `/assets/*` (chunks محشّاة بهاش — آمن للأبد)
-   - `stale-while-revalidate` للصور Supabase render
-   - **بدون** `clients.claim()` أو `skipWaiting()` في activate — التحديث في الخلفية فقط، يُطبَّق عند next navigation.
-   - **بدون** force navigate (سبب التوقف السابق).
+- Input: `{ url?: string, file_meta?: { name, size_bytes, dims_mm? } }`.
+- Steps: validate URL host → lookup cache → fetch metadata (host-specific parsers; fallback to OG/JSON-LD) → run Lovable AI Gateway (`google/gemini-3-flash-preview`) for missing fields with a strict JSON schema → load `quote_pricing` settings → compute breakdown → write cache → return `{ source: 'scrape'|'ai'|'cached', model, breakdown, min, max }`.
+- Auth: `verify_jwt = true` (logged-in customers only), CORS enabled.
+- No secrets needed beyond `LOVABLE_API_KEY` (already provisioned).
 
-2. **kill-switch مدمج**: زيارة `/?_swkill=1` تلغي تسجيل SW وتمسح caches — إذا حصل أي بلاء.
+## Frontend
 
-3. **تسجيل SW بعد `load` + delay 3s** — لا يتنافس مع render الأولي.
+- `src/pages/CommunityQuoteFromLink.tsx` — input, result card with skeletons, glass-panel layout, mobile-first.
+- `src/components/community/QuoteResultCard.tsx` — preview, range, "Price transparency" collapsible, "Create Print Request" / "Upload file instead".
+- `src/components/community/QuoteFromLinkEntry.tsx` — entry tile added to `CommunityHome.tsx` (no removal of existing cards).
+- Route added in `src/App.tsx`: `/community/quote-from-link`.
+- `CommunityRequestsBrowse` / `CompactRequestCard`: render "عرض سعر فوري" badge when `quote_source = 'url_quote'` and show price range chip. Accept flow uses existing `AcceptOfferDialog` / `AddOfferDialog` — merchant can submit a bid at or near the quoted range; accepting opens the existing community chat where merchant requests payment.
+- All strings in `ar/en/ku` i18n files.
 
-**التحقق:** فتح موقع → عمل reload → التحقق من Network tab أن الـ chunks تُسلَّم من `(ServiceWorker)`. زيارة `_swkill=1` للتأكد من خروج آمن.
+## Admin
 
----
+- Extend existing `AdminCommunityComplaints`-style settings area (or `AdminDefaultSettings` "Community" tab) with a new "أسعار العرض الفوري" section editing the `quote_pricing` jsonb (filament/kg, hourly cost, complexity fee, platform fee %, margin %, min/max range %). Live preview of formula with sample inputs.
 
-## المرحلة 3 — صور WebP/AVIF تلقائياً
+## Caching (step 10)
 
-1. **`<OptimizedImage />` موحّد**:
-   - يكتشف URL الصور Supabase ويحوّلها تلقائياً عبر `/storage/v1/render/image/public/...?width=X&quality=72&format=webp` (أو `format=avif` إن دعم المتصفح).
-   - يضيف `loading="lazy"` و `decoding="async"` افتراضياً.
-   - يدعم `priority` للـ LCP فقط.
-   - `srcSet` بـ 400/800/1200 + `sizes`.
+`print_quote_cache.url` unique; TTL 30 days. Edge function checks cache first; on hit returns immediately with `source: 'cached'`.
 
-2. **استبدال `<img>` التلقائي** في:
-   - مكونات بطاقات المنتجات (`ProductCard*`)
-   - `BannerImage`
-   - `ReelCard` thumbnails
-   - صور البروفايل/الـ avatars
+## Out of scope / explicitly preserved
 
-3. **صور /public ثابتة** (frames, icons): ترك .svg كما هي، تحويل أي PNG/JPG كبير إلى WebP عبر سكربت بناء `scripts/convert-public-images.mjs` (يولّد .webp بجانب الأصلي).
+- No change to existing merchant accept/escrow logic, existing `print_offers` rules (1 bid/merchant), chat, or commerce flow.
+- No change to existing request creation form (`CommunityCustomerNewRequest`); the new flow is a parallel entry point that writes into the same table with extra metadata.
 
-**التحقق:** Lighthouse mobile قبل/بعد على `/` — متوقع تحسن LCP بـ 30-50%.
+## Open questions before I build
 
----
-
-## المرحلة 4 — تأجيل خطوط/أيقونات/scripts ثالثة
-
-1. **خطوط Cairo**:
-   - الإبقاء على preload لـ 400 فقط (موجود).
-   - تحويل ttf إلى **woff2** (سكربت بناء) — توفير ~60% حجم.
-   - إزالة 900 من المسار الحرج إن لم يُستخدم في FCP.
-
-2. **lucide-react**:
-   - فحص imports — إن وُجد `import * as Icons` يُستبدل بـ named imports فقط.
-   - إعداد plugin `babel-plugin-transform-imports` ليس ضرورياً مع Vite + tree-shaking إن كانت الـ imports نظيفة.
-
-3. **scripts ثالثة (Meta Pixel)** — موجود بـ delay 1.5s، الإبقاء عليه.
-
-4. **Route prefetch ذكي**:
-   - عند hover/focus على Link → prefetch chunk الصفحة (`<link rel="modulepreload">` ديناميكياً).
-   - يجعل التنقل فورياً.
-
-**التحقق:** Lighthouse + قياس `transferSize` لـ `/` على Network throttling = "Fast 3G".
-
----
-
-## التنفيذ
-
-سأبدأ المرحلة 1 الآن بعد موافقتك على هذه الخطة، ثم أتوقف لأعرض النتائج وأطلب الإذن قبل المرحلة 2.
-
-## تفاصيل تقنية
-
-- **TDZ guard**: قبل ai chunk split، قراءة كل libs كبيرة في `node_modules` للتحقق من `import React from 'react'` على المستوى الأعلى. أي lib تستورد React تبقى مع `vendor-react-core` أو في chunk يُحمَّل بعدها بترتيب صريح.
-- **ترتيب الـ chunks**: Vite يضمن ترتيب التحميل عبر `<link rel="modulepreload">` المولّدة في `index.html` بشرط عدم تجاوزها يدوياً.
-- **SW versioning**: `CACHE_NAME = 'levonis-v17'` بعد إعادة التفعيل، مع تنظيف v16 وما قبل.
-- **Rollback**: كل مرحلة في commit منفصل قابل للرجوع عبر "Restore" في Lovable.
+1. Default values for `quote_pricing` (filament IQD/kg, hourly machine cost, complexity fee, platform %, margin %)?
+2. Should the merchant bid be **locked** to the quoted range, or only **prefilled** and editable?
+3. For the file fallback, do you want real slicing (heavy, needs a slicer service) or a size‑based heuristic + AI estimation only (recommended, fast)?
+4. Confirm caching TTL = 30 days, and that re-quoting the same URL by a different user reuses the cached estimate.
