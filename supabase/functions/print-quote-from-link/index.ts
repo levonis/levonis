@@ -649,6 +649,7 @@ async function tryFetchScrape(url: string): Promise<Partial<UnifiedModel> | null
     printTime: sourceMetrics.print_minutes,
     colorCount: sourceMetrics.color_count,
     source: { engine: "fetch", scrapedAt: new Date().toISOString() },
+    previewFileUrl: findDirectModelUrl(html),
   };
 }
 
