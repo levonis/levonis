@@ -381,6 +381,7 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
       tags{name}
       image{filePath}
       images{filePath}
+      stls{filePath name fileSize}
     }
   }`;
 
