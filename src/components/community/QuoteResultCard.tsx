@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
+import QualityReportPanel from "./QualityReportPanel";
+import MaterialPicker from "./MaterialPicker";
+import type { ModelMetrics, QualityReport } from "@/lib/modelAnalysis/types";
 
 export interface QuoteResult {
-  source: "scrape" | "ai" | "cached" | "file";
+  source: "scrape" | "ai" | "cached" | "file" | "geometry";
   sourceUrl?: string;
   sourceFileName?: string;
   model: {
@@ -31,6 +34,10 @@ export interface QuoteResult {
     price_max: number;
     inputs: { weight_g: number; print_minutes: number; difficulty: string };
   };
+  // Only present for geometry-based quotes:
+  metrics?: ModelMetrics;
+  quality?: QualityReport;
+  material?: { code: string; name_en: string; name_ar: string };
 }
 
 interface Props {
@@ -38,21 +45,25 @@ interface Props {
   onCreate: () => void;
   creating: boolean;
   onUseFile: () => void;
+  onMaterialChange?: (code: string) => void;
+  materialChanging?: boolean;
 }
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
-export default function QuoteResultCard({ result, onCreate, creating, onUseFile }: Props) {
+export default function QuoteResultCard({ result, onCreate, creating, onUseFile, onMaterialChange, materialChanging }: Props) {
   const { language } = useLanguage();
   const isAr = language === "ar";
   const t = (ar: string, en: string) => (isAr ? ar : en);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showQuality, setShowQuality] = useState(true);
 
   const m = result.model;
   const b = result.breakdown;
   const minutes = m.print_minutes ?? b.inputs.print_minutes;
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
+  const hasGeometry = !!result.metrics && !!result.quality;
 
   const difficultyColor =
     m.difficulty === "hard"
@@ -60,6 +71,13 @@ export default function QuoteResultCard({ result, onCreate, creating, onUseFile 
       : m.difficulty === "easy"
         ? "bg-green-500/15 text-green-600 dark:text-green-400"
         : "bg-amber-500/15 text-amber-600 dark:text-amber-400";
+
+  const sourceLabel =
+    result.source === "cached" ? t("نتيجة محفوظة", "Cached")
+    : result.source === "ai" ? t("تقدير ذكي", "AI estimate")
+    : result.source === "geometry" ? t("تحليل دقيق", "Geometry analysis")
+    : result.source === "file" ? t("من الملف", "From file")
+    : t("من الرابط", "From link");
 
   return (
     <Card className="glass-panel overflow-hidden">
@@ -71,31 +89,28 @@ export default function QuoteResultCard({ result, onCreate, creating, onUseFile 
             <Sparkles className="h-10 w-10" />
           </div>
         )}
-        <Badge className="absolute top-2 end-2" variant="secondary">
-          {result.source === "cached"
-            ? t("نتيجة محفوظة", "Cached")
-            : result.source === "ai"
-              ? t("تقدير ذكي", "AI estimate")
-              : result.source === "file"
-                ? t("من الملف", "From file")
-                : t("من الرابط", "From link")}
-        </Badge>
+        <Badge className="absolute top-2 end-2" variant="secondary">{sourceLabel}</Badge>
       </div>
 
       <CardContent className="p-4 space-y-3">
         <div>
           <h3 className="font-semibold text-lg leading-tight">{m.name}</h3>
           {result.sourceUrl && (
-            <a
-              href={result.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-primary inline-flex items-center gap-1 mt-0.5"
-            >
+            <a href={result.sourceUrl} target="_blank" rel="noreferrer"
+              className="text-xs text-primary inline-flex items-center gap-1 mt-0.5">
               {t("الرابط الأصلي", "Original link")} <ExternalLink className="h-3 w-3" />
             </a>
           )}
         </div>
+
+        {hasGeometry && onMaterialChange && (
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <MaterialPicker value={result.material?.code ?? "pla"} onChange={onMaterialChange} />
+            </div>
+            {materialChanging && <Loader2 className="h-4 w-4 animate-spin mb-2" />}
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-2 text-center">
           <Stat label={t("الوزن", "Weight")} value={`${b.inputs.weight_g}g`} />
@@ -115,10 +130,19 @@ export default function QuoteResultCard({ result, onCreate, creating, onUseFile 
           </div>
         </div>
 
-        <button
-          onClick={() => setShowBreakdown((s) => !s)}
-          className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition"
-        >
+        {hasGeometry && (
+          <>
+            <button onClick={() => setShowQuality((s) => !s)}
+              className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition">
+              <span className="font-medium">{t("تقرير جودة النموذج", "Model quality report")}</span>
+              {showQuality ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {showQuality && <QualityReportPanel metrics={result.metrics!} quality={result.quality!} />}
+          </>
+        )}
+
+        <button onClick={() => setShowBreakdown((s) => !s)}
+          className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition">
           <span className="font-medium">{t("شفافية السعر", "Price transparency")}</span>
           {showBreakdown ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
