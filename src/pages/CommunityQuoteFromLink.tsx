@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import QuoteResultCard, { QuoteResult } from "@/components/community/QuoteResultCard";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/lib/i18n";
 
 const SUPPORTED_HOSTS = ["thingiverse.com", "printables.com", "makerworld.com", "cults3d.com"];
 
