@@ -8428,34 +8428,43 @@ export type Database = {
       print_quote_cache: {
         Row: {
           analysis_payload: Json | null
+          confidence_level: string | null
           created_at: string
           expires_at: string
+          extraction_engine: string | null
           file_hash: string | null
           id: string
           material_code: string | null
           payload: Json
+          platform: string | null
           source: string
           url: string
         }
         Insert: {
           analysis_payload?: Json | null
+          confidence_level?: string | null
           created_at?: string
           expires_at?: string
+          extraction_engine?: string | null
           file_hash?: string | null
           id?: string
           material_code?: string | null
           payload: Json
+          platform?: string | null
           source?: string
           url: string
         }
         Update: {
           analysis_payload?: Json | null
+          confidence_level?: string | null
           created_at?: string
           expires_at?: string
+          extraction_engine?: string | null
           file_hash?: string | null
           id?: string
           material_code?: string | null
           payload?: Json
+          platform?: string | null
           source?: string
           url?: string
         }
@@ -8673,6 +8682,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      print_url_analytics: {
+        Row: {
+          cache_hit: boolean
+          confidence_level: string | null
+          converted_to_request: boolean
+          created_at: string
+          duration_ms: number | null
+          engine_used: string | null
+          id: string
+          platform: string | null
+          source_url: string
+          url_hash: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cache_hit?: boolean
+          confidence_level?: string | null
+          converted_to_request?: boolean
+          created_at?: string
+          duration_ms?: number | null
+          engine_used?: string | null
+          id?: string
+          platform?: string | null
+          source_url: string
+          url_hash?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cache_hit?: boolean
+          confidence_level?: string | null
+          converted_to_request?: boolean
+          created_at?: string
+          duration_ms?: number | null
+          engine_used?: string | null
+          id?: string
+          platform?: string | null
+          source_url?: string
+          url_hash?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       printer_protection_logs: {
         Row: {
@@ -14361,6 +14412,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_url_analytics_summary: {
+        Args: { _days?: number; _platform?: string }
+        Returns: Json
+      }
       get_user_card_cycle: {
         Args: { p_card_id: string }
         Returns: {
@@ -14485,6 +14540,10 @@ export type Database = {
           p_error_message?: string
         }
         Returns: string
+      }
+      mark_url_analytics_converted: {
+        Args: { _url_hash: string }
+        Returns: undefined
       }
       move_to_dlq: {
         Args: {
