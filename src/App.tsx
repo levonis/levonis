@@ -373,6 +373,8 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/games-settings`} element={<AdminRoute><AdminGamesSettings /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/wishes`} element={<AdminRoute><AdminWishes /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/price-match`} element={<AdminRoute><AdminPriceMatch /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/print-materials`} element={<AdminRoute><AdminPrintMaterials /></AdminRoute>} />
+
             <Route path={`${ADMIN_BASE_PATH}/product-bundles`} element={<AdminRoute><AdminProductBundles /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/financial-drafts`} element={<AdminRoute><AdminFinancialDrafts /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/inventory`} element={<AdminRoute><AdminInventory /></AdminRoute>} />
