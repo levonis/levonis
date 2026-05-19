@@ -397,7 +397,7 @@ const cellR = { padding: "6px 8px", borderBottom: "1px solid #eee", textAlign: "
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg p-2 border border-border/40 bg-card/40">
+    <div className="rounded-lg p-2 glass-panel">
       <div className="text-[10px] text-muted-foreground mb-1">{label}</div>
       <div className="font-semibold text-sm">{value}</div>
     </div>
