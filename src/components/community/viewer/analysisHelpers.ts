@@ -132,3 +132,32 @@ export function autoOrient(group: THREE.Object3D): THREE.Euler {
   group.rotation.copy(origRot);
   return best;
 }
+
+/** Decimate every mesh geometry in-place to ~ratio (0..1) of original triangle count.
+ *  Uses three-stdlib SimplifyModifier. Stores original geometry on userData for restore. */
+export async function applyDecimation(group: THREE.Object3D, enabled: boolean, ratio = 0.5) {
+  const { SimplifyModifier } = await import("three-stdlib");
+  const mod = new SimplifyModifier();
+  group.traverse((c: any) => {
+    if (!c.isMesh) return;
+    if (!c.userData._origGeom) c.userData._origGeom = c.geometry;
+    const orig: THREE.BufferGeometry = c.userData._origGeom;
+    if (!enabled) {
+      if (c.geometry !== orig) c.geometry.dispose?.();
+      c.geometry = orig;
+      return;
+    }
+    try {
+      const triCount = (orig.index ? orig.index.count : orig.attributes.position.count) / 3;
+      const targetRemove = Math.max(0, Math.floor(triCount * (1 - ratio) * 3));
+      if (targetRemove <= 0) return;
+      const simplified = mod.modify(orig, targetRemove);
+      simplified.computeVertexNormals();
+      if (c.geometry !== orig) c.geometry.dispose?.();
+      c.geometry = simplified;
+    } catch (e) {
+      // Skip meshes that can't be simplified.
+      console.warn("[viewer] decimation failed for mesh", e);
+    }
+  });
+}
