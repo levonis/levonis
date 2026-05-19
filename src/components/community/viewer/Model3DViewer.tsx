@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react";
 import { loadModelFromFile, computeBoundsMM, fetchModelAsFile } from "./loaders";
 import ViewerToolbar from "./ViewerToolbar";
 import BuildPlate from "./BuildPlate";
-import { applyOverhangColors, applyExploded, autoOrient } from "./analysisHelpers";
+import { applyOverhangColors, applyExploded, autoOrient, applyDecimation } from "./analysisHelpers";
 
 interface Props {
   file?: File | null;
@@ -45,16 +45,17 @@ function ModelMesh({
   showBBox,
   overhang,
   explode,
+  clippingPlane,
 }: {
   group: THREE.Group;
   wireframe: boolean;
   showBBox: boolean;
   overhang: boolean;
   explode: number;
+  clippingPlane: THREE.Plane | null;
 }) {
   const ref = useRef<THREE.Group>(null);
 
-  // Material + wireframe; preserves vertexColors flag from overhang pass.
   useEffect(() => {
     group.traverse((c: any) => {
       if (c.isMesh) {
@@ -64,22 +65,21 @@ function ModelMesh({
             metalness: 0.1,
             roughness: 0.55,
             flatShading: false,
+            side: THREE.DoubleSide,
           });
         }
         const m: THREE.MeshStandardMaterial = c.userData._mat;
         m.wireframe = wireframe;
+        m.clippingPlanes = clippingPlane ? [clippingPlane] : [];
+        m.clipShadows = true;
+        m.needsUpdate = true;
         c.material = m;
       }
     });
-  }, [group, wireframe]);
+  }, [group, wireframe, clippingPlane]);
 
-  useEffect(() => {
-    applyOverhangColors(group, overhang);
-  }, [group, overhang]);
-
-  useEffect(() => {
-    applyExploded(group, explode);
-  }, [group, explode]);
+  useEffect(() => { applyOverhangColors(group, overhang); }, [group, overhang]);
+  useEffect(() => { applyExploded(group, explode); }, [group, explode]);
 
   return (
     <group ref={ref}>
@@ -116,9 +116,28 @@ export default function Model3DViewer({ file, url, className, language = "en" }:
   const [showPlate, setShowPlate] = useState(true);
   const [overhang, setOverhang] = useState(false);
   const [explode, setExplode] = useState(0);
+  const [layerCut, setLayerCut] = useState(0); // 0..100 (% from top to hide)
+  const [decimate, setDecimate] = useState(false);
+  const [decimating, setDecimating] = useState(false);
 
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
   const sourceName = file?.name || url?.split("/").pop() || "model";
+
+  // Single clipping plane that cuts horizontally at layerCut % of model height.
+  const clippingPlane = useMemo(() => {
+    if (!dims || layerCut <= 0) return null;
+    const topY = dims.y * (1 - layerCut / 100);
+    // Plane equation: normal · p + constant >= 0 keeps fragments. Normal (0,-1,0) keeps y <= topY.
+    return new THREE.Plane(new THREE.Vector3(0, -1, 0), topY);
+  }, [dims, layerCut]);
+
+  // Re-apply decimation toggle.
+  useEffect(() => {
+    if (!group) return;
+    setDecimating(true);
+    applyDecimation(group, decimate, 0.4)
+      .finally(() => setDecimating(false));
+  }, [group, decimate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,7 +211,8 @@ export default function Model3DViewer({ file, url, className, language = "en" }:
       <Canvas
         shadows
         dpr={[1, 2]}
-        gl={{ preserveDrawingBuffer: true, antialias: true }}
+        gl={{ preserveDrawingBuffer: true, antialias: true, localClippingEnabled: true }}
+        onCreated={({ gl }) => { gl.localClippingEnabled = true; }}
         style={{ background: "linear-gradient(180deg, #0b1220 0%, #05070d 100%)" }}
       >
         <PerspectiveCamera makeDefault position={[300, 250, 350]} fov={40} near={0.1} far={5000} />
@@ -234,6 +254,7 @@ export default function Model3DViewer({ file, url, className, language = "en" }:
               showBBox={showBBox}
               overhang={overhang}
               explode={explode}
+              clippingPlane={clippingPlane}
             />
           )}
         </Bounds>
@@ -276,12 +297,17 @@ export default function Model3DViewer({ file, url, className, language = "en" }:
           showPlate={showPlate}
           overhang={overhang}
           explode={explode}
+          layerCut={layerCut}
+          decimate={decimate}
+          decimating={decimating}
           onWireframe={setWireframe}
           onAutoRotate={setAutoRotate}
           onBBox={setShowBBox}
           onPlate={setShowPlate}
           onOverhang={setOverhang}
           onExplode={setExplode}
+          onLayerCut={setLayerCut}
+          onDecimate={setDecimate}
           onAutoOrient={onAutoOrient}
           onScreenshot={onScreenshot}
           onReset={onResetView}
