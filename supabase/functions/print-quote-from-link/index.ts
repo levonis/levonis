@@ -367,9 +367,9 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
       userGcodeMaterials userGcodePrinters
       downloadCount likesCount makesCount
       user{publicUsername handle}
-      tags
+      tags{name}
+      image{filePath}
       images{filePath}
-      previewFile{__typename ... on PrintImageType{filePath}}
     }
   }`;
 
@@ -381,6 +381,9 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
     });
     if (!res.ok) return null;
     const json: any = await res.json();
+    if (json?.errors) {
+      console.warn("[printables-public] gql errors:", JSON.stringify(json.errors).slice(0, 300));
+    }
     const p = json?.data?.print;
     if (!p) return null;
 
@@ -408,14 +411,18 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
       1, 8,
     );
 
-    const thumb: string | null = (p.previewFile?.filePath
-      ? `https://media.printables.com/media/prints/${printId}/images/${p.previewFile.filePath}`
-      : null);
+    const toMediaUrl = (fp: string | null | undefined): string | null =>
+      fp ? `https://media.printables.com/${fp.replace(/^\/+/, "")}` : null;
+    const thumb = toMediaUrl(p.image?.filePath) ?? toMediaUrl(p.images?.[0]?.filePath);
     const images: string[] = Array.isArray(p.images)
-      ? p.images.slice(0, 8).map((im: any) => `https://media.printables.com/media/prints/${printId}/images/${im.filePath}`)
+      ? p.images.slice(0, 8).map((im: any) => toMediaUrl(im?.filePath)).filter(Boolean) as string[]
       : (thumb ? [thumb] : []);
 
     const creatorName = p.user?.publicUsername ?? p.user?.handle ?? null;
+
+    // If API has no weight/time/mmu data at all, signal to cascade that we only enriched metadata
+    // (so HTML scrape/AI can still fill numbers), but lock colorCount=1 since mmu is authoritative.
+    const hasNumericData = totalWeight !== null || printMinutes !== null;
 
     return {
       title: p.name || "",
@@ -440,13 +447,16 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
       estimatedWeight: totalWeight,
       printTime: printMinutes,
       colorCount,
-      source: { engine: "printables-public", scrapedAt: new Date().toISOString() },
+      // Mark engine — when no numeric data, downstream cascade can still try other engines
+      // but colorCount (from mmu) and metadata are trusted.
+      source: { engine: hasNumericData ? "printables-public" : "printables-public-meta", scrapedAt: new Date().toISOString() },
     };
   } catch (e) {
     console.warn("[printables-public] err:", (e as Error)?.message);
     return null;
   }
 }
+
 
 
 async function tryMakerWorld(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
