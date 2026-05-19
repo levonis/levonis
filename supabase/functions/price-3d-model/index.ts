@@ -1,6 +1,6 @@
-// price-3d-model: computes the IQD price for a 3D print given client-side
-// computed geometry metrics. Reads materials + machine profile + global
-// quote_pricing settings from the DB. Uses file_hash for caching.
+// price-3d-model v2: Industrial Craftcloud-style pricing engine.
+// Supports FDM / Resin / SLS, with full breakdown, rush tiers, bulk discounts,
+// load balancing, difficulty 1-10, and cache.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -16,8 +16,8 @@ interface Metrics {
   bbox_mm: { x: number; y: number; z: number };
   triangle_count: number;
   complexity: number;
+  parts_count?: number;
 }
-
 interface Quality {
   non_manifold_edges: number;
   non_manifold_pct: number;
@@ -29,23 +29,23 @@ interface Quality {
   watertight: boolean;
 }
 
-interface Pricing {
-  filament_price_per_kg: number;
-  hourly_machine_cost: number;
-  base_complexity_fee: number;
-  platform_fee_pct: number;
-  profit_margin_pct: number;
-  min_range_pct: number;
-  max_range_pct: number;
-}
-
-const round250 = (n: number) => Math.round(n / 250) * 250;
+const round = (n: number, step = 250) => Math.round(n / step) * step;
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
-function difficultyFromQuality(q: Quality, complexity: number): "easy" | "medium" | "hard" {
+function difficultyTier(q: Quality, complexity: number): "easy" | "medium" | "hard" {
   if (complexity > 60 || q.overhang_pct > 0.15 || q.non_manifold_edges > 100) return "hard";
   if (complexity > 30 || q.overhang_pct > 0.05) return "medium";
   return "easy";
+}
+
+function difficultyScore(q: Quality, complexity: number): number {
+  const raw =
+    complexity / 10 +
+    q.overhang_pct * 30 +
+    q.non_manifold_pct * 10 +
+    (q.thin_wall_warning ? 1 : 0) +
+    (q.flipped_normals_pct > 0.05 ? 1 : 0);
+  return clamp(Math.round(raw), 1, 10);
 }
 
 Deno.serve(async (req) => {
@@ -68,8 +68,8 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey);
-
     const body = await req.json().catch(() => ({}));
+
     const metrics = body.metrics as Metrics | undefined;
     const quality = (body.quality as Quality | undefined) ?? {
       non_manifold_edges: 0, non_manifold_pct: 0, flipped_normals_pct: 0,
@@ -80,6 +80,12 @@ Deno.serve(async (req) => {
     const infillPctOverride = body.infill_pct as number | undefined;
     const fileHash = body.file_hash as string | undefined;
     const fileName = (body.file_name as string | undefined) ?? "model";
+    const qtyRaw = Number(body.qty ?? 1);
+    const qty = clamp(Math.floor(qtyRaw), 1, 1000);
+    const rushTier = (["standard", "fast", "rush"].includes(body.rush_tier)
+      ? body.rush_tier
+      : "standard") as "standard" | "fast" | "rush";
+    const partsCount = clamp(Math.floor(Number(body.parts_count ?? metrics?.parts_count ?? 1)), 1, 50);
 
     if (!metrics || typeof metrics.volume_cm3 !== "number" || metrics.volume_cm3 <= 0) {
       return new Response(JSON.stringify({ error: "Invalid metrics" }), {
@@ -87,17 +93,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cache lookup by file_hash + material_code.
+    // Cache lookup
     if (fileHash) {
       const { data: cached } = await admin
         .from("print_quote_cache")
-        .select("payload, analysis_payload, material_code, expires_at")
+        .select("payload, material_code, expires_at")
         .eq("file_hash", fileHash)
         .maybeSingle();
       if (
         cached &&
         cached.material_code === materialCode &&
-        new Date(cached.expires_at as string).getTime() > Date.now()
+        new Date(cached.expires_at as string).getTime() > Date.now() &&
+        (cached.payload as any)?.breakdown?.rush_tier === rushTier &&
+        (cached.payload as any)?.breakdown?.qty === qty
       ) {
         return new Response(JSON.stringify({ source: "cached", ...(cached.payload as object) }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -105,7 +113,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Load material.
     const { data: material } = await admin
       .from("print_materials")
       .select("*")
@@ -117,62 +124,180 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const processType = (material.process_type as string) ?? "fdm";
 
-    // Load default machine profile.
-    const { data: machine } = await admin
+    // Best machine for this process; fallback to any default machine
+    const { data: machineRows } = await admin
       .from("print_machine_profiles")
       .select("*")
       .eq("is_active", true)
-      .order("is_default", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order("is_default", { ascending: false });
+    const machine =
+      (machineRows ?? []).find((m: any) => m.process_type === processType) ??
+      (machineRows ?? [])[0];
 
-    // Global pricing config.
+    // Global config
     const { data: settingsRow } = await admin
       .from("community_settings")
       .select("value")
       .eq("key", "quote_pricing")
       .maybeSingle();
-
-    const pricing: Pricing = (settingsRow?.value as Pricing) ?? {
-      filament_price_per_kg: Number(material.cost_per_kg_iqd),
-      hourly_machine_cost: 2000,
-      base_complexity_fee: 1500,
-      platform_fee_pct: 0.017,
-      profit_margin_pct: 0.15,
-      min_range_pct: 0.9,
-      max_range_pct: 1.15,
-    };
+    const cfg: any = settingsRow?.value ?? {};
+    const base = cfg.base ?? {};
+    const risk = cfg.risk ?? {};
+    const rush = cfg.rush ?? { standard: { mult: 1 }, fast: { mult: 1.25 }, rush: { mult: 1.6 } };
+    const bulkTiers: Array<{ min_qty: number; discount_pct: number }> = cfg.bulk_tiers ?? [];
+    const lb = cfg.load_balancing ?? { enabled: false };
+    const proc = (cfg.processes ?? {})[processType] ?? {};
 
     const density = Number(material.density_g_cm3);
-    const filamentPrice = Number(material.cost_per_kg_iqd);
-    const infillPct = clamp(infillPctOverride ?? Number(material.default_infill_pct), 5, 100);
-    const hourlyCost = Number(machine?.hourly_cost_iqd ?? pricing.hourly_machine_cost);
-    const flowRate = Number(machine?.nozzle_flow_rate_cm3_min ?? 8); // cm³/min
+    const materialPricePerKg = Number(material.cost_per_kg_iqd);
+    const infillPct = clamp(
+      infillPctOverride ?? Number(material.default_infill_pct),
+      processType === "fdm" ? 5 : 100,
+      100,
+    );
+    const hourlyCost = Number(machine?.hourly_cost_iqd ?? 2000);
+    const flowRate = Number(machine?.nozzle_flow_rate_cm3_min ?? 8);
     const layerHeight = Number(material.default_layer_height_mm);
     const travelOverheadSec = Number(machine?.travel_overhead_per_layer_sec ?? 1.5);
+    const electricityKwh = Number(base.electricity_kwh_iqd ?? 250);
+    const machineKw = Number(proc.machine_kw ?? 0.15);
+    const failureRate = Number(proc.failure_rate_pct ?? 0.05);
+    const supportMult = Number(proc.support_mult ?? 1.0);
+    const postProcessingMin = Number(proc.post_processing_min ?? 5);
+    const laborPerHour = Number(base.labor_per_hour_iqd ?? 3000);
+    const packaging = Number(base.packaging_iqd ?? 1500);
+    const depreciationPct = Number(base.depreciation_pct ?? 0.05);
+    const platformFeePct = Number(base.platform_fee_pct ?? 0.017);
+    const profitPct = Number(base.profit_margin_pct ?? 0.15);
+    const minRange = Number(base.min_range_pct ?? 0.9);
+    const maxRange = Number(base.max_range_pct ?? 1.15);
+    const minOrder = Number(base.min_order_iqd ?? 5000);
+    const roundStep = Number(base.round_to_iqd ?? 250);
+    const baseComplexityFee = Number(base.base_complexity_fee ?? 1500);
 
-    // Effective volume: shell at ~100% + infill density.
-    const infillFactor = 0.2 + 0.8 * (infillPct / 100);
-    const effectiveVolume = metrics.volume_cm3 * infillFactor;
-    const weight_g = effectiveVolume * density;
+    // === Weight & print time per process ===
+    let weight_g = 0;
+    let print_minutes = 0;
+    let unusedVolume = 0;
 
-    // Print time: extrusion + travel overhead per layer.
-    const extrusionMin = effectiveVolume / Math.max(1, flowRate);
-    const layers = Math.max(1, Math.ceil(metrics.bbox_mm.z / Math.max(0.05, layerHeight)));
-    const travelMin = (layers * travelOverheadSec) / 60;
-    const print_minutes = Math.max(5, Math.round(extrusionMin + travelMin));
+    if (processType === "fdm") {
+      const infillFactor = 0.2 + 0.8 * (infillPct / 100);
+      const effectiveVolume = metrics.volume_cm3 * infillFactor;
+      weight_g = effectiveVolume * density;
+      const extrusionMin = effectiveVolume / Math.max(1, flowRate);
+      const layers = Math.max(1, Math.ceil(metrics.bbox_mm.z / Math.max(0.05, layerHeight)));
+      const travelMin = (layers * travelOverheadSec) / 60;
+      print_minutes = Math.max(5, Math.round(extrusionMin + travelMin));
+    } else if (processType === "resin") {
+      const waste = Number(proc.resin_waste_pct ?? 0.15);
+      weight_g = metrics.volume_cm3 * density * (1 + waste);
+      const layers = Math.max(1, Math.ceil(metrics.bbox_mm.z / Math.max(0.02, layerHeight)));
+      const curePerLayerSec = Number(machine?.travel_overhead_per_layer_sec ?? 6);
+      print_minutes = Math.max(10, Math.round((layers * curePerLayerSec) / 60 + postProcessingMin));
+    } else {
+      // SLS: weight uses powder packing density to account for refresh
+      const packingDensity = Number(proc.packing_density ?? 0.08);
+      const refresh = Number(proc.powder_refresh_pct ?? 0.30);
+      weight_g = metrics.volume_cm3 * density;
+      const buildVolumeUsed = metrics.volume_cm3 / Math.max(0.02, packingDensity);
+      unusedVolume = Math.max(0, buildVolumeUsed - metrics.volume_cm3) * refresh;
+      // Build time ~ 20mm height per hour typical
+      const buildHours = Math.max(0.5, metrics.bbox_mm.z / 20);
+      print_minutes = Math.round(buildHours * 60 + postProcessingMin);
+    }
 
-    const difficulty = difficultyFromQuality(quality, metrics.complexity);
-    const complexityMult = difficulty === "easy" ? 1 : difficulty === "hard" ? 2.2 : 1.5;
+    weight_g = weight_g * qty;
+    const print_hours = print_minutes / 60;
 
-    const filament_cost = (weight_g / 1000) * filamentPrice;
-    const machine_cost = (print_minutes / 60) * hourlyCost;
-    const complexity_fee = pricing.base_complexity_fee * complexityMult;
-    const subtotal = filament_cost + machine_cost + complexity_fee;
-    const platform_fee = subtotal * pricing.platform_fee_pct;
-    const profit_margin = subtotal * pricing.profit_margin_pct;
-    const final = subtotal + platform_fee + profit_margin;
+    // === Base costs (per total order) ===
+    const materialCost =
+      processType === "sls"
+        ? ((weight_g + unusedVolume * density) / 1000) * materialPricePerKg
+        : (weight_g / 1000) * materialPricePerKg;
+    const machineCost = print_hours * hourlyCost * qty;
+    const electricityCost = print_hours * machineKw * electricityKwh * qty;
+    const supportsCost = quality.support_required
+      ? materialCost * 0.1 * supportMult
+      : 0;
+    const depreciationCost = machineCost * depreciationPct;
+    const laborMinutes = (postProcessingMin + (partsCount - 1) * 2) * qty;
+    const laborCost = (laborMinutes / 60) * laborPerHour;
+    const multipartLabor = (partsCount - 1) * Number(risk.multipart_labor_per_part_iqd ?? 0) * qty;
+    const packagingCost = packaging * qty;
+    const washCureCost = processType === "resin" ? Number(proc.wash_cure_iqd ?? 0) * qty : 0;
+
+    const rawSubtotal =
+      materialCost +
+      machineCost +
+      electricityCost +
+      supportsCost +
+      depreciationCost +
+      laborCost +
+      multipartLabor +
+      packagingCost +
+      washCureCost +
+      baseComplexityFee;
+
+    const failureRiskCost = rawSubtotal * failureRate;
+    let subtotal = rawSubtotal + failureRiskCost;
+
+    // === Dynamic multipliers ===
+    const tier = difficultyTier(quality, metrics.complexity);
+    const complexityMult = Number((risk.complexity_mult ?? {})[tier] ?? (tier === "hard" ? 2.2 : tier === "medium" ? 1.5 : 1));
+    const overhangMult = 1 + (quality.overhang_pct * 10) * Number(risk.overhang_mult_per_10pct ?? 0.08);
+    const largeThreshold = Number(risk.large_model_threshold_cm3 ?? 200);
+    const largeMult = metrics.volume_cm3 > largeThreshold ? Number(risk.large_model_mult ?? 1.15) : 1;
+    subtotal = subtotal * complexityMult * overhangMult * largeMult;
+
+    // === Rush ===
+    const rushMult = Number((rush[rushTier] ?? {}).mult ?? 1);
+    const rushDays = Number((rush[rushTier] ?? {}).days ?? 7);
+    subtotal = subtotal * rushMult;
+
+    // === Load balancing ===
+    let loadMult = 1;
+    if (lb?.enabled && machine) {
+      const queue = Number(machine.current_queue_count ?? 0);
+      loadMult = queue >= Number(lb.high_threshold_pending ?? 5)
+        ? Number(lb.queue_high_mult ?? 1.1)
+        : Number(lb.queue_low_mult ?? 0.95);
+      subtotal = subtotal * loadMult;
+    }
+
+    // === Bulk discount (by qty) ===
+    let bulkDiscountPct = 0;
+    for (const tierRow of bulkTiers.sort((a, b) => b.min_qty - a.min_qty)) {
+      if (qty >= tierRow.min_qty) { bulkDiscountPct = tierRow.discount_pct; break; }
+    }
+    const bulkDiscountAmount = subtotal * bulkDiscountPct;
+    subtotal = subtotal - bulkDiscountAmount;
+
+    const platformFee = subtotal * platformFeePct;
+    const profitMargin = subtotal * profitPct;
+    let final = subtotal + platformFee + profitMargin;
+    if (final < minOrder) final = minOrder;
+
+    const recommended = round(final, roundStep);
+    const price_min = round(final * minRange, roundStep);
+    const price_max = round(final * maxRange, roundStep);
+
+    const score = difficultyScore(quality, metrics.complexity);
+
+    // Rush previews (for UI without recompute)
+    const rushOptions = (["standard", "fast", "rush"] as const).map((k) => ({
+      tier: k,
+      mult: Number((rush[k] ?? {}).mult ?? 1),
+      days: Number((rush[k] ?? {}).days ?? 7),
+      preview_iqd: round((final / rushMult) * Number((rush[k] ?? {}).mult ?? 1), roundStep),
+    }));
+
+    const bulkPreview = bulkTiers.map((t) => ({
+      min_qty: t.min_qty,
+      discount_pct: t.discount_pct,
+      preview_iqd_per_unit: round((final / qty) * (1 - t.discount_pct), roundStep),
+    }));
 
     const payload = {
       model: {
@@ -182,21 +307,52 @@ Deno.serve(async (req) => {
         weight_g: Math.round(weight_g),
         print_minutes,
         dimensions_mm: metrics.bbox_mm,
-        recommended_printer: null,
-        difficulty,
+        recommended_printer: machine?.name ?? null,
+        difficulty: tier,
+        difficulty_score: score,
+        process: processType,
       },
       breakdown: {
-        filament_cost: round250(filament_cost),
-        machine_cost: round250(machine_cost),
-        complexity_fee: round250(complexity_fee),
-        platform_fee: round250(platform_fee),
-        profit_margin: round250(profit_margin),
-        subtotal: round250(subtotal),
-        final: round250(final),
-        price_min: round250(final * pricing.min_range_pct),
-        price_max: round250(final * pricing.max_range_pct),
-        inputs: { weight_g: Math.round(weight_g), print_minutes, difficulty },
-        pricing,
+        // legacy keys kept for backward compatibility
+        filament_cost: round(materialCost, roundStep),
+        machine_cost: round(machineCost, roundStep),
+        complexity_fee: round(baseComplexityFee * complexityMult, roundStep),
+        platform_fee: round(platformFee, roundStep),
+        profit_margin: round(profitMargin, roundStep),
+        subtotal: round(subtotal, roundStep),
+        final: recommended,
+        price_min,
+        price_max,
+        // new fields
+        components: [
+          { key: "material", label_ar: "المادة", label_en: "Material", value: round(materialCost, roundStep) },
+          { key: "machine", label_ar: "تشغيل الماكينة", label_en: "Machine runtime", value: round(machineCost, roundStep) },
+          { key: "electricity", label_ar: "الكهرباء", label_en: "Electricity", value: round(electricityCost, roundStep) },
+          { key: "supports", label_ar: "الدعامات", label_en: "Supports", value: round(supportsCost, roundStep) },
+          { key: "depreciation", label_ar: "إهلاك الماكينة", label_en: "Depreciation", value: round(depreciationCost, roundStep) },
+          { key: "labor", label_ar: "العمل اليدوي", label_en: "Labor", value: round(laborCost + multipartLabor, roundStep) },
+          { key: "packaging", label_ar: "التغليف", label_en: "Packaging", value: round(packagingCost, roundStep) },
+          ...(washCureCost > 0 ? [{ key: "wash_cure", label_ar: "غسيل ومعالجة", label_en: "Wash & cure", value: round(washCureCost, roundStep) }] : []),
+          { key: "failure_risk", label_ar: "احتمال الفشل", label_en: "Failure risk", value: round(failureRiskCost, roundStep) },
+          { key: "complexity_fee", label_ar: "رسم التعقيد", label_en: "Complexity fee", value: round(baseComplexityFee, roundStep) },
+        ],
+        multipliers: {
+          complexity: complexityMult,
+          overhang: overhangMult,
+          large_model: largeMult,
+          rush: rushMult,
+          load_balancing: loadMult,
+          bulk_discount_pct: bulkDiscountPct,
+        },
+        platform_fee_amount: round(platformFee, roundStep),
+        profit_margin_amount: round(profitMargin, roundStep),
+        rush_tier: rushTier,
+        rush_days: rushDays,
+        qty,
+        parts_count: partsCount,
+        rush_options: rushOptions,
+        bulk_preview: bulkPreview,
+        inputs: { weight_g: Math.round(weight_g), print_minutes, difficulty: tier },
       },
       metrics,
       quality,
@@ -205,24 +361,27 @@ Deno.serve(async (req) => {
         name_en: material.name_en,
         name_ar: material.name_ar,
         density: density,
-        cost_per_kg: filamentPrice,
+        cost_per_kg: materialPricePerKg,
         infill_pct: infillPct,
+        process_type: processType,
       },
     };
 
     if (fileHash) {
-      await admin.from("print_quote_cache").upsert(
-        {
-          url: `file://${fileHash}`,
-          file_hash: fileHash,
-          material_code: materialCode,
-          payload: payload as unknown as Record<string, unknown>,
-          analysis_payload: { metrics, quality } as unknown as Record<string, unknown>,
-          source: "geometry",
-          expires_at: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
-        },
-        { onConflict: "file_hash" },
-      );
+      try {
+        await admin.from("print_quote_cache").upsert(
+          {
+            url: `file://${fileHash}`,
+            file_hash: fileHash,
+            material_code: materialCode,
+            payload: payload as unknown as Record<string, unknown>,
+            analysis_payload: { metrics, quality } as unknown as Record<string, unknown>,
+            source: "geometry",
+            expires_at: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+          },
+          { onConflict: "file_hash" },
+        );
+      } catch (_) { /* non-blocking */ }
     }
 
     return new Response(JSON.stringify({ source: "geometry", ...payload }), {
