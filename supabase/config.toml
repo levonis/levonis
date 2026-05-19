@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.meta-capi]
 verify_jwt = false
+
+[functions.proxy-download]
+verify_jwt = false

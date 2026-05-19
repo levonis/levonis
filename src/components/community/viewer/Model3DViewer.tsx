@@ -2,7 +2,6 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
   Bounds,
-  Center,
   ContactShadows,
   Environment,
   Html,
@@ -12,20 +11,23 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { Loader2 } from "lucide-react";
-import { loadModelFromFile, computeBoundsMM } from "./loaders";
+import { loadModelFromFile, computeBoundsMM, fetchModelAsFile } from "./loaders";
 import ViewerToolbar from "./ViewerToolbar";
 import BuildPlate from "./BuildPlate";
+import { applyOverhangColors, applyExploded, autoOrient } from "./analysisHelpers";
 
 interface Props {
-  file: File;
+  file?: File | null;
+  /** Optional direct URL to a .stl/.3mf/.obj/.glb/.gltf — fetched via proxy edge function. */
+  url?: string | null;
   className?: string;
   language?: "ar" | "en" | "ku";
 }
 
 /** Imperatively expose Canvas gl for screenshots */
-function GLBridge({ onReady }: { onReady: (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) => void }) {
-  const { gl, scene, camera } = useThree();
-  useEffect(() => { onReady(gl, scene, camera); }, [gl, scene, camera, onReady]);
+function GLBridge({ onReady }: { onReady: (gl: THREE.WebGLRenderer) => void }) {
+  const { gl } = useThree();
+  useEffect(() => { onReady(gl); }, [gl, onReady]);
   return null;
 }
 
@@ -41,50 +43,65 @@ function ModelMesh({
   group,
   wireframe,
   showBBox,
+  overhang,
+  explode,
 }: {
   group: THREE.Group;
   wireframe: boolean;
   showBBox: boolean;
+  overhang: boolean;
+  explode: number;
 }) {
   const ref = useRef<THREE.Group>(null);
 
-  // Apply material/wireframe to all meshes
+  // Material + wireframe; preserves vertexColors flag from overhang pass.
   useEffect(() => {
     group.traverse((c: any) => {
       if (c.isMesh) {
-        if (!c.userData._origMat) c.userData._origMat = c.material;
-        const base = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#9ec5ff"),
-          metalness: 0.1,
-          roughness: 0.55,
-          wireframe,
-          flatShading: false,
-        });
-        c.material = base;
+        if (!c.userData._mat) {
+          c.userData._mat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color("#9ec5ff"),
+            metalness: 0.1,
+            roughness: 0.55,
+            flatShading: false,
+          });
+        }
+        const m: THREE.MeshStandardMaterial = c.userData._mat;
+        m.wireframe = wireframe;
+        c.material = m;
       }
     });
   }, [group, wireframe]);
 
+  useEffect(() => {
+    applyOverhangColors(group, overhang);
+  }, [group, overhang]);
+
+  useEffect(() => {
+    applyExploded(group, explode);
+  }, [group, explode]);
+
   return (
     <group ref={ref}>
       <primitive object={group} />
-      {showBBox && <BBoxHelper object={group} />}
+      {showBBox && <BBoxHelper object={group} dep={`${overhang}-${explode}`} />}
     </group>
   );
 }
 
-function BBoxHelper({ object }: { object: THREE.Object3D }) {
+function BBoxHelper({ object, dep }: { object: THREE.Object3D; dep: string }) {
   const helper = useMemo(() => {
     const box = new THREE.Box3().setFromObject(object);
     const h = new THREE.Box3Helper(box, new THREE.Color("#22d3ee"));
     (h.material as THREE.LineBasicMaterial).transparent = true;
     (h.material as THREE.LineBasicMaterial).opacity = 0.8;
     return h;
-  }, [object]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [object, dep]);
   return <primitive object={helper} />;
 }
 
-export default function Model3DViewer({ file, className, language = "en" }: Props) {
+export default function Model3DViewer({ file, url, className, language = "en" }: Props) {
   const t = (ar: string, en: string) => (language === "ar" ? ar : en);
   const [group, setGroup] = useState<THREE.Group | null>(null);
   const [dims, setDims] = useState<{ x: number; y: number; z: number } | null>(null);
@@ -97,50 +114,75 @@ export default function Model3DViewer({ file, className, language = "en" }: Prop
   const [autoRotate, setAutoRotate] = useState(true);
   const [showBBox, setShowBBox] = useState(true);
   const [showPlate, setShowPlate] = useState(true);
+  const [overhang, setOverhang] = useState(false);
+  const [explode, setExplode] = useState(0);
 
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sourceName = file?.name || url?.split("/").pop() || "model";
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setLoadErr(null);
-    loadModelFromFile(file)
-      .then((g) => {
+    setGroup(null);
+
+    const loadIt = async (): Promise<File | null> => {
+      if (file) return file;
+      if (url) {
+        const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
+        return await fetchModelAsFile(url, supabaseUrl);
+      }
+      return null;
+    };
+
+    loadIt()
+      .then(async (f) => {
+        if (!f) { if (!cancelled) { setLoading(false); setLoadErr(t("لا يوجد ملف", "No file")); } return; }
+        const g = await loadModelFromFile(f);
         if (cancelled) return;
-        // Re-orient: model on bed (Z-up in slicer space, but THREE is Y-up; STL is usually Z-up).
-        // Rotate so Z becomes Y for STL/3MF; OBJ/GLB typically already Y-up.
-        const ext = file.name.toLowerCase().split(".").pop();
-        if (ext === "stl" || ext === "3mf") {
-          g.rotation.x = -Math.PI / 2;
-        }
+        const ext = f.name.toLowerCase().match(/\.(stl|3mf|obj|glb|gltf)$/)?.[1];
+        if (ext === "stl" || ext === "3mf") g.rotation.x = -Math.PI / 2;
         g.updateMatrixWorld(true);
         const { size, center, box } = computeBoundsMM(g);
-        // Recenter on XZ, sit on plate (min Y = 0)
         g.position.x -= center.x;
         g.position.z -= center.z;
         g.position.y -= box.min.y;
         setDims({ x: size.x, y: size.y, z: size.z });
         setGroup(g);
-        setFitTrigger((t) => t + 1);
+        setFitTrigger((tg) => tg + 1);
       })
       .catch((e) => !cancelled && setLoadErr(e?.message || "Load failed"))
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
-  }, [file]);
+  }, [file, url]);
 
   const onScreenshot = () => {
     const gl = glRef.current;
     if (!gl) return;
-    const url = gl.domElement.toDataURL("image/png");
+    const u = gl.domElement.toDataURL("image/png");
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `${file.name.replace(/\.[^.]+$/, "")}-preview.png`;
+    a.href = u;
+    a.download = `${sourceName.replace(/\.[^.]+$/, "")}-preview.png`;
     a.click();
   };
 
-  const onResetView = () => setFitTrigger((t) => t + 1);
+  const onResetView = () => setFitTrigger((tg) => tg + 1);
 
-  // Dimensions display: STL/3MF are in mm; for OBJ/GLB unit may differ, but we show as mm best-effort
+  const onAutoOrient = () => {
+    if (!group) return;
+    const best = autoOrient(group);
+    group.rotation.copy(best);
+    group.updateMatrixWorld(true);
+    // Reseat on plate
+    const box = new THREE.Box3().setFromObject(group);
+    const center = new THREE.Vector3(); box.getCenter(center);
+    group.position.x -= center.x - group.position.x;
+    group.position.z -= center.z - group.position.z;
+    group.position.y -= box.min.y;
+    if (overhang) applyOverhangColors(group, true);
+    setFitTrigger((tg) => tg + 1);
+  };
+
   const dimsLabel = dims
     ? `${dims.x.toFixed(1)} × ${dims.y.toFixed(1)} × ${dims.z.toFixed(1)} mm`
     : "—";
@@ -186,7 +228,13 @@ export default function Model3DViewer({ file, className, language = "en" }: Prop
         <Bounds margin={1.4}>
           <FitOnLoad trigger={fitTrigger} />
           {group && (
-            <ModelMesh group={group} wireframe={wireframe} showBBox={showBBox} />
+            <ModelMesh
+              group={group}
+              wireframe={wireframe}
+              showBBox={showBBox}
+              overhang={overhang}
+              explode={explode}
+            />
           )}
         </Bounds>
 
@@ -226,10 +274,15 @@ export default function Model3DViewer({ file, className, language = "en" }: Prop
           autoRotate={autoRotate}
           showBBox={showBBox}
           showPlate={showPlate}
+          overhang={overhang}
+          explode={explode}
           onWireframe={setWireframe}
           onAutoRotate={setAutoRotate}
           onBBox={setShowBBox}
           onPlate={setShowPlate}
+          onOverhang={setOverhang}
+          onExplode={setExplode}
+          onAutoOrient={onAutoOrient}
           onScreenshot={onScreenshot}
           onReset={onResetView}
           language={language}

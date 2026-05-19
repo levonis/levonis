@@ -42,10 +42,17 @@ export default function CommunityQuoteFromLink() {
   const [quoteParams, setQuoteParams] = useState<{ qty: number; rush_tier: "standard" | "fast" | "rush" }>({ qty: 1, rush_tier: "standard" });
 
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+
+  /** Detect direct downloadable model URLs (.stl/.3mf/.obj/.glb/.gltf). */
+  const isDirectModelUrl = (s: string) => /\.(stl|3mf|obj|glb|gltf)(\?.*)?$/i.test(s.trim());
 
   const submitUrl = async () => {
     if (!url.trim()) return;
     setLoading(true); setResult(null); setAnalysis(null);
+    // If the URL points directly to a model file, surface it in the 3D viewer too.
+    setViewerUrl(isDirectModelUrl(url) ? url.trim() : null);
+    setFileToUpload(null);
     try {
       const { data, error } = await supabase.functions.invoke("print-quote-from-link", {
         body: { url: url.trim() },
@@ -100,6 +107,7 @@ export default function CommunityQuoteFromLink() {
     }
     setLoading(true); setResult(null); setProgressPct(0); setProgressStage(t("قراءة الملف", "Reading file"));
     setFileToUpload(file);
+    setViewerUrl(null);
     try {
       const analyzed = await analyzeModelFile(file, {
         onProgress: (stage, pct) => { setProgressStage(stage); setProgressPct(pct); },
@@ -306,7 +314,7 @@ export default function CommunityQuoteFromLink() {
 
         {result && !loading && (
           <div className="mt-4 space-y-4">
-            {fileToUpload && (
+            {(fileToUpload || viewerUrl) && (
               <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl overflow-hidden">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between gap-2 text-base">
@@ -324,7 +332,7 @@ export default function CommunityQuoteFromLink() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="h-[360px] w-full">
-                    <Model3DViewer file={fileToUpload} language={isAr ? "ar" : "en"} />
+                    <Model3DViewer file={fileToUpload} url={viewerUrl} language={isAr ? "ar" : "en"} />
                   </div>
                 </CardContent>
               </Card>
@@ -349,6 +357,7 @@ export default function CommunityQuoteFromLink() {
         open={viewerOpen}
         onOpenChange={setViewerOpen}
         file={fileToUpload}
+        url={viewerUrl}
         language={isAr ? "ar" : "en"}
       />
     </div>

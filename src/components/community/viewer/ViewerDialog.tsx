@@ -5,19 +5,20 @@ import Model3DViewer from "./Model3DViewer";
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  file: File | null;
+  file?: File | null;
+  url?: string | null;
   language?: "ar" | "en" | "ku";
 }
 
-export default function ViewerDialog({ open, onOpenChange, file, language }: Props) {
+export default function ViewerDialog({ open, onOpenChange, file, url, language }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="!max-w-[100vw] !w-screen !h-[100dvh] !p-0 !rounded-none !border-0 !bg-[#05070d] !overflow-hidden !max-h-none"
       >
         <VisuallyHidden><DialogTitle>3D Viewer</DialogTitle></VisuallyHidden>
-        {file ? (
-          <Model3DViewer file={file} language={language} />
+        {file || url ? (
+          <Model3DViewer file={file ?? null} url={url ?? null} language={language} />
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
             No file
