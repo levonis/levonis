@@ -31,7 +31,7 @@ const UAS = [
 // in-memory rate limiter per (user, urlHash) → 30s
 const RECENT = new Map<string, number>();
 const RECENT_TTL = 30_000;
-const ANALYZER_VERSION = 5;
+const ANALYZER_VERSION = 6;
 
 // Timeout wrapper — prevents any single engine from blocking the cascade
 function withTimeout<T>(p: Promise<T>, ms: number, label = "op"): Promise<T | null> {
@@ -74,6 +74,17 @@ interface UnifiedModel {
   complexityScore: number;
   confidenceLevel: "high" | "medium" | "low";
   source: { engine: string; scrapedAt: string };
+  /** Direct downloadable model file URL (.stl/.3mf/.obj/.glb/.gltf), when discoverable from the source page or API. */
+  previewFileUrl?: string | null;
+}
+
+/** Find the first direct model-file URL (.stl/.3mf/.obj/.glb/.gltf) in a chunk of HTML/markdown/JSON text. */
+function findDirectModelUrl(text: string): string | null {
+  if (!text) return null;
+  // Prefer STL/3MF/OBJ (printable formats) over GLB/GLTF (preview-only).
+  const rxPrint = /https?:\/\/[^\s"'<>()]+?\.(?:stl|3mf|obj)(?:\?[^\s"'<>()]*)?/i;
+  const rxAny   = /https?:\/\/[^\s"'<>()]+?\.(?:stl|3mf|obj|glb|gltf)(?:\?[^\s"'<>()]*)?/i;
+  return (text.match(rxPrint)?.[0]) ?? (text.match(rxAny)?.[0]) ?? null;
 }
 
 // ---------- helpers ----------
@@ -370,6 +381,7 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
       tags{name}
       image{filePath}
       images{filePath}
+      stls{filePath name fileSize}
     }
   }`;
 
@@ -420,6 +432,11 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
 
     const creatorName = p.user?.publicUsername ?? p.user?.handle ?? null;
 
+    // First downloadable STL (preferred over 3MF/OBJ for viewer compatibility)
+    const stlList: any[] = Array.isArray(p.stls) ? p.stls : [];
+    const firstStl = stlList.find((s) => s?.filePath && /\.stl(\?|$)/i.test(s.filePath)) ?? stlList[0];
+    const previewFileUrl = firstStl?.filePath ? toMediaUrl(firstStl.filePath) : null;
+
     // If API has no weight/time/mmu data at all, signal to cascade that we only enriched metadata
     // (so HTML scrape/AI can still fill numbers), but lock colorCount=1 since mmu is authoritative.
     const hasNumericData = totalWeight !== null || printMinutes !== null;
@@ -450,6 +467,7 @@ async function tryPrintablesPublic(url: string, platform: string): Promise<Parti
       // Mark engine — when no numeric data, downstream cascade can still try other engines
       // but colorCount (from mmu) and metadata are trusted.
       source: { engine: hasNumericData ? "printables-public" : "printables-public-meta", scrapedAt: new Date().toISOString() },
+      previewFileUrl,
     };
   } catch (e) {
     console.warn("[printables-public] err:", (e as Error)?.message);
@@ -631,6 +649,7 @@ async function tryFetchScrape(url: string): Promise<Partial<UnifiedModel> | null
     printTime: sourceMetrics.print_minutes,
     colorCount: sourceMetrics.color_count,
     source: { engine: "fetch", scrapedAt: new Date().toISOString() },
+    previewFileUrl: findDirectModelUrl(html),
   };
 }
 
@@ -898,6 +917,7 @@ Deno.serve(async (req) => {
           dimensions_mm: null, recommended_printer: null,
           difficulty: breakdown.inputs.difficulty,
           color_count: colorCount,
+          preview_file_url: m.previewFileUrl ?? cachedPayload.model?.preview_file_url ?? null,
         },
         breakdown, material,
       };
@@ -966,6 +986,7 @@ Deno.serve(async (req) => {
           estimatedWeight: partial.estimatedWeight ?? fs.estimatedWeight ?? null,
           printTime: partial.printTime ?? fs.printTime ?? null,
           colorCount: Math.max(Number(partial.colorCount ?? 1), Number(fs.colorCount ?? 1)),
+          previewFileUrl: partial.previewFileUrl ?? fs.previewFileUrl ?? null,
         };
         engineUsed = engineUsed === "none" ? "fetch" : `${engineUsed}+fetch`;
       }
@@ -1032,6 +1053,7 @@ Deno.serve(async (req) => {
         dimensions_mm: null, recommended_printer: null,
         difficulty: breakdown.inputs.difficulty,
         color_count: colorCount,
+        preview_file_url: partial.previewFileUrl ?? null,
       },
       breakdown, material,
     };

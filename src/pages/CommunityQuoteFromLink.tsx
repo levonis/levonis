@@ -61,6 +61,11 @@ export default function CommunityQuoteFromLink() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setResult({ ...data, sourceUrl: url.trim() });
+      // If the scraper discovered a downloadable model file on the page, use it for the 3D preview.
+      const discovered: string | undefined = data?.model?.preview_file_url;
+      if (!isDirectModelUrl(url) && discovered && /^https?:\/\//i.test(discovered)) {
+        setViewerUrl(discovered);
+      }
     } catch (e: any) {
       toast({
         title: t("تعذّر تحليل الرابط", "Could not parse link"),
@@ -314,6 +319,17 @@ export default function CommunityQuoteFromLink() {
 
         {result && !loading && (
           <div className="mt-4 space-y-4">
+            <QuoteResultCard
+              result={result}
+              onCreate={createRequest}
+              creating={creating}
+              onUseFile={() => setTab("file")}
+              onMaterialChange={analysis ? handleMaterialChange : undefined}
+              materialChanging={materialChanging}
+              onParamsChange={analysis ? handleParamsChange : undefined}
+              paramsChanging={paramsChanging}
+            />
+
             {(fileToUpload || viewerUrl) && (
               <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl overflow-hidden">
                 <CardHeader className="pb-2">
@@ -349,8 +365,8 @@ export default function CommunityQuoteFromLink() {
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {t(
-                        "صفحات Printables/Thingiverse لا تكشف الملف مباشرة. حمّل ملف STL/3MF/OBJ من الرابط ثم ارفعه هنا لتفعيل المعاينة.",
-                        "Printables/Thingiverse pages don't expose the file directly. Download the STL/3MF/OBJ from the link, then upload it here to enable the 3D preview.",
+                        "هذه الصفحة لا تكشف ملف STL مباشرة. حمّل STL/3MF/OBJ من الرابط ثم ارفعه هنا لتفعيل المعاينة.",
+                        "This page doesn't expose the STL file directly. Download the STL/3MF/OBJ from the link, then upload it here to enable the 3D preview.",
                       )}
                     </p>
                   </div>
@@ -361,17 +377,6 @@ export default function CommunityQuoteFromLink() {
                 </CardContent>
               </Card>
             )}
-
-            <QuoteResultCard
-              result={result}
-              onCreate={createRequest}
-              creating={creating}
-              onUseFile={() => setTab("file")}
-              onMaterialChange={analysis ? handleMaterialChange : undefined}
-              materialChanging={materialChanging}
-              onParamsChange={analysis ? handleParamsChange : undefined}
-              paramsChanging={paramsChanging}
-            />
           </div>
         )}
         </div>
