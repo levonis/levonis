@@ -221,7 +221,7 @@ export default function CommunityQuoteFromLink() {
         <div className="space-y-4">
 
 
-        <Card className="glass-panel">
+        <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl">
 
 
           <CardHeader>
