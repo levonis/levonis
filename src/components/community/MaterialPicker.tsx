@@ -29,7 +29,7 @@ export default function MaterialPicker({ value, onChange }: Props) {
         .eq("is_active", true)
         .order("display_order");
       if (error) throw error;
-      return (data ?? []) as Material[];
+      return ((data ?? []) as unknown) as Material[];
     },
     staleTime: 5 * 60 * 1000,
   });
