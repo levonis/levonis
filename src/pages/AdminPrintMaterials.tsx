@@ -160,9 +160,22 @@ export default function AdminPrintMaterials() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        <TabsContent value="engine" className="pt-4">
+          <PricingEngineTab />
+        </TabsContent>
+
+        <TabsContent value="quotations" className="pt-4">
+          <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
+            عروض الأسعار تُحفظ تلقائيًا عند تنزيل PDF. (واجهة الإدارة الكاملة قريبًا.)
+          </CardContent></Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
+
 
 function Field({ label, value, onChange, step }: { label: string; value: number; onChange: (v: string) => void; step?: string }) {
   return (
