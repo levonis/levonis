@@ -233,6 +233,18 @@ export default function CompactRequestCard({
           {request.title}
         </h3>
 
+        {/* Instant Quote badge */}
+        {request.quote_source && request.estimated_price_min != null && request.estimated_price_max != null && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-primary/15 text-primary">
+              عرض سعر فوري
+            </span>
+            <span className="text-[8px] text-muted-foreground">
+              {request.estimated_price_min.toLocaleString()} – {request.estimated_price_max.toLocaleString()} IQD
+            </span>
+          </div>
+        )}
+
         {/* Specs Row - Governorate & Size */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded-md">
