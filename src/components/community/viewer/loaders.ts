@@ -7,15 +7,19 @@ import { GLTFLoader } from "three-stdlib";
 export type SupportedExt = "stl" | "obj" | "3mf" | "glb" | "gltf";
 
 export function getExt(name: string): SupportedExt | null {
-  const m = name.toLowerCase().match(/\.(stl|obj|3mf|glb|gltf)$/);
+  const m = name.toLowerCase().match(/\.(stl|obj|3mf|glb|gltf)(\?.*)?$/);
   return (m?.[1] as SupportedExt) ?? null;
 }
 
 /** Load a File into a THREE.Group; consumer disposes. */
 export async function loadModelFromFile(file: File): Promise<THREE.Group> {
-  const ext = getExt(file.name);
+  return loadModelFromBuffer(await file.arrayBuffer(), file.name);
+}
+
+/** Load directly from an ArrayBuffer + filename. */
+export async function loadModelFromBuffer(buf: ArrayBuffer, name: string): Promise<THREE.Group> {
+  const ext = getExt(name);
   if (!ext) throw new Error("Unsupported file extension");
-  const buf = await file.arrayBuffer();
   const group = new THREE.Group();
 
   if (ext === "stl") {
@@ -46,7 +50,6 @@ export async function loadModelFromFile(file: File): Promise<THREE.Group> {
     });
     group.add(parsed);
   } else {
-    // glb / gltf
     const loader = new GLTFLoader();
     const gltf: any = await new Promise((resolve, reject) =>
       loader.parse(buf, "", resolve as any, reject as any),
@@ -71,4 +74,20 @@ export function computeBoundsMM(object: THREE.Object3D) {
   const center = new THREE.Vector3();
   box.getCenter(center);
   return { box, size, center };
+}
+
+/** Download a remote model file through the proxy edge function and turn it into a File. */
+export async function fetchModelAsFile(url: string, supabaseUrl: string): Promise<File> {
+  const ext = getExt(url);
+  if (!ext) throw new Error("URL must end with .stl/.3mf/.obj/.glb/.gltf");
+  const endpoint = `${supabaseUrl}/functions/v1/proxy-download?url=${encodeURIComponent(url)}`;
+  const res = await fetch(endpoint);
+  if (!res.ok) {
+    let msg = `Download failed (${res.status})`;
+    try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  const name = url.split("/").pop()?.split("?")[0] || `model.${ext}`;
+  return new File([blob], name, { type: blob.type || "application/octet-stream" });
 }
