@@ -61,14 +61,32 @@ export default function CommunityQuoteFromLink() {
 
   const priceFromGeometry = async (
     metrics: ModelMetrics, quality: QualityReport, fileHash: string, fileName: string, materialCode: string,
+    params?: { qty: number; rush_tier: "standard" | "fast" | "rush" },
   ) => {
+    const p = params ?? quoteParams;
     const { data, error } = await supabase.functions.invoke("price-3d-model", {
-      body: { metrics, quality, file_hash: fileHash, file_name: fileName, material_code: materialCode },
+      body: { metrics, quality, file_hash: fileHash, file_name: fileName, material_code: materialCode, qty: p.qty, rush_tier: p.rush_tier },
     });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     return data as QuoteResult;
   };
+
+  const handleParamsChange = async (next: { qty: number; rush_tier: "standard" | "fast" | "rush" }) => {
+    setQuoteParams(next);
+    if (!analysis) return;
+    setParamsChanging(true);
+    try {
+      const priced = await priceFromGeometry(
+        analysis.metrics, analysis.quality, analysis.fileHash, analysis.fileName,
+        result?.material?.code ?? "pla", next,
+      );
+      setResult({ ...priced, sourceFileName: analysis.fileName });
+    } catch (e: any) {
+      toast({ title: t("خطأ", "Error"), description: e.message, variant: "destructive" });
+    } finally { setParamsChanging(false); }
+  };
+
 
   const handleFile = async (file: File) => {
     const ext = detectExt(file.name);
