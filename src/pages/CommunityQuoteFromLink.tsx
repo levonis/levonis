@@ -207,7 +207,7 @@ export default function CommunityQuoteFromLink() {
   return (
     <div className="min-h-screen pb-24">
       <div className="container mx-auto max-w-2xl px-4 py-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4 gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4 gap-2 glass-trigger">
           <ArrowLeft className="h-4 w-4" />{t("رجوع", "Back")}
         </Button>
 
@@ -224,9 +224,9 @@ export default function CommunityQuoteFromLink() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Tabs value={tab} onValueChange={(v) => setTab(v as "link" | "file")}>
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="link"><Link2 className="h-4 w-4 me-1" />{t("رابط", "Link")}</TabsTrigger>
-                <TabsTrigger value="file"><FileBox className="h-4 w-4 me-1" />{t("ملف", "File")}</TabsTrigger>
+              <TabsList className="grid grid-cols-2 w-full glass-panel">
+                <TabsTrigger value="link" className="glass-trigger"><Link2 className="h-4 w-4 me-1" />{t("رابط", "Link")}</TabsTrigger>
+                <TabsTrigger value="file" className="glass-trigger"><FileBox className="h-4 w-4 me-1" />{t("ملف", "File")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="link" className="space-y-3 pt-3">
@@ -237,16 +237,16 @@ export default function CommunityQuoteFromLink() {
                       placeholder="https://www.printables.com/model/..."
                       value={url} onChange={(e) => setUrl(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && submitUrl()}
-                      className="ps-10" dir="ltr"
+                      className="ps-10 glass-panel" dir="ltr"
                     />
                   </div>
-                  <Button onClick={submitUrl} disabled={loading || !url.trim()}>
+                  <Button onClick={submitUrl} disabled={loading || !url.trim()} className="glass-trigger">
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("احسب", "Quote")}
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
                   {SUPPORTED_HOSTS.map((h) => (
-                    <span key={h} className="px-2 py-0.5 rounded-full bg-muted/40 border border-border/40">{h}</span>
+                    <span key={h} className="glass-panel px-2 py-0.5 rounded-full border border-border/40">{h}</span>
                   ))}
                 </div>
               </TabsContent>
@@ -255,7 +255,7 @@ export default function CommunityQuoteFromLink() {
                 <label className="block">
                   <input type="file" accept=".stl,.3mf,.obj" className="hidden"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-                  <div className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:bg-muted/30 transition">
+                  <div className="glass-panel border-2 border-dashed border-border/60 rounded-xl p-6 text-center cursor-pointer hover:bg-muted/30 transition">
                     <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm font-medium">{t("اضغط لرفع ملف STL / 3MF / OBJ", "Click to upload STL / 3MF / OBJ")}</p>
                     <p className="text-xs text-muted-foreground mt-1">{t("الحد الأقصى 100MB · تحليل محلي في المتصفح", "Up to 100MB · Analyzed locally in your browser")}</p>
