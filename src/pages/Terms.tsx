@@ -18,7 +18,7 @@ const Terms = () => {
     ar: {
       title: 'الشروط والأحكام',
       desc: 'الإطار القانوني الكامل لاستخدام موقع وتطبيق LEVONIS وشراء المنتجات والمشاركة في الألعاب، المسابقات، الطباعة ثلاثية الأبعاد، خدمات الصيانة، عضويات الولاء، وبرامج الإحالة.',
-      updated: 'آخر تحديث: 2026-04-26',
+      updated: 'آخر تحديث: 2026-05-19',
       intro: 'مرحباً بك في LEVONIS. باستخدامك لموقعنا (levonisiq.com / levonis.lovable.app) أو تطبيق LEVONIS الرسمي أو أي خدمة تابعة لنا (يُشار إليها مجتمعةً بـ"المنصة")، فإنك تُقرّ بأنك بالغ سن الرشد القانوني (أو لديك إذن وليّ أمر) وأنك قرأت ووافقت على هذه الشروط والأحكام بكامل بنودها. إذا لم توافق على أي بند، يُرجى التوقف فوراً عن استخدام المنصة. تطبَّق هذه الشروط على جميع الزوّار، المستخدمين المسجّلين، المشترين، التجار، فنيي الصيانة، المشاركين في المسابقات، وأصحاب البطاقات.',
       sections: [
         { icon: FileText, h: '1. التعريفات والمصطلحات', p: '"المنصة" تعني موقع levonisiq.com والمواقع الفرعية وتطبيق LEVONIS الرسمي وأي واجهة برمجية (API) تابعة. "نحن/الشركة" تعني LEVONIS وفريقها وموظفيها وشركاءها التشغيليين. "المستخدم" يشمل أي زائر أو حساب مسجّل أو مشتري أو تاجر أو فني صيانة. "المنتج" يشمل السلع المادية، الخدمات، المنتجات الرقمية، الطلبات المسبقة (Pre-orders)، الطلبات المخصّصة (Custom Requests)، الطباعة ثلاثية الأبعاد، خدمات الصيانة، عضويات الولاء، التذاكر، النقاط، والقسائم. "المحتوى" يشمل النصوص والصور والفيديوهات (الريلز) والتعليقات والتقييمات والشعارات والشيفرة المصدرية.' },
@@ -62,7 +62,7 @@ const Terms = () => {
     en: {
       title: 'Terms of Use',
       desc: 'Comprehensive legal framework for using LEVONIS, purchasing products, and participating in games, competitions, 3D printing, maintenance, loyalty memberships, and referral programs.',
-      updated: 'Last updated: 2026-04-26',
+      updated: 'Last updated: 2026-05-19',
       intro: 'Welcome to LEVONIS. By using our website (levonisiq.com / levonis.lovable.app), the official LEVONIS app, or any related service (collectively, the "Platform"), you confirm that you are of legal age (or have parental consent) and that you have read and agreed to these Terms in full. If you do not agree to any clause, please stop using the Platform immediately. These Terms apply to all visitors, registered users, buyers, merchants, maintenance technicians, competition participants, and cardholders.',
       sections: [
         { icon: FileText, h: '1. Definitions', p: '"Platform" means levonisiq.com, related sub-domains, the official LEVONIS app, and any related API. "We/Company" means LEVONIS, its team, employees, and operating partners. "User" includes any visitor, registered account, buyer, merchant, or technician. "Product" includes physical goods, services, digital products, pre-orders, custom requests, 3D printing, maintenance, loyalty memberships, tickets, points, and coupons. "Content" includes text, images, video reels, comments, ratings, logos, and source code.' },
@@ -106,7 +106,7 @@ const Terms = () => {
     ku: {
       title: 'مەرجەکانی بەکارهێنان',
       desc: 'چوارچێوەی یاسایی تەواوی بەکارهێنانی LEVONIS و بەشداریکردن لە یاری، پێشبڕکێ، چاپی سێ ڕەهەندی، چاککردنەوە، و بەرنامەی وەفاداری.',
-      updated: 'دوایین نوێکردنەوە: 2026-04-26',
+      updated: 'دوایین نوێکردنەوە: 2026-05-19',
       intro: 'بەخێربێیت بۆ LEVONIS. بە بەکارهێنانی ماڵپەڕ و ئەپڵیکەیشن و خزمەتگوزاریەکانمان، تۆ ڕازیت بەم مەرجانەی خوارەوە. ئەگەر ڕازی نیت، تکایە بەکارهێنانی پلاتفۆڕم بوەستێنە.',
       sections: [
         { icon: FileText, h: '١. پێناسەکان', p: 'پلاتفۆڕم: levonisiq.com و ئەپی LEVONIS و هەر API پەیوەندیدار. بەکارهێنەر: هەر سەردانیکار، حساب، کڕیار، یان بازرگان.' },
