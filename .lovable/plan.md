@@ -1,175 +1,168 @@
 
-# نظام استخراج بيانات النماذج ثلاثية الأبعاد من الروابط
+# محرك تسعير 3D Printing بمستوى صناعي
 
-## نظرة عامة
-تطوير `print-quote-from-link` الحالية إلى نظام إنتاجي شامل يستخرج بيانات النموذج من MakerWorld/Printables/Thingiverse، يحسب التسعير في نفس النداء، مع كاش وتحليلات أدمن.
+## 1) قاعدة البيانات (Migration واحدة)
 
-## 1) المنصات المدعومة وأنماط الروابط
-- MakerWorld: `makerworld.com/{lang}/models/{id}` — سيُجرَّب OpenAPI الرسمي أولاً (إن توفر مفتاح)
-- Printables: `printables.com/{lang}/model/{id}-{slug}`
-- Thingiverse: `thingiverse.com/thing:{id}`
-- روابط أخرى → تُمرَّر مباشرة لـ Firecrawl كـ generic
-
-## 2) منطق الاستخراج الهجين (Cascade 3 مستويات)
-
-```text
-┌──────────────────────────────────────────┐
-│ POST /functions/v1/print-quote-from-link │
-└────────────┬─────────────────────────────┘
-             ↓
-   [1] فحص الكاش (print_url_cache, age < 7d, url_hash=sha256)
-             ↓ miss
-   [2] MakerWorld OpenAPI (إن كان مكرويرلد + مفتاح موجود)
-             ↓ fail/skip
-   [3] Firecrawl scrape (formats: markdown + json schema + screenshot)
-             ↓ fail/blocked
-   [4] fetch + Cheerio (HTML parsing مع rotating headers)
-             ↓ low-confidence
-   [5] AI fallback (Lovable AI: google/gemini-3-flash-preview)
-             ↓
-   [6] احتساب التسعير (print_materials + machine_profiles + quote_pricing)
-             ↓
-   [7] حفظ في الكاش + إدراج analytics row
-             ↓
-   إرجاع JSON موحّد
-```
-
-كل مستوى يضيف للحقول الموجودة ولا يستبدلها. `confidenceLevel` يُحسب من عدد الحقول المؤكدة:
-- `high` (≥85%): OpenAPI أو Firecrawl JSON كامل
-- `medium` (50–84%): scraping ناجح لكن ينقص filament/printTime
-- `low` (<50%): AI تقدير فقط
-
-## 3) شكل الـ JSON الموحّد
+### أ. توسيع `community_settings.value` لمفتاح `quote_pricing`
+JSON موحّد (source of truth) يحتوي الإعدادات العامة + override لكل تقنية:
 
 ```json
 {
-  "sourcePlatform": "makerworld|printables|thingiverse|other",
-  "title": "string",
-  "creator": { "name": "string", "url": "string" },
-  "description": "string (markdown, max 4000 chars)",
-  "images": ["url1","url2"],
-  "thumbnail": "url",
-  "tags": ["..."],
-  "category": "string",
-  "stats": { "downloads": 0, "likes": 0, "prints": 0 },
-  "printProfiles": [
-    { "name": "0.20mm Standard", "filamentG": 42.5, "printMinutes": 215, "layerHeight": 0.2, "infill": 15, "supports": false, "ams": false }
+  "base": {
+    "electricity_kwh_iqd": 250,
+    "depreciation_pct": 0.05,
+    "labor_per_hour_iqd": 3000,
+    "packaging_iqd": 1500,
+    "shipping_default_iqd": 5000,
+    "platform_fee_pct": 0.017,
+    "profit_margin_pct": 0.15,
+    "min_range_pct": 0.90,
+    "max_range_pct": 1.15,
+    "min_order_iqd": 5000,
+    "round_to_iqd": 250
+  },
+  "risk": {
+    "complexity_mult": { "easy": 1.0, "medium": 1.5, "hard": 2.2 },
+    "overhang_mult_per_10pct": 0.08,
+    "large_model_threshold_cm3": 200,
+    "large_model_mult": 1.15,
+    "multipart_labor_per_part_iqd": 1500
+  },
+  "rush": {
+    "standard": { "mult": 1.0, "days": 7 },
+    "fast":     { "mult": 1.25, "days": 3 },
+    "rush":     { "mult": 1.6,  "days": 1 }
+  },
+  "bulk_tiers": [
+    { "min_qty": 5,  "discount_pct": 0.05 },
+    { "min_qty": 10, "discount_pct": 0.10 },
+    { "min_qty": 25, "discount_pct": 0.18 }
   ],
-  "bambuCompatible": true,
-  "estimatedWeight": 42.5,
-  "printTime": 215,
-  "complexityScore": 67,
-  "confidenceLevel": "high|medium|low",
-  "source": { "engine": "firecrawl|openapi|fetch|ai", "scrapedAt": "ISO" },
-  "pricing": {
-    "materialCode": "PLA",
-    "weightG": 42.5,
-    "basePriceIqd": 8000,
-    "platformFeeIqd": 136,
-    "finalPriceIqd": 8250,
-    "currency": "IQD"
+  "load_balancing": {
+    "enabled": true,
+    "queue_low_mult": 0.95,
+    "queue_high_mult": 1.10,
+    "high_threshold_pending": 5
+  },
+  "processes": {
+    "fdm": {
+      "enabled": true,
+      "machine_kw": 0.15,
+      "failure_rate_pct": 0.05,
+      "support_mult": 1.0,
+      "post_processing_min": 5
+    },
+    "resin": {
+      "enabled": true,
+      "machine_kw": 0.06,
+      "failure_rate_pct": 0.08,
+      "support_mult": 1.2,
+      "post_processing_min": 20,
+      "wash_cure_iqd": 2000,
+      "resin_waste_pct": 0.15
+    },
+    "sls": {
+      "enabled": true,
+      "machine_kw": 3.5,
+      "failure_rate_pct": 0.03,
+      "support_mult": 1.0,
+      "post_processing_min": 15,
+      "powder_refresh_pct": 0.30,
+      "packing_density": 0.08
+    }
   }
 }
 ```
 
-## 4) قاعدة البيانات (Migration)
+### ب. عمود `process_type` على `print_materials`
+`text NOT NULL DEFAULT 'fdm'` + CHECK in ('fdm','resin','sls'). Seed المواد الحالية كـ fdm + إضافة 2 راتنج + 1 SLS (PA12) كنماذج.
 
-### `print_url_cache` (تحديث للجدول الموجود)
+### ج. عمود `process_type` على `print_machine_profiles`
+نفس القيد. + عمود `current_queue_count int default 0` (سيُملأ من print_requests pending).
+
+### د. جدول `print_quotations`
+لتخزين كل تسعيرة معتمدة كفاتورة قابلة للتنزيل:
+- `id, user_id, quote_number, source ('file'|'url'), input_payload jsonb, breakdown jsonb, final_iqd, currency, status ('draft'|'accepted'|'converted'), pdf_url text NULL, print_request_id uuid NULL, rush_tier, qty int default 1, created_at`
+- RLS: المستخدم يرى ملفه، الأدمن يرى الكل.
+
+## 2) Edge Function: إعادة كتابة `price-3d-model`
+
+cascade التسعير الجديد:
+
+1. **اختيار التقنية** من `material.process_type` (FDM/Resin/SLS).
+2. **حساب الوزن والوقت** حسب المعادلة المناسبة:
+   - FDM: مثل الحالي (extrusion + travel)
+   - Resin: `cure_time = layers * cure_sec_per_layer + post_cure_min`، الوزن = volume * density * (1 + resin_waste_pct)
+   - SLS: `print_time = (bbox_z / build_rate) + cooling_min`، تكلفة المسحوق = `(weight + powder_refresh * unused_volume) * cost_per_kg`
+3. **التكاليف الأساسية** (8 مكونات):
+   - filament/resin/powder
+   - machine runtime
+   - electricity = `kwh * hours * electricity_kwh_iqd`
+   - supports = `support_mult * support_volume_estimate * material_cost`
+   - failure_risk = `subtotal * failure_rate_pct`
+   - depreciation = `machine_cost * depreciation_pct`
+   - labor = `(post_processing_min + multipart_extra) / 60 * labor_per_hour_iqd`
+   - packaging
+4. **مضاعفات ديناميكية**:
+   - complexity_mult (من difficulty heuristic)
+   - overhang_mult: `1 + (overhang_pct * 10) * overhang_mult_per_10pct`
+   - large_model_mult إذا volume > threshold
+5. **rush** × **load_balancing** × **bulk_discount** (حسب qty)
+6. **platform_fee + profit_margin → final**
+7. **min_order_iqd** floor + round250
+8. **خرج**: `{ price_min, price_max, recommended, breakdown[], difficulty_score (1-10 heuristic), process, rush_options[], bulk_tiers_preview[] }`
+
+heuristic لـ difficulty 1-10:
+`score = clamp(round(complexity/10 + overhang_pct*30 + non_manifold_pct*10 + thin_wall?1:0), 1, 10)`
+
+## 3) Edge Function جديدة: `generate-quotation-pdf`
+- POST بـ quotation_id → يولّد HTML احترافي (شعار، breakdown table، شروط، RTL) → يرفع PDF إلى bucket `quotations` → يرجع `pdf_url`.
+- يُستخدم نفس نمط `AdminPrinterInvoices` (html2canvas+jsPDF موجودين فعليًا في الواجهة، نُكرر النهج للقوام الإحترافي).
+
+## 4) صفحة أدمن: `/admin/print-materials` (توسعة)
+تبويبات داخلية بدل صفحة جديدة (يحقق "توسيع الجدول الحالي"):
+- **المواد**: الحالي + عمود process_type
+- **الماكينات**: الحالي + process_type + queue
+- **محرك التسعير**: 6 أقسام (Base, Risk, Rush, Bulk, Load Balancing, Per-Process Overrides)
+- **معاينة حية**: حقول test (volume, bbox, overhang, qty, rush) → تعرض breakdown فوريًا بنداء `price-3d-model` بدون حفظ.
+
+## 5) UI المستخدم
+- `QuoteResultCard`: إضافة قسم Breakdown Table قابل للطي (8 مكونات + المضاعفات + المجموع)
+- شارات: difficulty_score 1-10 ملوّنة، process badge (FDM/Resin/SLS)
+- مفاتيح: rush tier (3 خيارات بالأسعار)، qty stepper (يحدّث bulk discount مباشرة)
+- زرّ "تنزيل عرض السعر PDF" → ينشئ quotation ويفتح PDF
+- زرّ "اعتماد وتحويل لطلب" → ينشئ `print_requests` ويربط `print_request_id` بالـ quotation
+
+## 6) i18n
+كل النصوص الجديدة في `src/lib/i18n/{ar,en,ku}.ts` تحت namespace `pricing.engine.*`.
+
+## 7) أمان
+- RLS على print_quotations
+- Zod validation في الـ edge function لكل المدخلات (qty 1-1000, rush in enum, process in enum)
+- الأدمن فقط يحرّر community_settings (السياسة موجودة)
+- لا تغيير على عقد JWT verify الحالي للدالة
+
+## تفاصيل تقنية
 ```text
-id uuid pk
-url_hash text unique (sha256 الرابط بعد التطبيع)
-source_url text
-platform text  (makerworld|printables|thingiverse|other)
-analysis_payload jsonb  (الـ JSON الكامل أعلاه)
-extraction_engine text  (openapi|firecrawl|fetch|ai)
-confidence_level text
-cached_until timestamptz  (NOW + 7 days)
-created_at, updated_at
+ملفات جديدة:
+  supabase/migrations/<ts>_pricing_engine.sql
+  supabase/functions/generate-quotation-pdf/index.ts
+  src/components/community/PricingBreakdownTable.tsx
+  src/components/community/RushAndQtyControls.tsx
+  src/components/admin/pricing/PricingEngineTab.tsx
+  src/components/admin/pricing/LivePricingPreview.tsx
+
+ملفات معدّلة:
+  supabase/functions/price-3d-model/index.ts        (إعادة كتابة كاملة)
+  src/pages/AdminPrintMaterials.tsx                 (Tabs + قسم محرك التسعير)
+  src/components/community/QuoteResultCard.tsx      (breakdown + rush/qty + PDF)
+  src/components/community/MaterialPicker.tsx       (فلترة حسب process)
+  src/lib/i18n/{ar,en,ku}.ts                        (pricing.engine.*)
+  src/integrations/supabase/types.ts                (auto)
 ```
-RLS: قراءة عامة (anon)، كتابة service_role فقط (تتم من الـ edge function).
 
-### `print_url_analytics` (جديد)
-```text
-id uuid pk
-url_hash text  (FK soft to cache)
-source_url text
-platform text
-user_id uuid nullable  (auth.uid)
-engine_used text
-confidence_level text
-cache_hit boolean
-duration_ms int
-converted_to_request boolean default false  (true لو أنشأ طلب طباعة بعدها)
-created_at timestamptz
-```
-RLS: insert من المستخدمين المصادَقين، select للأدمن فقط.
-
-### Index على `(platform, created_at desc)` و `(url_hash, created_at desc)` للوحة التحليلات.
-
-## 5) Edge Functions
-
-### تحديث `print-quote-from-link/index.ts`
-- استقبال `{ url, materialCode? }`
-- توحيد الرابط (إزالة UTM/تطبيع language locale)
-- حساب `url_hash`
-- تنفيذ الـ cascade أعلاه
-- استدعاء داخلي لمنطق التسعير (إعادة استخدام كود `price-3d-model`)
-- كتابة الكاش + analytics
-- إرجاع JSON الموحّد + `cacheHit: true|false`
-
-أدوات داخلية في نفس الملف:
-- `parseMakerWorldOpenApi(id)` — لو `MAKERWORLD_API_KEY` موجود
-- `scrapeWithFirecrawl(url)` — يطلب formats: `markdown`, `json` (مع schema للحقول المطلوبة), `screenshot`
-- `scrapeWithFetch(url, platform)` — rotating User-Agent من قائمة 8 متصفحات، retry 3 مرات مع backoff، cheerio selectors لكل منصة
-- `aiEstimate(partialData, url)` — Lovable AI لتعبئة الفجوات (وزن/زمن/تعقيد فقط، لا يخترع عنوان)
-- `computeComplexity({ printMinutes, filamentG, tagCount, supports })`
-
-### مفاتيح مطلوبة (يطلبها الأدمن لاحقاً عند الحاجة)
-- `FIRECRAWL_API_KEY` — موجود مسبقاً عبر الـ connector، نتأكد منه
-- `MAKERWORLD_API_KEY` — اختياري؛ لو ناقص يتم تخطي المستوى 2 بصمت
-
-## 6) لوحة التحليلات للأدمن
-
-### صفحة جديدة: `src/pages/AdminUrlAnalytics.tsx`
-- مسار: `${ADMIN_BASE_PATH}/url-analytics` (تسجيل في `App.tsx` + `adminConfig.ts` + `Admin.tsx`)
-- بطاقات KPIs: إجمالي التحليلات، Cache Hit Rate، متوسط الزمن، Conversion Rate (تحليل → طلب طباعة)
-- جدول "أكثر النماذج تحليلاً" (group by url_hash, count desc)
-- مخطط Pie/Bar لتوزيع المنصات
-- مخطط Line آخر 30 يوم
-- فلاتر: المنصة، نطاق التاريخ، مستوى الثقة
-
-كل البيانات عبر `supabase.rpc('get_url_analytics_summary', {...})` للأداء.
-
-### تتبع التحويل (Conversion)
-- عند إنشاء طلب طباعة من نتيجة تحليل، يُرسل العميل `url_hash` المرتبط
-- edge function تُحدّث `converted_to_request=true` في آخر سطر analytics لنفس `(user_id, url_hash)`
-
-## 7) واجهة المستخدم (تعديل بسيط فقط)
-
-تعديل `src/pages/CommunityQuoteFromLink.tsx` و `QuoteResultCard.tsx`:
-- إضافة شارة `confidenceLevel` (high/medium/low) باللون الأخضر/الأصفر/الأحمر مع tooltip
-- عرض `creator.name` + `stats.downloads` + `stats.likes` بشكل خفيف فوق العنوان
-- عرض dropdown `printProfiles` لو وُجد أكثر من واحد لإعادة احتساب السعر
-- شارة "محفوظ من الكاش" خفيفة لو `cacheHit=true`
-- لا تغيير على تبويب "ملف" (Web Worker) الموجود
-
-## 8) الحماية من إساءة الاستخدام
-- التحقق من JWT في الـ edge function (Lovable Cloud verify_jwt = true)
-- ضغط في الذاكرة: Map داخل الـ edge function (TTL 30s) لمنع نفس المستخدم من ضرب نفس الـ URL أكثر من مرة في 30 ثانية
-- Zod validation لـ `{ url: z.string().url().max(2048), materialCode: z.string().regex(/^[A-Z]{2,8}$/).optional() }`
-
-## 9) خارج النطاق
-- تشغيل Puppeteer/Playwright فعلي (لا يعمل في Edge Functions؛ نستبدله بـ Firecrawl وهو نفس الجودة بدون بنية تحتية)
-- استخراج ملفات STL من الرابط مباشرة (الإستخدام يبقى للروابط فقط، الملف للتبويب الثاني)
-- تخزين الصور محلياً (نستخدم روابط CDN الأصلية)
-
-## 10) خطة التنفيذ بالتسلسل
-1. Migration لـ `print_url_cache` (update) + `print_url_analytics` (new) + RPC `get_url_analytics_summary`
-2. تحديث `supabase/functions/print-quote-from-link/index.ts` بالـ cascade الكامل
-3. تعديل خفيف على `CommunityQuoteFromLink.tsx` + `QuoteResultCard.tsx` لشارات الثقة والمنشئ
-4. صفحة `AdminUrlAnalytics.tsx` + تسجيلها في الراوتر والـ admin nav
-5. ربط `converted_to_request` بعد إنشاء طلب الطباعة
-
-## أسئلة معلّقة (يمكن الإجابة بعد الموافقة)
-1. هل تريد لوحة التحليلات الآن أم لاحقاً (لتقليل حجم هذه المرحلة)؟
-2. هل لديك بالفعل `MAKERWORLD_API_KEY` لإضافته كـ secret، أم نتخطى مستوى OpenAPI ونعتمد Firecrawl فقط؟
+## خارج النطاق (الآن)
+- Multi-currency display (IQD فقط)
+- إشعارات telegram للتسعيرات (موجودة لـprint_requests فقط)
+- Slicer حقيقي (نعتمد heuristic الموجودة)
+- تكامل دفع/خصم محفظة للتسعيرة (تتم عند تحويلها لـ print_request)

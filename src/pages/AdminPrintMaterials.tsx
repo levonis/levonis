@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
+import PricingEngineTab from "@/components/admin/pricing/PricingEngineTab";
 
 interface Material {
   id: string; code: string; name_ar: string; name_en: string; name_ku?: string | null;
@@ -77,9 +79,19 @@ export default function AdminPrintMaterials() {
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">إدارة مواد الطباعة ثلاثية الأبعاد</h1>
-        <p className="text-sm text-muted-foreground mt-1">كثافة، سعر/كجم، وافتراضيات لكل فلامنت — تُستخدم في حساب السعر الفوري.</p>
+        <h1 className="text-2xl font-bold">إدارة طباعة 3D — المواد والتسعير</h1>
+        <p className="text-sm text-muted-foreground mt-1">المواد، الماكينات، ومحرك التسعير الصناعي الكامل.</p>
       </div>
+
+      <Tabs defaultValue="materials">
+        <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+          <TabsTrigger value="materials">المواد والماكينات</TabsTrigger>
+          <TabsTrigger value="engine">محرك التسعير</TabsTrigger>
+          <TabsTrigger value="quotations">عروض الأسعار</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="materials" className="space-y-6 pt-4">
+
 
       <Card>
         <CardHeader><CardTitle>المواد (Filaments)</CardTitle></CardHeader>
@@ -148,9 +160,22 @@ export default function AdminPrintMaterials() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        <TabsContent value="engine" className="pt-4">
+          <PricingEngineTab />
+        </TabsContent>
+
+        <TabsContent value="quotations" className="pt-4">
+          <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
+            عروض الأسعار تُحفظ تلقائيًا عند تنزيل PDF. (واجهة الإدارة الكاملة قريبًا.)
+          </CardContent></Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
+
 
 function Field({ label, value, onChange, step }: { label: string; value: number; onChange: (v: string) => void; step?: string }) {
   return (
