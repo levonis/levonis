@@ -190,7 +190,7 @@ export default function QuoteResultCard({
   ];
 
   return (
-    <Card className="glass-panel overflow-hidden">
+    <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl overflow-hidden">
       <div className="aspect-video w-full bg-muted relative">
         {m.thumbnail ? (
           <img src={m.thumbnail} alt={m.name} className="w-full h-full object-cover" />
