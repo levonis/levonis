@@ -314,7 +314,7 @@ export default function CommunityQuoteFromLink() {
 
         {result && !loading && (
           <div className="mt-4 space-y-4">
-            {fileToUpload && (
+            {(fileToUpload || viewerUrl) && (
               <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl overflow-hidden">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between gap-2 text-base">
@@ -332,7 +332,7 @@ export default function CommunityQuoteFromLink() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="h-[360px] w-full">
-                    <Model3DViewer file={fileToUpload} language={isAr ? "ar" : "en"} />
+                    <Model3DViewer file={fileToUpload} url={viewerUrl} language={isAr ? "ar" : "en"} />
                   </div>
                 </CardContent>
               </Card>
