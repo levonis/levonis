@@ -2154,6 +2154,8 @@ const Admin = () => {
                 { icon: Trophy, title: 'الفائزون', desc: 'جوائز', path: ADMIN_ROUTES.winners },
                 { icon: Flag, title: 'فحص الألوان', desc: 'مطابقة الصور', path: ADMIN_ROUTES.productColorQa },
                 { icon: Sparkles, title: 'فلمنت عشوائي', desc: 'إعدادات وحظر', path: ADMIN_ROUTES.randomFilament },
+                { icon: BadgeDollarSign, title: 'تسعير الطباعة 3D', desc: 'مواد ومحرك السعر', path: ADMIN_ROUTES.printMaterials },
+
               ].map((item, idx) => (
                 <button
                   key={idx}

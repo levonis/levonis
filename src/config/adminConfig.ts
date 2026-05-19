@@ -64,6 +64,8 @@ export const ADMIN_ROUTES = {
   winners: `${ADMIN_BASE_PATH}/winners`,
   productColorQa: `${ADMIN_BASE_PATH}/product-color-qa`,
   randomFilament: `${ADMIN_BASE_PATH}/random-filament`,
+  printMaterials: `${ADMIN_BASE_PATH}/print-materials`,
+
 } as const;
 
 // Helper to check if a path is an admin path
