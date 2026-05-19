@@ -205,18 +205,24 @@ export default function CommunityQuoteFromLink() {
   };
 
   return (
-    <div className="min-h-screen pb-24 relative overflow-hidden">
+    <div className="min-h-screen pb-24 relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/10">
       {/* Glass aurora background */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-32 -start-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl" />
-        <div className="absolute top-1/3 -end-24 h-96 w-96 rounded-full bg-accent/25 blur-3xl" />
-        <div className="absolute bottom-0 start-1/4 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute -top-32 -start-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute top-1/3 -end-24 h-96 w-96 rounded-full bg-accent/25 blur-3xl animate-pulse" style={{ animationDuration: "8s" }} />
+        <div className="absolute bottom-0 start-1/4 h-72 w-72 rounded-full bg-primary/20 blur-3xl animate-pulse" style={{ animationDuration: "7s" }} />
+        {/* Subtle noise/grain overlay for depth */}
+        <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "24px 24px" }} />
       </div>
 
       <div className="container mx-auto max-w-2xl px-4 py-6">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4 gap-2 glass-trigger rounded-full">
           <ArrowLeft className="h-4 w-4" />{t("رجوع", "Back")}
         </Button>
+
+        {/* Outer glass shell wrapping the entire page content */}
+        <div className="glass-panel rounded-3xl p-3 sm:p-4 space-y-4">
+
 
         <Card className="glass-panel">
 
@@ -311,7 +317,9 @@ export default function CommunityQuoteFromLink() {
 
           </div>
         )}
+        </div>
       </div>
     </div>
+
   );
 }
