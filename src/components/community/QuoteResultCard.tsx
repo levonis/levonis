@@ -321,7 +321,7 @@ export default function QuoteResultCard({
 
 
         {showBreakdown && (
-          <div className="space-y-1.5 text-sm bg-muted/20 rounded-lg p-3 border border-border/40">
+          <div className="space-y-1.5 text-sm glass-panel rounded-lg p-3">
             {components.map((c) => (
               <Row key={c.key} label={isAr ? c.label_ar : c.label_en} value={c.value} />
             ))}
