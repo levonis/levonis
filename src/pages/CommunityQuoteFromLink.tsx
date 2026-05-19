@@ -41,6 +41,8 @@ export default function CommunityQuoteFromLink() {
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [quoteParams, setQuoteParams] = useState<{ qty: number; rush_tier: "standard" | "fast" | "rush" }>({ qty: 1, rush_tier: "standard" });
 
+  const [viewerOpen, setViewerOpen] = useState(false);
+
   const submitUrl = async () => {
     if (!url.trim()) return;
     setLoading(true); setResult(null); setAnalysis(null);
@@ -278,7 +280,7 @@ export default function CommunityQuoteFromLink() {
                       <Upload className="h-6 w-6 text-primary" />
                     </span>
                     <p className="text-sm font-medium">{t("اضغط لرفع ملف STL / 3MF / OBJ", "Click to upload STL / 3MF / OBJ")}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{t("الحد الأقصى 100MB · تحليل محلي في المتصفح", "Up to 100MB · Analyzed locally in your browser")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("الحد الأقصى 200MB · تحليل ومعاينة 3D في المتصفح", "Up to 200MB · Analyzed & previewed in 3D locally")}</p>
                   </div>
 
                 </label>
@@ -303,7 +305,31 @@ export default function CommunityQuoteFromLink() {
         )}
 
         {result && !loading && (
-          <div className="mt-4">
+          <div className="mt-4 space-y-4">
+            {fileToUpload && (
+              <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl overflow-hidden">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between gap-2 text-base">
+                    <span className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center h-8 w-8 rounded-full glass-panel">
+                        <Box className="h-4 w-4 text-primary" />
+                      </span>
+                      {t("معاينة ثلاثية الأبعاد", "3D Preview")}
+                    </span>
+                    <Button size="sm" variant="ghost" onClick={() => setViewerOpen(true)} className="glass-trigger rounded-full gap-1.5">
+                      <Maximize2 className="h-4 w-4" />
+                      {t("ملء الشاشة", "Fullscreen")}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="h-[360px] w-full">
+                    <Model3DViewer file={fileToUpload} language={isAr ? "ar" : "en"} />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <QuoteResultCard
               result={result}
               onCreate={createRequest}
@@ -314,11 +340,17 @@ export default function CommunityQuoteFromLink() {
               onParamsChange={analysis ? handleParamsChange : undefined}
               paramsChanging={paramsChanging}
             />
-
           </div>
         )}
         </div>
       </div>
+
+      <ViewerDialog
+        open={viewerOpen}
+        onOpenChange={setViewerOpen}
+        file={fileToUpload}
+        language={isAr ? "ar" : "en"}
+      />
     </div>
 
   );
