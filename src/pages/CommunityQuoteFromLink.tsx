@@ -292,7 +292,7 @@ export default function CommunityQuoteFromLink() {
         </Card>
 
         {loading && !progressPct && (
-          <Card className="glass-panel mt-4">
+          <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl mt-4">
             <CardContent className="p-4 space-y-3">
               <Skeleton className="h-40 w-full rounded-lg" />
               <Skeleton className="h-6 w-2/3" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-10 w-full" />
