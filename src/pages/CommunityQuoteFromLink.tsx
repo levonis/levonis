@@ -336,6 +336,7 @@ export default function CommunityQuoteFromLink() {
                   </div>
                 </CardContent>
               </Card>
+            )}
             {!fileToUpload && !viewerUrl && result.sourceUrl && (
               <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-xl rounded-3xl">
                 <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
