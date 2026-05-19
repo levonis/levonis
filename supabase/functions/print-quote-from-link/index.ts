@@ -805,8 +805,13 @@ Deno.serve(async (req) => {
     };
 
     let engineUsed = "none";
-    const mw = await tryMakerWorld(normalized, platform);
-    if (mw) { partial = { ...partial, ...mw }; engineUsed = "openapi"; }
+    // Engine 0: public MakerWorld JSON (no key, most accurate)
+    const mwp = await tryMakerWorldPublic(normalized, platform);
+    if (mwp) { partial = { ...partial, ...mwp }; engineUsed = "mw-public"; }
+    if (!partial.estimatedWeight) {
+      const mw = await tryMakerWorld(normalized, platform);
+      if (mw) { partial = { ...partial, ...mw }; engineUsed = engineUsed === "none" ? "openapi" : `${engineUsed}+openapi`; }
+    }
 
     if (!partial.title || !partial.estimatedWeight) {
       const fc = await tryFirecrawl(normalized);
