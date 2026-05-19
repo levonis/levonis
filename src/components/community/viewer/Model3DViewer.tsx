@@ -254,6 +254,7 @@ export default function Model3DViewer({ file, url, className, language = "en" }:
               showBBox={showBBox}
               overhang={overhang}
               explode={explode}
+              clippingPlane={clippingPlane}
             />
           )}
         </Bounds>
