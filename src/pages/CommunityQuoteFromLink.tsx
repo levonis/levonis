@@ -61,6 +61,11 @@ export default function CommunityQuoteFromLink() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setResult({ ...data, sourceUrl: url.trim() });
+      // If the scraper discovered a downloadable model file on the page, use it for the 3D preview.
+      const discovered: string | undefined = data?.model?.preview_file_url;
+      if (!isDirectModelUrl(url) && discovered && /^https?:\/\//i.test(discovered)) {
+        setViewerUrl(discovered);
+      }
     } catch (e: any) {
       toast({
         title: t("تعذّر تحليل الرابط", "Could not parse link"),
