@@ -305,7 +305,7 @@ export default function QuoteResultCard({
         {hasGeometry && (
           <>
             <button onClick={() => setShowQuality((s) => !s)}
-              className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition">
+              className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg glass-trigger">
               <span className="font-medium">{t("تقرير جودة النموذج", "Model quality report")}</span>
               {showQuality ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
@@ -314,10 +314,11 @@ export default function QuoteResultCard({
         )}
 
         <button onClick={() => setShowBreakdown((s) => !s)}
-          className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition">
+          className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-lg glass-trigger">
           <span className="font-medium">{t("شفافية السعر", "Price transparency")}</span>
           {showBreakdown ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
+
 
         {showBreakdown && (
           <div className="space-y-1.5 text-sm bg-muted/20 rounded-lg p-3 border border-border/40">
