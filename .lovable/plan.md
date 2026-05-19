@@ -1,94 +1,135 @@
 
 ## Goal
 
-A new entry point on the community for customers to get an instant price quote by pasting a 3D model link, then publish it as a community print request that merchants can accept and message the customer to start preparing. The existing `/community` flow stays untouched.
+أضف نظام تحليل حقيقي لملفات STL/3MF/OBJ في صفحة `/community/quote-from-link` بحيث يستطيع المستخدم اختيار **رابط نموذج** أو **رفع ملف** للحصول على تسعير دقيق مبني على هندسة الملف الفعلية، مع لوحة أدمن لإدارة المواد.
 
-## Scope (non‑breaking)
+## نطاق الميزة
 
-- Reuses existing tables `community_print_requests`, `print_offers`, `community_settings`, `community_messages`.
-- Adds a new "quote_source" tag and a few estimation columns so quote-from-URL requests are distinguishable but flow through the same merchant pipeline.
-- Adds one new admin page section, one new customer page, one new edge function, and a small "Quote from Link" entry card on `CommunityHome`.
+- لا تعديل على تدفق التجار/العروض/المحادثة الموجود.
+- يضيف مسار "Upload file" بجانب "Paste link" داخل نفس الصفحة (تبويبان داخل نفس الكارد).
+- التحليل بالكامل داخل المتصفح في Web Worker (لا رفع للملف على السيرفر إلا عند إنشاء طلب طباعة فعلي).
+- Edge function `print-quote-from-link` يبقى كما هو للروابط، ويُضاف edge function جديد `price-3d-model` يستقبل المقاييس المحسوبة محليًا ويرجع التسعير + caching.
 
-## User Flow
+## تدفق المستخدم
 
-1. On `/community`, a new card "احسب سعر طباعتك من رابط" → opens `/community/quote-from-link`.
-2. Customer pastes URL (Thingiverse / Printables / MakerWorld / Cults).
-3. Submit → edge function `print-quote-from-link`:
-   - If cached for URL → return cached result.
-   - Otherwise try metadata scrape (oEmbed / OG tags / Firecrawl-style fetch) for: title, thumbnail, filament weight (g), print time, dimensions, recommended printer.
-   - If scrape misses any required field → Lovable AI Gateway estimates missing fields from title + scraped description + dimensions (category, complexity, weight, time).
-   - Compute price using admin settings.
-4. Result card shows: thumbnail, name, weight, time, difficulty, **price range (min–max ±15%)**, "Price transparency" expandable breakdown, source-link button, **Create Print Request** button.
-5. Fallback: if URL parsing fails, show "Upload STL/3MF instead" → reuses existing custom-request file upload flow with the same quote endpoint (file size → weight heuristic).
-6. Create Print Request → inserts row in `community_print_requests` with `quote_source='url_quote'`, prefilled title/notes/image, `estimated_price_min/max`, `reference_links=[url]`, `status='pending_review'`. Then redirects to existing tracking page.
-7. The request appears on `/community/requests` browse like other requests, with a "عرض سعر فوري" badge. Merchants accept via existing `print_offers` flow (one bid each), and on accept the existing accept-offer dialog already opens a chat — we just preselect the quoted price.
+1. على `/community/quote-from-link` يظهر تبويبان: **رابط** / **ملف**.
+2. تبويب الملف: سحب وإفلات STL/3MF/OBJ (حد 100MB، رسالة واضحة إن تجاوز).
+3. شريط تقدم متعدد المراحل: قراءة → تحميل هندسة → حساب مقاييس → فحص جودة → حساب السعر.
+4. النتيجة تظهر في نفس `QuoteResultCard` الحالي + قسم إضافي "تقرير الجودة" يعرض: عدد المثلثات، عدد الحواف غير الصالحة (non-manifold)، نسبة Normals المقلوبة، نسبة Overhangs > 45°، أقل سماكة جدار مكتشفة، توصية الدعامات (نعم/لا).
+5. زر "إنشاء طلب طباعة" يرفع الملف لـ Supabase Storage في bucket `print-quote-files` ثم يُنشئ صفًا في `community_print_requests` بنفس الحقول الحالية + `quote_source='file_quote'` + `file_url`.
+6. عند فشل التحليل (ملف تالف/كبير جدًا/تجاوز ذاكرة الـ Worker): fallback يطلب من المستخدم إدخال الوزن/الوقت يدويًا أو يستدعي `print-quote-from-link` مع `file_meta` (نفس fallback AI الموجود).
 
-## Pricing Formula
+## محرك التحليل (Web Worker)
 
+ملف `src/workers/modelAnalyzer.worker.ts` يحمّل `three` + `three/examples/jsm/loaders/STLLoader` + `OBJLoader` + `3MFLoader` ديناميكيًا (lazy)، ويعالج بـ Transferable ArrayBuffer.
+
+### المقاييس الأساسية
+- **الحجم (cm³)**: مجموع `signed volume` لكل tetrahedron من المركز إلى المثلث (`|v1·(v2×v3)|/6`).
+- **المساحة (cm²)**: مجموع `0.5·|edge1×edge2|` لكل مثلث.
+- **Bounding box**: `geometry.computeBoundingBox()` → X/Y/Z mm.
+- **عدد المثلثات**: من index/position.
+- **Complexity score 0–100**: تركيبة من (triangle_count log scale, surface_area/volume ratio, overhang_pct).
+
+### فحوصات الجودة
+- **Non-manifold**: بناء HashMap للحواف `min(a,b)|max(a,b)` وعدّ الحواف التي ليست مشتركة بين مثلثين بالضبط.
+- **Normals مقلوبة**: نسبة المثلثات التي `dot(face_normal, (centroid - mesh_center))` سالبة (heuristic للأشكال المغلقة).
+- **Overhangs**: عدّ المثلثات التي زاوية normal مع `-Z` < 45° مقسوم على الإجمالي.
+- **سماكة الجدار**: ray casting من مركز كل مثلث على عكس normal باستخدام `THREE.Raycaster` على عينة 500 مثلث (مع `BVH` من `three-mesh-bvh` للسرعة) → أقل مسافة = أقل سماكة.
+
+### تسعير
+- **الوزن (g)** = `volume_cm3 × density × (0.2 + 0.8·infill_pct)` (تقريب shell+infill).
+- **وقت الطباعة (min)** = `(volume_cm3 × infill_factor) / (nozzle_flow_rate_cm3_per_min)` + `surface_area_cm2 / shell_speed_cm2_per_min` + `bbox_z_mm / layer_height_mm × travel_overhead_sec / 60`.
+- **التكلفة الأساس** = `weight_g/1000 × material_cost_per_kg + machine_hours × hourly_cost + complexity_fee` ثم نفس مسار `quote_pricing` الحالي (`platform_fee_pct`, `profit_margin_pct`, تقريب لـ 250 IQD).
+
+## قاعدة البيانات (migration واحدة)
+
+```text
+print_materials (
+  id uuid pk, code text unique,          -- 'pla'|'petg'|'abs'|'tpu'
+  name_ar/en/ku text,
+  density_g_cm3 numeric,                  -- PLA 1.24, PETG 1.27, ABS 1.04, TPU 1.21
+  cost_per_kg_iqd integer,
+  shrinkage_pct numeric,                  -- PLA 0.2, ABS 0.8...
+  default_infill_pct numeric default 20,
+  default_layer_height_mm numeric default 0.2,
+  default_nozzle_mm numeric default 0.4,
+  default_print_speed_mm_s numeric default 60,
+  is_active boolean default true,
+  display_order int
+)
++ seed 4 صفوف بقيم صناعية، RLS: قراءة عامة، كتابة admin فقط.
+
+print_machine_profiles (
+  id uuid pk, name text,
+  hourly_cost_iqd integer,
+  nozzle_flow_rate_cm3_min numeric default 8,
+  travel_overhead_per_layer_sec numeric default 1.5,
+  is_default boolean
+)
++ seed صف افتراضي.
+
+print_quote_cache: تضاف 3 أعمدة nullable:
+  file_hash text unique,                  -- sha256 من ArrayBuffer
+  analysis_payload jsonb,                 -- المقاييس الكاملة
+  material_code text
 ```
-filament_cost   = weight_g / 1000 * filament_price_per_kg
-machine_cost    = print_time_hours * hourly_machine_cost
-complexity_fee  = base_complexity_fee * { easy:1, medium:1.5, hard:2.2 }
-subtotal        = filament_cost + machine_cost + complexity_fee
-platform_fee    = subtotal * platform_fee_pct
-profit_margin   = subtotal * profit_margin_pct
-final           = subtotal + platform_fee + profit_margin
-price_min/max   = final * 0.9  /  final * 1.15  (rounded to 250 IQD)
-```
 
-All values from `community_settings` (key = `quote_pricing`). Existing IQD/250 rounding rule applies.
+## Edge Function: `price-3d-model`
 
-## Database (one migration)
+- Input: `{ metrics: { volume_cm3, surface_area_cm2, bbox_mm, triangle_count, overhang_pct, min_wall_mm, non_manifold_edges, complexity }, material_code, infill_pct?, file_hash? }`
+- يتحقق من JWT (مستخدم مسجل دخول).
+- يقرأ `print_materials` + `print_machine_profiles` + `community_settings.quote_pricing`.
+- يحسب التسعير على السيرفر (لا نثق بالعميل في الأرقام النهائية).
+- يكتب/يقرأ من `print_quote_cache.file_hash`.
+- يرجع نفس شكل response الحالي + `quality_report` + `support_required`.
 
-- New `community_settings` row `quote_pricing` (jsonb):
-  ```
-  { filament_price_per_kg, hourly_machine_cost, base_complexity_fee,
-    platform_fee_pct, profit_margin_pct, min_range_pct, max_range_pct }
-  ```
-- `community_print_requests` add columns (nullable, no breakage):
-  - `quote_source text` (`'url_quote' | 'file_quote' | null`)
-  - `quote_url text`
-  - `estimated_weight_g numeric`
-  - `estimated_print_minutes integer`
-  - `difficulty text` (`'easy'|'medium'|'hard'`)
-  - `estimated_price_min integer`
-  - `estimated_price_max integer`
-  - `quote_breakdown jsonb`
-- New table `print_quote_cache` (`url text unique`, `payload jsonb`, `expires_at`) for the dedupe/caching rule in step 10.
-- RLS: cache readable by authenticated, writable only by service role (edge function).
+## واجهة الأدمن
 
-## Edge Function: `print-quote-from-link`
+صفحة جديدة `/admin/print-materials` (محمية بـ `AdminRoute`، تُضاف في `adminConfig.ts` تحت قسم "Community"):
+- جدول المواد القابل للتعديل المباشر (كثافة، سعر/كجم، انكماش، افتراضيات).
+- بطاقة "Machine profile" لتعديل التكلفة بالساعة و flow rate.
+- معاينة مباشرة: أدخل حجم/مادة وشوف السعر المحسوب فورًا.
 
-- Input: `{ url?: string, file_meta?: { name, size_bytes, dims_mm? } }`.
-- Steps: validate URL host → lookup cache → fetch metadata (host-specific parsers; fallback to OG/JSON-LD) → run Lovable AI Gateway (`google/gemini-3-flash-preview`) for missing fields with a strict JSON schema → load `quote_pricing` settings → compute breakdown → write cache → return `{ source: 'scrape'|'ai'|'cached', model, breakdown, min, max }`.
-- Auth: `verify_jwt = true` (logged-in customers only), CORS enabled.
-- No secrets needed beyond `LOVABLE_API_KEY` (already provisioned).
+## الواجهة الأمامية — تغييرات ملموسة
 
-## Frontend
+| ملف | تغيير |
+|---|---|
+| `src/pages/CommunityQuoteFromLink.tsx` | إضافة Tabs (Link/File)، حالة الملف، استدعاء الـ Worker، حالة `qualityReport`. |
+| `src/workers/modelAnalyzer.worker.ts` | جديد — كل منطق التحليل. |
+| `src/lib/modelAnalysis/types.ts` | جديد — أنواع `ModelMetrics`, `QualityReport`. |
+| `src/lib/modelAnalysis/analyzeClient.ts` | جديد — wrapper يفتح Worker، يحسب sha256، يرسل ArrayBuffer كـ Transferable، يعرض progress. |
+| `src/components/community/QuoteResultCard.tsx` | إضافة قسم "تقرير الجودة" قابل للطي + اختيار المادة من dropdown يعيد حساب السعر. |
+| `src/components/community/MaterialPicker.tsx` | جديد — يقرأ `print_materials` ويعرض الأسعار/الكثافات. |
+| `src/components/community/QualityReportPanel.tsx` | جديد — badges glass-panel لكل فحص (PASS/WARN/FAIL). |
+| `src/pages/AdminPrintMaterials.tsx` | جديد — لوحة الأدمن. |
+| `src/App.tsx` | route جديد + lazy import. |
+| `src/config/adminConfig.ts` | إضافة عنصر القائمة. |
+| `supabase/functions/price-3d-model/index.ts` | جديد. |
+| `supabase/migrations/...` | جداول + RLS + storage bucket `print-quote-files` (private، RLS على المالك). |
+| ملفات i18n `ar/en/ku` | مفاتيح جديدة للتحليل والجودة والمواد. |
 
-- `src/pages/CommunityQuoteFromLink.tsx` — input, result card with skeletons, glass-panel layout, mobile-first.
-- `src/components/community/QuoteResultCard.tsx` — preview, range, "Price transparency" collapsible, "Create Print Request" / "Upload file instead".
-- `src/components/community/QuoteFromLinkEntry.tsx` — entry tile added to `CommunityHome.tsx` (no removal of existing cards).
-- Route added in `src/App.tsx`: `/community/quote-from-link`.
-- `CommunityRequestsBrowse` / `CompactRequestCard`: render "عرض سعر فوري" badge when `quote_source = 'url_quote'` and show price range chip. Accept flow uses existing `AcceptOfferDialog` / `AddOfferDialog` — merchant can submit a bid at or near the quoted range; accepting opens the existing community chat where merchant requests payment.
-- All strings in `ar/en/ku` i18n files.
+## الحزم المطلوبة
 
-## Admin
+- `three@^0.160` (موجود غالبًا — سأتحقق قبل التثبيت).
+- `three-mesh-bvh@^0.7` (لتسريع ray casting لسماكة الجدار).
+- `three/examples/jsm/loaders/3MFLoader` يحتاج `fflate` (peer dep خفيفة).
 
-- Extend existing `AdminCommunityComplaints`-style settings area (or `AdminDefaultSettings` "Community" tab) with a new "أسعار العرض الفوري" section editing the `quote_pricing` jsonb (filament/kg, hourly cost, complexity fee, platform fee %, margin %, min/max range %). Live preview of formula with sample inputs.
+## الأداء والحدود
 
-## Caching (step 10)
+- حد الملف 100MB قبل التحليل (warning عند 50MB).
+- العمل في Worker مع `OffscreenCanvas`/Transferable لتفادي تجميد الواجهة.
+- ray casting لعينة 500 مثلث فقط (ليس كل المثلثات).
+- caching بـ `file_hash` (sha256 من المحتوى الخام) → إعادة فتح نفس الملف فوريًا.
 
-`print_quote_cache.url` unique; TTL 30 days. Edge function checks cache first; on hit returns immediately with `source: 'cached'`.
+## خارج النطاق (مستبعد صراحة)
 
-## Out of scope / explicitly preserved
+- تقطيع حقيقي layer-by-layer (gcode).
+- معاينة 3D للنموذج (يمكن لاحقًا).
+- تعديل المنطق التجاري للتجار/العروض/المحادثة.
 
-- No change to existing merchant accept/escrow logic, existing `print_offers` rules (1 bid/merchant), chat, or commerce flow.
-- No change to existing request creation form (`CommunityCustomerNewRequest`); the new flow is a parallel entry point that writes into the same table with extra metadata.
+## أسئلة مفتوحة قبل البناء
 
-## Open questions before I build
-
-1. Default values for `quote_pricing` (filament IQD/kg, hourly machine cost, complexity fee, platform %, margin %)?
-2. Should the merchant bid be **locked** to the quoted range, or only **prefilled** and editable?
-3. For the file fallback, do you want real slicing (heavy, needs a slicer service) or a size‑based heuristic + AI estimation only (recommended, fast)?
-4. Confirm caching TTL = 30 days, and that re-quoting the same URL by a different user reuses the cached estimate.
+1. هل أعرض **معاينة 3D** للنموذج بعد التحليل (Three.js canvas صغير دوّار)؟ مفيدة بصريًا لكن تزيد الحجم.
+2. حد الـ file size: 100MB كافي أم تريد 50MB لحماية الذاكرة على الموبايل؟
+3. التسعير: هل المستخدم يختار المادة (PLA/PETG/ABS/TPU) ويعيد حساب السعر، أم نعرض 4 أسعار جنبًا إلى جنب؟
+4. عند إنشاء طلب طباعة، هل أرفع ملف STL كأصل قابل للتحميل للتجار فقط، أم نكتفي بالمقاييس + thumbnail؟
