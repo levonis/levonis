@@ -971,9 +971,9 @@ Deno.serve(async (req) => {
 
     const weight = partial.estimatedWeight ?? 30;
     const minutes = partial.printTime ?? 180;
-    // Trust OpenAPI color count. Only run text-detection fallback when extraction did NOT come from openapi.
-    const isOpenApi = engineUsed.startsWith("openapi") || engineUsed.startsWith("mw-public");
-    const colorCount = isOpenApi
+    // Trust authoritative engines. Only run text-detection fallback when extraction did NOT come from an authoritative API.
+    const isAuthoritative = engineUsed.startsWith("openapi") || engineUsed.startsWith("mw-public") || engineUsed.startsWith("printables-public");
+    const colorCount = isAuthoritative
       ? clamp(Math.floor(Number(partial.colorCount ?? 1) || 1), 1, 8)
       : clamp(Math.max(
           Number(partial.colorCount ?? 1),
