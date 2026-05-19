@@ -31,7 +31,19 @@ const UAS = [
 // in-memory rate limiter per (user, urlHash) → 30s
 const RECENT = new Map<string, number>();
 const RECENT_TTL = 30_000;
-const ANALYZER_VERSION = 4;
+const ANALYZER_VERSION = 5;
+
+// Timeout wrapper — prevents any single engine from blocking the cascade
+function withTimeout<T>(p: Promise<T>, ms: number, label = "op"): Promise<T | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      console.warn(`[timeout] ${label} exceeded ${ms}ms`);
+      resolve(null as unknown as T);
+    }, ms);
+    p.then((v) => { clearTimeout(timer); resolve(v); })
+     .catch((e) => { clearTimeout(timer); console.warn(`[err] ${label}:`, e?.message); resolve(null as unknown as T); });
+  });
+}
 
 interface Creator { name: string | null; url: string | null }
 interface PrintProfile {
