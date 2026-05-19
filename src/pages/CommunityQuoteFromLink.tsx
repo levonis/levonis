@@ -290,7 +290,10 @@ export default function CommunityQuoteFromLink() {
               onUseFile={() => setTab("file")}
               onMaterialChange={analysis ? handleMaterialChange : undefined}
               materialChanging={materialChanging}
+              onParamsChange={analysis ? handleParamsChange : undefined}
+              paramsChanging={paramsChanging}
             />
+
           </div>
         )}
       </div>
