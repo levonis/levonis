@@ -290,7 +290,8 @@ export default function QuoteResultCard({
 
         )}
 
-        <div className="rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 p-4">
+        <div className="rounded-xl glass-panel ring-1 ring-primary/25 p-4 relative overflow-hidden">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/15 to-primary/0" />
           <div className="text-xs text-muted-foreground mb-1">{t("نطاق السعر المقدّر", "Estimated price range")}</div>
           <div className="text-2xl font-bold text-primary">
             {fmt(b.price_min)} – {fmt(b.price_max)} <span className="text-sm font-normal">IQD</span>
@@ -299,6 +300,7 @@ export default function QuoteResultCard({
             {t("الموصى به:", "Recommended:")} <span className="font-semibold text-foreground">{fmt(b.final)} IQD</span>
           </div>
         </div>
+
 
         {hasGeometry && (
           <>
