@@ -50,6 +50,9 @@ export default function CommunityQuoteFromLink() {
   const submitUrl = async () => {
     if (!url.trim()) return;
     setLoading(true); setResult(null); setAnalysis(null);
+    // If the URL points directly to a model file, surface it in the 3D viewer too.
+    setViewerUrl(isDirectModelUrl(url) ? url.trim() : null);
+    setFileToUpload(null);
     try {
       const { data, error } = await supabase.functions.invoke("print-quote-from-link", {
         body: { url: url.trim() },
