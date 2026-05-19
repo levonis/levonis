@@ -252,7 +252,7 @@ export default function QuoteResultCard({
 
         {/* Rush + Qty controls */}
         {onParamsChange && (
-          <div className="space-y-2 rounded-xl border border-border/40 p-3 bg-card/40">
+          <div className="space-y-2 rounded-xl p-3 glass-panel">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-medium">{t("سرعة التسليم", "Delivery speed")}</span>
               {paramsChanging && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -260,9 +260,9 @@ export default function QuoteResultCard({
             <div className="grid grid-cols-3 gap-1.5">
               {(b.rush_options ?? []).map((opt) => (
                 <button key={opt.tier} onClick={() => setRush(opt.tier)} disabled={paramsChanging}
-                  className={`rounded-lg px-2 py-1.5 text-[11px] border transition ${rushTier === opt.tier
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border/40 bg-card/30 hover:bg-card/60"}`}>
+                  className={`glass-trigger rounded-lg px-2 py-1.5 text-[11px] transition ${rushTier === opt.tier
+                    ? "ring-1 ring-primary/60 bg-primary/10 text-primary"
+                    : ""}`}>
                   <div className="font-semibold flex items-center justify-center gap-1">
                     {opt.tier === "rush" && <Zap className="h-3 w-3" />}
                     {opt.tier === "standard" ? t("قياسي", "Standard") : opt.tier === "fast" ? t("سريع", "Fast") : t("عاجل", "Rush")}
@@ -275,10 +275,10 @@ export default function QuoteResultCard({
               <span className="text-xs font-medium">{t("الكمية", "Quantity")}</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => setQty(qty - 1)} disabled={paramsChanging || qty <= 1}
-                  className="h-7 w-7 rounded-md border border-border/40 hover:bg-card/60">-</button>
+                  className="h-7 w-7 rounded-full glass-trigger">-</button>
                 <span className="w-10 text-center font-semibold text-sm">{qty}</span>
                 <button onClick={() => setQty(qty + 1)} disabled={paramsChanging}
-                  className="h-7 w-7 rounded-md border border-border/40 hover:bg-card/60">+</button>
+                  className="h-7 w-7 rounded-full glass-trigger">+</button>
               </div>
             </div>
             {(b.multipliers?.bulk_discount_pct ?? 0) > 0 && (
@@ -287,6 +287,7 @@ export default function QuoteResultCard({
               </div>
             )}
           </div>
+
         )}
 
         <div className="rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 p-4">
