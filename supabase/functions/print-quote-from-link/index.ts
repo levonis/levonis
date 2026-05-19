@@ -270,7 +270,7 @@ async function tryMakerWorld(url: string, platform: string): Promise<Partial<Uni
       const apiColorCount = Number(p.color_count ?? p.colorCount ?? p.filament_count ?? 0);
       return {
         name: p.name || "Profile",
-        filament_g: filSummary.totalWeight ?? Number(p.filament_weight_g ?? p.total_filament_g) || null,
+        filament_g: filSummary.totalWeight ?? (Number(p.filament_weight_g ?? p.total_filament_g) || null),
         print_minutes: Number(p.print_time_minutes ?? p.print_time_min ?? p.printTime) || null,
         layer_height: Number(p.layer_height_mm ?? p.layerHeight) || null,
         infill: Number(p.infill_pct ?? p.sparseInfillDensity) || null,
