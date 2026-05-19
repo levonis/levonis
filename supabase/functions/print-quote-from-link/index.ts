@@ -31,6 +31,7 @@ const UAS = [
 // in-memory rate limiter per (user, urlHash) → 30s
 const RECENT = new Map<string, number>();
 const RECENT_TTL = 30_000;
+const ANALYZER_VERSION = 2;
 
 interface Creator { name: string | null; url: string | null }
 interface PrintProfile {
@@ -41,6 +42,7 @@ interface PrintProfile {
   infill?: number | null;
   supports?: boolean | null;
   ams?: boolean | null;
+  color_count?: number | null;
 }
 interface UnifiedModel {
   sourcePlatform: "makerworld" | "printables" | "thingiverse" | "cults3d" | "other";
@@ -56,6 +58,7 @@ interface UnifiedModel {
   bambuCompatible: boolean | null;
   estimatedWeight: number | null;
   printTime: number | null; // minutes
+  colorCount: number;
   complexityScore: number;
   confidenceLevel: "high" | "medium" | "low";
   source: { engine: string; scrapedAt: string };
@@ -109,6 +112,78 @@ function extractJsonLd(html: string): any[] {
   return out;
 }
 
+function htmlText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseLooseNumber(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const normalized = raw.replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const n = Number(normalized);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function extractSourceMetrics(text: string) {
+  const grams: number[] = [];
+  for (const m of text.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:g|gram|grams|غ|غم)\b/gi)) {
+    const n = parseLooseNumber(m[1]);
+    if (n && n >= 1 && n <= 10000) grams.push(n);
+  }
+  const hours: number[] = [];
+  for (const m of text.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|hour|hours|ساعة|س)\b/gi)) {
+    const n = parseLooseNumber(m[1]);
+    if (n && n <= 240) hours.push(n);
+  }
+  const minutes: number[] = [];
+  for (const m of text.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:min|mins|minute|minutes|دقيقة|د)\b/gi)) {
+    const n = parseLooseNumber(m[1]);
+    if (n && n <= 6000) minutes.push(n);
+  }
+  const plateMatch = text.match(/(\d+)\s*(?:plates?|لوحات|صواني)/i);
+  const colorCount = detectColorCount(text);
+  return {
+    weight_g: grams.length ? Math.max(...grams) : null,
+    print_minutes: hours.length ? Math.round(Math.max(...hours) * 60) : (minutes.length ? Math.round(Math.max(...minutes)) : null),
+    plates: plateMatch ? Number(plateMatch[1]) : null,
+    color_count: colorCount,
+  };
+}
+
+function detectColorCount(text: string, profiles: PrintProfile[] = []): number {
+  const profileColors = profiles.map((p) => Number(p.color_count ?? 0)).filter((n) => Number.isFinite(n) && n > 0);
+  const materialTags = new Set<string>();
+  for (const m of text.matchAll(/\b(PLA|PETG|ABS|ASA|TPU|AMS|PA12|NYLON|RESIN)\b\s*(?:[|:]\s*)?(\d+(?:[.,]\d+)?)?\s*g?/gi)) {
+    materialTags.add(`${m[1].toUpperCase()}-${m[2] ?? materialTags.size}`);
+  }
+  const explicit = text.match(/(\d+)\s*(?:colors?|colours?|ألوان|لون)/i);
+  const explicitCount = explicit ? Number(explicit[1]) : 0;
+  const inferred = Math.max(explicitCount, materialTags.size, ...profileColors, 1);
+  return clamp(Math.floor(inferred), 1, 16);
+}
+
+function validateAgainstSource(partial: Partial<UnifiedModel>, sourceText: string): Partial<UnifiedModel> {
+  const metrics = extractSourceMetrics(sourceText);
+  const next = { ...partial };
+  if (metrics.weight_g && (!next.estimatedWeight || Math.abs(next.estimatedWeight - metrics.weight_g) / metrics.weight_g > 0.35)) {
+    next.estimatedWeight = metrics.weight_g;
+  }
+  if (metrics.print_minutes && (!next.printTime || Math.abs(next.printTime - metrics.print_minutes) / metrics.print_minutes > 0.35)) {
+    next.printTime = metrics.print_minutes;
+  }
+  next.colorCount = Math.max(Number(next.colorCount ?? 1), metrics.color_count);
+  if (metrics.plates && Array.isArray(next.printProfiles) && next.printProfiles.length) {
+    next.printProfiles = next.printProfiles.slice(0, Math.max(1, metrics.plates));
+  }
+  return next;
+}
+
 async function fetchHtmlRotating(url: string, retries = 3): Promise<string | null> {
   for (let i = 0; i < retries; i++) {
     const ua = UAS[(Date.now() + i) % UAS.length];
@@ -156,9 +231,11 @@ async function tryMakerWorld(url: string, platform: string): Promise<Partial<Uni
       infill: Number(p.infill_pct) || null,
       supports: !!p.supports,
       ams: !!p.uses_ams,
+      color_count: Number(p.color_count ?? p.colorCount ?? 0) || null,
     }));
     const bestFil = profiles.find((p) => p.filament_g)?.filament_g ?? null;
     const bestTime = profiles.find((p) => p.print_minutes)?.print_minutes ?? null;
+    const colorCount = Math.max(...profiles.map((p) => Number(p.color_count ?? 1)), 1);
     return {
       title: j.title || j.name,
       creator: { name: j.designer?.name ?? null, url: j.designer?.profile_url ?? null },
@@ -176,6 +253,7 @@ async function tryMakerWorld(url: string, platform: string): Promise<Partial<Uni
       bambuCompatible: true,
       estimatedWeight: bestFil,
       printTime: bestTime,
+      colorCount,
       source: { engine: "openapi", scrapedAt: new Date().toISOString() },
     };
   } catch { return null; }
@@ -192,7 +270,7 @@ async function tryFirecrawl(url: string): Promise<Partial<UnifiedModel> | null> 
         "markdown",
         {
           type: "json",
-          prompt: "Extract 3D model metadata: title, creator name, description (max 1500 chars), tags list, category, image URLs (max 8), download_count, like_count, print_count, list of print profiles with name+filament_grams+print_minutes+layer_height_mm+infill_pct+supports+uses_ams, and whether it is compatible with Bambu Studio.",
+          prompt: "Extract only facts visible on the page for this 3D model. Return title, creator name, description (max 1500 chars), tags list, category, image URLs (max 8), download_count, like_count, print_count, list of print profiles with name+filament_grams+print_minutes+layer_height_mm+infill_pct+supports+uses_ams+color_count/material_count, total color_count/material_count if visible, and whether it is compatible with Bambu Studio. Do not invent weight, time, colors, or stats if not visible.",
         },
       ],
       onlyMainContent: true,
@@ -218,11 +296,12 @@ async function tryFirecrawl(url: string): Promise<Partial<UnifiedModel> | null> 
           infill: Number(p.infill_pct) || null,
           supports: !!p.supports,
           ams: !!p.uses_ams,
+          color_count: Number(p.color_count ?? p.material_count ?? p.colors_count ?? 0) || null,
         }))
       : [];
     const bestFil = profiles.find((p) => p.filament_g)?.filament_g ?? null;
     const bestTime = profiles.find((p) => p.print_minutes)?.print_minutes ?? null;
-    return {
+    const extracted = {
       title: j.title || meta.title || meta.ogTitle || "",
       creator: { name: j.creator || j.creator_name || null, url: null },
       description: (j.description || meta.description || md.slice(0, 1500)) ?? null,
@@ -239,8 +318,10 @@ async function tryFirecrawl(url: string): Promise<Partial<UnifiedModel> | null> 
       bambuCompatible: typeof j.bambu_compatible === "boolean" ? j.bambu_compatible : null,
       estimatedWeight: bestFil,
       printTime: bestTime,
+      colorCount: detectColorCount(`${md} ${JSON.stringify(j)}`, profiles),
       source: { engine: "firecrawl", scrapedAt: new Date().toISOString() },
     };
+    return validateAgainstSource(extracted, md);
   } catch { return null; }
 }
 
@@ -248,6 +329,8 @@ async function tryFirecrawl(url: string): Promise<Partial<UnifiedModel> | null> 
 async function tryFetchScrape(url: string): Promise<Partial<UnifiedModel> | null> {
   const html = await fetchHtmlRotating(url);
   if (!html) return null;
+  const text = htmlText(html);
+  const sourceMetrics = extractSourceMetrics(text);
   const title = extractMeta(html, "og:title") || extractMeta(html, "twitter:title")
     || html.match(/<title>([^<]+)<\/title>/i)?.[1] || "";
   const description = extractMeta(html, "og:description") || extractMeta(html, "description");
@@ -281,8 +364,9 @@ async function tryFetchScrape(url: string): Promise<Partial<UnifiedModel> | null
     stats: { downloads: 0, likes: 0, prints: 0 },
     printProfiles: [],
     bambuCompatible: null,
-    estimatedWeight: null,
-    printTime: null,
+    estimatedWeight: sourceMetrics.weight_g,
+    printTime: sourceMetrics.print_minutes,
+    colorCount: sourceMetrics.color_count,
     source: { engine: "fetch", scrapedAt: new Date().toISOString() },
   };
 }
@@ -367,6 +451,7 @@ async function computePricing(
   print_minutes: number,
   complexity: number,
   materialCode: string,
+  colorCount = 1,
 ) {
   const { data: material } = await admin
     .from("print_materials")
@@ -388,6 +473,11 @@ async function computePricing(
   const minRangePct = Number(base.min_range_pct ?? 0.9);
   const maxRangePct = Number(base.max_range_pct ?? 1.15);
   const minOrderIqd = Number(base.min_order_iqd ?? 5000);
+  const safeColorCount = clamp(Math.floor(Number(colorCount) || 1), 1, 16);
+  const extraColors = Math.max(0, safeColorCount - 1);
+  const multiColorFixed = Number(base.multi_color_fixed_iqd ?? 1000);
+  const multiColorPerHour = Number(base.multi_color_per_hour_iqd ?? 350);
+  const multiColorMaterialWastePct = Number(base.multi_color_material_waste_pct ?? 0.06);
 
   const difficulty: "easy" | "medium" | "hard" =
     complexity > 60 ? "hard" : complexity > 30 ? "medium" : "easy";
@@ -396,7 +486,8 @@ async function computePricing(
   const filament_cost = (weight_g / 1000) * filamentPrice;
   const machine_cost = (print_minutes / 60) * hourlyCost;
   const complexity_fee = baseComplexityFee * complexityMult;
-  const subtotal = filament_cost + machine_cost + complexity_fee;
+  const multi_color_cost = extraColors * (multiColorFixed + multiColorPerHour * (print_minutes / 60) + filament_cost * multiColorMaterialWastePct);
+  const subtotal = filament_cost + machine_cost + complexity_fee + multi_color_cost;
   const platform_fee = subtotal * platformFeePct;
   const profit_margin = subtotal * profitPct;
   let final = subtotal + platform_fee + profit_margin;
@@ -407,14 +498,23 @@ async function computePricing(
       filament_cost: round250(filament_cost),
       machine_cost: round250(machine_cost),
       complexity_fee: round250(complexity_fee),
+      multi_color_cost: round250(multi_color_cost),
       platform_fee: round250(platform_fee),
       profit_margin: round250(profit_margin),
       subtotal: round250(subtotal),
       final: round250(final),
       price_min: round250(final * minRangePct),
       price_max: round250(final * maxRangePct),
+      color_count: safeColorCount,
+      components: [
+        { key: "material", label_ar: "المادة", label_en: "Material", value: round250(filament_cost) },
+        { key: "machine", label_ar: "تشغيل الماكينة", label_en: "Machine runtime", value: round250(machine_cost) },
+        { key: "complexity", label_ar: "التعقيد", label_en: "Complexity", value: round250(complexity_fee) },
+        ...(multi_color_cost > 0 ? [{ key: "multi_color", label_ar: "تعدد الألوان", label_en: "Multi-color", value: round250(multi_color_cost) }] : []),
+      ],
+      multipliers: { extra_colors: extraColors },
       inputs: { weight_g, print_minutes, difficulty },
-      pricing: { filament_price_per_kg: filamentPrice, hourly_machine_cost: hourlyCost, base_complexity_fee: baseComplexityFee, platform_fee_pct: platformFeePct, profit_margin_pct: profitPct, min_range_pct: minRangePct, max_range_pct: maxRangePct, min_order_iqd: minOrderIqd },
+      pricing: { filament_price_per_kg: filamentPrice, hourly_machine_cost: hourlyCost, base_complexity_fee: baseComplexityFee, platform_fee_pct: platformFeePct, profit_margin_pct: profitPct, min_range_pct: minRangePct, max_range_pct: maxRangePct, min_order_iqd: minOrderIqd, multi_color_fixed_iqd: multiColorFixed, multi_color_per_hour_iqd: multiColorPerHour, multi_color_material_waste_pct: multiColorMaterialWastePct },
     },
     material: material ? {
       code: material.code, name_en: material.name_en, name_ar: material.name_ar,
@@ -464,8 +564,8 @@ Deno.serve(async (req) => {
     if (!url && file_meta?.size_bytes) {
       const grams = Math.max(5, Math.round(file_meta.size_bytes / 1024 / 25));
       const print_minutes = Math.max(30, grams * 4);
-      const complexity = computeComplexity({ estimatedWeight: grams, printTime: print_minutes, tags: [], printProfiles: [] });
-      const { breakdown, material } = await computePricing(admin, grams, print_minutes, complexity, material_code);
+      const complexity = computeComplexity({ estimatedWeight: grams, printTime: print_minutes, colorCount: 1, tags: [], printProfiles: [] });
+      const { breakdown, material } = await computePricing(admin, grams, print_minutes, complexity, material_code, 1);
       return new Response(JSON.stringify({
         source: "file",
         model: {
@@ -474,6 +574,7 @@ Deno.serve(async (req) => {
           weight_g: grams, print_minutes,
           dimensions_mm: null, recommended_printer: null,
           difficulty: breakdown.inputs.difficulty,
+          color_count: 1,
         },
         breakdown, material,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -514,14 +615,15 @@ Deno.serve(async (req) => {
       .from("print_quote_cache")
       .select("payload, expires_at, extraction_engine, confidence_level, platform")
       .eq("url", normalized).maybeSingle();
-    if (cached && new Date(cached.expires_at).getTime() > Date.now()) {
+    if (cached && new Date(cached.expires_at).getTime() > Date.now() && (cached.payload as any)?.analyzer_version === ANALYZER_VERSION) {
       const cachedPayload = cached.payload as any;
       // re-price (material may differ)
       const m = cachedPayload.unified ?? cachedPayload;
       const weight = m.estimatedWeight ?? cachedPayload.model?.weight_g ?? 30;
       const minutes = m.printTime ?? cachedPayload.model?.print_minutes ?? 180;
       const complexity = m.complexityScore ?? 50;
-      const { breakdown, material } = await computePricing(admin, weight, minutes, complexity, material_code);
+      const colorCount = Math.max(Number(m.colorCount ?? cachedPayload.breakdown?.color_count ?? 1), 1);
+      const { breakdown, material } = await computePricing(admin, weight, minutes, complexity, material_code, colorCount);
       const responsePayload = {
         source: "cached",
         url_hash,
@@ -532,6 +634,7 @@ Deno.serve(async (req) => {
           weight_g: weight, print_minutes: minutes,
           dimensions_mm: null, recommended_printer: null,
           difficulty: breakdown.inputs.difficulty,
+          color_count: colorCount,
         },
         breakdown, material,
       };
@@ -555,7 +658,7 @@ Deno.serve(async (req) => {
       images: [], thumbnail: null, tags: [], category: null,
       stats: { downloads: 0, likes: 0, prints: 0 },
       printProfiles: [], bambuCompatible: null,
-      estimatedWeight: null, printTime: null, complexityScore: 0,
+      estimatedWeight: null, printTime: null, colorCount: 1, complexityScore: 0,
       confidenceLevel: "low",
       source: { engine: "none", scrapedAt: new Date().toISOString() },
     };
@@ -571,10 +674,19 @@ Deno.serve(async (req) => {
         engineUsed = engineUsed === "openapi" ? "openapi+firecrawl" : "firecrawl";
       }
     }
-    if (!partial.title) {
+    if (!partial.title || !partial.thumbnail || !partial.estimatedWeight || engineUsed.includes("firecrawl")) {
       const fs = await tryFetchScrape(normalized);
       if (fs) {
-        partial = { ...partial, ...fs };
+        partial = {
+          ...partial,
+          title: fs.title || partial.title,
+          description: fs.description || partial.description,
+          images: fs.images?.length ? fs.images : partial.images,
+          thumbnail: fs.thumbnail || partial.thumbnail,
+          estimatedWeight: fs.estimatedWeight ?? partial.estimatedWeight,
+          printTime: fs.printTime ?? partial.printTime,
+          colorCount: Math.max(Number(partial.colorCount ?? 1), Number(fs.colorCount ?? 1)),
+        };
         engineUsed = engineUsed === "none" ? "fetch" : `${engineUsed}+fetch`;
       }
     }
@@ -592,11 +704,14 @@ Deno.serve(async (req) => {
 
     const weight = partial.estimatedWeight ?? 30;
     const minutes = partial.printTime ?? 180;
+    const colorCount = Math.max(Number(partial.colorCount ?? 1), detectColorCount(`${partial.description ?? ""} ${(partial.tags ?? []).join(" ")}`, partial.printProfiles), 1);
+    partial.colorCount = colorCount;
     const { breakdown, material } = await computePricing(
-      admin, weight, minutes, partial.complexityScore, material_code,
+      admin, weight, minutes, partial.complexityScore, material_code, colorCount,
     );
 
     const responsePayload = {
+      analyzer_version: ANALYZER_VERSION,
       source: engineUsed.includes("ai") && engineUsed === "ai" ? "ai" : "scrape",
       url_hash,
       cacheHit: false,
@@ -608,6 +723,7 @@ Deno.serve(async (req) => {
         weight_g: weight, print_minutes: minutes,
         dimensions_mm: null, recommended_printer: null,
         difficulty: breakdown.inputs.difficulty,
+        color_count: colorCount,
       },
       breakdown, material,
     };

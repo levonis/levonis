@@ -220,3 +220,12 @@ Deno.test("Support required adds a non-zero supports cost", () => {
   assert(withSup.components.supports > 0);
   assert(withSup.final > noSup.final);
 });
+
+Deno.test("FDM: multi-color prints add cost and expose extra color multiplier", () => {
+  const oneColor = computeQuote({ metrics: simpleMetrics(80, 80), material: PLA, machine: fdmMachine, config: baseConfig, color_count: 1 });
+  const fiveColors = computeQuote({ metrics: simpleMetrics(80, 80), material: PLA, machine: fdmMachine, config: baseConfig, color_count: 5 });
+  assertEquals(oneColor.components.multi_color, 0);
+  assert(fiveColors.components.multi_color > 0);
+  assertEquals(fiveColors.multipliers.extra_colors, 4);
+  assert(fiveColors.final > oneColor.final);
+});
