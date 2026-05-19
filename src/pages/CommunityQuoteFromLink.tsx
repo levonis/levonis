@@ -35,7 +35,9 @@ export default function CommunityQuoteFromLink() {
     metrics: ModelMetrics; quality: QualityReport; fileHash: string; fileName: string;
   } | null>(null);
   const [materialChanging, setMaterialChanging] = useState(false);
+  const [paramsChanging, setParamsChanging] = useState(false);
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+  const [quoteParams, setQuoteParams] = useState<{ qty: number; rush_tier: "standard" | "fast" | "rush" }>({ qty: 1, rush_tier: "standard" });
 
   const submitUrl = async () => {
     if (!url.trim()) return;
