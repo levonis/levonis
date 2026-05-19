@@ -357,6 +357,7 @@ export default function CommunityQuoteFromLink() {
         open={viewerOpen}
         onOpenChange={setViewerOpen}
         file={fileToUpload}
+        url={viewerUrl}
         language={isAr ? "ar" : "en"}
       />
     </div>
