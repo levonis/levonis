@@ -32,8 +32,8 @@ export default function PricingEngineTab() {
   const { data, isLoading } = useQuery({
     queryKey: ["quote_pricing_cfg"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("community_settings" as any)
+      const { data, error } = await (supabase as any)
+        .from("community_settings")
         .select("value").eq("key", "quote_pricing").maybeSingle();
       if (error) throw error;
       return (data?.value ?? null) as QuotePricingCfg | null;
