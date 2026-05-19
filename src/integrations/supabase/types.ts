@@ -8254,6 +8254,99 @@ export type Database = {
         }
         Relationships: []
       }
+      print_machine_profiles: {
+        Row: {
+          created_at: string
+          hourly_cost_iqd: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          nozzle_flow_rate_cm3_min: number
+          travel_overhead_per_layer_sec: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hourly_cost_iqd?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          nozzle_flow_rate_cm3_min?: number
+          travel_overhead_per_layer_sec?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hourly_cost_iqd?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          nozzle_flow_rate_cm3_min?: number
+          travel_overhead_per_layer_sec?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      print_materials: {
+        Row: {
+          code: string
+          cost_per_kg_iqd: number
+          created_at: string
+          default_infill_pct: number
+          default_layer_height_mm: number
+          default_nozzle_mm: number
+          default_print_speed_mm_s: number
+          density_g_cm3: number
+          display_order: number
+          id: string
+          is_active: boolean
+          name_ar: string
+          name_en: string
+          name_ku: string | null
+          shrinkage_pct: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          cost_per_kg_iqd: number
+          created_at?: string
+          default_infill_pct?: number
+          default_layer_height_mm?: number
+          default_nozzle_mm?: number
+          default_print_speed_mm_s?: number
+          density_g_cm3: number
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          name_en: string
+          name_ku?: string | null
+          shrinkage_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          cost_per_kg_iqd?: number
+          created_at?: string
+          default_infill_pct?: number
+          default_layer_height_mm?: number
+          default_nozzle_mm?: number
+          default_print_speed_mm_s?: number
+          density_g_cm3?: number
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string
+          name_ku?: string | null
+          shrinkage_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       print_offers: {
         Row: {
           accepted_at: string | null
@@ -8334,25 +8427,34 @@ export type Database = {
       }
       print_quote_cache: {
         Row: {
+          analysis_payload: Json | null
           created_at: string
           expires_at: string
+          file_hash: string | null
           id: string
+          material_code: string | null
           payload: Json
           source: string
           url: string
         }
         Insert: {
+          analysis_payload?: Json | null
           created_at?: string
           expires_at?: string
+          file_hash?: string | null
           id?: string
+          material_code?: string | null
           payload: Json
           source?: string
           url: string
         }
         Update: {
+          analysis_payload?: Json | null
           created_at?: string
           expires_at?: string
+          file_hash?: string | null
           id?: string
+          material_code?: string | null
           payload?: Json
           source?: string
           url?: string
