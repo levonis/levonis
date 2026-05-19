@@ -31,7 +31,7 @@ const UAS = [
 // in-memory rate limiter per (user, urlHash) → 30s
 const RECENT = new Map<string, number>();
 const RECENT_TTL = 30_000;
-const ANALYZER_VERSION = 3;
+const ANALYZER_VERSION = 4;
 
 interface Creator { name: string | null; url: string | null }
 interface PrintProfile {
