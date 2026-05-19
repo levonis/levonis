@@ -8257,34 +8257,40 @@ export type Database = {
       print_machine_profiles: {
         Row: {
           created_at: string
+          current_queue_count: number
           hourly_cost_iqd: number
           id: string
           is_active: boolean
           is_default: boolean
           name: string
           nozzle_flow_rate_cm3_min: number
+          process_type: string
           travel_overhead_per_layer_sec: number
           updated_at: string
         }
         Insert: {
           created_at?: string
+          current_queue_count?: number
           hourly_cost_iqd?: number
           id?: string
           is_active?: boolean
           is_default?: boolean
           name: string
           nozzle_flow_rate_cm3_min?: number
+          process_type?: string
           travel_overhead_per_layer_sec?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
+          current_queue_count?: number
           hourly_cost_iqd?: number
           id?: string
           is_active?: boolean
           is_default?: boolean
           name?: string
           nozzle_flow_rate_cm3_min?: number
+          process_type?: string
           travel_overhead_per_layer_sec?: number
           updated_at?: string
         }
@@ -8306,6 +8312,7 @@ export type Database = {
           name_ar: string
           name_en: string
           name_ku: string | null
+          process_type: string
           shrinkage_pct: number
           updated_at: string
         }
@@ -8324,6 +8331,7 @@ export type Database = {
           name_ar: string
           name_en: string
           name_ku?: string | null
+          process_type?: string
           shrinkage_pct?: number
           updated_at?: string
         }
@@ -8342,6 +8350,7 @@ export type Database = {
           name_ar?: string
           name_en?: string
           name_ku?: string | null
+          process_type?: string
           shrinkage_pct?: number
           updated_at?: string
         }
@@ -8424,6 +8433,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      print_quotations: {
+        Row: {
+          breakdown: Json
+          created_at: string
+          currency: string
+          difficulty_score: number | null
+          final_iqd: number
+          id: string
+          input_payload: Json
+          material_code: string | null
+          pdf_url: string | null
+          print_request_id: string | null
+          process_type: string
+          qty: number
+          quote_number: string
+          rush_tier: string
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          breakdown?: Json
+          created_at?: string
+          currency?: string
+          difficulty_score?: number | null
+          final_iqd?: number
+          id?: string
+          input_payload?: Json
+          material_code?: string | null
+          pdf_url?: string | null
+          print_request_id?: string | null
+          process_type?: string
+          qty?: number
+          quote_number?: string
+          rush_tier?: string
+          source: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          breakdown?: Json
+          created_at?: string
+          currency?: string
+          difficulty_score?: number | null
+          final_iqd?: number
+          id?: string
+          input_payload?: Json
+          material_code?: string | null
+          pdf_url?: string | null
+          print_request_id?: string | null
+          process_type?: string
+          qty?: number
+          quote_number?: string
+          rush_tier?: string
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       print_quote_cache: {
         Row: {
