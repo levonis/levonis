@@ -943,6 +943,12 @@ Deno.serve(async (req) => {
       if (mw) { partial = { ...partial, ...mw }; engineUsed = engineUsed === "none" ? "openapi" : `${engineUsed}+openapi`; }
     }
 
+    // Snapshot authoritative fields before non-authoritative engines run, so we can re-pin them after.
+    const lockedColorCount = engineUsed.includes("printables-public") || engineUsed.includes("mw-public") || engineUsed.includes("openapi")
+      ? partial.colorCount : null;
+    const lockedTitle = engineUsed.includes("printables-public") || engineUsed.includes("mw-public") ? partial.title : null;
+    const lockedThumb = engineUsed.includes("printables-public") || engineUsed.includes("mw-public") ? partial.thumbnail : null;
+
     if (!partial.title || !partial.estimatedWeight) {
       const fc = await withTimeout(tryFirecrawl(normalized), 12000, "firecrawl");
       if (fc) {
@@ -972,6 +978,12 @@ Deno.serve(async (req) => {
       partial = { ...partial, ...ai };
       engineUsed = engineUsed === "none" ? "ai" : `${engineUsed}+ai`;
     }
+
+    // Re-pin authoritative fields (mmu-derived color count, official title/thumbnail)
+    if (lockedColorCount !== null) partial.colorCount = lockedColorCount;
+    if (lockedTitle) partial.title = lockedTitle;
+    if (lockedThumb) partial.thumbnail = lockedThumb;
+
 
     if (!partial.title) partial.title = "3D Model";
     partial.sourcePlatform = platform;
