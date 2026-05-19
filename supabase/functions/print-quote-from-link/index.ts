@@ -165,7 +165,7 @@ function detectColorCount(text: string, profiles: PrintProfile[] = []): number {
   const explicit = text.match(/(\d+)\s*(?:colors?|colours?|ألوان|لون)/i);
   const explicitCount = explicit ? Number(explicit[1]) : 0;
   const inferred = Math.max(explicitCount, materialTags.size, ...profileColors, 1);
-  return clamp(Math.floor(inferred), 1, 16);
+  return clamp(Math.floor(inferred), 1, 8);
 }
 
 function validateAgainstSource(partial: Partial<UnifiedModel>, sourceText: string): Partial<UnifiedModel> {
