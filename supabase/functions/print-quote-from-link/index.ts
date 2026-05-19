@@ -981,8 +981,8 @@ Deno.serve(async (req) => {
 
     const weight = partial.estimatedWeight ?? 30;
     const minutes = partial.printTime ?? 180;
-    // Trust authoritative engines. Only run text-detection fallback when extraction did NOT come from an authoritative API.
-    const isAuthoritative = engineUsed.startsWith("openapi") || engineUsed.startsWith("mw-public") || engineUsed.startsWith("printables-public");
+    // Trust authoritative engines for color count. Printables `mmu` flag is authoritative even when numeric data is null.
+    const isAuthoritative = engineUsed.startsWith("openapi") || engineUsed.startsWith("mw-public") || engineUsed.includes("printables-public");
     const colorCount = isAuthoritative
       ? clamp(Math.floor(Number(partial.colorCount ?? 1) || 1), 1, 8)
       : clamp(Math.max(
