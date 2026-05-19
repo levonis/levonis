@@ -319,6 +319,17 @@ export default function CommunityQuoteFromLink() {
 
         {result && !loading && (
           <div className="mt-4 space-y-4">
+            <QuoteResultCard
+              result={result}
+              onCreate={createRequest}
+              creating={creating}
+              onUseFile={() => setTab("file")}
+              onMaterialChange={analysis ? handleMaterialChange : undefined}
+              materialChanging={materialChanging}
+              onParamsChange={analysis ? handleParamsChange : undefined}
+              paramsChanging={paramsChanging}
+            />
+
             {(fileToUpload || viewerUrl) && (
               <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl overflow-hidden">
                 <CardHeader className="pb-2">
@@ -354,8 +365,8 @@ export default function CommunityQuoteFromLink() {
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {t(
-                        "صفحات Printables/Thingiverse لا تكشف الملف مباشرة. حمّل ملف STL/3MF/OBJ من الرابط ثم ارفعه هنا لتفعيل المعاينة.",
-                        "Printables/Thingiverse pages don't expose the file directly. Download the STL/3MF/OBJ from the link, then upload it here to enable the 3D preview.",
+                        "هذه الصفحة لا تكشف ملف STL مباشرة. حمّل STL/3MF/OBJ من الرابط ثم ارفعه هنا لتفعيل المعاينة.",
+                        "This page doesn't expose the STL file directly. Download the STL/3MF/OBJ from the link, then upload it here to enable the 3D preview.",
                       )}
                     </p>
                   </div>
@@ -366,17 +377,6 @@ export default function CommunityQuoteFromLink() {
                 </CardContent>
               </Card>
             )}
-
-            <QuoteResultCard
-              result={result}
-              onCreate={createRequest}
-              creating={creating}
-              onUseFile={() => setTab("file")}
-              onMaterialChange={analysis ? handleMaterialChange : undefined}
-              materialChanging={materialChanging}
-              onParamsChange={analysis ? handleParamsChange : undefined}
-              paramsChanging={paramsChanging}
-            />
           </div>
         )}
         </div>
