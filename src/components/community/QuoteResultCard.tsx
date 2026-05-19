@@ -10,6 +10,34 @@ import QualityReportPanel from "./QualityReportPanel";
 import MaterialPicker from "./MaterialPicker";
 import type { ModelMetrics, QualityReport } from "@/lib/modelAnalysis/types";
 
+function ThumbnailWithFallback({ candidates, alt }: { candidates: string[]; alt: string }) {
+  const [idx, setIdx] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const src = candidates[idx];
+  if (!src || failed) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+        <Sparkles className="h-10 w-10" />
+      </div>
+    );
+  }
+  // Route through weserv to bypass hotlink/referrer protection on media.printables.com etc.
+  const proxied = `https://images.weserv.nl/?url=${encodeURIComponent(src.replace(/^https?:\/\//, ""))}&w=1200&output=webp`;
+  return (
+    <img
+      src={proxied}
+      alt={alt}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      className="w-full h-full object-cover"
+      onError={() => {
+        if (idx + 1 < candidates.length) setIdx(idx + 1);
+        else setFailed(true);
+      }}
+    />
+  );
+}
+
 export interface BreakdownComponent { key: string; label_ar: string; label_en: string; value: number }
 export interface RushOption { tier: "standard" | "fast" | "rush"; mult: number; days: number; preview_iqd: number }
 
