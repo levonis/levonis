@@ -1020,6 +1020,20 @@ Deno.serve(async (req) => {
       const mw = await withTimeout(tryMakerWorld(normalized, platform), 8000, "openapi");
       if (mw) { partial = { ...partial, ...mw }; engineUsed = engineUsed === "none" ? "openapi" : `${engineUsed}+openapi`; }
     }
+    // Engine 1c: Thingiverse REST API (gives us direct STL URL via threejs_url)
+    {
+      const tv = await withTimeout(tryThingiverseApi(normalized, platform), 8000, "thingiverse-api");
+      if (tv) {
+        partial = {
+          ...partial,
+          ...tv,
+          // Prefer authoritative fields from API but keep weight/time if other engines later fill them
+          previewFileUrl: tv.previewFileUrl ?? partial.previewFileUrl ?? null,
+        };
+        engineUsed = engineUsed === "none" ? "thingiverse-api" : `${engineUsed}+thingiverse-api`;
+      }
+    }
+
 
     // Snapshot authoritative fields before non-authoritative engines run, so we can re-pin them after.
     const lockedColorCount = engineUsed.includes("printables-public") || engineUsed.includes("mw-public") || engineUsed.includes("openapi")
