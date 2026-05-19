@@ -12,6 +12,17 @@ export interface QuoteResult {
   source: "scrape" | "ai" | "cached" | "file" | "geometry";
   sourceUrl?: string;
   sourceFileName?: string;
+  url_hash?: string;
+  cacheHit?: boolean;
+  unified?: {
+    sourcePlatform?: string;
+    creator?: { name: string | null; url: string | null };
+    tags?: string[];
+    stats?: { downloads: number; likes: number; prints: number };
+    printProfiles?: Array<{ name: string; filament_g?: number | null; print_minutes?: number | null }>;
+    confidenceLevel?: "high" | "medium" | "low";
+    complexityScore?: number;
+  };
   model: {
     name: string;
     thumbnail: string | null;
@@ -34,7 +45,6 @@ export interface QuoteResult {
     price_max: number;
     inputs: { weight_g: number; print_minutes: number; difficulty: string };
   };
-  // Only present for geometry-based quotes:
   metrics?: ModelMetrics;
   quality?: QualityReport;
   material?: { code: string; name_en: string; name_ar: string };
