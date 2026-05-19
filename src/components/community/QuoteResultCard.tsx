@@ -27,6 +27,8 @@ export interface QuoteResult {
     printProfiles?: Array<{ name: string; filament_g?: number | null; print_minutes?: number | null }>;
     confidenceLevel?: "high" | "medium" | "low";
     complexityScore?: number;
+    images?: string[];
+    thumbnail?: string | null;
   };
   model: {
     name: string;
