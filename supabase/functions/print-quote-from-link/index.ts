@@ -377,29 +377,30 @@ async function computePricing(
   const { data: settingsRow } = await admin
     .from("community_settings").select("value").eq("key", "quote_pricing").maybeSingle();
 
-  const pricing = (settingsRow?.value as any) ?? {
-    filament_price_per_kg: Number(material?.cost_per_kg_iqd ?? 25000),
-    hourly_machine_cost: 2000,
-    base_complexity_fee: 1500,
-    platform_fee_pct: 0.017,
-    profit_margin_pct: 0.15,
-    min_range_pct: 0.9,
-    max_range_pct: 1.15,
-  };
+  const cfg: any = settingsRow?.value ?? {};
+  const base: any = cfg.base ?? {};
 
-  const filamentPrice = Number(material?.cost_per_kg_iqd ?? pricing.filament_price_per_kg);
-  const hourlyCost = Number(machine?.hourly_cost_iqd ?? pricing.hourly_machine_cost);
+  const filamentPrice = Number(material?.cost_per_kg_iqd ?? base.filament_price_per_kg ?? 25000);
+  const hourlyCost = Number(machine?.hourly_cost_iqd ?? base.hourly_machine_cost ?? 2000);
+  const baseComplexityFee = Number(base.base_complexity_fee ?? 1500);
+  const platformFeePct = Number(base.platform_fee_pct ?? 0.017);
+  const profitPct = Number(base.profit_margin_pct ?? 0.15);
+  const minRangePct = Number(base.min_range_pct ?? 0.9);
+  const maxRangePct = Number(base.max_range_pct ?? 1.15);
+  const minOrderIqd = Number(base.min_order_iqd ?? 5000);
+
   const difficulty: "easy" | "medium" | "hard" =
     complexity > 60 ? "hard" : complexity > 30 ? "medium" : "easy";
   const complexityMult = difficulty === "easy" ? 1 : difficulty === "hard" ? 2.2 : 1.5;
 
   const filament_cost = (weight_g / 1000) * filamentPrice;
   const machine_cost = (print_minutes / 60) * hourlyCost;
-  const complexity_fee = pricing.base_complexity_fee * complexityMult;
+  const complexity_fee = baseComplexityFee * complexityMult;
   const subtotal = filament_cost + machine_cost + complexity_fee;
-  const platform_fee = subtotal * pricing.platform_fee_pct;
-  const profit_margin = subtotal * pricing.profit_margin_pct;
-  const final = subtotal + platform_fee + profit_margin;
+  const platform_fee = subtotal * platformFeePct;
+  const profit_margin = subtotal * profitPct;
+  let final = subtotal + platform_fee + profit_margin;
+  if (final < minOrderIqd) final = minOrderIqd;
 
   return {
     breakdown: {
@@ -410,10 +411,10 @@ async function computePricing(
       profit_margin: round250(profit_margin),
       subtotal: round250(subtotal),
       final: round250(final),
-      price_min: round250(final * pricing.min_range_pct),
-      price_max: round250(final * pricing.max_range_pct),
+      price_min: round250(final * minRangePct),
+      price_max: round250(final * maxRangePct),
       inputs: { weight_g, print_minutes, difficulty },
-      pricing,
+      pricing: { filament_price_per_kg: filamentPrice, hourly_machine_cost: hourlyCost, base_complexity_fee: baseComplexityFee, platform_fee_pct: platformFeePct, profit_margin_pct: profitPct, min_range_pct: minRangePct, max_range_pct: maxRangePct, min_order_iqd: minOrderIqd },
     },
     material: material ? {
       code: material.code, name_en: material.name_en, name_ar: material.name_ar,
