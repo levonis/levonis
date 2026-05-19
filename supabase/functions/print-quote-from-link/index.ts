@@ -917,21 +917,30 @@ Deno.serve(async (req) => {
     };
 
     let engineUsed = "none";
-    // Engine 0: public MakerWorld JSON (no key, most accurate)
-    const mwp = await tryMakerWorldPublic(normalized, platform);
+    // Engine 0a: public MakerWorld JSON (no key, most accurate for makerworld)
+    const mwp = await withTimeout(tryMakerWorldPublic(normalized, platform), 8000, "mw-public");
     if (mwp) { partial = { ...partial, ...mwp }; engineUsed = "mw-public"; }
+    // Engine 0b: public Printables GraphQL (no key, most accurate for printables)
     if (!partial.estimatedWeight) {
-      const mw = await tryMakerWorld(normalized, platform);
+      const pp = await withTimeout(tryPrintablesPublic(normalized, platform), 8000, "printables-public");
+      if (pp) {
+        partial = { ...partial, ...pp };
+        engineUsed = engineUsed === "none" ? "printables-public" : `${engineUsed}+printables-public`;
+      }
+    }
+    if (!partial.estimatedWeight) {
+      const mw = await withTimeout(tryMakerWorld(normalized, platform), 8000, "openapi");
       if (mw) { partial = { ...partial, ...mw }; engineUsed = engineUsed === "none" ? "openapi" : `${engineUsed}+openapi`; }
     }
 
     if (!partial.title || !partial.estimatedWeight) {
-      const fc = await tryFirecrawl(normalized);
+      const fc = await withTimeout(tryFirecrawl(normalized), 12000, "firecrawl");
       if (fc) {
         partial = { ...partial, ...fc, images: fc.images?.length ? fc.images : partial.images };
-        engineUsed = engineUsed === "openapi" ? "openapi+firecrawl" : "firecrawl";
+        engineUsed = engineUsed === "none" ? "firecrawl" : `${engineUsed}+firecrawl`;
       }
     }
+
     if (!partial.title || !partial.thumbnail || !partial.estimatedWeight || engineUsed.includes("firecrawl")) {
       const fs = await tryFetchScrape(normalized);
       if (fs) {
