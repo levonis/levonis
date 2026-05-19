@@ -341,18 +341,19 @@ export default function QuoteResultCard({
         )}
 
         <div className="flex gap-2 pt-1">
-          <Button className="flex-1" onClick={onCreate} disabled={creating}>
+          <Button className="flex-1 glass-trigger rounded-full" onClick={onCreate} disabled={creating}>
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : t("إنشاء طلب طباعة", "Create Print Request")}
           </Button>
-          <Button variant="outline" onClick={downloadPdf} disabled={downloading} title={t("تنزيل PDF", "Download PDF")}>
+          <Button variant="outline" onClick={downloadPdf} disabled={downloading} title={t("تنزيل PDF", "Download PDF")} className="glass-trigger rounded-full">
             {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
           </Button>
           {!result.sourceFileName && (
-            <Button variant="outline" onClick={onUseFile} title={t("استخدام ملف", "Use file")}>
+            <Button variant="outline" onClick={onUseFile} title={t("استخدام ملف", "Use file")} className="glass-trigger rounded-full">
               <Upload className="h-4 w-4" />
             </Button>
           )}
         </div>
+
 
         {/* Hidden printable for PDF */}
         <div ref={printableRef} style={{ display: "none", width: 794, padding: 32, background: "#fff", color: "#111", fontFamily: "system-ui, -apple-system, sans-serif" }}>
