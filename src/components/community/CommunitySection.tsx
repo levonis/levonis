@@ -153,7 +153,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       {isCommunityHub && user && (
         <div className="mb-4">
           <button
-            onClick={() => navigate("/community/quote-from-link")}
+            onClick={() => navigate("/community/auto-levo")}
             className="w-full flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-gradient-to-l from-primary/10 to-card hover:border-primary/40 hover:shadow-md transition-all"
           >
             <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
