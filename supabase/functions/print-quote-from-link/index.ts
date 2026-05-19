@@ -283,12 +283,10 @@ async function tryMakerWorld(url: string, platform: string): Promise<Partial<Uni
     const best = pickBestProfile(rawProfiles);
     const bestSummary = best ? summarizeFilaments(best) : { totalWeight: null, colorCount: null };
     const bestFil = bestSummary.totalWeight
-      ?? Number(best?.filament_weight_g ?? best?.total_filament_g)
-      ?? profiles.find((p) => p.filament_g)?.filament_g
-      ?? null;
-    const bestTime = Number(best?.print_time_minutes ?? best?.print_time_min ?? best?.printTime)
-      || profiles.find((p) => p.print_minutes)?.print_minutes
-      || null;
+      ?? (Number(best?.filament_weight_g ?? best?.total_filament_g) || null)
+      ?? (profiles.find((p) => p.filament_g)?.filament_g ?? null);
+    const bestTime = (Number(best?.print_time_minutes ?? best?.print_time_min ?? best?.printTime) || null)
+      ?? (profiles.find((p) => p.print_minutes)?.print_minutes ?? null);
     const bestColors = bestSummary.colorCount
       ?? (best?.color_count && best.color_count <= 8 ? Number(best.color_count) : null)
       ?? Math.max(...profiles.map((p) => Number(p.color_count ?? 1)).filter((n) => n > 0 && n <= 8), 1);
