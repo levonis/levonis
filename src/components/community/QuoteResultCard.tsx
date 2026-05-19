@@ -10,6 +10,34 @@ import QualityReportPanel from "./QualityReportPanel";
 import MaterialPicker from "./MaterialPicker";
 import type { ModelMetrics, QualityReport } from "@/lib/modelAnalysis/types";
 
+function ThumbnailWithFallback({ candidates, alt }: { candidates: string[]; alt: string }) {
+  const [idx, setIdx] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const src = candidates[idx];
+  if (!src || failed) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+        <Sparkles className="h-10 w-10" />
+      </div>
+    );
+  }
+  // Route through weserv to bypass hotlink/referrer protection on media.printables.com etc.
+  const proxied = `https://images.weserv.nl/?url=${encodeURIComponent(src.replace(/^https?:\/\//, ""))}&w=1200&output=webp`;
+  return (
+    <img
+      src={proxied}
+      alt={alt}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      className="w-full h-full object-cover"
+      onError={() => {
+        if (idx + 1 < candidates.length) setIdx(idx + 1);
+        else setFailed(true);
+      }}
+    />
+  );
+}
+
 export interface BreakdownComponent { key: string; label_ar: string; label_en: string; value: number }
 export interface RushOption { tier: "standard" | "fast" | "rush"; mult: number; days: number; preview_iqd: number }
 
@@ -27,6 +55,8 @@ export interface QuoteResult {
     printProfiles?: Array<{ name: string; filament_g?: number | null; print_minutes?: number | null }>;
     confidenceLevel?: "high" | "medium" | "low";
     complexityScore?: number;
+    images?: string[];
+    thumbnail?: string | null;
   };
   model: {
     name: string;
@@ -193,13 +223,10 @@ export default function QuoteResultCard({
   return (
     <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl overflow-hidden">
       <div className="aspect-video w-full bg-muted relative">
-        {m.thumbnail ? (
-          <img src={m.thumbnail} alt={m.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <Sparkles className="h-10 w-10" />
-          </div>
-        )}
+        <ThumbnailWithFallback
+          candidates={[m.thumbnail, ...((result.unified?.images as string[] | undefined) ?? [])].filter(Boolean) as string[]}
+          alt={m.name}
+        />
         <Badge className="absolute top-2 end-2" variant="secondary">{sourceLabel}</Badge>
         <Badge className="absolute top-2 start-2 bg-primary/15 text-primary border-0" variant="secondary">
           {processBadge.toUpperCase()}
