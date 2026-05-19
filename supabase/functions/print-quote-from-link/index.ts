@@ -251,6 +251,92 @@ function pickBestProfile(profiles: any[]): any | null {
   return sorted[0];
 }
 
+// ---------- Engine 0: MakerWorld PUBLIC API (no key required) ----------
+// Hits the same JSON endpoint the MakerWorld web app uses. Provides exact
+// per-filament weight, distinct color count (materialColorCnt), and print time prediction (seconds).
+async function tryMakerWorldPublic(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
+  if (platform !== "makerworld") return null;
+  const idMatch = url.match(/\/models\/(\d+)/);
+  if (!idMatch) return null;
+  const designId = idMatch[1];
+  const profileMatch = url.match(/profileId-(\d+)/i) || url.match(/[?&]profileId=(\d+)/i);
+  const wantedProfileId = profileMatch ? Number(profileMatch[1]) : null;
+
+  try {
+    const ua = UAS[Date.now() % UAS.length];
+    const res = await fetch(`https://makerworld.com/api/v1/design-service/design/${designId}`, {
+      headers: { "User-Agent": ua, Accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    if (!j || !j.id) return null;
+
+    const instances: any[] = Array.isArray(j.instances) ? j.instances : [];
+    if (!instances.length) return null;
+    const defaultId = Number(j.defaultInstanceId) || null;
+    const chosen =
+      (wantedProfileId && instances.find((i) => Number(i.id) === wantedProfileId)) ||
+      (defaultId && instances.find((i) => Number(i.id) === defaultId)) ||
+      instances[0];
+
+    const filaments: any[] = Array.isArray(chosen.instanceFilaments) ? chosen.instanceFilaments : [];
+    const totalFromFilaments = filaments.reduce((s, f) => s + (Number(f.usedG) || 0), 0);
+    const totalWeight = totalFromFilaments > 0 ? Math.round(totalFromFilaments) : (Number(chosen.weight) || null);
+
+    const distinctColors = new Set(
+      filaments.filter((f) => (Number(f.usedG) || 0) > 0.5).map((f) => String(f.color || "").toUpperCase()),
+    ).size;
+    const colorCount = clamp(
+      Number(chosen.materialColorCnt) || distinctColors || Number(chosen.materialCnt) || 1,
+      1, 8,
+    );
+
+    const printSec = Number(chosen.prediction) || 0;
+    const printMinutes = printSec > 0 ? Math.round(printSec / 60) : null;
+
+    const profiles: PrintProfile[] = instances.map((inst: any) => {
+      const fl: any[] = Array.isArray(inst.instanceFilaments) ? inst.instanceFilaments : [];
+      const w = fl.reduce((s, f) => s + (Number(f.usedG) || 0), 0) || Number(inst.weight) || null;
+      const distinct = new Set(fl.filter((f) => (Number(f.usedG) || 0) > 0.5).map((f) => String(f.color || ""))).size;
+      return {
+        name: inst.title || `Profile ${inst.id}`,
+        filament_g: w ? Math.round(Number(w)) : null,
+        print_minutes: inst.prediction ? Math.round(Number(inst.prediction) / 60) : null,
+        layer_height: null,
+        infill: null,
+        supports: false,
+        ams: !!inst.needAms,
+        color_count: distinct || Number(inst.materialColorCnt) || null,
+      };
+    });
+
+    const creatorName = j?.designCreator?.name ?? j?.designCreator?.nickname ?? null;
+    const creatorUid = j?.designCreator?.uid ?? null;
+
+    return {
+      title: j.title || j.titleTranslated || "",
+      creator: { name: creatorName, url: creatorUid ? `https://makerworld.com/en/@${creatorUid}` : null },
+      description: typeof j.summary === "string" ? j.summary.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 1500) : null,
+      images: ([j.coverUrl].filter(Boolean)) as string[],
+      thumbnail: j.coverUrl ?? null,
+      tags: Array.isArray(j.tags) ? j.tags.slice(0, 12) : [],
+      category: Array.isArray(j.categories) && j.categories[0] ? (j.categories[0].name ?? null) : null,
+      stats: {
+        downloads: Number(j.downloadCount) || 0,
+        likes: Number(j.likeCount) || 0,
+        prints: Number(j.printCount) || 0,
+      },
+      printProfiles: profiles,
+      bambuCompatible: true,
+      estimatedWeight: totalWeight,
+      printTime: printMinutes,
+      colorCount,
+      source: { engine: "mw-public", scrapedAt: new Date().toISOString() },
+    };
+  } catch { return null; }
+}
+
+// ---------- Engine 1: MakerWorld OpenAPI (best when key available) ----------
 async function tryMakerWorld(url: string, platform: string): Promise<Partial<UnifiedModel> | null> {
   if (platform !== "makerworld") return null;
   const idMatch = url.match(/\/models\/(\d+)/);
