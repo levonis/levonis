@@ -45,16 +45,17 @@ function ModelMesh({
   showBBox,
   overhang,
   explode,
+  clippingPlane,
 }: {
   group: THREE.Group;
   wireframe: boolean;
   showBBox: boolean;
   overhang: boolean;
   explode: number;
+  clippingPlane: THREE.Plane | null;
 }) {
   const ref = useRef<THREE.Group>(null);
 
-  // Material + wireframe; preserves vertexColors flag from overhang pass.
   useEffect(() => {
     group.traverse((c: any) => {
       if (c.isMesh) {
@@ -64,22 +65,21 @@ function ModelMesh({
             metalness: 0.1,
             roughness: 0.55,
             flatShading: false,
+            side: THREE.DoubleSide,
           });
         }
         const m: THREE.MeshStandardMaterial = c.userData._mat;
         m.wireframe = wireframe;
+        m.clippingPlanes = clippingPlane ? [clippingPlane] : [];
+        m.clipShadows = true;
+        m.needsUpdate = true;
         c.material = m;
       }
     });
-  }, [group, wireframe]);
+  }, [group, wireframe, clippingPlane]);
 
-  useEffect(() => {
-    applyOverhangColors(group, overhang);
-  }, [group, overhang]);
-
-  useEffect(() => {
-    applyExploded(group, explode);
-  }, [group, explode]);
+  useEffect(() => { applyOverhangColors(group, overhang); }, [group, overhang]);
+  useEffect(() => { applyExploded(group, explode); }, [group, explode]);
 
   return (
     <group ref={ref}>
