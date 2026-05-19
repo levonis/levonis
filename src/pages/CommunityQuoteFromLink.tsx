@@ -293,24 +293,23 @@ export default function CommunityQuoteFromLink() {
                   </div>
 
                 </label>
-                {loading && progressPct > 0 && (
-                  <div className="space-y-1">
-                    <Progress value={progressPct} className="h-2" />
-                    <div className="text-xs text-muted-foreground text-center">{progressStage} · {progressPct}%</div>
-                  </div>
+                {loading && tab === "file" && (
+                  <ExtractionLoader
+                    language={isAr ? "ar" : "en"}
+                    mode="file"
+                    stage={progressStage}
+                    realProgress={progressPct}
+                  />
                 )}
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
 
-        {loading && !progressPct && (
-          <Card className="!bg-card/25 !backdrop-blur-2xl !border-white/15 shadow-2xl shadow-primary/10 rounded-3xl mt-4">
-            <CardContent className="p-4 space-y-3">
-              <Skeleton className="h-40 w-full rounded-lg" />
-              <Skeleton className="h-6 w-2/3" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-10 w-full" />
-            </CardContent>
-          </Card>
+        {loading && tab === "link" && (
+          <div className="mt-4">
+            <ExtractionLoader language={isAr ? "ar" : "en"} mode="link" />
+          </div>
         )}
 
         {result && !loading && (
