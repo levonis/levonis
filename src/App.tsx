@@ -122,6 +122,7 @@ const AdminRedeemableProducts = lazy(() => import("./pages/AdminRedeemableProduc
 const AdminCartRequests = lazy(() => import("./pages/AdminCartRequests"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const CommunityHome = lazy(() => import("./pages/CommunityHome"));
+const CommunityQuoteFromLink = lazy(() => import("./pages/CommunityQuoteFromLink"));
 const OffersStoragePage = lazy(() => import("./pages/OffersStoragePage"));
 const ChatOrderCheckout = lazy(() => import("./pages/ChatOrderCheckout"));
 const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
@@ -391,6 +392,7 @@ function AppContent() {
             <Route path="/community/customer/requests" element={<RequireCommunityProfile><CommunityCustomerRequests /></RequireCommunityProfile>} />
             <Route path="/community/customer/new" element={<RequireCommunityProfile><CommunityCustomerNewRequest /></RequireCommunityProfile>} />
             <Route path="/community/customer/profile" element={<RequireAuth><CommunityCustomerProfile /></RequireAuth>} />
+            <Route path="/community/quote-from-link" element={<RequireCommunityProfile><CommunityQuoteFromLink /></RequireCommunityProfile>} />
             <Route path="/community/merchant/signup" element={<RequireAuth><CommunityMerchantSignup /></RequireAuth>} />
             <Route path="/community/merchant/store" element={<RequireCommunityProfile><CommunityMerchantStore /></RequireCommunityProfile>} />
             <Route path="/community/merchant/orders" element={<RequireCommunityProfile><CommunityMerchantOrders /></RequireCommunityProfile>} />

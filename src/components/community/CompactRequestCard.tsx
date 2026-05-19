@@ -27,6 +27,9 @@ interface PrintRequest {
   accepted_offer_id: string | null;
   quantity?: number;
   customer_governorate?: string;
+  quote_source?: string | null;
+  estimated_price_min?: number | null;
+  estimated_price_max?: number | null;
 }
 
 interface CompactRequestCardProps {
@@ -229,6 +232,18 @@ export default function CompactRequestCard({
         <h3 className="font-bold text-[11px] line-clamp-1 text-foreground group-hover:text-primary transition-colors">
           {request.title}
         </h3>
+
+        {/* Instant Quote badge */}
+        {request.quote_source && request.estimated_price_min != null && request.estimated_price_max != null && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-primary/15 text-primary">
+              عرض سعر فوري
+            </span>
+            <span className="text-[8px] text-muted-foreground">
+              {request.estimated_price_min.toLocaleString()} – {request.estimated_price_max.toLocaleString()} IQD
+            </span>
+          </div>
+        )}
 
         {/* Specs Row - Governorate & Size */}
         <div className="flex items-center gap-1.5 flex-wrap">

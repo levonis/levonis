@@ -149,6 +149,25 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       )}
 
+      {/* Instant Quote from URL */}
+      {isCommunityHub && user && (
+        <div className="mb-4">
+          <button
+            onClick={() => navigate("/community/quote-from-link")}
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-gradient-to-l from-primary/10 to-card hover:border-primary/40 hover:shadow-md transition-all"
+          >
+            <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 text-right">
+              <h3 className="text-sm font-black text-foreground">احسب سعر طباعتك من رابط</h3>
+              <p className="text-[10px] text-muted-foreground">Thingiverse · Printables · MakerWorld · Cults</p>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">جديد</span>
+          </button>
+        </div>
+      )}
+
       {/* Merchant Stories Bar */}
       {isCommunityHub && (
         <div className="mb-3">
