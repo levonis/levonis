@@ -205,13 +205,21 @@ export default function CommunityQuoteFromLink() {
   };
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 relative overflow-hidden">
+      {/* Glass aurora background */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-32 -start-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl" />
+        <div className="absolute top-1/3 -end-24 h-96 w-96 rounded-full bg-accent/25 blur-3xl" />
+        <div className="absolute bottom-0 start-1/4 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+      </div>
+
       <div className="container mx-auto max-w-2xl px-4 py-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4 gap-2 glass-trigger">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4 gap-2 glass-trigger rounded-full">
           <ArrowLeft className="h-4 w-4" />{t("رجوع", "Back")}
         </Button>
 
         <Card className="glass-panel">
+
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
               <Sparkles className="h-5 w-5 text-primary" />
