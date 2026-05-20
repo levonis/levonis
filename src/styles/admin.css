@@ -2,9 +2,38 @@
    ADMIN DASHBOARD STYLES - GLASSMORPHISM 3D UI
    ================================ */
 
-/* Admin page container */
+/* Admin page container — neutral slate palette (no theme-green leak) + glass backdrop */
 .admin-page {
-  @apply min-h-screen bg-background;
+  min-height: 100vh;
+  position: relative;
+  --background: 220 18% 8%;
+  --card: 220 16% 12%;
+  --popover: 220 16% 12%;
+  --muted: 220 12% 22%;
+  --muted-foreground: 220 10% 70%;
+  --border: 220 14% 24%;
+  --input: 220 14% 18%;
+  --sidebar-background: 220 16% 12%;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, hsl(var(--primary) / 0.08), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, hsl(var(--accent) / 0.06), transparent 60%),
+    linear-gradient(180deg, hsl(220 22% 7%), hsl(220 18% 10%));
+  color: hsl(var(--foreground));
+}
+
+.theme-light .admin-page {
+  --background: 220 20% 96%;
+  --card: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --muted: 220 14% 90%;
+  --muted-foreground: 220 10% 35%;
+  --border: 220 14% 86%;
+  --input: 220 14% 90%;
+  --sidebar-background: 0 0% 100%;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, hsl(var(--primary) / 0.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, hsl(var(--accent) / 0.08), transparent 60%),
+    linear-gradient(180deg, hsl(220 22% 98%), hsl(220 18% 94%));
 }
 
 /* Admin header section */
