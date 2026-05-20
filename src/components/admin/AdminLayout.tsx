@@ -144,9 +144,9 @@ export function AdminCardHeader({
 }) {
   return (
     <div className="admin-card-header">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h3 className="admin-card-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="admin-card-title break-words">
             {icon && <span className="text-primary">{icon}</span>}
             {title}
           </h3>
@@ -154,7 +154,7 @@ export function AdminCardHeader({
             <p className="text-sm text-muted-foreground mt-1">{description}</p>
           )}
         </div>
-        {actions && <div className="shrink-0">{actions}</div>}
+        {actions && <div className="shrink-0 w-full sm:w-auto flex justify-end">{actions}</div>}
       </div>
     </div>
   );
