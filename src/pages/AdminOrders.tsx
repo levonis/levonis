@@ -1598,7 +1598,12 @@ const AdminOrders = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تعديل الطلب {editingOrder?.order_number}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              تعديل الطلب {editingOrder?.order_number}
+              {editingOrder?.order_number && (
+                <OrderNumberCopyButton orderNumber={editingOrder.order_number} />
+              )}
+            </DialogTitle>
           </DialogHeader>
           
           {editingOrder && (
