@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Trash2, Plus, Save, Package, Receipt, Truck, Wallet, BadgePercent, Calculator, Eye } from "lucide-react";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
+import {
+  Loader2, Trash2, Plus, Save, Package, Receipt, Truck, Wallet,
+  BadgePercent, Eye, ShoppingBag, Pencil, X, Sparkles, ArrowDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
 import { adminUpdateOrder } from "@/lib/adminMutations";
@@ -47,17 +51,19 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   const [items, setItems] = useState<OrderItem[]>(() => orderItems.map(i => ({ ...i })));
   const [saving, setSaving] = useState(false);
   const [finance, setFinance] = useState<Finance>({ admin_shipping_cost: 0, cod_fee: 0, discount_amount: 0, tax_amount: 0 });
+  const [originalFinance, setOriginalFinance] = useState<Finance | null>(null);
+  const [originalTotal, setOriginalTotal] = useState<number>(0);
   const [financeLoaded, setFinanceLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState<"items" | "finance">("items");
 
-  // Reset state when reopened
   useEffect(() => {
     if (open) {
       setItems(orderItems.map(i => ({ ...i })));
       setFinanceLoaded(false);
+      setActiveTab("items");
     }
   }, [open, orderItems]);
 
-  // Fetch current order finance
   useEffect(() => {
     if (!open) return;
     (async () => {
@@ -73,23 +79,24 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         const prevTax = Number(data.tax_amount) || 0;
         const prevCod = Number(data.cod_fee) || 0;
         let prevShipping = Number(data.admin_shipping_cost) || 0;
-        // If admin_shipping_cost is 0 but there's an inferred delivery in total, derive it
         if (prevShipping === 0 && prevSubtotal > 0) {
           const inferred = prevTotal - prevSubtotal - prevCod - prevTax + prevDiscount;
           if (inferred > 0) prevShipping = inferred;
         }
-        setFinance({
+        const fin = {
           admin_shipping_cost: prevShipping,
           cod_fee: prevCod,
           discount_amount: prevDiscount,
           tax_amount: prevTax,
-        });
+        };
+        setFinance(fin);
+        setOriginalFinance(fin);
+        setOriginalTotal(prevTotal);
       }
       setFinanceLoaded(true);
     })();
   }, [open, orderId]);
 
-  // Fetch products for adding new items
   const { data: allProducts } = useQuery({
     queryKey: ["admin-products-for-order"],
     enabled: open,
@@ -134,18 +141,26 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
     }]);
   };
 
-  // Live totals
   const subtotal = useMemo(() => items.reduce((s, i) => s + (Number(i.total_price) || 0), 0), [items]);
   const customerTotal = useMemo(() => {
     return Math.max(0, subtotal + (finance.admin_shipping_cost || 0) + (finance.cod_fee || 0) + (finance.tax_amount || 0) - (finance.discount_amount || 0));
   }, [subtotal, finance]);
+
+  const totalDelta = customerTotal - originalTotal;
+  const hasChanges = useMemo(() => {
+    if (totalDelta !== 0) return true;
+    if (items.length !== orderItems.length) return true;
+    return items.some((it, i) => {
+      const o = orderItems[i];
+      return !o || o.id !== it.id || o.quantity !== it.quantity || Number(o.unit_price) !== Number(it.unit_price) || (o.selected_color || null) !== (it.selected_color || null);
+    });
+  }, [items, orderItems, totalDelta]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const originalItems = orderItems;
 
-      // 1. Removed items - restore stock
       for (const orig of originalItems) {
         const stillExists = items.find(i => i.id === orig.id);
         if (!stillExists) {
@@ -161,7 +176,6 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         }
       }
 
-      // 2. Modified / new items
       for (const item of items) {
         const orig = originalItems.find(o => o.id === item.id);
         const isManual = (item as any).is_manual === true || !item.product_id;
@@ -202,7 +216,6 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         }
       }
 
-      // 3. Update order finance with explicit values
       await adminUpdateOrder(orderId, {
         subtotal,
         total_amount: customerTotal,
@@ -248,254 +261,347 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   };
 
   const setFin = (k: keyof Finance, v: number) => setFinance(prev => ({ ...prev, [k]: isNaN(v) ? 0 : Math.max(0, v) }));
+  const itemsCount = items.reduce((s, i) => s + (i.quantity || 0), 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-3xl !overflow-hidden !max-h-none flex flex-col p-0" dir="rtl">
-        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border/40">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <Receipt className="h-5 w-5 text-primary" />
-            تعديل الطلب وحساب المجموع
-          </DialogTitle>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            عدّل المنتجات والقيم المالية — المجموع النهائي يتحدّث فورياً ويُحفظ في الطلب كما يراه الزبون.
-          </p>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          {/* SECTION 1: Products */}
-          <section className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold flex items-center gap-1.5 text-foreground/90">
-                <Package className="h-3.5 w-3.5 text-primary" />
-                المنتجات ({items.length})
-              </h3>
-              <span className="text-[11px] text-muted-foreground">
-                المجموع الفرعي: <span className="font-bold text-foreground">{formatPrice(subtotal)}</span>
-              </span>
+      <DialogContent className="!max-w-3xl !overflow-hidden !max-h-none flex flex-col p-0 gap-0" dir="rtl">
+        {/* ====== HERO HEADER with live total ====== */}
+        <DialogHeader className="px-5 pt-5 pb-4 border-b border-border/40 bg-gradient-to-bl from-primary/10 via-primary/[0.04] to-transparent">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="flex items-center gap-2 text-base mb-1">
+                <div className="h-8 w-8 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center">
+                  <Receipt className="h-4 w-4 text-primary" />
+                </div>
+                تعديل الطلب
+              </DialogTitle>
+              <p className="text-[11px] text-muted-foreground">
+                {itemsCount} قطعة · {items.length} منتج · أي تعديل يُحفظ مباشرة في الطلب
+              </p>
             </div>
-
-            {items.length === 0 && (
-              <div className="p-4 text-center text-xs text-muted-foreground rounded-xl border border-dashed border-border/50">
-                لا توجد منتجات — أضف منتجاً أدناه
-              </div>
-            )}
-
-            {items.map((item, index) => (
-              <div key={item.id} className="p-3 rounded-xl border border-border/40 bg-card/60 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-bold truncate flex-1 flex items-center gap-1.5">
-                    {item.bundle_id && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-600 font-bold shrink-0">📦 بندل</span>}
-                    {((item as any).is_manual || (!item.product_id && !item.bundle_id)) && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 font-bold shrink-0">✏️ يدوي</span>}
-                    {((item as any).is_manual || (!item.product_id && !item.bundle_id)) ? (
-                      <Input
-                        value={item.product_name_ar || ""}
-                        onChange={e => updateItem(index, "product_name_ar", e.target.value)}
-                        placeholder="اسم المنتج"
-                        className="h-7 text-sm rounded-lg flex-1"
-                      />
-                    ) : (
-                      <span className="truncate">{item.product_bundles?.title_ar || item.product_name_ar || item.product_name || "منتج"}</span>
-                    )}
-                  </span>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0" onClick={() => removeItem(index)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-[10px] text-muted-foreground">الكمية</Label>
-                    <Input type="number" min={1} value={item.quantity}
-                      onChange={e => updateItem(index, "quantity", parseInt(e.target.value) || 1)}
-                      className="h-8 text-sm rounded-lg" />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] text-muted-foreground">سعر الوحدة</Label>
-                    <Input type="number" min={0} value={item.unit_price}
-                      onChange={e => updateItem(index, "unit_price", parseFloat(e.target.value) || 0)}
-                      className="h-8 text-sm rounded-lg" />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] text-muted-foreground">المجموع</Label>
-                    <Input value={formatPrice(item.total_price)} disabled className="h-8 text-sm rounded-lg bg-muted/30" />
-                  </div>
-                </div>
-
-                <Input
-                  value={item.selected_color || ""}
-                  onChange={e => updateItem(index, "selected_color", e.target.value || null)}
-                  placeholder="اللون (اختياري)"
-                  className="h-8 text-sm rounded-lg"
-                />
-
-                {item.bundle_id && item.product_bundles?.bundle_items && item.product_bundles.bundle_items.length > 0 && (
-                  <div className="mt-1 pt-2 border-t border-border/30">
-                    <Label className="text-[10px] text-muted-foreground mb-1.5 block">📦 محتويات البندل:</Label>
-                    <div className="space-y-1">
-                      {item.product_bundles.bundle_items.map((bi, bIdx) => (
-                        <div key={bIdx} className="flex items-center gap-2 text-xs bg-muted/30 rounded p-1.5">
-                          {bi.products?.image_url && <img src={bi.products.image_url} alt="" className="w-7 h-7 rounded object-cover" />}
-                          <span className="flex-1 truncate">{bi.products?.name_ar || 'منتج'}</span>
-                          <span className="text-muted-foreground">×{bi.quantity * item.quantity}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Add new product */}
-            <div className="p-3 rounded-xl border border-dashed border-border/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">إضافة منتج</Label>
-                <div className="flex gap-1 p-0.5 rounded-lg bg-muted/40">
-                  <button type="button" onClick={() => setAddMode("existing")}
-                    className={`px-2 py-1 text-[11px] rounded-md font-bold transition ${addMode === "existing" ? "bg-background shadow-sm" : "text-muted-foreground"}`}>
-                    منتج موجود
-                  </button>
-                  <button type="button" onClick={() => setAddMode("manual")}
-                    className={`px-2 py-1 text-[11px] rounded-md font-bold transition ${addMode === "manual" ? "bg-background shadow-sm" : "text-muted-foreground"}`}>
-                    ✏️ يدوي
-                  </button>
-                </div>
-              </div>
-
-              {addMode === "existing" ? (
-                <div className="flex gap-2">
-                  <Select value={addProductId} onValueChange={setAddProductId}>
-                    <SelectTrigger className="flex-1 h-8 text-sm rounded-lg"><SelectValue placeholder="اختر منتج" /></SelectTrigger>
-                    <SelectContent>
-                      {allProducts?.map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button size="sm" variant="outline" className="h-8 rounded-lg gap-1" disabled={!addProductId}
-                    onClick={() => { addItem(addProductId); setAddProductId(""); }}>
-                    <Plus className="h-3.5 w-3.5" /> إضافة
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Input value={manualName} onChange={e => setManualName(e.target.value.slice(0, 200))}
-                    placeholder="اسم المنتج" className="h-8 text-sm rounded-lg" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">السعر</Label>
-                      <Input type="number" min={0} value={manualPrice}
-                        onChange={e => setManualPrice(parseFloat(e.target.value) || 0)}
-                        className="h-8 text-sm rounded-lg" />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">الكمية</Label>
-                      <Input type="number" min={1} value={manualQty}
-                        onChange={e => setManualQty(parseInt(e.target.value) || 1)}
-                        className="h-8 text-sm rounded-lg" />
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" className="w-full h-8 rounded-lg gap-1"
-                    disabled={!manualName.trim() || manualPrice < 0 || manualQty < 1} onClick={addManualItem}>
-                    <Plus className="h-3.5 w-3.5" /> إضافة منتج يدوي
-                  </Button>
-                  <p className="text-[10px] text-muted-foreground text-center">ⓘ المنتج اليدوي لا يؤثر على المخزون</p>
+            <div className="text-end shrink-0">
+              <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">المجموع للزبون</div>
+              <div className="text-2xl font-black text-primary leading-tight tabular-nums">{formatPrice(customerTotal)}</div>
+              {originalFinance && totalDelta !== 0 && (
+                <div className={`text-[10px] font-bold tabular-nums ${totalDelta > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  {totalDelta > 0 ? '↑' : '↓'} {formatPrice(Math.abs(totalDelta))} عن السابق
                 </div>
               )}
             </div>
-          </section>
+          </div>
 
-          {/* SECTION 2: Financial Adjustments */}
-          <section className="space-y-2.5">
-            <h3 className="text-xs font-bold flex items-center gap-1.5 text-foreground/90">
-              <Calculator className="h-3.5 w-3.5 text-primary" />
-              التعديلات المالية
-            </h3>
+          {/* Tabs */}
+          <div className="flex gap-1 p-1 rounded-xl bg-muted/40 mt-3">
+            <button type="button" onClick={() => setActiveTab("items")}
+              className={`flex-1 px-3 py-1.5 text-xs rounded-lg font-bold transition flex items-center justify-center gap-1.5 ${activeTab === "items" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              <ShoppingBag className="h-3.5 w-3.5" /> المنتجات
+              <span className="text-[10px] px-1.5 rounded-full bg-primary/15 text-primary">{items.length}</span>
+            </button>
+            <button type="button" onClick={() => setActiveTab("finance")}
+              className={`flex-1 px-3 py-1.5 text-xs rounded-lg font-bold transition flex items-center justify-center gap-1.5 ${activeTab === "finance" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              <Wallet className="h-3.5 w-3.5" /> المالية والمعاينة
+            </button>
+          </div>
+        </DialogHeader>
 
-            {!financeLoaded ? (
-              <div className="h-24 flex items-center justify-center text-muted-foreground text-xs">
-                <Loader2 className="h-4 w-4 animate-spin ml-2" /> تحميل بيانات الطلب…
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-2.5 rounded-xl border border-border/40 bg-card/60">
-                  <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Truck className="h-3 w-3" /> التوصيل (د.ع)
-                  </Label>
-                  <Input type="number" min={0} value={finance.admin_shipping_cost}
-                    onChange={e => setFin('admin_shipping_cost', parseFloat(e.target.value))}
-                    className="h-9 text-sm rounded-lg mt-1 font-bold" />
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* ============= TAB 1: ITEMS ============= */}
+          {activeTab === "items" && (
+            <>
+              {items.length === 0 && (
+                <div className="p-6 text-center rounded-2xl border-2 border-dashed border-border/50 bg-muted/20">
+                  <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm font-bold text-muted-foreground">لا توجد منتجات في الطلب</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">أضف منتجاً من النموذج أدناه</p>
                 </div>
-                <div className="p-2.5 rounded-xl border border-border/40 bg-card/60">
-                  <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Wallet className="h-3 w-3" /> عمولة الدفع عند الاستلام (د.ع)
-                  </Label>
-                  <Input type="number" min={0} value={finance.cod_fee}
-                    onChange={e => setFin('cod_fee', parseFloat(e.target.value))}
-                    className="h-9 text-sm rounded-lg mt-1 font-bold" />
-                </div>
-                <div className="p-2.5 rounded-xl border border-border/40 bg-card/60">
-                  <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <BadgePercent className="h-3 w-3" /> الخصم (د.ع)
-                  </Label>
-                  <Input type="number" min={0} value={finance.discount_amount}
-                    onChange={e => setFin('discount_amount', parseFloat(e.target.value))}
-                    className="h-9 text-sm rounded-lg mt-1 font-bold" />
-                </div>
-                <div className="p-2.5 rounded-xl border border-border/40 bg-card/60">
-                  <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Receipt className="h-3 w-3" /> الضريبة (د.ع)
-                  </Label>
-                  <Input type="number" min={0} value={finance.tax_amount}
-                    onChange={e => setFin('tax_amount', parseFloat(e.target.value))}
-                    className="h-9 text-sm rounded-lg mt-1 font-bold" />
-                </div>
-              </div>
-            )}
-          </section>
+              )}
 
-          {/* SECTION 3: Customer Preview */}
-          <section className="space-y-2">
-            <h3 className="text-xs font-bold flex items-center gap-1.5 text-foreground/90">
-              <Eye className="h-3.5 w-3.5 text-primary" />
-              ما سيراه الزبون
-            </h3>
-            <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-primary/[0.02] to-transparent overflow-hidden">
-              <div className="p-3.5 space-y-1.5 text-sm">
-                <Row label="سعر المنتجات" value={formatPrice(subtotal)} />
-                {finance.admin_shipping_cost > 0 && <Row label="التوصيل" value={formatPrice(finance.admin_shipping_cost)} />}
-                {finance.cod_fee > 0 && <Row label="عمولة الدفع عند الاستلام" value={formatPrice(finance.cod_fee)} />}
-                {finance.tax_amount > 0 && <Row label="الضريبة" value={formatPrice(finance.tax_amount)} />}
-                {finance.discount_amount > 0 && <Row label="الخصم" value={`- ${formatPrice(finance.discount_amount)}`} negative />}
+              {items.map((item, index) => {
+                const isManual = (item as any).is_manual === true || (!item.product_id && !item.bundle_id);
+                const isBundle = !!item.bundle_id;
+                return (
+                  <div key={item.id} className="group relative rounded-2xl border border-border/40 bg-card/60 hover:bg-card/80 hover:border-primary/30 transition-all overflow-hidden">
+                    {/* Item header */}
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-border/30 bg-muted/20">
+                      <span className="h-6 w-6 rounded-lg bg-primary/15 text-primary text-[11px] font-black flex items-center justify-center shrink-0">
+                        {index + 1}
+                      </span>
+                      {isBundle && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-purple-500/15 text-purple-600 font-bold">📦 بندل</span>}
+                      {isManual && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 font-bold flex items-center gap-0.5"><Pencil className="h-2.5 w-2.5" /> يدوي</span>}
+                      <div className="flex-1 min-w-0">
+                        {isManual ? (
+                          <Input
+                            value={item.product_name_ar || ""}
+                            onChange={e => updateItem(index, "product_name_ar", e.target.value)}
+                            placeholder="اسم المنتج"
+                            className="h-7 text-sm rounded-lg border-0 bg-transparent px-1 font-bold focus-visible:bg-background"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold truncate block">{item.product_bundles?.title_ar || item.product_name_ar || item.product_name || "منتج"}</span>
+                        )}
+                      </div>
+                      <div className="text-sm font-black text-primary tabular-nums shrink-0">{formatPrice(item.total_price)}</div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0" onClick={() => removeItem(index)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+
+                    {/* Item editable fields */}
+                    <div className="p-3 grid grid-cols-12 gap-2">
+                      <div className="col-span-3">
+                        <Label className="text-[10px] text-muted-foreground font-bold">الكمية</Label>
+                        <Input type="number" min={1} value={item.quantity}
+                          onChange={e => updateItem(index, "quantity", parseInt(e.target.value) || 1)}
+                          className="h-9 text-sm rounded-lg mt-1 text-center font-bold tabular-nums" />
+                      </div>
+                      <div className="col-span-5">
+                        <Label className="text-[10px] text-muted-foreground font-bold">سعر الوحدة (د.ع)</Label>
+                        <FormattedNumberInput value={item.unit_price}
+                          onChange={v => updateItem(index, "unit_price", v)}
+                          className="h-9 text-sm rounded-lg mt-1 font-bold" />
+                      </div>
+                      <div className="col-span-4">
+                        <Label className="text-[10px] text-muted-foreground font-bold">اللون</Label>
+                        <Input
+                          value={item.selected_color || ""}
+                          onChange={e => updateItem(index, "selected_color", e.target.value || null)}
+                          placeholder="—"
+                          className="h-9 text-sm rounded-lg mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    {isBundle && item.product_bundles?.bundle_items && item.product_bundles.bundle_items.length > 0 && (
+                      <div className="px-3 pb-3">
+                        <div className="pt-2 border-t border-border/30">
+                          <Label className="text-[10px] text-muted-foreground mb-1.5 block font-bold">📦 محتويات البندل</Label>
+                          <div className="space-y-1">
+                            {item.product_bundles.bundle_items.map((bi, bIdx) => (
+                              <div key={bIdx} className="flex items-center gap-2 text-xs bg-muted/30 rounded-lg p-1.5">
+                                {bi.products?.image_url && <img src={bi.products.image_url} alt="" className="w-7 h-7 rounded object-cover" />}
+                                <span className="flex-1 truncate">{bi.products?.name_ar || 'منتج'}</span>
+                                <span className="text-muted-foreground tabular-nums">×{bi.quantity * item.quantity}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Add new product card */}
+              <div className="rounded-2xl border-2 border-dashed border-primary/30 bg-primary/[0.03] overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-primary/15 bg-primary/5">
+                  <Label className="text-xs font-bold flex items-center gap-1.5 text-primary">
+                    <Plus className="h-3.5 w-3.5" /> إضافة منتج جديد
+                  </Label>
+                  <div className="flex gap-0.5 p-0.5 rounded-lg bg-background/60">
+                    <button type="button" onClick={() => setAddMode("existing")}
+                      className={`px-2 py-1 text-[10px] rounded-md font-bold transition ${addMode === "existing" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"}`}>
+                      من القائمة
+                    </button>
+                    <button type="button" onClick={() => setAddMode("manual")}
+                      className={`px-2 py-1 text-[10px] rounded-md font-bold transition ${addMode === "manual" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"}`}>
+                      يدوي
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3">
+                  {addMode === "existing" ? (
+                    <div className="flex gap-2">
+                      <Select value={addProductId} onValueChange={setAddProductId}>
+                        <SelectTrigger className="flex-1 h-9 text-sm rounded-lg"><SelectValue placeholder="اختر منتج…" /></SelectTrigger>
+                        <SelectContent>
+                          {allProducts?.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm" variant="default" className="h-9 rounded-lg gap-1 px-4" disabled={!addProductId}
+                        onClick={() => { addItem(addProductId); setAddProductId(""); }}>
+                        <Plus className="h-3.5 w-3.5" /> إضافة
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Input value={manualName} onChange={e => setManualName(e.target.value.slice(0, 200))}
+                        placeholder="اسم المنتج اليدوي" className="h-9 text-sm rounded-lg" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground font-bold">السعر (د.ع)</Label>
+                          <FormattedNumberInput value={manualPrice} onChange={setManualPrice} className="h-9 text-sm rounded-lg mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground font-bold">الكمية</Label>
+                          <Input type="number" min={1} value={manualQty}
+                            onChange={e => setManualQty(parseInt(e.target.value) || 1)}
+                            className="h-9 text-sm rounded-lg mt-1 text-center font-bold" />
+                        </div>
+                      </div>
+                      <Button size="sm" variant="default" className="w-full h-9 rounded-lg gap-1"
+                        disabled={!manualName.trim() || manualPrice < 0 || manualQty < 1} onClick={addManualItem}>
+                        <Plus className="h-3.5 w-3.5" /> إضافة يدوي
+                      </Button>
+                      <p className="text-[10px] text-muted-foreground text-center flex items-center justify-center gap-1">
+                        <Sparkles className="h-3 w-3" /> المنتج اليدوي لا يؤثر على المخزون
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="px-3.5 py-3 bg-primary/10 border-t border-primary/20 flex items-center justify-between">
-                <span className="text-sm font-bold">المجموع الكلي للزبون</span>
-                <span className="text-lg font-black text-primary">{formatPrice(customerTotal)}</span>
-              </div>
-            </div>
-          </section>
+
+              {/* Quick jump to finance */}
+              <button type="button" onClick={() => setActiveTab("finance")}
+                className="w-full p-3 rounded-2xl border border-border/40 bg-card/40 hover:bg-card/70 hover:border-primary/40 transition-all flex items-center justify-between group">
+                <div className="text-start">
+                  <div className="text-xs font-bold text-foreground">المالية والمعاينة</div>
+                  <div className="text-[10px] text-muted-foreground">التوصيل · العمولات · الخصم · معاينة الزبون</div>
+                </div>
+                <ArrowDown className="h-4 w-4 text-muted-foreground group-hover:text-primary -rotate-90" />
+              </button>
+            </>
+          )}
+
+          {/* ============= TAB 2: FINANCE + PREVIEW ============= */}
+          {activeTab === "finance" && (
+            <>
+              {!financeLoaded ? (
+                <div className="h-32 flex items-center justify-center text-muted-foreground text-xs">
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" /> تحميل بيانات الطلب…
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2.5">
+                    <h3 className="text-xs font-black text-foreground/90 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Wallet className="h-3.5 w-3.5 text-primary" /> التعديلات المالية
+                    </h3>
+
+                    <FinanceField
+                      icon={<Truck className="h-4 w-4" />}
+                      label="رسوم التوصيل"
+                      hint="ما يدفعه الزبون مقابل توصيل الطلب"
+                      value={finance.admin_shipping_cost}
+                      onChange={v => setFin('admin_shipping_cost', v)}
+                      color="blue"
+                    />
+                    <FinanceField
+                      icon={<Wallet className="h-4 w-4" />}
+                      label="عمولة الدفع عند الاستلام"
+                      hint="رسوم إضافية على طلبات COD"
+                      value={finance.cod_fee}
+                      onChange={v => setFin('cod_fee', v)}
+                      color="amber"
+                    />
+                    <FinanceField
+                      icon={<BadgePercent className="h-4 w-4" />}
+                      label="الخصم"
+                      hint="يُطرح من المجموع الكلي"
+                      value={finance.discount_amount}
+                      onChange={v => setFin('discount_amount', v)}
+                      color="emerald"
+                      isNegative
+                    />
+                    <FinanceField
+                      icon={<Receipt className="h-4 w-4" />}
+                      label="الضريبة"
+                      hint="ضرائب إضافية على الطلب"
+                      value={finance.tax_amount}
+                      onChange={v => setFin('tax_amount', v)}
+                      color="slate"
+                    />
+                  </div>
+
+                  {/* Customer preview */}
+                  <div className="space-y-2.5 pt-2">
+                    <h3 className="text-xs font-black text-foreground/90 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Eye className="h-3.5 w-3.5 text-primary" /> ما سيراه الزبون
+                    </h3>
+                    <div className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-primary/[0.03] to-transparent overflow-hidden shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.3)]">
+                      <div className="px-4 py-3 space-y-2 text-sm">
+                        <PreviewRow label="سعر المنتجات" value={formatPrice(subtotal)} />
+                        {finance.admin_shipping_cost > 0 && <PreviewRow label="التوصيل" value={formatPrice(finance.admin_shipping_cost)} />}
+                        {finance.cod_fee > 0 && <PreviewRow label="عمولة الدفع عند الاستلام" value={formatPrice(finance.cod_fee)} />}
+                        {finance.tax_amount > 0 && <PreviewRow label="الضريبة" value={formatPrice(finance.tax_amount)} />}
+                        {finance.discount_amount > 0 && <PreviewRow label="الخصم" value={`- ${formatPrice(finance.discount_amount)}`} negative />}
+                      </div>
+                      <div className="px-4 py-3.5 bg-primary/15 border-t-2 border-primary/30 flex items-center justify-between">
+                        <span className="text-sm font-black">المجموع الكلي</span>
+                        <span className="text-xl font-black text-primary tabular-nums">{formatPrice(customerTotal)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Sticky footer */}
-        <div className="border-t border-border/40 px-5 py-3 bg-background/95 backdrop-blur flex items-center gap-2">
-          <Button variant="outline" className="rounded-xl flex-1" disabled={saving} onClick={() => onOpenChange(false)}>
-            إلغاء
-          </Button>
-          <Button className="rounded-xl gap-2 flex-[2]" disabled={saving || !financeLoaded} onClick={handleSave}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            حفظ التعديلات — {formatPrice(customerTotal)}
-          </Button>
+        {/* ====== Sticky footer ====== */}
+        <div className="border-t border-border/40 px-5 py-3 bg-background/95 backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="rounded-xl flex-1 h-11" disabled={saving} onClick={() => onOpenChange(false)}>
+              إلغاء
+            </Button>
+            <Button variant="glass-primary" className="rounded-xl gap-2 flex-[2] h-11"
+              disabled={saving || !financeLoaded || !hasChanges} onClick={handleSave}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <span className="font-black">
+                {hasChanges ? `حفظ — ${formatPrice(customerTotal)}` : 'لا توجد تغييرات'}
+              </span>
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Row({ label, value, negative }: { label: string; value: string; negative?: boolean }) {
+function PreviewRow({ label, value, negative }: { label: string; value: string; negative?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-muted-foreground">{label}</span>
-      <span className={`font-bold ${negative ? 'text-emerald-600' : 'text-foreground'}`}>{value}</span>
+      <span className={`font-bold tabular-nums ${negative ? 'text-emerald-600' : 'text-foreground'}`}>{value}</span>
+    </div>
+  );
+}
+
+function FinanceField({
+  icon, label, hint, value, onChange, color, isNegative,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+  value: number;
+  onChange: (v: number) => void;
+  color: 'blue' | 'amber' | 'emerald' | 'slate';
+  isNegative?: boolean;
+}) {
+  const colorMap = {
+    blue: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    amber: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    emerald: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+    slate: 'bg-slate-500/10 text-slate-600 border-slate-500/20',
+  };
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-2xl border border-border/40 bg-card/60 hover:border-border/70 transition-colors">
+      <div className={`h-10 w-10 rounded-xl border flex items-center justify-center shrink-0 ${colorMap[color]}`}>
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-bold text-foreground">{label}</span>
+          {isNegative && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 font-bold">يُطرح</span>}
+        </div>
+        <p className="text-[10px] text-muted-foreground truncate">{hint}</p>
+      </div>
+      <div className="w-32 shrink-0">
+        <FormattedNumberInput value={value} onChange={onChange} suffix="د.ع"
+          className="h-9 text-sm rounded-lg font-bold text-end" />
+      </div>
     </div>
   );
 }
