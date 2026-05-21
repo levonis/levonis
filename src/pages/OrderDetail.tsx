@@ -5,7 +5,7 @@ import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotificat
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Image, File, Download, Ship, Plane, MessageCircle, XCircle, Wallet, Clock, CheckCircle2, Receipt, Hash, Info, Sparkles } from 'lucide-react';
+import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Image, File, Download, Ship, Plane, MessageCircle, XCircle, Wallet, Clock, CheckCircle2, Receipt, Hash, Info, Sparkles, Copy, Check } from 'lucide-react';
 import WavyColors from '@/components/WavyColors';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -37,6 +37,26 @@ const checkIfPreOrder = (order: any): boolean => {
   }
   return false;
 };
+
+// Copy button for order number
+function OrderNumberCopyButton({ orderNumber }: { orderNumber: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(orderNumber);
+        setCopied(true);
+        toast.success('تم نسخ رقم الطلب');
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="inline-flex items-center justify-center h-6 w-6 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+      title="نسخ رقم الطلب"
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
 
 // Glass card wrapper
 const GlassCard = ({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => (
@@ -302,9 +322,12 @@ const OrderDetail = () => {
                 <p className="text-[11px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
                   <Hash className="h-3 w-3" /> {t('od_order_number_label')}
                 </p>
-                <h1 className="text-2xl font-black text-foreground tracking-tight">
-                  {order.order_number}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-black text-foreground tracking-tight">
+                    {order.order_number}
+                  </h1>
+                  <OrderNumberCopyButton orderNumber={order.order_number} />
+                </div>
               </div>
               <div className={`px-3 py-1.5 rounded-xl text-xs font-black border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
                 {statusConfig.label}

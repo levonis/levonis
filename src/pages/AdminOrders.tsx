@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Package, Truck, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle, Wallet } from 'lucide-react';
+import { Loader2, Package, Truck, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle, Wallet, Copy, Check } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -34,6 +34,27 @@ import AdminOrderItemEditor from '@/components/admin/AdminOrderItemEditor';
 import { adminCreateOrder, adminUpdateOrder } from '@/lib/adminMutations';
 import OrderWalletAuditLog from '@/components/admin/OrderWalletAuditLog';
 import { exportToExcel } from '@/lib/exportUtils';
+
+function OrderNumberCopyButton({ orderNumber }: { orderNumber: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(orderNumber);
+        setCopied(true);
+        toast.success('تم نسخ رقم الطلب');
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+      title="نسخ رقم الطلب"
+    >
+      {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
+
 const directStatusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
   { value: 'confirmed', label: 'تم التأكيد' },
@@ -1298,7 +1319,10 @@ const AdminOrders = () => {
                     <div key={order.id} className="rounded-xl border border-border bg-card p-3 space-y-3">
                       {/* Header row: order number + status */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
+                          <OrderNumberCopyButton orderNumber={order.order_number} />
+                        </div>
                         <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           {getStatusBadge(order.status)}
                           {(order as any).order_type === 'direct' ? (
@@ -1427,6 +1451,7 @@ const AdminOrders = () => {
                           <TableCell className="font-mono text-sm font-medium">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{order.order_number}</span>
+                              <OrderNumberCopyButton orderNumber={order.order_number} />
                               {(() => {
                                 const rfInfo = getRandomFilamentInfo(order);
                                 if (rfInfo.total === 0) return null;
@@ -1573,7 +1598,12 @@ const AdminOrders = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تعديل الطلب {editingOrder?.order_number}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              تعديل الطلب {editingOrder?.order_number}
+              {editingOrder?.order_number && (
+                <OrderNumberCopyButton orderNumber={editingOrder.order_number} />
+              )}
+            </DialogTitle>
           </DialogHeader>
           
           {editingOrder && (

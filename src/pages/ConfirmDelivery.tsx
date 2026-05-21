@@ -8,11 +8,30 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Loader2, ArrowRight, CheckCircle, Package, Sparkles,
-  Star, Upload, X, Image as ImageIcon, Video, Gift, Coins, Camera
+  Star, Upload, X, Image as ImageIcon, Video, Gift, Coins, Camera, Copy, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+function OrderNumberCopyButton({ orderNumber }: { orderNumber: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(orderNumber);
+        setCopied(true);
+        toast.success('تم نسخ رقم الطلب');
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+      title="نسخ رقم الطلب"
+    >
+      {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
 
 type Step = 'confirm' | 'rating' | 'done';
 
@@ -266,7 +285,10 @@ const ConfirmDelivery = () => {
           <h1 className="text-3xl font-black text-primary mb-2">
             {step === 'confirm' ? 'تأكيد استلام الطلب' : step === 'rating' ? 'قيّم منتجاتك واربح نقاط 🎁' : 'شكراً لك! 🎉'}
           </h1>
-          <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
+          <p className="text-muted-foreground flex items-center justify-center gap-1.5">
+            رقم الطلب: {order.order_number}
+            <OrderNumberCopyButton orderNumber={order.order_number} />
+          </p>
 
           {/* Step indicator */}
           {step !== 'done' && (
