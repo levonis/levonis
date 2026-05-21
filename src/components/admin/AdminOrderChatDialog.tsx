@@ -522,8 +522,8 @@ export default function AdminOrderChatDialog({
                 const walletPaid = Number(displayOrder.customer_paid_amount) || Number(displayOrder.paid_amount) || 0;
                 const remaining = Math.max(0, Number(displayOrder.remaining_amount) || 0);
                 const orderTotal = Number(displayOrder.total_amount) || 0;
-                // Delivery + commission merged: anything in total beyond subtotal+codFee+tax+donation +discounts
-                const deliveryAndCommission = Math.max(
+                // Delivery only (commission is already baked into product unit_price)
+                const deliveryFee = Math.max(
                   0,
                   orderTotal - subtotal - codFee - tax - donation + discount + cardDiscount,
                 );
@@ -663,8 +663,8 @@ export default function AdminOrderChatDialog({
                       <Section title="تفاصيل الحساب" icon="💰">
                         <div className="space-y-0.5">
                           <PriceRow label="مجموع المنتجات" value={`${formatPrice(subtotal)} ${cur}`} />
-                          {deliveryAndCommission > 0 && (
-                            <PriceRow label="التوصيل + العمولة" value={`+${formatPrice(deliveryAndCommission)} ${cur}`} />
+                          {deliveryFee > 0 && (
+                            <PriceRow label="التوصيل" value={`+${formatPrice(deliveryFee)} ${cur}`} />
                           )}
                           {codFee > 0 && (
                             <PriceRow label="رسوم الدفع عند الاستلام" value={`+${formatPrice(codFee)} ${cur}`} />
