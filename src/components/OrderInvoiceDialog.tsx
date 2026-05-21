@@ -21,6 +21,7 @@ interface InvoiceLineItem {
 
 export default function OrderInvoiceDialog({ order, open, onClose }: OrderInvoiceDialogProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
 
   if (!order) return null;
 
