@@ -915,8 +915,34 @@ const AdminOrders = () => {
     return matchesStatus;
   });
 
+  // Per-customer ordering index + distinct color stripe
+  const customerKey = (o: any) => o.user_id || o.phone_number || 'guest';
+  const customerOrdersMap = new Map<string, string[]>();
+  [...(orders || [])]
+    .filter((o: any) => o.status !== 'cancelled')
+    .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    .forEach((o: any) => {
+      const k = customerKey(o);
+      const arr = customerOrdersMap.get(k) || [];
+      arr.push(o.id);
+      customerOrdersMap.set(k, arr);
+    });
+  const getCustomerIndex = (o: any) => {
+    const arr = customerOrdersMap.get(customerKey(o)) || [];
+    const idx = arr.indexOf(o.id);
+    return { index: idx + 1, total: arr.length };
+  };
+  const getCustomerColor = (o: any) => {
+    const k = String(customerKey(o));
+    let hash = 0;
+    for (let i = 0; i < k.length; i++) hash = (hash * 31 + k.charCodeAt(i)) >>> 0;
+    const hue = hash % 360;
+    return `hsl(${hue} 75% 50%)`;
+  };
+
   // Pagination
   const pagination = usePagination(filteredOrders, { pageSize: 25 });
+
 
   // Count by status
   const statusCounts = orders?.reduce((acc, order) => {
