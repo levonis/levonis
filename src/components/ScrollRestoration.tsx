@@ -95,16 +95,21 @@ export default function ScrollRestoration() {
     prevKeyRef.current = location.key;
   }, [location.key, navType]);
 
-  // Save on tab close / refresh too
+  // Save on tab hide / page hide. We intentionally avoid `beforeunload`
+  // because it disables Chrome's BFCache and causes a full reload
+  // (initial loading screen) when the user switches apps and returns.
   useEffect(() => {
-    const handler = () => {
+    const save = () => {
       positions.set(location.key, window.scrollY);
     };
-    window.addEventListener("beforeunload", handler);
-    window.addEventListener("pagehide", handler);
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") save();
+    };
+    window.addEventListener("pagehide", save);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("beforeunload", handler);
-      window.removeEventListener("pagehide", handler);
+      window.removeEventListener("pagehide", save);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [location.key]);
 
