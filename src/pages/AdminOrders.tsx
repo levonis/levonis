@@ -1653,477 +1653,636 @@ const AdminOrders = () => {
       </AdminSection>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              تعديل الطلب {editingOrder?.order_number}
-              {editingOrder?.order_number && (
-                <OrderNumberCopyButton orderNumber={editingOrder.order_number} />
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {editingOrder && (
-            <div className="space-y-6 py-4">
-              {/* Order Info */}
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
-                <div>
-                  <span className="text-sm text-muted-foreground">العميل:</span>
-                  <p className="font-medium">{editingOrder.profiles?.full_name || editingOrder.profiles?.username}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">الهاتف:</span>
-                  <p className="font-medium">{editingOrder.phone_number}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">المحافظة:</span>
-                  <p className="font-medium">{editingOrder.governorate}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">رقم الطلب:</span>
-                  <p className="font-medium">{editingOrder.order_number}</p>
-                </div>
-              </div>
+        <DialogContent
+          className="!max-w-4xl !overflow-hidden !max-h-none flex flex-col p-0 gap-0"
+          style={{ height: 'min(92vh, 860px)' }}
+          dir="rtl"
+        >
+          {editingOrder && (() => {
+            // ===== Live customer-facing totals (driven by edit state, not stale order) =====
+            const liveSubtotal = Number(subtotalAmount) || Number(editingOrder.subtotal) || 0;
+            const liveDelivery = Number(deliveryFee) || 0;
+            const liveTax = Number(taxAmount) || 0;
+            const discountAmt = Number(editingOrder.discount_amount) || 0;
+            const cardDiscountAmt = Number((editingOrder as any).card_discount_amount) || 0;
+            const codFeeStored = Number(editingOrder.cod_fee) || 0;
 
-              {/* Edit Order Items Button */}
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => setItemEditorOpen(true)}
-              >
-                <Package className="h-4 w-4" />
-                تعديل منتجات الطلب والمخزون
-              </Button>
+            // Derive COD fee implicitly = totalAmount - subtotal - delivery - tax + discounts
+            const liveCodFee = Math.max(
+              0,
+              Number(totalAmount) - liveSubtotal - liveDelivery - liveTax + discountAmt + cardDiscountAmt
+            ) || codFeeStored;
 
-              {/* Full Order Summary Breakdown */}
-              {(() => {
-                const subtotal = Number(editingOrder.subtotal) || 0;
-                const totalAmt = Number(editingOrder.total_amount) || 0;
-                const discountAmt = Number(editingOrder.discount_amount) || 0;
-                const cardDiscountAmt = Number((editingOrder as any).card_discount_amount) || 0;
-                const deliveryCalc = subtotal > 0 ? Math.max(0, totalAmt - subtotal + discountAmt + cardDiscountAmt) : 0;
-                const walletPaid = Number(editingOrder.customer_paid_amount) || Number(editingOrder.paid_amount) || 0;
-                const remainingAmt = Number(editingOrder.remaining_amount) ?? Math.max(0, totalAmt - walletPaid);
-                const couponCode = (editingOrder as any).coupon_code || null;
-                const referralCouponId = (editingOrder as any).referral_coupon_id;
-                const referralOwnerEarnings = Number((editingOrder as any).referral_owner_earnings_iqd) || 0;
-                const originalDelivery = Number((editingOrder as any).original_delivery_fee) || 0;
-                const isReferralFreeDelivery = !!referralCouponId && deliveryCalc === 0;
-                const isReferralCommissionOnly = !!referralCouponId && deliveryCalc > 0;
-                const items = (editingOrder.order_items || []) as any[];
-                const itemsCount = items.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
-                const giftsCount = items.filter((it: any) => it?.is_gift).reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
-                const totalSavings = discountAmt + cardDiscountAmt + (isReferralFreeDelivery ? originalDelivery : 0);
-                const paymentMethod = (editingOrder as any).payment_method || 'cash_on_delivery';
-                const isFullyPaid = walletPaid >= totalAmt && totalAmt > 0;
-                const slipAmount = Math.max(0, remainingAmt);
+            const liveCustomerTotal = Number(totalAmount) || (
+              liveSubtotal + liveDelivery + liveTax + liveCodFee - discountAmt - cardDiscountAmt
+            );
+            const originalTotal = Number(editingOrder.total_amount) || 0;
+            const totalDelta = liveCustomerTotal - originalTotal;
 
-                return (
-                  <div className="p-3 rounded-xl border border-border/60 bg-muted/20 space-y-2">
-                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-2">
-                      <Wallet className="h-3.5 w-3.5 text-primary" />
-                      ملخص الطلب المالي
-                    </h4>
+            const walletPaid =
+              Number(editingOrder.customer_paid_amount) ||
+              Number(editingOrder.paid_amount) ||
+              0;
+            const remainingAmt = Math.max(0, liveCustomerTotal - walletPaid);
+            const isFullyPaid = walletPaid >= liveCustomerTotal && liveCustomerTotal > 0;
 
-                    {referralCouponId && (
-                      <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2 text-xs">
-                        <div className="flex items-center gap-1.5 font-bold text-amber-700">
-                          🎟️ كوبون إحالة VIP Plus
-                        </div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">
-                          {isReferralFreeDelivery
-                            ? <>توصيل مجاني (تجاوز الحد) • أرباح صاحب الكوبون: <span className="font-bold text-emerald-600">{formatPrice(referralOwnerEarnings)} د.ع</span></>
-                            : <>عمولة فقط (لم يصل للحد) • أرباح صاحب الكوبون: <span className="font-bold text-emerald-600">{formatPrice(referralOwnerEarnings)} د.ع</span></>
-                          }
-                        </div>
+            const items = (editingOrder.order_items || []) as any[];
+            const itemsCount = items.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
+            const giftsCount = items
+              .filter((it: any) => it?.is_gift)
+              .reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
+
+            const paymentMethod = (editingOrder as any).payment_method || 'cash_on_delivery';
+            const couponCode = (editingOrder as any).coupon_code || null;
+
+            const orderType =
+              editingOrder.order_type ||
+              (checkIfPreOrder(editingOrder.order_items || []) ? 'preorder' : 'direct');
+            const isDirectSale = orderType === 'direct';
+
+            return (
+              <>
+                {/* ===== Sticky Pro Header ===== */}
+                <div className="shrink-0 px-5 py-3 border-b border-border/40 bg-gradient-to-l from-primary/5 via-background to-background">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-base font-bold flex items-center gap-1.5">
+                          <Pencil className="h-4 w-4 text-primary" />
+                          تعديل الطلب
+                        </h2>
+                        <Badge variant="outline" className="font-mono text-[11px]">
+                          {editingOrder.order_number}
+                        </Badge>
+                        {editingOrder.order_number && (
+                          <OrderNumberCopyButton orderNumber={editingOrder.order_number} />
+                        )}
+                        <Badge variant="secondary" className="text-[10px]">
+                          {isDirectSale ? 'بيع مباشر' : 'طلب مسبق'}
+                        </Badge>
                       </div>
-                    )}
+                      <p className="text-[11px] text-muted-foreground mt-1 truncate">
+                        {editingOrder.profiles?.full_name || editingOrder.profiles?.username || 'زبون'}
+                        {editingOrder.phone_number && <span className="mx-1">•</span>}
+                        {editingOrder.phone_number}
+                        {editingOrder.governorate && <span className="mx-1">•</span>}
+                        {editingOrder.governorate}
+                      </p>
+                    </div>
 
-                    <div className="space-y-1.5 text-sm">
-                      <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                        <span>عدد القطع</span>
-                        <span>{itemsCount}{giftsCount > 0 && <span className="text-emerald-600 mx-1">(منها {giftsCount} هدية 🎁)</span>}</span>
+                    {/* Live Customer Total */}
+                    <div className="rounded-xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 to-primary/5 px-3 py-2 min-w-[180px]">
+                      <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                        <Wallet className="h-3 w-3" />
+                        المجموع الذي سيراه الزبون
                       </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">سعر المنتجات (Subtotal)</span>
-                        <span className="font-medium">{formatPrice(subtotal || totalAmt)}</span>
+                      <div className="text-xl font-extrabold text-primary leading-tight">
+                        {formatPrice(liveCustomerTotal)}
+                        <span className="text-[10px] font-normal mx-1">د.ع</span>
                       </div>
-
-                      {isReferralFreeDelivery ? (
-                        <div className="flex justify-between items-center text-emerald-600">
-                          <span>التوصيل {originalDelivery > 0 && <span className="text-[10px] line-through text-muted-foreground">{formatPrice(originalDelivery)}</span>}</span>
-                          <span className="font-bold">مجاني عبر الكوبون</span>
-                        </div>
-                      ) : deliveryCalc > 0 ? (
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">رسوم التوصيل</span>
-                          <span className="font-medium">{formatPrice(deliveryCalc)}</span>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between items-center text-emerald-600">
-                          <span>التوصيل</span>
-                          <span className="font-bold">مجاني</span>
+                      {Math.abs(totalDelta) > 0 && (
+                        <div
+                          className={`text-[10px] font-bold ${
+                            totalDelta > 0 ? 'text-amber-600' : 'text-emerald-600'
+                          }`}
+                        >
+                          {totalDelta > 0 ? '▲' : '▼'} {formatPrice(Math.abs(totalDelta))} د.ع عن الأصلي
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
 
-                      {discountAmt > 0 && (
-                        <div className="flex justify-between items-center text-red-500">
-                          <span>خصم {couponCode ? `(${couponCode})` : '(كوبون)'}</span>
-                          <span className="font-medium">- {formatPrice(discountAmt)}</span>
-                        </div>
-                      )}
+                {/* ===== Tabs Body ===== */}
+                <Tabs defaultValue="finance" className="flex-1 flex flex-col min-h-0">
+                  <TabsList className="shrink-0 mx-4 mt-3 grid grid-cols-5 h-9">
+                    <TabsTrigger value="finance" className="text-[11px] gap-1">
+                      <Wallet className="h-3.5 w-3.5" />
+                      المالية
+                    </TabsTrigger>
+                    <TabsTrigger value="status" className="text-[11px] gap-1">
+                      <Truck className="h-3.5 w-3.5" />
+                      الحالة
+                    </TabsTrigger>
+                    <TabsTrigger value="items" className="text-[11px] gap-1">
+                      <Package className="h-3.5 w-3.5" />
+                      المنتجات
+                    </TabsTrigger>
+                    <TabsTrigger value="files" className="text-[11px] gap-1">
+                      <Upload className="h-3.5 w-3.5" />
+                      المرفقات
+                    </TabsTrigger>
+                    <TabsTrigger value="notes" className="text-[11px] gap-1">
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      ملاحظات
+                    </TabsTrigger>
+                  </TabsList>
 
-                      {cardDiscountAmt > 0 && (
-                        <div className="flex justify-between items-center text-amber-600">
-                          <span className="flex items-center gap-1">
-                            💳 خصم بطاقة {(editingOrder as any).card_discount_level_name || 'ولاء'}
-                          </span>
-                          <span className="font-medium">- {formatPrice(cardDiscountAmt)}</span>
-                        </div>
-                      )}
-
-                      {totalSavings > 0 && (
-                        <div className="flex justify-between items-center text-[11px] text-emerald-700 bg-emerald-500/5 rounded px-2 py-1">
-                          <span>إجمالي التوفير للزبون</span>
-                          <span className="font-bold">{formatPrice(totalSavings)}</span>
-                        </div>
-                      )}
-
-                      <div className="border-t border-border/40 my-1" />
-
-                      <div className="flex justify-between items-center font-bold text-base">
-                        <span>المجموع النهائي</span>
-                        <span>{formatPrice(totalAmt)}</span>
-                      </div>
-
-                      {walletPaid > 0 && (
-                        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 space-y-1 mt-2">
-                          <div className="flex justify-between items-center text-emerald-700 text-xs font-bold">
-                            <span>💳 مدفوع من المحفظة</span>
-                            <span>- {formatPrice(walletPaid)}</span>
+                  <div className="flex-1 overflow-y-auto px-5 py-4">
+                    {/* ============ FINANCE TAB ============ */}
+                    <TabsContent value="finance" className="mt-0 space-y-4">
+                      {/* Editable financial inputs */}
+                      <div className="rounded-xl border border-border/60 bg-card/50 p-4 space-y-3">
+                        <h4 className="text-xs font-bold flex items-center gap-1.5">
+                          <Pencil className="h-3.5 w-3.5 text-primary" />
+                          الحقول القابلة للتعديل
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-[11px]">المجموع الإجمالي (للزبون)</Label>
+                            <Input
+                              type="number"
+                              value={totalAmount}
+                              onChange={(e) => setTotalAmount(Number(e.target.value))}
+                              className="h-9 text-sm font-bold"
+                            />
                           </div>
-                          {(editingOrder as any).wallet_balance_before != null && (
-                            <div className="text-[10px] text-muted-foreground flex justify-between">
-                              <span>الرصيد قبل: {formatPrice(Number((editingOrder as any).wallet_balance_before))}</span>
-                              <span>← بعد: {formatPrice(Math.max(0, Number((editingOrder as any).wallet_balance_before) - walletPaid))}</span>
+                          <div className="space-y-1">
+                            <Label className="text-[11px]">رسوم التوصيل</Label>
+                            <Input
+                              type="number"
+                              value={deliveryFee}
+                              onChange={(e) => setDeliveryFee(Number(e.target.value))}
+                              className="h-9 text-sm"
+                            />
+                            <p className="text-[9px] text-muted-foreground">لا يُحسب من الأرباح</p>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px]">تكلفة المنتجات</Label>
+                            <Input
+                              type="number"
+                              value={adminProductCost}
+                              onChange={(e) => setAdminProductCost(Number(e.target.value))}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px]">الربح المتوقع</Label>
+                            <Input
+                              type="number"
+                              value={calculatedProfit}
+                              readOnly
+                              className={`h-9 text-sm font-bold ${
+                                calculatedProfit >= 0 ? 'text-emerald-600' : 'text-red-500'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Customer-facing preview */}
+                      <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-b from-primary/5 to-transparent p-4">
+                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-3">
+                          <Wallet className="h-3.5 w-3.5 text-primary" />
+                          معاينة الفاتورة كما يراها الزبون
+                          <Badge variant="outline" className="text-[9px] mr-auto">مباشر</Badge>
+                        </h4>
+
+                        <div className="space-y-1.5 text-sm">
+                          <div className="flex justify-between items-center text-[11px] text-muted-foreground">
+                            <span>عدد القطع</span>
+                            <span>
+                              {itemsCount}
+                              {giftsCount > 0 && (
+                                <span className="text-emerald-600 mx-1">
+                                  (منها {giftsCount} هدية 🎁)
+                                </span>
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">سعر المنتجات</span>
+                            <span className="font-medium">{formatPrice(liveSubtotal)}</span>
+                          </div>
+
+                          {liveCodFee > 0 && (
+                            <div className="flex justify-between items-center text-amber-600">
+                              <span>عمولة الدفع عند الاستلام</span>
+                              <span className="font-medium">{formatPrice(liveCodFee)}</span>
+                            </div>
+                          )}
+
+                          {liveDelivery > 0 ? (
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">رسوم التوصيل</span>
+                              <span className="font-medium">{formatPrice(liveDelivery)}</span>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between items-center text-emerald-600">
+                              <span>التوصيل</span>
+                              <span className="font-bold">مجاني</span>
+                            </div>
+                          )}
+
+                          {liveTax > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">ضريبة</span>
+                              <span className="font-medium">{formatPrice(liveTax)}</span>
+                            </div>
+                          )}
+
+                          {discountAmt > 0 && (
+                            <div className="flex justify-between items-center text-red-500">
+                              <span>خصم {couponCode ? `(${couponCode})` : '(كوبون)'}</span>
+                              <span className="font-medium">- {formatPrice(discountAmt)}</span>
+                            </div>
+                          )}
+
+                          {cardDiscountAmt > 0 && (
+                            <div className="flex justify-between items-center text-amber-600">
+                              <span>💳 خصم بطاقة {(editingOrder as any).card_discount_level_name || 'ولاء'}</span>
+                              <span className="font-medium">- {formatPrice(cardDiscountAmt)}</span>
+                            </div>
+                          )}
+
+                          <div className="border-t border-border/40 my-2" />
+
+                          <div className="flex justify-between items-center font-extrabold text-lg bg-primary/10 rounded-lg px-3 py-2">
+                            <span>المجموع النهائي للزبون</span>
+                            <span className="text-primary">{formatPrice(liveCustomerTotal)}</span>
+                          </div>
+
+                          {walletPaid > 0 && (
+                            <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 mt-2">
+                              <div className="flex justify-between items-center text-emerald-700 text-xs font-bold">
+                                <span>💳 مدفوع من المحفظة</span>
+                                <span>- {formatPrice(walletPaid)}</span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="text-[10px] text-muted-foreground flex justify-between mt-1">
+                            <span>طريقة الدفع</span>
+                            <span className="font-medium">
+                              {paymentMethod === 'wallet'
+                                ? 'محفظة'
+                                : paymentMethod === 'cash_on_delivery'
+                                ? 'الدفع عند الاستلام'
+                                : paymentMethod}
+                            </span>
+                          </div>
+
+                          {/* Slip amount */}
+                          <div
+                            className={`mt-3 rounded-xl border-2 p-3 ${
+                              isFullyPaid
+                                ? 'border-emerald-500/60 bg-emerald-500/10'
+                                : 'border-amber-500/60 bg-amber-500/10'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 text-xs font-bold">
+                                <Truck className="h-4 w-4" />
+                                <span>
+                                  {isFullyPaid
+                                    ? 'مدفوع بالكامل — لا يطلب من الزبون'
+                                    : 'المبلغ المطلوب على ورقة التوصيل'}
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-[10px]"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(String(remainingAmt));
+                                  toast.success('تم نسخ المبلغ');
+                                }}
+                              >
+                                نسخ
+                              </Button>
+                            </div>
+                            <div
+                              className={`text-2xl font-extrabold mt-1 text-center ${
+                                isFullyPaid ? 'text-emerald-700' : 'text-amber-700'
+                              }`}
+                            >
+                              {isFullyPaid ? '✓ 0 د.ع' : `${formatPrice(remainingAmt)} د.ع`}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Wallet audit log */}
+                      <OrderWalletAuditLog orderId={editingOrder.id} formatPrice={formatPrice} />
+                    </TabsContent>
+
+                    {/* ============ STATUS TAB ============ */}
+                    <TabsContent value="status" className="mt-0 space-y-4">
+                      <div className="rounded-xl border border-border/60 bg-card/50 p-4 space-y-3">
+                        <h4 className="text-xs font-bold flex items-center gap-1.5">
+                          <Truck className="h-3.5 w-3.5 text-primary" />
+                          حالة الطلب والدفع
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-[11px]">حالة الطلب</Label>
+                            <Select value={editStatus} onValueChange={setEditStatus}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="اختر الحالة" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {getStatusOptionsForOrder(editingOrder, checkIfPreOrder).map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px]">حالة الدفع</Label>
+                            <Select value={editPaymentStatus} onValueChange={setEditPaymentStatus}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="اختر حالة الدفع" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cod">الدفع عند الاستلام</SelectItem>
+                                <SelectItem value="pending">قيد الانتظار</SelectItem>
+                                <SelectItem value="partial">دفع جزئي</SelectItem>
+                                <SelectItem value="paid">مدفوع</SelectItem>
+                                <SelectItem value="refunded">مسترجع</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {!isDirectSale && (
+                            <div className="space-y-1">
+                              <Label className="text-[11px] flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                التاريخ المتوقع للوصول
+                              </Label>
+                              <Input
+                                type="date"
+                                value={editEstimatedDeliveryDate}
+                                onChange={(e) => setEditEstimatedDeliveryDate(e.target.value)}
+                                className="h-9"
+                              />
                             </div>
                           )}
                         </div>
-                      )}
+                      </div>
+                    </TabsContent>
 
-                      <div className="text-[10px] text-muted-foreground flex justify-between mt-1">
-                        <span>طريقة الدفع</span>
-                        <span className="font-medium">
-                          {paymentMethod === 'wallet' ? 'محفظة' : paymentMethod === 'cash_on_delivery' ? 'الدفع عند الاستلام' : paymentMethod}
-                        </span>
+                    {/* ============ ITEMS TAB ============ */}
+                    <TabsContent value="items" className="mt-0 space-y-3">
+                      <div className="rounded-xl border border-border/60 bg-card/50 p-4">
+                        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                          افتح محرر المنتجات لإضافة، حذف، تعديل الكميات أو الألوان مع مزامنة المخزون تلقائياً.
+                        </p>
+                        <Button
+                          variant="default"
+                          className="w-full gap-2"
+                          onClick={() => setItemEditorOpen(true)}
+                        >
+                          <Package className="h-4 w-4" />
+                          فتح محرر المنتجات والمخزون
+                        </Button>
                       </div>
 
-                      {/* === Delivery Slip Amount (most important) === */}
-                      <div className={`mt-3 rounded-xl border-2 p-3 ${isFullyPaid ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-amber-500/60 bg-amber-500/10'}`}>
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 text-xs font-bold">
-                            <Truck className="h-4 w-4" />
-                            <span>{isFullyPaid ? 'مدفوع بالكامل — لا يطلب من الزبون' : 'المبلغ المطلوب على ورقة التوصيل'}</span>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-[10px]"
-                            onClick={() => {
-                              navigator.clipboard.writeText(String(slipAmount));
-                              toast.success('تم نسخ المبلغ');
-                            }}
-                          >
-                            نسخ
-                          </Button>
-                        </div>
-                        <div className={`text-2xl font-extrabold mt-1 text-center ${isFullyPaid ? 'text-emerald-700' : 'text-amber-700'}`}>
-                          {isFullyPaid ? '✓ 0 د.ع' : `${formatPrice(slipAmount)} د.ع`}
-                        </div>
-                        {!isFullyPaid && walletPaid > 0 && (
-                          <div className="text-[10px] text-center text-muted-foreground mt-1">
-                            ({formatPrice(totalAmt)} − {formatPrice(walletPaid)} مدفوع مسبقاً)
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Wallet deduction audit log linked to this order */}
-              <OrderWalletAuditLog orderId={editingOrder.id} formatPrice={formatPrice} />
-
-              {/* Status */}
-              {(() => {
-                const orderType = editingOrder.order_type || (checkIfPreOrder(editingOrder.order_items || []) ? 'preorder' : 'direct');
-                const isDirectSale = orderType === 'direct';
-                return (
-                  <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>حالة الطلب</Label>
-                        <Select value={editStatus} onValueChange={setEditStatus}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="اختر الحالة" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getStatusOptionsForOrder(editingOrder, checkIfPreOrder).map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
+                      {/* Quick items preview */}
+                      {items.length > 0 && (
+                        <div className="rounded-xl border border-border/40 bg-muted/20 p-3 space-y-2">
+                          <h5 className="text-[11px] font-bold text-muted-foreground">
+                            المنتجات الحالية ({items.length})
+                          </h5>
+                          <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
+                            {items.map((it: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between text-xs bg-background/60 rounded-lg px-2 py-1.5"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {it.is_gift && <Gift className="h-3 w-3 text-emerald-600 shrink-0" />}
+                                  <span className="truncate">
+                                    {it.products?.name_ar || it.product_name || 'منتج'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Badge variant="outline" className="text-[10px] h-5">
+                                    × {it.quantity}
+                                  </Badge>
+                                  <span className="font-medium">
+                                    {formatPrice(Number(it.total_price) || 0)}
+                                  </span>
+                                </div>
+                              </div>
                             ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>حالة الدفع</Label>
-                        <Select value={editPaymentStatus} onValueChange={setEditPaymentStatus}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="اختر حالة الدفع" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="cod">الدفع عند الاستلام</SelectItem>
-                            <SelectItem value="pending">قيد الانتظار</SelectItem>
-                            <SelectItem value="partial">دفع جزئي</SelectItem>
-                            <SelectItem value="paid">مدفوع</SelectItem>
-                            <SelectItem value="refunded">مسترجع</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {!isDirectSale && (
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* ============ FILES TAB ============ */}
+                    <TabsContent value="files" className="mt-0 space-y-4">
+                      <div className="rounded-xl border border-border/60 bg-card/50 p-4 space-y-4">
+                        <h4 className="text-xs font-bold flex items-center gap-1.5">
+                          <Upload className="h-3.5 w-3.5 text-primary" />
+                          صور وملفات الإدارة
+                        </h4>
+
+                        {/* Serial */}
                         <div className="space-y-2">
-                          <Label className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            التاريخ المتوقع للوصول
-                          </Label>
+                          <Label className="text-[11px]">صورة الرقم التسلسلي</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              className="flex-1 h-9"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setSerialImageFile(file);
+                                  setSerialImagePreview(URL.createObjectURL(file));
+                                }
+                              }}
+                            />
+                            {serialImagePreview && (
+                              <div className="relative">
+                                <img src={serialImagePreview} alt="Serial" className="w-12 h-12 object-cover rounded" />
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="destructive"
+                                  className="absolute -top-2 -right-2 h-5 w-5"
+                                  onClick={() => {
+                                    setSerialImageFile(null);
+                                    setSerialImagePreview('');
+                                  }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Admin images */}
+                        <div className="space-y-2">
+                          <Label className="text-[11px]">صور إضافية</Label>
                           <Input
-                            type="date"
-                            value={editEstimatedDeliveryDate}
-                            onChange={(e) => setEditEstimatedDeliveryDate(e.target.value)}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="h-9"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              setAdminImageFiles([...adminImageFiles, ...files]);
+                              const previews = files.map((f) => URL.createObjectURL(f));
+                              setAdminImagePreviews([...adminImagePreviews, ...previews]);
+                            }}
+                          />
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {existingAdminImages.map((url, idx) => (
+                              <div key={`existing-${idx}`} className="relative">
+                                <img src={url} alt={`Admin ${idx}`} className="w-16 h-16 object-cover rounded" />
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="destructive"
+                                  className="absolute -top-2 -right-2 h-5 w-5"
+                                  onClick={() =>
+                                    setExistingAdminImages(existingAdminImages.filter((_, i) => i !== idx))
+                                  }
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                            {adminImagePreviews.map((url, idx) => (
+                              <div key={`new-${idx}`} className="relative">
+                                <img src={url} alt={`New ${idx}`} className="w-16 h-16 object-cover rounded border-2 border-primary" />
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="destructive"
+                                  className="absolute -top-2 -right-2 h-5 w-5"
+                                  onClick={() => {
+                                    setAdminImageFiles(adminImageFiles.filter((_, i) => i !== idx));
+                                    setAdminImagePreviews(adminImagePreviews.filter((_, i) => i !== idx));
+                                  }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Admin files */}
+                        <div className="space-y-2">
+                          <Label className="text-[11px]">ملفات مرفقة (PDF, DOC...)</Label>
+                          <Input
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx"
+                            multiple
+                            className="h-9"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              setAdminFilesArray([...adminFilesArray, ...files]);
+                            }}
+                          />
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {existingAdminFiles.map((url, idx) => (
+                              <Badge key={`existing-file-${idx}`} variant="secondary" className="gap-1">
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs"
+                                >
+                                  ملف {idx + 1}
+                                </a>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-4 w-4 p-0"
+                                  onClick={() =>
+                                    setExistingAdminFiles(existingAdminFiles.filter((_, i) => i !== idx))
+                                  }
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </Badge>
+                            ))}
+                            {adminFilesArray.map((file, idx) => (
+                              <Badge key={`new-file-${idx}`} variant="outline" className="gap-1 border-primary">
+                                <span className="text-xs">{file.name}</span>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-4 w-4 p-0"
+                                  onClick={() =>
+                                    setAdminFilesArray(adminFilesArray.filter((_, i) => i !== idx))
+                                  }
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    {/* ============ NOTES TAB ============ */}
+                    <TabsContent value="notes" className="mt-0 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[11px]">ملاحظات داخلية (للإدارة فقط)</Label>
+                          <Textarea
+                            value={editInternalNotes}
+                            onChange={(e) => setEditInternalNotes(e.target.value)}
+                            placeholder="ملاحظات للإدارة فقط..."
+                            rows={6}
                           />
                         </div>
-                      )}
-                    </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px]">ملاحظات الشحن</Label>
+                          <Textarea
+                            value={editShippingNotes}
+                            onChange={(e) => setEditShippingNotes(e.target.value)}
+                            placeholder="ملاحظات خاصة بالشحن..."
+                            rows={6}
+                          />
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </div>
+                </Tabs>
 
-                    {/* Financial */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      <div className="space-y-2">
-                        <Label>المبلغ الإجمالي</Label>
-                        <Input
-                          type="number"
-                          value={totalAmount}
-                          onChange={(e) => setTotalAmount(Number(e.target.value))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>سعر التوصيل</Label>
-                        <Input
-                          type="number"
-                          value={deliveryFee}
-                          onChange={(e) => setDeliveryFee(Number(e.target.value))}
-                        />
-                        <p className="text-[10px] text-muted-foreground">لا يُحسب من الأرباح</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>تكلفة المنتجات</Label>
-                        <Input
-                          type="number"
-                          value={adminProductCost}
-                          onChange={(e) => setAdminProductCost(Number(e.target.value))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>الربح المتوقع</Label>
-                        <Input
-                          type="number"
-                          value={calculatedProfit}
-                          readOnly
-                          className={calculatedProfit >= 0 ? 'text-green-500' : 'text-red-500'}
-                        />
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-
-              {/* Admin Images and Files */}
-              <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-medium text-sm">صور وملفات الإدارة</h4>
-                
-                {/* Serial Number Image */}
-                <div className="space-y-2">
-                  <Label>صورة الرقم التسلسلي</Label>
+                {/* ===== Sticky Footer ===== */}
+                <div className="shrink-0 border-t border-border/40 bg-background/95 backdrop-blur px-5 py-3 flex items-center justify-between gap-3">
+                  <div className="text-[11px] text-muted-foreground">
+                    سيظهر للزبون:{' '}
+                    <span className="font-bold text-foreground">
+                      {formatPrice(liveCustomerTotal)} د.ع
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setSerialImageFile(file);
-                          setSerialImagePreview(URL.createObjectURL(file));
-                        }
-                      }}
-                      className="flex-1"
-                    />
-                    {serialImagePreview && (
-                      <div className="relative">
-                        <img src={serialImagePreview} alt="Serial" className="w-12 h-12 object-cover rounded" />
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="destructive"
-                          className="absolute -top-2 -right-2 h-5 w-5"
-                          onClick={() => {
-                            setSerialImageFile(null);
-                            setSerialImagePreview('');
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
+                    <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+                      إلغاء
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveOrder}
+                      disabled={updateOrderMutation.isPending}
+                      className="gap-2"
+                    >
+                      {updateOrderMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      حفظ التغييرات
+                    </Button>
                   </div>
                 </div>
-
-                {/* Admin Images */}
-                <div className="space-y-2">
-                  <Label>صور إضافية</Label>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      setAdminImageFiles([...adminImageFiles, ...files]);
-                      const previews = files.map(f => URL.createObjectURL(f));
-                      setAdminImagePreviews([...adminImagePreviews, ...previews]);
-                    }}
-                  />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {existingAdminImages.map((url, idx) => (
-                      <div key={`existing-${idx}`} className="relative">
-                        <img src={url} alt={`Admin ${idx}`} className="w-16 h-16 object-cover rounded" />
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="destructive"
-                          className="absolute -top-2 -right-2 h-5 w-5"
-                          onClick={() => setExistingAdminImages(existingAdminImages.filter((_, i) => i !== idx))}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                    {adminImagePreviews.map((url, idx) => (
-                      <div key={`new-${idx}`} className="relative">
-                        <img src={url} alt={`New ${idx}`} className="w-16 h-16 object-cover rounded border-2 border-primary" />
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="destructive"
-                          className="absolute -top-2 -right-2 h-5 w-5"
-                          onClick={() => {
-                            setAdminImageFiles(adminImageFiles.filter((_, i) => i !== idx));
-                            setAdminImagePreviews(adminImagePreviews.filter((_, i) => i !== idx));
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Admin Files */}
-                <div className="space-y-2">
-                  <Label>ملفات مرفقة (PDF, DOC...)</Label>
-                  <Input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx"
-                    multiple
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      setAdminFilesArray([...adminFilesArray, ...files]);
-                    }}
-                  />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {existingAdminFiles.map((url, idx) => (
-                      <Badge key={`existing-file-${idx}`} variant="secondary" className="gap-1">
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs">ملف {idx + 1}</a>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-4 w-4 p-0"
-                          onClick={() => setExistingAdminFiles(existingAdminFiles.filter((_, i) => i !== idx))}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </Badge>
-                    ))}
-                    {adminFilesArray.map((file, idx) => (
-                      <Badge key={`new-file-${idx}`} variant="outline" className="gap-1 border-primary">
-                        <span className="text-xs">{file.name}</span>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-4 w-4 p-0"
-                          onClick={() => setAdminFilesArray(adminFilesArray.filter((_, i) => i !== idx))}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>ملاحظات داخلية</Label>
-                  <Textarea
-                    value={editInternalNotes}
-                    onChange={(e) => setEditInternalNotes(e.target.value)}
-                    placeholder="ملاحظات للإدارة فقط..."
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>ملاحظات الشحن</Label>
-                  <Textarea
-                    value={editShippingNotes}
-                    onChange={(e) => setEditShippingNotes(e.target.value)}
-                    placeholder="ملاحظات خاصة بالشحن..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              إلغاء
-            </Button>
-            <Button 
-              onClick={handleSaveOrder}
-              disabled={updateOrderMutation.isPending}
-              className="gap-2"
-            >
-              {updateOrderMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              حفظ التغييرات
-            </Button>
-          </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
         </TabsContent>
