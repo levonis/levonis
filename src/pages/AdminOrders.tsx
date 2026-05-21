@@ -916,10 +916,13 @@ const AdminOrders = () => {
   });
 
   // Per-customer ordering index + distinct color stripe
+  // يُحسب فقط للطلبات بحالة: قيد الانتظار / تم التأكيد / تم الشراء
+  const COUNTED_STATUSES = new Set(['pending', 'confirmed', 'purchased']);
   const customerKey = (o: any) => o.user_id || o.phone_number || 'guest';
   const customerOrdersMap = new Map<string, string[]>();
   [...(orders || [])]
-    .filter((o: any) => o.status !== 'cancelled')
+    .filter((o: any) => COUNTED_STATUSES.has(o.status))
+
     .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     .forEach((o: any) => {
       const k = customerKey(o);
