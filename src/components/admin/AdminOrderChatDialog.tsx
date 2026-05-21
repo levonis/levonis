@@ -663,8 +663,8 @@ export default function AdminOrderChatDialog({
                       <Section title="تفاصيل الحساب" icon="💰">
                         <div className="space-y-0.5">
                           <PriceRow label="مجموع المنتجات" value={`${formatPrice(subtotal)} ${cur}`} />
-                          {deliveryAndCommission > 0 && (
-                            <PriceRow label="التوصيل + العمولة" value={`+${formatPrice(deliveryAndCommission)} ${cur}`} />
+                          {deliveryFee > 0 && (
+                            <PriceRow label="التوصيل" value={`+${formatPrice(deliveryFee)} ${cur}`} />
                           )}
                           {codFee > 0 && (
                             <PriceRow label="رسوم الدفع عند الاستلام" value={`+${formatPrice(codFee)} ${cur}`} />
