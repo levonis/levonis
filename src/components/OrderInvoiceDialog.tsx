@@ -68,10 +68,31 @@ export default function OrderInvoiceDialog({ order, open, onClose }: OrderInvoic
   });
 
   const subtotal = items.reduce((s, i) => s + i.total, 0);
-  const delivery = Number(order.delivery_fee || order.shipping_cost || 0);
+  const total = Number(order.total_amount ?? subtotal);
   const discount = Number(order.discount_amount || 0);
-  const total = Number(order.total_amount ?? subtotal + delivery - discount);
+  const cardDiscount = Number(order.card_discount_amount || 0);
+  // Effective delivery: explicit field, or derive from totals as fallback.
+  const explicitDelivery = Number(order.delivery_fee || order.shipping_cost || order.admin_shipping_cost || 0);
+  const derivedDelivery = subtotal > 0 ? Math.max(0, total - subtotal + discount + cardDiscount) : 0;
+  const delivery = explicitDelivery > 0 ? explicitDelivery : derivedDelivery;
   const orderDate = order.created_at ? new Date(order.created_at) : new Date();
+
+  // Coupons & referral
+  const couponCode: string | null = order.coupon_code || null;
+  const referralCouponId = order.referral_coupon_id || null;
+  const originalDelivery = Number(order.original_delivery_fee || 0);
+  const isReferralFreeDelivery = !!referralCouponId && delivery === 0 && originalDelivery > 0;
+
+  // Wallet & COD
+  const walletPaid = Number(order.customer_paid_amount || order.paid_amount || 0);
+  const walletBefore = order.wallet_balance_before != null ? Number(order.wallet_balance_before) : null;
+  const walletAfter = walletBefore != null ? Math.max(0, walletBefore - walletPaid) : null;
+  const codRemaining = Math.max(
+    0,
+    order.remaining_amount != null ? Number(order.remaining_amount) : (total - walletPaid),
+  );
+  const isFullyPaid = walletPaid >= total && total > 0;
+  const totalSavings = discount + cardDiscount + (isReferralFreeDelivery ? originalDelivery : 0);
 
   // QR code points to order page
   const qrCodeData = `${window.location.origin}/order/${order.id}`;
@@ -84,6 +105,17 @@ export default function OrderInvoiceDialog({ order, open, onClose }: OrderInvoic
     subtotal,
     delivery,
     discount,
+    cardDiscount,
+    cardLevelName: order.card_discount_level_name || null,
+    couponCode,
+    isReferralFreeDelivery,
+    originalDelivery,
+    walletPaid,
+    walletBefore,
+    walletAfter,
+    codRemaining,
+    isFullyPaid,
+    totalSavings,
     total,
     invoiceNo: order.order_number || order.id?.slice(0, 8) || '',
     date: orderDate,
