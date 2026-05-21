@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback } from 'react';
+import { useState, useEffect, memo, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -78,6 +78,7 @@ const AdminOrders = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const ordersTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
+  const preorderSummaryScrollRef = useRef<HTMLDivElement | null>(null);
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqdRate = shippingSettings?.usd_to_iqd_rate ?? 1500;
   const [activeTab, setActiveTab] = useState('orders');
@@ -1156,7 +1157,7 @@ const AdminOrders = () => {
             </AdminCard>
 
             <Dialog open={preorderSummaryOpen} onOpenChange={setPreorderSummaryOpen}>
-              <DialogContent className="!max-w-2xl !overflow-hidden !max-h-none flex flex-col" style={{ maxHeight: '90vh' }}>
+              <DialogContent className="!max-w-2xl !overflow-hidden !max-h-none flex flex-col" style={{ height: 'min(90vh, 720px)' }}>
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
@@ -1167,7 +1168,33 @@ const AdminOrders = () => {
                   </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto -mx-1 px-1">
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={() => preorderSummaryScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                    disabled={rows.length === 0}
+                  >
+                    أعلى
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={() => {
+                      const el = preorderSummaryScrollRef.current;
+                      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+                    }}
+                    disabled={rows.length === 0}
+                  >
+                    نزول للأسفل
+                  </Button>
+                </div>
+
+                <div ref={preorderSummaryScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain -mx-1 px-1 pr-2" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {rows.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">لا توجد منتجات نشطة في الطلبات المسبقة</p>
                   ) : (
