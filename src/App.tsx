@@ -222,12 +222,44 @@ function RouteSuspenseFallback() {
   const [stuck, setStuck] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    let remaining = ROUTE_FALLBACK_TIMEOUT_MS;
+    let startedAt = Date.now();
+    let timer: number | null = null;
+
+    const trigger = () => {
       setStuck(true);
       recoverFromStuckRoute();
-    }, ROUTE_FALLBACK_TIMEOUT_MS);
+    };
 
-    return () => window.clearTimeout(timer);
+    const start = () => {
+      if (timer != null) return;
+      startedAt = Date.now();
+      timer = window.setTimeout(trigger, remaining);
+    };
+
+    const pause = () => {
+      if (timer == null) return;
+      window.clearTimeout(timer);
+      timer = null;
+      remaining = Math.max(0, remaining - (Date.now() - startedAt));
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        // لا نحتسب الوقت أثناء غياب التبويب — يمنع إعادة التحميل عند العودة
+        pause();
+      } else {
+        start();
+      }
+    };
+
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (timer != null) window.clearTimeout(timer);
+    };
   }, []);
 
   if (stuck) {
