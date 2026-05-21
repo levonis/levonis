@@ -5,7 +5,7 @@ import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotificat
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Image, File, Download, Ship, Plane, MessageCircle, XCircle, Wallet, Clock, CheckCircle2, Receipt, Hash, Info, Sparkles } from 'lucide-react';
+import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Image, File, Download, Ship, Plane, MessageCircle, XCircle, Wallet, Clock, CheckCircle2, Receipt, Hash, Info, Sparkles, Copy, Check } from 'lucide-react';
 import WavyColors from '@/components/WavyColors';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
