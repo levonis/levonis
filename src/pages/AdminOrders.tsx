@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback } from 'react';
+import { useState, useEffect, memo, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -78,6 +78,7 @@ const AdminOrders = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const ordersTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
+  const preorderSummaryScrollRef = useRef<HTMLDivElement | null>(null);
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqdRate = shippingSettings?.usd_to_iqd_rate ?? 1500;
   const [activeTab, setActiveTab] = useState('orders');
