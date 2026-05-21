@@ -509,7 +509,7 @@ export default function AdminOrderChatDialog({
           <TabsContent value="order" className="!mt-0 m-0 flex-1 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
             <div ref={orderViewportRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-muted/10">
               {displayOrder ? (() => {
-                // ===== Accurate price breakdown (mirrors OrderDetail summary) =====
+                // ===== Accurate price breakdown =====
                 const cur = displayOrder.currency || 'IQD';
                 const subtotal = Number(displayOrder.subtotal) || 0;
                 const tax = Number(displayOrder.tax_amount) || 0;
@@ -518,232 +518,209 @@ export default function AdminOrderChatDialog({
                 const cardDiscount = Number(displayOrder.card_discount_amount) || 0;
                 const cardLevelName = displayOrder.card_discount_level_name || null;
                 const codFee = Number(displayOrder.cod_fee) || 0;
+                const donation = (Number(displayOrder.auto_donation_amount) || 0) + (Number(displayOrder.extra_donation_amount) || 0);
                 const walletPaid = Number(displayOrder.customer_paid_amount) || Number(displayOrder.paid_amount) || 0;
                 const remaining = Math.max(0, Number(displayOrder.remaining_amount) || 0);
                 const orderTotal = Number(displayOrder.total_amount) || 0;
-                const shippingAddon = (displayOrder.order_items as any[] || []).reduce(
-                  (s: number, it: any) => s + (Number(it.shipping_price_adjustment) || 0) * (Number(it.quantity) || 1),
+                // Delivery + commission merged: anything in total beyond subtotal+codFee+tax+donation +discounts
+                const deliveryAndCommission = Math.max(
                   0,
+                  orderTotal - subtotal - codFee - tax - donation + discount + cardDiscount,
                 );
+                const totalSavings = discount + cardDiscount;
                 const isCod = (displayOrder.payment_method || displayOrder.payment_status) === 'cod';
                 const isFullyPaid = remaining <= 0 && walletPaid > 0;
 
-                const Bubble = ({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'success' | 'warning' | 'info' }) => {
-                  const toneClass =
-                    tone === 'success' ? 'bg-emerald-500/10 border-emerald-500/30'
-                    : tone === 'warning' ? 'bg-amber-500/10 border-amber-500/30'
-                    : tone === 'info' ? 'bg-primary/10 border-primary/30'
-                    : 'bg-card border-border';
-                  return (
-                    <div className="flex justify-start">
-                      <div className={`max-w-[92%] rounded-2xl rounded-tr-sm border px-3 py-2.5 shadow-sm ${toneClass}`}>
-                        {children}
-                      </div>
-                    </div>
-                  );
-                };
-
-                const PriceRow = ({ label, value, cls = '' }: { label: string; value: string; cls?: string }) => (
-                  <div className={`flex items-center justify-between text-xs gap-3 ${cls}`}>
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-semibold tabular-nums">{value}</span>
+                const Section = ({ title, icon, children }: { title: string; icon?: string; children: React.ReactNode }) => (
+                  <div className="border-t border-border/60 first:border-t-0 px-3 py-2.5">
+                    <p className="text-[10px] font-bold text-muted-foreground mb-1.5 tracking-wide">{icon} {title}</p>
+                    {children}
                   </div>
                 );
 
+                const PriceRow = ({ label, value, cls = '', bold = false }: { label: string; value: string; cls?: string; bold?: boolean }) => (
+                  <div className={`flex items-center justify-between text-xs gap-3 py-0.5 ${cls}`}>
+                    <span className={bold ? 'font-bold' : 'text-muted-foreground'}>{label}</span>
+                    <span className={`tabular-nums ${bold ? 'font-black' : 'font-semibold'}`}>{value}</span>
+                  </div>
+                );
+
+                const CopyBtn = ({ text, label = 'تم النسخ' }: { text: string; label?: string }) => (
+                  <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => { navigator.clipboard.writeText(text); toast.success(label); }}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                );
+
                 return (
-                  <div className="p-3 space-y-2.5">
-                    {/* Status */}
-                    <Bubble tone="info">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs font-bold">طلب {displayOrder.order_number || orderNumber}</span>
+                  <div className="p-3 space-y-3">
+                    {/* === Main card === */}
+                    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+                      {/* Header */}
+                      <div className="px-3 py-2.5 bg-primary/10 border-b border-border/60 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-bold">طلب {displayOrder.order_number || orderNumber}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {displayOrder.created_at && format(new Date(displayOrder.created_at), 'dd/MM/yyyy - HH:mm', { locale: ar })}
+                          </p>
+                        </div>
                         <Badge variant={displayOrder.status === 'delivered' ? 'default' : displayOrder.status === 'cancelled' ? 'destructive' : 'secondary'} className="text-[10px]">
                           {STATUS_LABELS[displayOrder.status] || displayOrder.status || '—'}
                         </Badge>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {displayOrder.created_at && format(new Date(displayOrder.created_at), 'dd/MM/yyyy - HH:mm', { locale: ar })}
-                      </p>
-                    </Bubble>
 
-                    {/* Customer */}
-                    <Bubble>
-                      <p className="text-[10px] font-bold text-muted-foreground mb-1.5">👤 معلومات الزبون</p>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1">
-                          <span className="flex-1 text-xs font-medium">{matchedAddress?.full_name || customerName}</span>
-                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress?.full_name || customerName); toast.success('تم نسخ الاسم'); }}>
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        {(matchedAddress?.phone_number || displayOrder.phone_number) && (
+                      {/* Customer */}
+                      <Section title="معلومات الزبون" icon="👤">
+                        <div className="space-y-1">
                           <div className="flex items-center gap-1">
-                            <span className="flex-1 text-xs" dir="ltr">{matchedAddress?.phone_number || displayOrder.phone_number}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress?.phone_number || displayOrder.phone_number || ''); toast.success('تم نسخ الرقم'); }}>
-                              <Copy className="h-3 w-3" />
-                            </Button>
+                            <span className="flex-1 text-xs font-medium">{matchedAddress?.full_name || customerName}</span>
+                            <CopyBtn text={matchedAddress?.full_name || customerName} label="تم نسخ الاسم" />
+                          </div>
+                          {(matchedAddress?.phone_number || displayOrder.phone_number) && (
+                            <div className="flex items-center gap-1">
+                              <span className="flex-1 text-xs" dir="ltr">{matchedAddress?.phone_number || displayOrder.phone_number}</span>
+                              <CopyBtn text={matchedAddress?.phone_number || displayOrder.phone_number || ''} label="تم نسخ الرقم" />
+                            </div>
+                          )}
+                        </div>
+                      </Section>
+
+                      {/* Address */}
+                      {(matchedAddress || displayOrder.shipping_address) && (
+                        <Section title="عنوان التوصيل" icon="📍">
+                          <div className="space-y-1 text-xs">
+                            {(matchedAddress?.governorate || displayOrder.governorate) && (
+                              <div className="flex items-center gap-1">
+                                <span className="flex-1"><span className="text-muted-foreground">المحافظة:</span> {matchedAddress?.governorate || displayOrder.governorate}{matchedAddress?.area ? ` - ${matchedAddress.area}` : ''}</span>
+                                <CopyBtn text={[matchedAddress?.governorate || displayOrder.governorate, matchedAddress?.area].filter(Boolean).join(' - ')} />
+                              </div>
+                            )}
+                            {(matchedAddress?.neighborhood || matchedAddress?.nearest_landmark) && (
+                              <div className="flex items-center gap-1">
+                                <span className="flex-1">
+                                  {matchedAddress.neighborhood && <><span className="text-muted-foreground">الحي:</span> {matchedAddress.neighborhood}</>}
+                                  {matchedAddress.neighborhood && matchedAddress.nearest_landmark && ' - '}
+                                  {matchedAddress.nearest_landmark && <><span className="text-muted-foreground">نقطة دالة:</span> {matchedAddress.nearest_landmark}</>}
+                                </span>
+                                <CopyBtn text={[matchedAddress.neighborhood, matchedAddress.nearest_landmark].filter(Boolean).join(' - ')} />
+                              </div>
+                            )}
+                            {matchedAddress?.additional_notes && (
+                              <div className="text-muted-foreground">📝 {matchedAddress.additional_notes}</div>
+                            )}
+                            {!matchedAddress && displayOrder.shipping_address && (
+                              <div className="flex items-center gap-1">
+                                <span className="flex-1">{displayOrder.shipping_address}</span>
+                                <CopyBtn text={displayOrder.shipping_address} />
+                              </div>
+                            )}
+                          </div>
+                        </Section>
+                      )}
+
+                      {/* Notes */}
+                      {(displayOrder.shipping_notes || displayOrder.internal_notes || displayOrder.financial_notes) && (
+                        <Section title="ملاحظات" icon="📝">
+                          <div className="space-y-1 text-xs">
+                            {displayOrder.shipping_notes && <div><span className="text-muted-foreground">شحن:</span> {displayOrder.shipping_notes}</div>}
+                            {displayOrder.internal_notes && <div><span className="text-muted-foreground">داخلية:</span> {displayOrder.internal_notes}</div>}
+                            {displayOrder.financial_notes && <div><span className="text-muted-foreground">مالية:</span> {displayOrder.financial_notes}</div>}
+                          </div>
+                        </Section>
+                      )}
+
+                      {/* Products */}
+                      <Section title="المنتجات" icon="🛒">
+                        {(displayOrder.order_items as any[] || []).length === 0 ? (
+                          <p className="text-xs text-muted-foreground">لا توجد منتجات</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {(displayOrder.order_items as any[]).map((item: any, index: number) => {
+                              const itemName = item.product_name_ar || item.product_name || item.products?.name_ar || item.custom_product_requests?.product_name || 'منتج';
+                              const itemQty = item.quantity ?? 1;
+                              const itemUnit = Number(item.unit_price) || 0;
+                              const itemLineTotal = Number(item.total_price) || itemUnit * itemQty;
+                              const itemImage = item.color_image_url || item.product_image || item.products?.images?.[0] || item.products?.image_url || item.custom_product_requests?.image_url;
+                              return (
+                                <div key={item.id || `${displayOrder.id || orderId}-${index}`} className="flex items-center gap-2 rounded-lg bg-muted/40 p-2">
+                                  {itemImage && <img src={itemImage} className="w-10 h-10 rounded-md object-cover border border-border" alt={itemName} loading="lazy" />}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold truncate">{itemName}</p>
+                                    <div className="flex flex-wrap gap-1 mt-0.5">
+                                      {item.selected_color && <Badge variant="outline" className="text-[9px] px-1 py-0">{item.selected_color}</Badge>}
+                                      {item.selected_option && <Badge variant="outline" className="text-[9px] px-1 py-0">{item.selected_option}</Badge>}
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">{formatPrice(itemUnit)} × {itemQty}</p>
+                                  </div>
+                                  <p className="text-xs font-bold tabular-nums shrink-0">{formatPrice(itemLineTotal)}</p>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
-                      </div>
-                    </Bubble>
+                      </Section>
 
-                    {/* Address */}
-                    {(matchedAddress || displayOrder.shipping_address) && (
-                      <Bubble>
-                        <p className="text-[10px] font-bold text-muted-foreground mb-1.5">📍 عنوان التوصيل</p>
-                        <div className="space-y-1 text-xs">
-                          {(matchedAddress?.governorate || displayOrder.governorate) && (
-                            <div className="flex items-center gap-1">
-                              <span className="flex-1"><span className="text-muted-foreground">المحافظة:</span> {matchedAddress?.governorate || displayOrder.governorate}{matchedAddress?.area ? ` - ${matchedAddress.area}` : ''}</span>
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
-                                const text = [matchedAddress?.governorate || displayOrder.governorate, matchedAddress?.area].filter(Boolean).join(' - ');
-                                navigator.clipboard.writeText(text); toast.success('تم النسخ');
-                              }}>
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
+                      {/* Price breakdown */}
+                      <Section title="تفاصيل الحساب" icon="💰">
+                        <div className="space-y-0.5">
+                          <PriceRow label="مجموع المنتجات" value={`${formatPrice(subtotal)} ${cur}`} />
+                          {deliveryAndCommission > 0 && (
+                            <PriceRow label="التوصيل + العمولة" value={`+${formatPrice(deliveryAndCommission)} ${cur}`} />
                           )}
-                          {(matchedAddress?.neighborhood || matchedAddress?.nearest_landmark) && (
-                            <div className="flex items-center gap-1">
-                              <span className="flex-1">
-                                {matchedAddress.neighborhood && <><span className="text-muted-foreground">الحي:</span> {matchedAddress.neighborhood}</>}
-                                {matchedAddress.neighborhood && matchedAddress.nearest_landmark && ' - '}
-                                {matchedAddress.nearest_landmark && <><span className="text-muted-foreground">نقطة دالة:</span> {matchedAddress.nearest_landmark}</>}
-                              </span>
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
-                                const text = [matchedAddress.neighborhood, matchedAddress.nearest_landmark].filter(Boolean).join(' - ');
-                                navigator.clipboard.writeText(text); toast.success('تم النسخ');
-                              }}>
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
+                          {codFee > 0 && (
+                            <PriceRow label="رسوم الدفع عند الاستلام" value={`+${formatPrice(codFee)} ${cur}`} />
                           )}
-                          {matchedAddress?.additional_notes && (
-                            <div className="text-muted-foreground">📝 {matchedAddress.additional_notes}</div>
+                          {tax > 0 && (
+                            <PriceRow label={`الضريبة${taxPct ? ` (${taxPct}%)` : ''}`} value={`+${formatPrice(tax)} ${cur}`} />
                           )}
-                          {!matchedAddress && displayOrder.shipping_address && (
-                            <div className="flex items-center gap-1">
-                              <span className="flex-1">{displayOrder.shipping_address}</span>
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(displayOrder.shipping_address); toast.success('تم النسخ'); }}>
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
+                          {donation > 0 && (
+                            <PriceRow label="تبرع" value={`+${formatPrice(donation)} ${cur}`} />
+                          )}
+                          {discount > 0 && (
+                            <PriceRow label={displayOrder.referral_coupon_id ? 'كوبون إحالة' : 'خصم كوبون'} value={`-${formatPrice(discount)} ${cur}`} cls="text-emerald-600" />
+                          )}
+                          {cardDiscount > 0 && (
+                            <PriceRow label={`خصم بطاقة ${cardLevelName || 'الولاء'}`} value={`-${formatPrice(cardDiscount)} ${cur}`} cls="text-emerald-600" />
+                          )}
+                          {totalSavings > 0 && (
+                            <p className="text-[10px] text-emerald-600 text-left pt-0.5">وفّر الزبون {formatPrice(totalSavings)} {cur}</p>
+                          )}
+                          <div className="h-px bg-border/60 my-1.5" />
+                          <PriceRow label="المجموع النهائي" value={`${formatPrice(orderTotal)} ${cur}`} bold cls="text-primary" />
+                        </div>
+                      </Section>
+
+                      {/* Payment */}
+                      <Section title="الدفع" icon="💳">
+                        <div className="space-y-0.5">
+                          <PriceRow label="طريقة الدفع" value={(displayOrder.payment_method || displayOrder.payment_status) === 'cod' ? 'عند الاستلام' : (displayOrder.payment_method || '—')} />
+                          <PriceRow label="حالة الدفع" value={isFullyPaid ? 'مدفوع بالكامل ✓' : (displayOrder.payment_status === 'cod' ? 'عند الاستلام' : (displayOrder.payment_status || '—'))} cls={isFullyPaid ? 'text-emerald-600' : ''} />
+                          {walletPaid > 0 && (
+                            <PriceRow label="مدفوع من المحفظة" value={`-${formatPrice(walletPaid)} ${cur}`} cls="text-emerald-600" />
                           )}
                         </div>
-                      </Bubble>
-                    )}
+                      </Section>
+                    </div>
 
-                    {/* Notes */}
-                    {(displayOrder.shipping_notes || displayOrder.internal_notes || displayOrder.financial_notes) && (
-                      <Bubble>
-                        <p className="text-[10px] font-bold text-muted-foreground mb-1.5">📝 ملاحظات</p>
-                        <div className="space-y-1 text-xs">
-                          {displayOrder.shipping_notes && <div><span className="text-muted-foreground">شحن:</span> {displayOrder.shipping_notes}</div>}
-                          {displayOrder.internal_notes && <div><span className="text-muted-foreground">داخلية:</span> {displayOrder.internal_notes}</div>}
-                          {displayOrder.financial_notes && <div><span className="text-muted-foreground">مالية:</span> {displayOrder.financial_notes}</div>}
-                        </div>
-                      </Bubble>
-                    )}
-
-                    {/* Products */}
-                    <Bubble>
-                      <p className="text-[10px] font-bold text-muted-foreground mb-1.5">🛒 المنتجات</p>
-                      {(displayOrder.order_items as any[] || []).length === 0 ? (
-                        <p className="text-xs text-muted-foreground">لا توجد منتجات</p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {(displayOrder.order_items as any[]).map((item: any, index: number) => {
-                            const itemName = item.product_name_ar || item.product_name || item.products?.name_ar || item.custom_product_requests?.product_name || 'منتج';
-                            const itemQty = item.quantity ?? 1;
-                            const itemUnit = Number(item.unit_price) || 0;
-                            const itemLineTotal = Number(item.total_price) || itemUnit * itemQty;
-                            const itemImage = item.color_image_url || item.product_image || item.products?.images?.[0] || item.products?.image_url || item.custom_product_requests?.image_url;
-                            return (
-                              <div key={item.id || `${displayOrder.id || orderId}-${index}`} className="flex items-center gap-2 rounded-lg bg-background/60 p-2">
-                                {itemImage && <img src={itemImage} className="w-10 h-10 rounded-md object-cover border border-border" alt={itemName} loading="lazy" />}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold truncate">{itemName}</p>
-                                  <div className="flex flex-wrap gap-1 mt-0.5">
-                                    {item.selected_color && <Badge variant="outline" className="text-[9px] px-1 py-0">{item.selected_color}</Badge>}
-                                    {item.selected_option && <Badge variant="outline" className="text-[9px] px-1 py-0">{item.selected_option}</Badge>}
-                                  </div>
-                                  <p className="text-[10px] text-muted-foreground mt-0.5">{formatPrice(itemUnit)} × {itemQty}</p>
-                                </div>
-                                <div className="text-left shrink-0">
-                                  <p className="text-xs font-bold tabular-nums">{formatPrice(itemLineTotal)}</p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </Bubble>
-
-                    {/* Payment method */}
-                    <Bubble>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <p className="text-[10px] text-muted-foreground">طريقة الدفع</p>
-                          <p className="font-bold">
-                            {(displayOrder.payment_method || displayOrder.payment_status) === 'cod' ? 'عند الاستلام' : (displayOrder.payment_method || '—')}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground">حالة الدفع</p>
-                          <p className="font-bold">
-                            {isFullyPaid ? 'مدفوع بالكامل ✓' : (displayOrder.payment_status === 'cod' ? 'عند الاستلام' : (displayOrder.payment_status || '—'))}
-                          </p>
-                        </div>
-                      </div>
-                    </Bubble>
-
-                    {/* Price breakdown */}
-                    <Bubble tone="info">
-                      <p className="text-[10px] font-bold text-muted-foreground mb-2">💰 تفاصيل الحساب</p>
-                      <div className="space-y-1.5">
-                        {subtotal > 0 && <PriceRow label="المجموع الفرعي" value={`${formatPrice(subtotal)} ${cur}`} />}
-                        {shippingAddon > 0 && <PriceRow label="رسوم الشحن / التوصيل" value={`+${formatPrice(shippingAddon)} ${cur}`} />}
-                        {codFee > 0 && <PriceRow label="رسوم الدفع عند الاستلام" value={`+${formatPrice(codFee)} ${cur}`} />}
-                        {tax > 0 && <PriceRow label={`الضريبة${taxPct ? ` (${taxPct}%)` : ''}`} value={`${formatPrice(tax)} ${cur}`} />}
-                        {discount > 0 && <PriceRow label={displayOrder.referral_coupon_id ? 'كوبون إحالة' : 'خصم كوبون'} value={`-${formatPrice(discount)} ${cur}`} cls="text-emerald-600" />}
-                        {cardDiscount > 0 && <PriceRow label={`خصم بطاقة ${cardLevelName || 'الولاء'}`} value={`-${formatPrice(cardDiscount)} ${cur}`} cls="text-emerald-600" />}
-                        <div className="h-px bg-border/60 my-1" />
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold">المجموع</span>
-                          <span className="text-base font-black text-primary tabular-nums">{formatPrice(orderTotal)} <span className="text-[10px]">{cur}</span></span>
-                        </div>
-                      </div>
-                    </Bubble>
-
-                    {/* Wallet payment */}
-                    {walletPaid > 0 && (
-                      <Bubble tone="success">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold">💳 مدفوع من المحفظة</span>
-                          <span className="font-black tabular-nums text-emerald-700">{formatPrice(walletPaid)} {cur}</span>
-                        </div>
-                      </Bubble>
-                    )}
-
-                    {/* COD remaining (copyable) */}
+                    {/* === COD remaining (copyable, prominent) === */}
                     {isCod && (
-                      <Bubble tone={isFullyPaid ? 'success' : 'warning'}>
-                        <p className="text-[10px] font-bold text-muted-foreground mb-1">
-                          {isFullyPaid ? '✓ لا يطلب من الزبون' : '🚚 المبلغ المطلوب عند الاستلام'}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(String(remaining));
+                          toast.success('تم نسخ المبلغ المتبقي');
+                        }}
+                        className={`w-full rounded-2xl border-2 px-4 py-3 shadow-sm transition ${isFullyPaid ? 'bg-emerald-500/15 border-emerald-500/40 hover:bg-emerald-500/25' : 'bg-amber-500/15 border-amber-500/40 hover:bg-amber-500/25'}`}
+                      >
+                        <p className="text-[10px] font-bold text-muted-foreground mb-1 text-right">
+                          {isFullyPaid ? '✓ لا يطلب من الزبون' : '🚚 المبلغ المطلوب على ورقة التوصيل'}
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(String(remaining));
-                            toast.success('تم نسخ المبلغ المتبقي');
-                          }}
-                          className={`w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 transition ${isFullyPaid ? 'bg-emerald-500/15 hover:bg-emerald-500/25' : 'bg-amber-500/15 hover:bg-amber-500/25'}`}
-                        >
+                        <div className="flex items-center justify-between gap-2">
                           <Copy className="h-4 w-4 opacity-70" />
-                          <span className={`text-xl font-black tabular-nums ${isFullyPaid ? 'text-emerald-700' : 'text-amber-700'}`}>
+                          <span className={`text-2xl font-black tabular-nums ${isFullyPaid ? 'text-emerald-700' : 'text-amber-700'}`}>
                             {formatPrice(remaining)} <span className="text-xs">{cur}</span>
                           </span>
-                        </button>
-                      </Bubble>
+                        </div>
+                      </button>
                     )}
                   </div>
                 );
