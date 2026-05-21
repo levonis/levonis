@@ -1348,7 +1348,9 @@ const AdminOrders = () => {
                   const custColor = getCustomerColor(order);
                   return (
                     <div key={order.id} className="relative rounded-xl border border-border bg-card p-3 pt-4 space-y-3 overflow-hidden">
-                      <div className="absolute inset-x-0 top-0 h-1" style={{ background: custColor }} aria-hidden />
+                      {custIdx.total > 0 && (
+                        <div className="absolute inset-x-0 top-0 h-1" style={{ background: custColor }} aria-hidden />
+                      )}
                       {/* Header row: order number + status */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
