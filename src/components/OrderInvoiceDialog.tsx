@@ -231,6 +231,56 @@ export default function OrderInvoiceDialog({ order, open, onClose }: OrderInvoic
           </Button>
         </div>
 
+        {/* COD Copy Bar (UI-only, not printed) */}
+        <div className="px-4 pt-3" dir="rtl">
+          <div
+            className={`rounded-2xl border-2 p-3 flex items-center justify-between gap-3 ${
+              data.isFullyPaid
+                ? 'border-emerald-500/60 bg-emerald-500/10'
+                : 'border-amber-500/60 bg-amber-500/10'
+            }`}
+          >
+            <div className="flex items-center gap-2 text-xs font-bold">
+              {data.isFullyPaid ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              ) : (
+                <Truck className="h-5 w-5 text-amber-600" />
+              )}
+              <span className={data.isFullyPaid ? 'text-emerald-700' : 'text-amber-700'}>
+                {data.isFullyPaid
+                  ? 'مدفوع بالكامل — لا يطلب من الزبون'
+                  : 'المبلغ المتبقي عند الاستلام'}
+              </span>
+            </div>
+            {!data.isFullyPaid ? (
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(String(data.codRemaining));
+                  setCopied(true);
+                  toast.success('تم نسخ المبلغ');
+                  window.setTimeout(() => setCopied(false), 1500);
+                }}
+                className="group flex items-center gap-2 rounded-xl bg-white/70 hover:bg-white px-3 py-1.5 transition shadow-sm"
+                title="نسخ المبلغ"
+              >
+                <span className="text-lg sm:text-xl font-extrabold text-amber-700 tabular-nums">
+                  {data.codRemaining.toLocaleString()} د.ع
+                </span>
+                {copied ? (
+                  <Check className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <Copy className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                )}
+              </button>
+            ) : (
+              <span className="text-lg font-extrabold text-emerald-700">✓ 0 د.ع</span>
+            )}
+          </div>
+        </div>
+
+
+
         <div className="p-4 overflow-auto bg-white">
           <div
             style={{
