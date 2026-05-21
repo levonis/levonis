@@ -522,8 +522,8 @@ export default function AdminOrderChatDialog({
                 const walletPaid = Number(displayOrder.customer_paid_amount) || Number(displayOrder.paid_amount) || 0;
                 const remaining = Math.max(0, Number(displayOrder.remaining_amount) || 0);
                 const orderTotal = Number(displayOrder.total_amount) || 0;
-                // Delivery + commission merged: anything in total beyond subtotal+codFee+tax+donation +discounts
-                const deliveryAndCommission = Math.max(
+                // Delivery only (commission is already baked into product unit_price)
+                const deliveryFee = Math.max(
                   0,
                   orderTotal - subtotal - codFee - tax - donation + discount + cardDiscount,
                 );
