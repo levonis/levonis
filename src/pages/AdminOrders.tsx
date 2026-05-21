@@ -916,10 +916,13 @@ const AdminOrders = () => {
   });
 
   // Per-customer ordering index + distinct color stripe
+  // يُحسب فقط للطلبات بحالة: قيد الانتظار / تم التأكيد / تم الشراء
+  const COUNTED_STATUSES = new Set(['pending', 'confirmed', 'purchased']);
   const customerKey = (o: any) => o.user_id || o.phone_number || 'guest';
   const customerOrdersMap = new Map<string, string[]>();
   [...(orders || [])]
-    .filter((o: any) => o.status !== 'cancelled')
+    .filter((o: any) => COUNTED_STATUSES.has(o.status))
+
     .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     .forEach((o: any) => {
       const k = customerKey(o);
@@ -1345,7 +1348,9 @@ const AdminOrders = () => {
                   const custColor = getCustomerColor(order);
                   return (
                     <div key={order.id} className="relative rounded-xl border border-border bg-card p-3 pt-4 space-y-3 overflow-hidden">
-                      <div className="absolute inset-x-0 top-0 h-1" style={{ background: custColor }} aria-hidden />
+                      {custIdx.total > 0 && (
+                        <div className="absolute inset-x-0 top-0 h-1" style={{ background: custColor }} aria-hidden />
+                      )}
                       {/* Header row: order number + status */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -1488,7 +1493,7 @@ const AdminOrders = () => {
                       const custIdx = getCustomerIndex(order);
                       const custColor = getCustomerColor(order);
                       return (
-                        <TableRow key={order.id} className="admin-table-row" style={{ boxShadow: `inset 4px 0 0 ${custColor}` }}>
+                        <TableRow key={order.id} className="admin-table-row" style={custIdx.total > 0 ? { boxShadow: `inset 4px 0 0 ${custColor}` } : undefined}>
                           <TableCell className="font-mono text-sm font-medium">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{order.order_number}</span>
