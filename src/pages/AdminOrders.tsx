@@ -915,8 +915,34 @@ const AdminOrders = () => {
     return matchesStatus;
   });
 
+  // Per-customer ordering index + distinct color stripe
+  const customerKey = (o: any) => o.user_id || o.phone_number || 'guest';
+  const customerOrdersMap = new Map<string, string[]>();
+  [...(orders || [])]
+    .filter((o: any) => o.status !== 'cancelled')
+    .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    .forEach((o: any) => {
+      const k = customerKey(o);
+      const arr = customerOrdersMap.get(k) || [];
+      arr.push(o.id);
+      customerOrdersMap.set(k, arr);
+    });
+  const getCustomerIndex = (o: any) => {
+    const arr = customerOrdersMap.get(customerKey(o)) || [];
+    const idx = arr.indexOf(o.id);
+    return { index: idx + 1, total: arr.length };
+  };
+  const getCustomerColor = (o: any) => {
+    const k = String(customerKey(o));
+    let hash = 0;
+    for (let i = 0; i < k.length; i++) hash = (hash * 31 + k.charCodeAt(i)) >>> 0;
+    const hue = hash % 360;
+    return `hsl(${hue} 75% 50%)`;
+  };
+
   // Pagination
   const pagination = usePagination(filteredOrders, { pageSize: 25 });
+
 
   // Count by status
   const statusCounts = orders?.reduce((acc, order) => {
@@ -1315,14 +1341,28 @@ const AdminOrders = () => {
                   const shippingInfo = getShippingInfo(order.order_items || []);
                   const isPreOrder = checkIfPreOrder(order.order_items || []);
                   const rfInfo = getRandomFilamentInfo(order);
+                  const custIdx = getCustomerIndex(order);
+                  const custColor = getCustomerColor(order);
                   return (
-                    <div key={order.id} className="rounded-xl border border-border bg-card p-3 space-y-3">
+                    <div key={order.id} className="relative rounded-xl border border-border bg-card p-3 pt-4 space-y-3 overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-1" style={{ background: custColor }} aria-hidden />
                       {/* Header row: order number + status */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
                           <OrderNumberCopyButton orderNumber={order.order_number} />
+                          {custIdx.total > 1 && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] gap-0.5"
+                              style={{ borderColor: custColor, color: custColor }}
+                              title="ترتيب الطلب لهذا العميل"
+                            >
+                              طلب {custIdx.index} من {custIdx.total}
+                            </Badge>
+                          )}
                         </div>
+
                         <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           {getStatusBadge(order.status)}
                           {(order as any).order_type === 'direct' ? (
@@ -1445,13 +1485,25 @@ const AdminOrders = () => {
                     {pagination.paginatedItems.map((order) => {
                       const shippingInfo = getShippingInfo(order.order_items || []);
                       const isPreOrder = checkIfPreOrder(order.order_items || []);
-                      
+                      const custIdx = getCustomerIndex(order);
+                      const custColor = getCustomerColor(order);
                       return (
-                        <TableRow key={order.id} className="admin-table-row">
+                        <TableRow key={order.id} className="admin-table-row" style={{ boxShadow: `inset 4px 0 0 ${custColor}` }}>
                           <TableCell className="font-mono text-sm font-medium">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{order.order_number}</span>
                               <OrderNumberCopyButton orderNumber={order.order_number} />
+                              {custIdx.total > 1 && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] gap-0.5"
+                                  style={{ borderColor: custColor, color: custColor }}
+                                  title="ترتيب الطلب لهذا العميل"
+                                >
+                                  طلب {custIdx.index} من {custIdx.total}
+                                </Badge>
+                              )}
+
                               {(() => {
                                 const rfInfo = getRandomFilamentInfo(order);
                                 if (rfInfo.total === 0) return null;
