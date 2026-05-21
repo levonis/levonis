@@ -1451,6 +1451,7 @@ const AdminOrders = () => {
                           <TableCell className="font-mono text-sm font-medium">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{order.order_number}</span>
+                              <OrderNumberCopyButton orderNumber={order.order_number} />
                               {(() => {
                                 const rfInfo = getRandomFilamentInfo(order);
                                 if (rfInfo.total === 0) return null;
