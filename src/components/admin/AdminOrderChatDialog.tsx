@@ -106,7 +106,7 @@ export default function AdminOrderChatDialog({
           *,
           order_items!order_items_order_id_fkey(
             *,
-            products!order_items_product_id_fkey(name_ar, images, image_url),
+            products!order_items_product_id_fkey(name_ar, images, image_url, category_id, categories!products_category_id_fkey(name_ar)),
             custom_product_requests(product_name, image_url)
           )
         `)
@@ -520,13 +520,26 @@ export default function AdminOrderChatDialog({
                 const codFee = Number(displayOrder.cod_fee) || 0;
                 const donation = (Number(displayOrder.auto_donation_amount) || 0) + (Number(displayOrder.extra_donation_amount) || 0);
                 const walletPaid = Number(displayOrder.customer_paid_amount) || Number(displayOrder.paid_amount) || 0;
-                const remaining = Math.max(0, Number(displayOrder.remaining_amount) || 0);
-                const orderTotal = Number(displayOrder.total_amount) || 0;
-                // Delivery only (commission is already baked into product unit_price)
-                const deliveryFee = Math.max(
+                const storedOrderTotal = Number(displayOrder.total_amount) || 0;
+                const orderItems = (displayOrder.order_items as any[]) || [];
+                const hasPrinterItem = orderItems.some((item: any) => {
+                  const categoryName = String(item.products?.categories?.name_ar || item.category_name_ar || '').toLowerCase();
+                  const productName = String(item.product_name_ar || item.product_name || item.products?.name_ar || '').toLowerCase();
+                  return categoryName.includes('طابع') || productName.includes('printer') || productName.includes('طابع');
+                });
+                const isStandardDelivery = String(displayOrder.delivery_method || '').toLowerCase() === 'standard';
+                const adminShippingCost = Number(displayOrder.admin_shipping_cost) || 0;
+                const inferredDeliveryFee = Math.max(
                   0,
-                  orderTotal - subtotal - codFee - tax - donation + discount + cardDiscount,
+                  storedOrderTotal - subtotal - codFee - tax - donation + discount + cardDiscount,
                 );
+                const deliveryFee = adminShippingCost > 0
+                  ? adminShippingCost
+                  : hasPrinterItem && isStandardDelivery
+                    ? 25000
+                    : inferredDeliveryFee;
+                const orderTotal = subtotal + deliveryFee + codFee + tax + donation - discount - cardDiscount;
+                const remaining = Math.max(0, orderTotal - walletPaid);
                 const totalSavings = discount + cardDiscount;
                 const isCod = (displayOrder.payment_method || displayOrder.payment_status) === 'cod';
                 const isFullyPaid = remaining <= 0 && walletPaid > 0;
