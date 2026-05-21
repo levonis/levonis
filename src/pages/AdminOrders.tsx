@@ -1341,14 +1341,28 @@ const AdminOrders = () => {
                   const shippingInfo = getShippingInfo(order.order_items || []);
                   const isPreOrder = checkIfPreOrder(order.order_items || []);
                   const rfInfo = getRandomFilamentInfo(order);
+                  const custIdx = getCustomerIndex(order);
+                  const custColor = getCustomerColor(order);
                   return (
-                    <div key={order.id} className="rounded-xl border border-border bg-card p-3 space-y-3">
+                    <div key={order.id} className="relative rounded-xl border border-border bg-card p-3 pt-4 space-y-3 overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-1" style={{ background: custColor }} aria-hidden />
                       {/* Header row: order number + status */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
                           <OrderNumberCopyButton orderNumber={order.order_number} />
+                          {custIdx.total > 1 && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] gap-0.5"
+                              style={{ borderColor: custColor, color: custColor }}
+                              title="ترتيب الطلب لهذا العميل"
+                            >
+                              طلب {custIdx.index} من {custIdx.total}
+                            </Badge>
+                          )}
                         </div>
+
                         <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           {getStatusBadge(order.status)}
                           {(order as any).order_type === 'direct' ? (
