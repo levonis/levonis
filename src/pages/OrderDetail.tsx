@@ -322,9 +322,12 @@ const OrderDetail = () => {
                 <p className="text-[11px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
                   <Hash className="h-3 w-3" /> {t('od_order_number_label')}
                 </p>
-                <h1 className="text-2xl font-black text-foreground tracking-tight">
-                  {order.order_number}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-black text-foreground tracking-tight">
+                    {order.order_number}
+                  </h1>
+                  <OrderNumberCopyButton orderNumber={order.order_number} />
+                </div>
               </div>
               <div className={`px-3 py-1.5 rounded-xl text-xs font-black border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
                 {statusConfig.label}
