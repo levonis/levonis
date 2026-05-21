@@ -38,6 +38,26 @@ const checkIfPreOrder = (order: any): boolean => {
   return false;
 };
 
+// Copy button for order number
+function OrderNumberCopyButton({ orderNumber }: { orderNumber: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(orderNumber);
+        setCopied(true);
+        toast.success('تم نسخ رقم الطلب');
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="inline-flex items-center justify-center h-6 w-6 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+      title="نسخ رقم الطلب"
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
+
 // Glass card wrapper
 const GlassCard = ({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => (
   <motion.div
