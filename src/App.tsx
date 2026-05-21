@@ -178,6 +178,74 @@ import IdleRoutePrefetcher from "@/components/IdleRoutePrefetcher";
 import ViewTransitions from "@/components/ViewTransitions";
 import ImageQualityBoost from "@/components/ImageQualityBoost";
 
+const ROUTE_FALLBACK_TIMEOUT_MS = 12000;
+
+const recoverFromStuckRoute = async () => {
+  if (typeof window === "undefined") return;
+
+  try {
+    (window as any).__levoReportError?.(
+      "route-suspense-timeout",
+      "Route fallback stayed visible too long",
+      null,
+    );
+  } catch {}
+
+  try {
+    if (sessionStorage.getItem("__levo_route_recovered_v1") === "1") return;
+    sessionStorage.setItem("__levo_route_recovered_v1", "1");
+  } catch {}
+
+  try {
+    localStorage.removeItem("lvn-rq-cache-v1");
+    localStorage.removeItem("__levo_chunk_retry");
+  } catch {}
+
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+  } catch {}
+
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {}
+
+  window.location.reload();
+};
+
+function RouteSuspenseFallback() {
+  const [stuck, setStuck] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setStuck(true);
+      recoverFromStuckRoute();
+    }, ROUTE_FALLBACK_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (stuck) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 text-center">
+        <div className="glass-panel max-w-sm space-y-4 p-6">
+          <p className="text-sm font-semibold text-foreground">التحميل عالق بسبب كاش قديم أو اتصال بطيء</p>
+          <button type="button" className="glass-trigger px-5 py-2 text-sm font-bold" onClick={recoverFromStuckRoute}>
+            إعادة المحاولة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return <RouteAwareSkeleton />;
+}
+
 
 function AppContent() {
   const location = useLocation();
@@ -296,7 +364,7 @@ function AppContent() {
         style={{ paddingTop: mainPaddingTop }}
         className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
       >
-        <Suspense fallback={<RouteAwareSkeleton />}>
+        <Suspense fallback={<RouteSuspenseFallback />}>
           <PageFade>
           <Routes>
             <Route path="/" element={<Home />} />
