@@ -80,9 +80,23 @@ export default function RecentOrders({ userId }: RecentOrdersProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-foreground">
-                      {t('orders_order_number', { id: o.id.slice(-6) })}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-semibold text-foreground">
+                        {o.order_number || `#${o.id.slice(-6)}`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(o.order_number || o.id);
+                          toast.success('تم نسخ رقم الطلب');
+                        }}
+                        className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                        title="نسخ رقم الطلب"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </button>
+                    </div>
                     <Badge variant={variant} className="text-[10px] shrink-0">
                       {label}
                     </Badge>
