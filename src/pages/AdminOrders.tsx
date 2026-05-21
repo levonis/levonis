@@ -1485,13 +1485,25 @@ const AdminOrders = () => {
                     {pagination.paginatedItems.map((order) => {
                       const shippingInfo = getShippingInfo(order.order_items || []);
                       const isPreOrder = checkIfPreOrder(order.order_items || []);
-                      
+                      const custIdx = getCustomerIndex(order);
+                      const custColor = getCustomerColor(order);
                       return (
-                        <TableRow key={order.id} className="admin-table-row">
+                        <TableRow key={order.id} className="admin-table-row" style={{ boxShadow: `inset 4px 0 0 ${custColor}` }}>
                           <TableCell className="font-mono text-sm font-medium">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{order.order_number}</span>
                               <OrderNumberCopyButton orderNumber={order.order_number} />
+                              {custIdx.total > 1 && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] gap-0.5"
+                                  style={{ borderColor: custColor, color: custColor }}
+                                  title="ترتيب الطلب لهذا العميل"
+                                >
+                                  طلب {custIdx.index} من {custIdx.total}
+                                </Badge>
+                              )}
+
                               {(() => {
                                 const rfInfo = getRandomFilamentInfo(order);
                                 if (rfInfo.total === 0) return null;
