@@ -1493,7 +1493,7 @@ const AdminOrders = () => {
                       const custIdx = getCustomerIndex(order);
                       const custColor = getCustomerColor(order);
                       return (
-                        <TableRow key={order.id} className="admin-table-row" style={{ boxShadow: `inset 4px 0 0 ${custColor}` }}>
+                        <TableRow key={order.id} className="admin-table-row" style={custIdx.total > 0 ? { boxShadow: `inset 4px 0 0 ${custColor}` } : undefined}>
                           <TableCell className="font-mono text-sm font-medium">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{order.order_number}</span>
