@@ -313,6 +313,17 @@ function InvoiceTemplate({
     subtotal: number;
     delivery: number;
     discount: number;
+    cardDiscount: number;
+    cardLevelName: string | null;
+    couponCode: string | null;
+    isReferralFreeDelivery: boolean;
+    originalDelivery: number;
+    walletPaid: number;
+    walletBefore: number | null;
+    walletAfter: number | null;
+    codRemaining: number;
+    isFullyPaid: boolean;
+    totalSavings: number;
     total: number;
     invoiceNo: string;
     date: Date;
