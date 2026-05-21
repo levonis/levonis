@@ -1298,7 +1298,10 @@ const AdminOrders = () => {
                     <div key={order.id} className="rounded-xl border border-border bg-card p-3 space-y-3">
                       {/* Header row: order number + status */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
+                          <OrderNumberCopyButton orderNumber={order.order_number} />
+                        </div>
                         <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           {getStatusBadge(order.status)}
                           {(order as any).order_type === 'direct' ? (
