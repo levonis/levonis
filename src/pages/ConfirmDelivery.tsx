@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Loader2, ArrowRight, CheckCircle, Package, Sparkles,
-  Star, Upload, X, Image as ImageIcon, Video, Gift, Coins, Camera
+  Star, Upload, X, Image as ImageIcon, Video, Gift, Coins, Camera, Copy, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useRef } from 'react';
