@@ -285,7 +285,10 @@ const ConfirmDelivery = () => {
           <h1 className="text-3xl font-black text-primary mb-2">
             {step === 'confirm' ? 'تأكيد استلام الطلب' : step === 'rating' ? 'قيّم منتجاتك واربح نقاط 🎁' : 'شكراً لك! 🎉'}
           </h1>
-          <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
+          <p className="text-muted-foreground flex items-center justify-center gap-1.5">
+            رقم الطلب: {order.order_number}
+            <OrderNumberCopyButton orderNumber={order.order_number} />
+          </p>
 
           {/* Step indicator */}
           {step !== 'done' && (
