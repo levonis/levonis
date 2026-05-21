@@ -610,34 +610,81 @@ const OrderDetail = () => {
         {/* Order Summary */}
         <GlassCard className="p-5" delay={0.4}>
           <SectionHeader icon={Receipt} title={t('od_section_summary')} />
-          <div className="space-y-2.5">
-            {Number(order.subtotal) > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t('od_summary_subtotal')}</span>
-                <span className="font-medium">{formatPrice(Number(order.subtotal))} {order.currency}</span>
+          {(() => {
+            const cur = order.currency;
+            const subtotal = Number(order.subtotal) || 0;
+            const tax = Number(order.tax_amount) || 0;
+            const discount = Number(order.discount_amount) || 0;
+            const cardDiscount = Number(order.card_discount_amount) || 0;
+            const codFee = Number(order.cod_fee) || 0;
+            const walletPaid = Number(order.customer_paid_amount) || Number(order.paid_amount) || 0;
+            const remaining = Number(order.remaining_amount) || 0;
+            const total = Number(order.total_amount) || 0;
+            const shippingAddon = (order.order_items || []).reduce(
+              (s: number, it: any) => s + (Number(it.shipping_price_adjustment) || 0) * (Number(it.quantity) || 1),
+              0
+            );
+            const Row = ({ label, value, cls = '' }: { label: string; value: string; cls?: string }) => (
+              <div className={`flex justify-between text-sm ${cls}`}>
+                <span className="text-muted-foreground">{label}</span>
+                <span className="font-medium">{value}</span>
               </div>
-            )}
-            {Number(order.tax_amount) > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t('od_summary_tax')} ({order.tax_percentage || 0}%)</span>
-                <span className="font-medium">{formatPrice(Number(order.tax_amount))} {order.currency}</span>
+            );
+            return (
+              <div className="space-y-2.5">
+                {subtotal > 0 && <Row label={t('od_summary_subtotal')} value={`${formatPrice(subtotal)} ${cur}`} />}
+                {shippingAddon > 0 && <Row label="رسوم الشحن / التوصيل" value={`+${formatPrice(shippingAddon)} ${cur}`} />}
+                {codFee > 0 && <Row label="رسوم الدفع عند الاستلام" value={`+${formatPrice(codFee)} ${cur}`} />}
+                {tax > 0 && <Row label={`${t('od_summary_tax')} (${order.tax_percentage || 0}%)`} value={`${formatPrice(tax)} ${cur}`} />}
+                {discount > 0 && (
+                  <Row label={t('od_summary_discount')} value={`-${formatPrice(discount)} ${cur}`} cls="text-emerald-500" />
+                )}
+                {cardDiscount > 0 && (
+                  <Row
+                    label={`خصم بطاقة ${order.card_discount_level_name || 'الولاء'}`}
+                    value={`-${formatPrice(cardDiscount)} ${cur}`}
+                    cls="text-emerald-500"
+                  />
+                )}
+                {order.referral_coupon_id && (
+                  <Row label="كوبون إحالة مُطبّق" value="✓" cls="text-fuchsia-500" />
+                )}
+
+                <div className="h-px bg-border/30 my-1" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground font-bold">{t('od_summary_total')}</span>
+                  <span className="font-black text-2xl text-primary">
+                    {formatPrice(total)} <span className="text-sm font-bold">{cur}</span>
+                  </span>
+                </div>
+
+                {(walletPaid > 0 || remaining > 0) && (
+                  <>
+                    <div className="h-px bg-border/30 my-1" />
+                    {walletPaid > 0 && (
+                      <Row
+                        label="مدفوع من المحفظة"
+                        value={`${formatPrice(walletPaid)} ${cur}`}
+                        cls="text-emerald-600"
+                      />
+                    )}
+                    {remaining > 0 && (
+                      <Row
+                        label="المتبقي (الدفع عند الاستلام)"
+                        value={`${formatPrice(remaining)} ${cur}`}
+                        cls="text-amber-600"
+                      />
+                    )}
+                    {remaining <= 0 && walletPaid > 0 && (
+                      <Row label="حالة الدفع" value="مدفوع بالكامل ✓" cls="text-emerald-600" />
+                    )}
+                  </>
+                )}
               </div>
-            )}
-            {Number(order.discount_amount) > 0 && (
-              <div className="flex justify-between text-sm text-emerald-500">
-                <span>{t('od_summary_discount')}</span>
-                <span className="font-medium">-{formatPrice(Number(order.discount_amount))} {order.currency}</span>
-              </div>
-            )}
-            <div className="h-px bg-border/30 my-1" />
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground font-bold">{t('od_summary_total')}</span>
-              <span className="font-black text-2xl text-primary">
-                {formatPrice(Number(order.total_amount))} <span className="text-sm font-bold">{order.currency}</span>
-              </span>
-            </div>
-          </div>
+            );
+          })()}
         </GlassCard>
+
 
         {/* Additional Images and Files */}
         {((order.admin_images && order.admin_images.length > 0) || (order.admin_files && order.admin_files.length > 0)) && (
