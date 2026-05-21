@@ -441,20 +441,71 @@ function InvoiceTemplate({
                 {data.subtotal.toLocaleString()} د.ع
               </span>
             </div>
+
+            {/* Delivery row — free via referral coupon shows original price struck-through */}
+            {data.isReferralFreeDelivery ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px' }}>delivery (مجاني عبر كوبون):</span>
+                <span style={{ fontSize: '14px' }} dir="rtl">
+                  <span style={{ textDecoration: 'line-through', color: '#888', marginLeft: '6px', fontSize: '12px' }}>
+                    {data.originalDelivery.toLocaleString()} د.ع
+                  </span>
+                  <span style={{ color: '#0a8' }}>مجاني</span>
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px' }}>delivery:</span>
+                <span style={{ fontSize: '14px' }} dir="rtl">
+                  {data.delivery > 0 ? `${data.delivery.toLocaleString()} د.ع` : 'مجاني'}
+                </span>
+              </div>
+            )}
+
+            {/* Coupon discount */}
             {data.discount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontWeight: 700, fontSize: '13px' }}>discount:</span>
+                <span style={{ fontWeight: 700, fontSize: '13px' }}>
+                  خصم كوبون{data.couponCode ? ` (${data.couponCode})` : ''}:
+                </span>
                 <span style={{ fontSize: '14px', color: '#c00' }} dir="rtl">
                   -{data.discount.toLocaleString()} د.ع
                 </span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>delivery:</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">
-                {data.delivery.toLocaleString()} د.ع
-              </span>
-            </div>
+
+            {/* Loyalty card discount */}
+            {data.cardDiscount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px' }}>
+                  💳 خصم بطاقة {data.cardLevelName || 'ولاء'}:
+                </span>
+                <span style={{ fontSize: '14px', color: '#b58900' }} dir="rtl">
+                  -{data.cardDiscount.toLocaleString()} د.ع
+                </span>
+              </div>
+            )}
+
+            {/* Total savings summary */}
+            {data.totalSavings > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: '8px',
+                  fontSize: '11px',
+                  color: '#0a8',
+                  background: '#e6f9f1',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                }}
+              >
+                <span>إجمالي التوفير</span>
+                <span dir="rtl">{data.totalSavings.toLocaleString()} د.ع</span>
+              </div>
+            )}
+
+            {/* Final Total */}
             <div
               style={{
                 display: 'flex',
@@ -469,8 +520,79 @@ function InvoiceTemplate({
                 {data.total.toLocaleString()} د.ع
               </span>
             </div>
+
+            {/* Wallet payment */}
+            {data.walletPaid > 0 && (
+              <div
+                style={{
+                  marginTop: '10px',
+                  padding: '8px 10px',
+                  background: '#e6f9f1',
+                  border: '1px solid #0a8',
+                  borderRadius: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 700, fontSize: '13px', color: '#066' }}>💳 مدفوع من المحفظة:</span>
+                  <span style={{ fontWeight: 700, fontSize: '14px', color: '#066' }} dir="rtl">
+                    -{data.walletPaid.toLocaleString()} د.ع
+                  </span>
+                </div>
+                {data.walletBefore != null && data.walletAfter != null && (
+                  <div style={{ fontSize: '10px', color: '#666', marginTop: '3px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>الرصيد قبل: {data.walletBefore.toLocaleString()} د.ع</span>
+                    <span>← بعد: {data.walletAfter.toLocaleString()} د.ع</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Payment method */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '11px', color: '#666' }}>
+              <span>طريقة الدفع</span>
+              <span style={{ fontWeight: 600 }}>
+                {data.paymentMethod === 'wallet'
+                  ? 'محفظة'
+                  : data.paymentMethod === 'cash_on_delivery'
+                  ? 'الدفع عند الاستلام'
+                  : data.paymentMethod}
+              </span>
+            </div>
+
+            {/* COD remaining slip — printed */}
+            <div
+              style={{
+                marginTop: '12px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                border: `2px solid ${data.isFullyPaid ? '#0a8' : '#d97706'}`,
+                background: data.isFullyPaid ? '#e6f9f1' : '#fef3c7',
+              }}
+            >
+              <div style={{ fontSize: '11px', fontWeight: 700, color: data.isFullyPaid ? '#066' : '#92400e' }}>
+                {data.isFullyPaid ? '✓ مدفوع بالكامل — لا يطلب من الزبون' : 'المبلغ المطلوب على ورقة التوصيل'}
+              </div>
+              <div
+                style={{
+                  fontSize: '22px',
+                  fontWeight: 800,
+                  textAlign: 'center',
+                  marginTop: '4px',
+                  color: data.isFullyPaid ? '#066' : '#92400e',
+                }}
+                dir="rtl"
+              >
+                {data.isFullyPaid ? '✓ 0 د.ع' : `${data.codRemaining.toLocaleString()} د.ع`}
+              </div>
+              {!data.isFullyPaid && data.walletPaid > 0 && (
+                <div style={{ fontSize: '10px', textAlign: 'center', color: '#666', marginTop: '3px' }}>
+                  ({data.total.toLocaleString()} − {data.walletPaid.toLocaleString()} مدفوع مسبقاً)
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
 
         {/* Right Column - Customer Details & QR */}
         <div style={{ flex: '0.9', textAlign: 'right' }} dir="rtl">
