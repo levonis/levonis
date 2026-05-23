@@ -497,19 +497,63 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
 
                 <div className="p-3">
                   {addMode === "existing" ? (
-                    <div className="flex gap-2">
-                      <Select value={addProductId} onValueChange={setAddProductId}>
-                        <SelectTrigger className="flex-1 h-9 text-sm rounded-lg"><SelectValue placeholder="اختر منتج…" /></SelectTrigger>
-                        <SelectContent>
-                          {allProducts?.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button size="sm" variant="default" className="h-9 rounded-lg gap-1 px-4" disabled={!addProductId}
-                        onClick={() => { addItem(addProductId); setAddProductId(""); }}>
-                        <Plus className="h-3.5 w-3.5" /> إضافة
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                        <Input
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          placeholder={orderType === 'preorder' ? "ابحث في منتجات الحجز المسبق…" : "ابحث في منتجات البيع المباشر…"}
+                          className="h-9 text-sm rounded-lg pr-9"
+                        />
+                      </div>
+                      <div className="max-h-64 overflow-y-auto rounded-xl border border-border/40 bg-background/50 divide-y divide-border/30">
+                        {searchResults.length === 0 ? (
+                          <div className="p-4 text-center text-[11px] text-muted-foreground flex flex-col items-center gap-1">
+                            <AlertTriangle className="h-4 w-4" />
+                            {(allProducts?.length ?? 0) === 0
+                              ? "جاري التحميل…"
+                              : orderType === 'preorder'
+                                ? "لا توجد منتجات متاحة للحجز المسبق"
+                                : "لا توجد منتجات بيع مباشر متاحة بهذا البحث"}
+                          </div>
+                        ) : (
+                          searchResults.map(p => {
+                            const stock = orderType === 'direct'
+                              ? Math.max(0, Number(p.direct_stock) || 0)
+                              : Math.max(0, Number(p.pre_order_stock) || 0);
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => { addItem(p.id); setSearchQuery(""); }}
+                                className="w-full flex items-center gap-2.5 p-2 text-right hover:bg-primary/5 transition-colors"
+                              >
+                                {p.image_url ? (
+                                  <img src={p.image_url} alt="" loading="lazy" className="h-10 w-10 rounded-lg object-cover shrink-0 bg-muted" />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-bold truncate">{p.name_ar || p.name}</div>
+                                  <div className="text-[10px] text-muted-foreground tabular-nums flex items-center gap-2">
+                                    <span className="text-primary font-bold">{formatPrice(p.price)}</span>
+                                    <span className={`px-1.5 py-0.5 rounded ${orderType === 'direct' ? (stock > 0 ? 'bg-emerald-500/15 text-emerald-600' : 'bg-destructive/15 text-destructive') : 'bg-violet-500/15 text-violet-600'}`}>
+                                      {orderType === 'direct' ? `متاح: ${stock}` : (stock > 0 ? `حجز: ${stock}` : 'حجز مفتوح')}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Plus className="h-4 w-4 text-primary shrink-0" />
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground text-center">
+                        المنتجات المعروضة مفلترة حسب نوع الطلب ({orderType === 'preorder' ? 'حجز مسبق' : 'بيع مباشر'})
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
