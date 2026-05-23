@@ -435,7 +435,22 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
                     {/* Item editable fields */}
                     <div className="p-3 grid grid-cols-12 gap-2">
                       <div className="col-span-3">
-                        <Label className="text-[10px] text-muted-foreground font-bold">الكمية</Label>
+                        <Label className="text-[10px] text-muted-foreground font-bold flex items-center justify-between">
+                          <span>الكمية</span>
+                          {!isManual && !isBundle && item.product_id && orderType === 'direct' && (() => {
+                            const orig = orderItems.find(o => o.id === item.id);
+                            const prevQty = orig && orig.product_id === item.product_id && (orig.selected_color || null) === (item.selected_color || null) ? orig.quantity : 0;
+                            const avail = getAvailableStock(item.product_id, item.selected_color);
+                            if (avail == null) return null;
+                            const maxAllowed = avail + prevQty;
+                            const exceeds = item.quantity > maxAllowed;
+                            return (
+                              <span className={`text-[9px] px-1 rounded ${exceeds ? 'bg-destructive/15 text-destructive' : 'bg-emerald-500/15 text-emerald-600'}`}>
+                                متاح: {maxAllowed}
+                              </span>
+                            );
+                          })()}
+                        </Label>
                         <Input type="number" min={1} value={item.quantity}
                           onChange={e => updateItem(index, "quantity", parseInt(e.target.value) || 1)}
                           className="h-9 text-sm rounded-lg mt-1 text-center font-bold tabular-nums" />
