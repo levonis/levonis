@@ -145,7 +145,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         (cc?.name || '').toString().trim().toLowerCase() === color.trim().toLowerCase()
       );
       if (c?.option_stocks && typeof c.option_stocks === 'object') {
-        return Object.values(c.option_stocks).reduce((s: number, v: any) => s + Math.max(0, Number(v) || 0), 0);
+        return Object.values(c.option_stocks).reduce<number>((s, v: any) => s + Math.max(0, Number(v) || 0), 0);
       }
       if (c?.stock_quantity != null) return Math.max(0, Number(c.stock_quantity));
     }
