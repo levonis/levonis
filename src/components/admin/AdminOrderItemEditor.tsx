@@ -10,10 +10,12 @@ import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import {
   Loader2, Trash2, Plus, Save, Package, Receipt, Truck, Wallet,
   BadgePercent, Eye, ShoppingBag, Pencil, X, Sparkles, ArrowDown,
+  Search, Clock, Box, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
 import { adminUpdateOrder } from "@/lib/adminMutations";
+import { isAllDirectStockDepleted } from "@/lib/stockUtils";
 
 interface OrderItem {
   id: string;
