@@ -356,9 +356,14 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
                 </div>
                 تعديل الطلب
               </DialogTitle>
-              <p className="text-[11px] text-muted-foreground">
-                {itemsCount} قطعة · {items.length} منتج · أي تعديل يُحفظ مباشرة في الطلب
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold flex items-center gap-1 ${orderType === 'preorder' ? 'bg-violet-500/15 text-violet-600 border border-violet-500/30' : 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'}`}>
+                  {orderType === 'preorder' ? <><Clock className="h-2.5 w-2.5" /> حجز مسبق</> : <><Box className="h-2.5 w-2.5" /> بيع مباشر</>}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {itemsCount} قطعة · {items.length} منتج
+                </span>
+              </div>
             </div>
             <div className="text-end shrink-0">
               <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">المجموع للزبون</div>
