@@ -70,11 +70,19 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from('orders_admin')
-        .select('admin_shipping_cost, cod_fee, discount_amount, tax_amount, subtotal, total_amount')
-        .eq('id', orderId)
-        .maybeSingle();
+      const [finResp, orderResp] = await Promise.all([
+        (supabase as any)
+          .from('orders_admin')
+          .select('admin_shipping_cost, cod_fee, discount_amount, tax_amount, subtotal, total_amount')
+          .eq('id', orderId)
+          .maybeSingle(),
+        (supabase as any)
+          .from('orders')
+          .select('order_type')
+          .eq('id', orderId)
+          .maybeSingle(),
+      ]);
+      const data = finResp?.data;
       if (data) {
         const prevSubtotal = Number(data.subtotal) || 0;
         const prevTotal = Number(data.total_amount) || 0;
@@ -96,22 +104,54 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         setOriginalFinance(fin);
         setOriginalTotal(prevTotal);
       }
+      const ot = (orderResp?.data?.order_type === 'preorder') ? 'preorder' : 'direct';
+      setOrderType(ot);
       setFinanceLoaded(true);
     })();
   }, [open, orderId]);
 
   const { data: allProducts } = useQuery({
-    queryKey: ["admin-products-for-order"],
+    queryKey: ["admin-products-for-order-editor"],
     enabled: open,
     staleTime: 60_000,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("products_admin")
-        .select("id, name, name_ar, price, colors, direct_stock")
+        .select("id, name, name_ar, price, image_url, colors, direct_stock, pre_order_stock, has_in_stock, has_pre_order, availability_type, sold_count")
         .order("name_ar");
       return (data ?? []) as any[];
     },
   });
+
+  // Eligible products filtered by order type
+  const eligibleProducts = useMemo(() => {
+    const list = allProducts ?? [];
+    if (orderType === 'preorder') {
+      return list.filter(p => p.has_pre_order === true);
+    }
+    // direct: in-stock and not depleted
+    return list.filter(p => p.has_in_stock !== false && !isAllDirectStockDepleted(p));
+  }, [allProducts, orderType]);
+
+  // Compute available stock for an item (direct sale only)
+  const getAvailableStock = (productId: string, color?: string | null): number | null => {
+    if (orderType !== 'direct') return null;
+    const p = allProducts?.find(x => x.id === productId);
+    if (!p) return null;
+    const colors = Array.isArray(p.colors) ? p.colors : [];
+    if (color && colors.length > 0) {
+      const c = colors.find((cc: any) =>
+        (cc?.name_ar || '').toString().trim().toLowerCase() === color.trim().toLowerCase() ||
+        (cc?.name || '').toString().trim().toLowerCase() === color.trim().toLowerCase()
+      );
+      if (c?.option_stocks && typeof c.option_stocks === 'object') {
+        return Object.values(c.option_stocks).reduce((s: number, v: any) => s + Math.max(0, Number(v) || 0), 0);
+      }
+      if (c?.stock_quantity != null) return Math.max(0, Number(c.stock_quantity));
+    }
+    return Math.max(0, Number(p.direct_stock) || 0);
+  };
+
 
   const updateItem = (index: number, field: string, value: any) => {
     setItems(prev => prev.map((item, i) => {
