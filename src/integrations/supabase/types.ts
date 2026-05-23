@@ -13842,6 +13842,16 @@ export type Database = {
         }
         Returns: string
       }
+      admin_adjust_product_counters: {
+        Args: {
+          p_option_name?: string
+          p_order_type?: string
+          p_product_id: string
+          p_quantity_change?: number
+          p_selected_color?: string
+        }
+        Returns: undefined
+      }
       admin_adjust_tickets: {
         Args: { p_amount: number; p_source?: string; p_user_id: string }
         Returns: boolean
