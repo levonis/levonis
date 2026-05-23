@@ -200,38 +200,63 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   }, [items, orderItems, totalDelta]);
 
   const handleSave = async () => {
+    // Pre-save stock validation for direct sale orders
+    if (orderType === 'direct') {
+      for (const item of items) {
+        const isManual = (item as any).is_manual === true || !item.product_id;
+        if (isManual) continue;
+        const orig = orderItems.find(o => o.id === item.id);
+        const prevQty = orig && orig.product_id === item.product_id && (orig.selected_color || null) === (item.selected_color || null)
+          ? orig.quantity : 0;
+        const additional = item.quantity - prevQty;
+        if (additional > 0) {
+          const avail = getAvailableStock(item.product_id, item.selected_color);
+          if (avail != null && additional > avail) {
+            toast.error(`المخزون المتاح لـ "${item.product_name_ar || item.product_name}" غير كافٍ (المتاح: ${avail})`);
+            return;
+          }
+        }
+      }
+    }
+
     setSaving(true);
     try {
       const originalItems = orderItems;
+      const adjust = (productId: string, optionName: string | null, color: string | null, qtyChange: number) =>
+        supabase.rpc("admin_adjust_product_counters" as any, {
+          p_product_id: productId,
+          p_order_type: orderType,
+          p_option_name: optionName,
+          p_selected_color: color,
+          p_quantity_change: qtyChange,
+        });
 
+      // 1) Removed items → restore stock + decrement sold_count
       for (const orig of originalItems) {
         const stillExists = items.find(i => i.id === orig.id);
         if (!stillExists) {
           if (orig.product_id) {
-            await supabase.rpc("admin_adjust_order_inventory", {
-              p_product_id: orig.product_id,
-              p_option_name: orig.selected_option || null,
-              p_selected_color: orig.selected_color || null,
-              p_quantity_change: orig.quantity,
-            });
+            await adjust(orig.product_id, orig.selected_option || null, orig.selected_color || null, orig.quantity);
           }
           await supabase.from("order_items").delete().eq("id", orig.id);
         }
       }
 
+      // 2) Updated or newly added items
       for (const item of items) {
         const orig = originalItems.find(o => o.id === item.id);
         const isManual = (item as any).is_manual === true || !item.product_id;
 
         if (orig) {
           if (!isManual && orig.product_id) {
-            const qtyDiff = orig.quantity - item.quantity;
-            const colorChanged = orig.selected_color !== item.selected_color;
-            if (colorChanged) {
-              await supabase.rpc("admin_adjust_order_inventory", { p_product_id: orig.product_id, p_option_name: orig.selected_option || null, p_selected_color: orig.selected_color || null, p_quantity_change: orig.quantity });
-              await supabase.rpc("admin_adjust_order_inventory", { p_product_id: item.product_id, p_option_name: item.selected_option || null, p_selected_color: item.selected_color || null, p_quantity_change: -item.quantity });
+            const qtyDiff = orig.quantity - item.quantity; // positive = restore, negative = deduct
+            const colorChanged = (orig.selected_color || null) !== (item.selected_color || null);
+            const productChanged = orig.product_id !== item.product_id;
+            if (productChanged || colorChanged) {
+              await adjust(orig.product_id, orig.selected_option || null, orig.selected_color || null, orig.quantity);
+              await adjust(item.product_id, item.selected_option || null, item.selected_color || null, -item.quantity);
             } else if (qtyDiff !== 0) {
-              await supabase.rpc("admin_adjust_order_inventory", { p_product_id: item.product_id, p_option_name: item.selected_option || null, p_selected_color: item.selected_color || null, p_quantity_change: qtyDiff });
+              await adjust(item.product_id, item.selected_option || null, item.selected_color || null, qtyDiff);
             }
           }
           await supabase.from("order_items").update({
@@ -243,7 +268,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
           }).eq("id", item.id);
         } else {
           if (!isManual) {
-            await supabase.rpc("admin_adjust_order_inventory", { p_product_id: item.product_id, p_option_name: item.selected_option || null, p_selected_color: item.selected_color || null, p_quantity_change: -item.quantity });
+            await adjust(item.product_id, item.selected_option || null, item.selected_color || null, -item.quantity);
           }
           await supabase.from("order_items").insert({
             order_id: orderId,
@@ -270,6 +295,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
 
       toast.success("تم حفظ التعديلات بنجاح");
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-products-for-order-editor"] });
       onSaved({ subtotal, total_amount: customerTotal, items });
       onOpenChange(false);
     } catch (err: any) {
@@ -279,11 +305,22 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
     }
   };
 
-  const [addProductId, setAddProductId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [addMode, setAddMode] = useState<"existing" | "manual">("existing");
   const [manualName, setManualName] = useState("");
   const [manualPrice, setManualPrice] = useState<number>(0);
   const [manualQty, setManualQty] = useState<number>(1);
+
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const base = eligibleProducts;
+    if (!q) return base.slice(0, 25);
+    return base.filter(p =>
+      (p.name_ar || '').toLowerCase().includes(q) ||
+      (p.name || '').toLowerCase().includes(q)
+    ).slice(0, 50);
+  }, [eligibleProducts, searchQuery]);
+
 
   const addManualItem = () => {
     const name = manualName.trim();
