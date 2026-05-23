@@ -10,10 +10,12 @@ import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import {
   Loader2, Trash2, Plus, Save, Package, Receipt, Truck, Wallet,
   BadgePercent, Eye, ShoppingBag, Pencil, X, Sparkles, ArrowDown,
+  Search, Clock, Box, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
 import { adminUpdateOrder } from "@/lib/adminMutations";
+import { isAllDirectStockDepleted } from "@/lib/stockUtils";
 
 interface OrderItem {
   id: string;
@@ -55,6 +57,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   const [originalTotal, setOriginalTotal] = useState<number>(0);
   const [financeLoaded, setFinanceLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"items" | "finance">("items");
+  const [orderType, setOrderType] = useState<"direct" | "preorder">("direct");
 
   useEffect(() => {
     if (open) {
@@ -67,11 +70,19 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from('orders_admin')
-        .select('admin_shipping_cost, cod_fee, discount_amount, tax_amount, subtotal, total_amount')
-        .eq('id', orderId)
-        .maybeSingle();
+      const [finResp, orderResp] = await Promise.all([
+        (supabase as any)
+          .from('orders_admin')
+          .select('admin_shipping_cost, cod_fee, discount_amount, tax_amount, subtotal, total_amount')
+          .eq('id', orderId)
+          .maybeSingle(),
+        (supabase as any)
+          .from('orders')
+          .select('order_type')
+          .eq('id', orderId)
+          .maybeSingle(),
+      ]);
+      const data = finResp?.data;
       if (data) {
         const prevSubtotal = Number(data.subtotal) || 0;
         const prevTotal = Number(data.total_amount) || 0;
@@ -93,22 +104,54 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         setOriginalFinance(fin);
         setOriginalTotal(prevTotal);
       }
+      const ot = (orderResp?.data?.order_type === 'preorder') ? 'preorder' : 'direct';
+      setOrderType(ot);
       setFinanceLoaded(true);
     })();
   }, [open, orderId]);
 
   const { data: allProducts } = useQuery({
-    queryKey: ["admin-products-for-order"],
+    queryKey: ["admin-products-for-order-editor"],
     enabled: open,
     staleTime: 60_000,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("products_admin")
-        .select("id, name, name_ar, price, colors, direct_stock")
+        .select("id, name, name_ar, price, image_url, colors, direct_stock, pre_order_stock, has_in_stock, has_pre_order, availability_type, sold_count")
         .order("name_ar");
       return (data ?? []) as any[];
     },
   });
+
+  // Eligible products filtered by order type
+  const eligibleProducts = useMemo(() => {
+    const list = allProducts ?? [];
+    if (orderType === 'preorder') {
+      return list.filter(p => p.has_pre_order === true);
+    }
+    // direct: in-stock and not depleted
+    return list.filter(p => p.has_in_stock !== false && !isAllDirectStockDepleted(p));
+  }, [allProducts, orderType]);
+
+  // Compute available stock for an item (direct sale only)
+  const getAvailableStock = (productId: string, color?: string | null): number | null => {
+    if (orderType !== 'direct') return null;
+    const p = allProducts?.find(x => x.id === productId);
+    if (!p) return null;
+    const colors = Array.isArray(p.colors) ? p.colors : [];
+    if (color && colors.length > 0) {
+      const c = colors.find((cc: any) =>
+        (cc?.name_ar || '').toString().trim().toLowerCase() === color.trim().toLowerCase() ||
+        (cc?.name || '').toString().trim().toLowerCase() === color.trim().toLowerCase()
+      );
+      if (c?.option_stocks && typeof c.option_stocks === 'object') {
+        return Object.values(c.option_stocks).reduce<number>((s, v: any) => s + Math.max(0, Number(v) || 0), 0);
+      }
+      if (c?.stock_quantity != null) return Math.max(0, Number(c.stock_quantity));
+    }
+    return Math.max(0, Number(p.direct_stock) || 0);
+  };
+
 
   const updateItem = (index: number, field: string, value: any) => {
     setItems(prev => prev.map((item, i) => {
@@ -157,38 +200,63 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   }, [items, orderItems, totalDelta]);
 
   const handleSave = async () => {
+    // Pre-save stock validation for direct sale orders
+    if (orderType === 'direct') {
+      for (const item of items) {
+        const isManual = (item as any).is_manual === true || !item.product_id;
+        if (isManual) continue;
+        const orig = orderItems.find(o => o.id === item.id);
+        const prevQty = orig && orig.product_id === item.product_id && (orig.selected_color || null) === (item.selected_color || null)
+          ? orig.quantity : 0;
+        const additional = item.quantity - prevQty;
+        if (additional > 0) {
+          const avail = getAvailableStock(item.product_id, item.selected_color);
+          if (avail != null && additional > avail) {
+            toast.error(`المخزون المتاح لـ "${item.product_name_ar || item.product_name}" غير كافٍ (المتاح: ${avail})`);
+            return;
+          }
+        }
+      }
+    }
+
     setSaving(true);
     try {
       const originalItems = orderItems;
+      const adjust = (productId: string, optionName: string | null, color: string | null, qtyChange: number) =>
+        supabase.rpc("admin_adjust_product_counters" as any, {
+          p_product_id: productId,
+          p_order_type: orderType,
+          p_option_name: optionName,
+          p_selected_color: color,
+          p_quantity_change: qtyChange,
+        });
 
+      // 1) Removed items → restore stock + decrement sold_count
       for (const orig of originalItems) {
         const stillExists = items.find(i => i.id === orig.id);
         if (!stillExists) {
           if (orig.product_id) {
-            await supabase.rpc("admin_adjust_order_inventory", {
-              p_product_id: orig.product_id,
-              p_option_name: orig.selected_option || null,
-              p_selected_color: orig.selected_color || null,
-              p_quantity_change: orig.quantity,
-            });
+            await adjust(orig.product_id, orig.selected_option || null, orig.selected_color || null, orig.quantity);
           }
           await supabase.from("order_items").delete().eq("id", orig.id);
         }
       }
 
+      // 2) Updated or newly added items
       for (const item of items) {
         const orig = originalItems.find(o => o.id === item.id);
         const isManual = (item as any).is_manual === true || !item.product_id;
 
         if (orig) {
           if (!isManual && orig.product_id) {
-            const qtyDiff = orig.quantity - item.quantity;
-            const colorChanged = orig.selected_color !== item.selected_color;
-            if (colorChanged) {
-              await supabase.rpc("admin_adjust_order_inventory", { p_product_id: orig.product_id, p_option_name: orig.selected_option || null, p_selected_color: orig.selected_color || null, p_quantity_change: orig.quantity });
-              await supabase.rpc("admin_adjust_order_inventory", { p_product_id: item.product_id, p_option_name: item.selected_option || null, p_selected_color: item.selected_color || null, p_quantity_change: -item.quantity });
+            const qtyDiff = orig.quantity - item.quantity; // positive = restore, negative = deduct
+            const colorChanged = (orig.selected_color || null) !== (item.selected_color || null);
+            const productChanged = orig.product_id !== item.product_id;
+            if (productChanged || colorChanged) {
+              await adjust(orig.product_id, orig.selected_option || null, orig.selected_color || null, orig.quantity);
+              await adjust(item.product_id, item.selected_option || null, item.selected_color || null, -item.quantity);
             } else if (qtyDiff !== 0) {
-              await supabase.rpc("admin_adjust_order_inventory", { p_product_id: item.product_id, p_option_name: item.selected_option || null, p_selected_color: item.selected_color || null, p_quantity_change: qtyDiff });
+              await adjust(item.product_id, item.selected_option || null, item.selected_color || null, qtyDiff);
             }
           }
           await supabase.from("order_items").update({
@@ -200,7 +268,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
           }).eq("id", item.id);
         } else {
           if (!isManual) {
-            await supabase.rpc("admin_adjust_order_inventory", { p_product_id: item.product_id, p_option_name: item.selected_option || null, p_selected_color: item.selected_color || null, p_quantity_change: -item.quantity });
+            await adjust(item.product_id, item.selected_option || null, item.selected_color || null, -item.quantity);
           }
           await supabase.from("order_items").insert({
             order_id: orderId,
@@ -227,6 +295,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
 
       toast.success("تم حفظ التعديلات بنجاح");
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-products-for-order-editor"] });
       onSaved({ subtotal, total_amount: customerTotal, items });
       onOpenChange(false);
     } catch (err: any) {
@@ -236,11 +305,22 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
     }
   };
 
-  const [addProductId, setAddProductId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [addMode, setAddMode] = useState<"existing" | "manual">("existing");
   const [manualName, setManualName] = useState("");
   const [manualPrice, setManualPrice] = useState<number>(0);
   const [manualQty, setManualQty] = useState<number>(1);
+
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const base = eligibleProducts;
+    if (!q) return base.slice(0, 25);
+    return base.filter(p =>
+      (p.name_ar || '').toLowerCase().includes(q) ||
+      (p.name || '').toLowerCase().includes(q)
+    ).slice(0, 50);
+  }, [eligibleProducts, searchQuery]);
+
 
   const addManualItem = () => {
     const name = manualName.trim();
@@ -276,9 +356,14 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
                 </div>
                 تعديل الطلب
               </DialogTitle>
-              <p className="text-[11px] text-muted-foreground">
-                {itemsCount} قطعة · {items.length} منتج · أي تعديل يُحفظ مباشرة في الطلب
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold flex items-center gap-1 ${orderType === 'preorder' ? 'bg-violet-500/15 text-violet-600 border border-violet-500/30' : 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'}`}>
+                  {orderType === 'preorder' ? <><Clock className="h-2.5 w-2.5" /> حجز مسبق</> : <><Box className="h-2.5 w-2.5" /> بيع مباشر</>}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {itemsCount} قطعة · {items.length} منتج
+                </span>
+              </div>
             </div>
             <div className="text-end shrink-0">
               <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">المجموع للزبون</div>
@@ -350,7 +435,22 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
                     {/* Item editable fields */}
                     <div className="p-3 grid grid-cols-12 gap-2">
                       <div className="col-span-3">
-                        <Label className="text-[10px] text-muted-foreground font-bold">الكمية</Label>
+                        <Label className="text-[10px] text-muted-foreground font-bold flex items-center justify-between">
+                          <span>الكمية</span>
+                          {!isManual && !isBundle && item.product_id && orderType === 'direct' && (() => {
+                            const orig = orderItems.find(o => o.id === item.id);
+                            const prevQty = orig && orig.product_id === item.product_id && (orig.selected_color || null) === (item.selected_color || null) ? orig.quantity : 0;
+                            const avail = getAvailableStock(item.product_id, item.selected_color);
+                            if (avail == null) return null;
+                            const maxAllowed = avail + prevQty;
+                            const exceeds = item.quantity > maxAllowed;
+                            return (
+                              <span className={`text-[9px] px-1 rounded ${exceeds ? 'bg-destructive/15 text-destructive' : 'bg-emerald-500/15 text-emerald-600'}`}>
+                                متاح: {maxAllowed}
+                              </span>
+                            );
+                          })()}
+                        </Label>
                         <Input type="number" min={1} value={item.quantity}
                           onChange={e => updateItem(index, "quantity", parseInt(e.target.value) || 1)}
                           className="h-9 text-sm rounded-lg mt-1 text-center font-bold tabular-nums" />
@@ -412,19 +512,63 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
 
                 <div className="p-3">
                   {addMode === "existing" ? (
-                    <div className="flex gap-2">
-                      <Select value={addProductId} onValueChange={setAddProductId}>
-                        <SelectTrigger className="flex-1 h-9 text-sm rounded-lg"><SelectValue placeholder="اختر منتج…" /></SelectTrigger>
-                        <SelectContent>
-                          {allProducts?.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button size="sm" variant="default" className="h-9 rounded-lg gap-1 px-4" disabled={!addProductId}
-                        onClick={() => { addItem(addProductId); setAddProductId(""); }}>
-                        <Plus className="h-3.5 w-3.5" /> إضافة
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                        <Input
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          placeholder={orderType === 'preorder' ? "ابحث في منتجات الحجز المسبق…" : "ابحث في منتجات البيع المباشر…"}
+                          className="h-9 text-sm rounded-lg pr-9"
+                        />
+                      </div>
+                      <div className="max-h-64 overflow-y-auto rounded-xl border border-border/40 bg-background/50 divide-y divide-border/30">
+                        {searchResults.length === 0 ? (
+                          <div className="p-4 text-center text-[11px] text-muted-foreground flex flex-col items-center gap-1">
+                            <AlertTriangle className="h-4 w-4" />
+                            {(allProducts?.length ?? 0) === 0
+                              ? "جاري التحميل…"
+                              : orderType === 'preorder'
+                                ? "لا توجد منتجات متاحة للحجز المسبق"
+                                : "لا توجد منتجات بيع مباشر متاحة بهذا البحث"}
+                          </div>
+                        ) : (
+                          searchResults.map(p => {
+                            const stock = orderType === 'direct'
+                              ? Math.max(0, Number(p.direct_stock) || 0)
+                              : Math.max(0, Number(p.pre_order_stock) || 0);
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => { addItem(p.id); setSearchQuery(""); }}
+                                className="w-full flex items-center gap-2.5 p-2 text-right hover:bg-primary/5 transition-colors"
+                              >
+                                {p.image_url ? (
+                                  <img src={p.image_url} alt="" loading="lazy" className="h-10 w-10 rounded-lg object-cover shrink-0 bg-muted" />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-bold truncate">{p.name_ar || p.name}</div>
+                                  <div className="text-[10px] text-muted-foreground tabular-nums flex items-center gap-2">
+                                    <span className="text-primary font-bold">{formatPrice(p.price)}</span>
+                                    <span className={`px-1.5 py-0.5 rounded ${orderType === 'direct' ? (stock > 0 ? 'bg-emerald-500/15 text-emerald-600' : 'bg-destructive/15 text-destructive') : 'bg-violet-500/15 text-violet-600'}`}>
+                                      {orderType === 'direct' ? `متاح: ${stock}` : (stock > 0 ? `حجز: ${stock}` : 'حجز مفتوح')}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Plus className="h-4 w-4 text-primary shrink-0" />
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground text-center">
+                        المنتجات المعروضة مفلترة حسب نوع الطلب ({orderType === 'preorder' ? 'حجز مسبق' : 'بيع مباشر'})
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
