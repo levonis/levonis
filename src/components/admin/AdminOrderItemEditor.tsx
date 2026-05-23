@@ -57,6 +57,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   const [originalTotal, setOriginalTotal] = useState<number>(0);
   const [financeLoaded, setFinanceLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"items" | "finance">("items");
+  const [orderType, setOrderType] = useState<"direct" | "preorder">("direct");
 
   useEffect(() => {
     if (open) {
