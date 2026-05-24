@@ -15,6 +15,7 @@ import ReelsBar from '@/components/reels/ReelsBar';
 import { useLanguage } from '@/lib/i18n';
 import ProgressiveSection from '@/components/ProgressiveSection';
 import SEO from '@/components/SEO';
+import QuestVerifier from '@/components/QuestVerifier';
 import { organizationLd, websiteLd } from '@/lib/seo/structured';
 
 // Lazy-load only sections gated by ProgressiveSection (genuinely below-the-fold)
@@ -113,6 +114,7 @@ const Home = () => {
         url="https://levonisiq.com/"
         jsonLd={[organizationLd(), websiteLd()]}
       />
+      <QuestVerifier />
       <main className="relative z-10 pt-6">
 
         <section className="w-full">
