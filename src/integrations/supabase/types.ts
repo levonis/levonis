@@ -14473,6 +14473,17 @@ export type Database = {
         Args: { p_order_item_id: string }
         Returns: number
       }
+      get_public_donations_feed: {
+        Args: { p_limit?: number }
+        Returns: {
+          amount: number
+          created_at: string
+          display_name: string
+          id: string
+          order_short: string
+          source: string
+        }[]
+      }
       get_public_profiles: {
         Args: { user_ids: string[] }
         Returns: {
@@ -14740,6 +14751,10 @@ export type Database = {
         Returns: Json
       }
       redeem_loyalty_card_code: { Args: { p_code: string }; Returns: Json }
+      redeem_points_store_product: {
+        Args: { p_product_id: string }
+        Returns: Json
+      }
       refund_wallet_balance: {
         Args: {
           p_amount: number

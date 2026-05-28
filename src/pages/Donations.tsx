@@ -35,11 +35,12 @@ const timeAgo = (iso: string) => {
 
 interface DonationRow {
   id: string;
-  user_id: string | null;
+  user_id?: string | null;
   display_name: string | null;
   amount: number;
   source: string;
-  order_id: string | null;
+  order_id?: string | null;
+  order_short?: string | null;
   created_at: string;
 }
 
@@ -74,12 +75,10 @@ export default function Donations() {
     queryKey: ["donations-feed", "wallet-only"],
     staleTime: 10_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("donations_log" as any)
-        .select("id, user_id, display_name, amount, source, order_id, created_at")
-        .eq("source", "wallet_direct")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc(
+        "get_public_donations_feed" as any,
+        { p_limit: 50 }
+      );
       if (error) throw error;
       return (data ?? []) as unknown as DonationRow[];
     },
@@ -413,9 +412,9 @@ export default function Donations() {
                                           <span className="truncate">
                                             {d.display_name || "متبرع كريم"}
                                           </span>
-                                          {d.order_id && (
+                                          {(d.order_short || d.order_id) && (
                                             <span className="shrink-0 rounded-md border border-border/50 bg-background/60 px-1.5 py-0.5 font-mono text-[9px] tabular-nums text-muted-foreground">
-                                              #{shortOrderId(d.order_id)}
+                                              #{(d.order_short || (d.order_id ? shortOrderId(d.order_id) : "")).toUpperCase()}
                                             </span>
                                           )}
                                         </div>
