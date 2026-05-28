@@ -180,6 +180,8 @@ const BundleDetail = () => {
     : 0;
   const activeImage = bundle.allImages?.[selectedImageIndex] || bundle.image_url;
   const maxQty = bundle.maxQuantity || 0;
+  const offerEndsAt = (bundle as any).offer_ends_at as string | null | undefined;
+  const isOfferExpired = !!offerEndsAt && new Date(offerEndsAt).getTime() <= Date.now();
 
   return (
     <div className="min-h-screen bg-transparent" dir="rtl">
