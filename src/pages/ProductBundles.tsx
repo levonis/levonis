@@ -159,7 +159,7 @@ const ProductBundles = () => {
                         <img
                           src={bundle.image_url}
                           alt=""
-                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${bundle.outOfStock ? 'opacity-50 grayscale' : ''}`}
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isDisabled ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/5" aria-hidden="true">
@@ -168,12 +168,12 @@ const ProductBundles = () => {
                       )}
                       <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background/40 to-transparent backdrop-blur-[1px]" />
 
-                      {/* Out of stock diagonal ribbon */}
-                      {bundle.outOfStock && (
+                      {/* Diagonal ribbon: expired takes precedence over out-of-stock */}
+                      {(isExpired || bundle.outOfStock) && (
                         <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none" aria-hidden="true">
                           <div className="absolute bg-destructive text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap shadow-lg"
                             style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-35deg)', minWidth: '150%', textAlign: 'center' }}>
-                            {t('bundles_out_of_stock')}
+                            {isExpired ? t('bundles_offer_ended') : t('bundles_out_of_stock')}
                           </div>
                         </div>
                       )}
@@ -187,6 +187,11 @@ const ProductBundles = () => {
                       <div className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-md bg-background/70 backdrop-blur-xl border border-white/30 dark:border-white/15 text-foreground text-[8px] font-semibold leading-none shadow-sm" aria-hidden="true">
                         {SALE_TYPE_KEYS[saleType] ? t(SALE_TYPE_KEYS[saleType]) : saleType}
                       </div>
+
+                      {/* Countdown timer */}
+                      {bundle.offer_ends_at && !isExpired && !bundle.outOfStock && (
+                        <BundleCountdown endsAt={bundle.offer_ends_at} />
+                      )}
                     </div>
 
                     {/* Info */}
