@@ -289,6 +289,13 @@ const BundleDetail = () => {
           </div>
         </div>
 
+        {/* Offer countdown / ended banner */}
+        {offerEndsAt && (
+          <DetailCountdownBanner endsAt={offerEndsAt} />
+        )}
+
+
+
         {/* Bundle Contents */}
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2.5">
