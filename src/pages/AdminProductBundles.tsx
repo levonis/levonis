@@ -46,11 +46,13 @@ interface BundleForm {
   is_active: boolean;
   sale_type: BundleSaleType;
   items: BundleItem[];
+  offer_ends_at: string | null;
 }
 
 const emptyForm: BundleForm = {
   title_ar: '', title_en: '', description_ar: '', image_url: '', images: [],
   bundle_price: 0, original_price: 0, is_active: true, sale_type: 'direct', items: [],
+  offer_ends_at: null,
 };
 
 function getAvailableStock(product: any, colorName?: string, optionId?: string): number {
