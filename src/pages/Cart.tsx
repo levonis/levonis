@@ -3749,7 +3749,7 @@ const Cart = () => {
                             </div>
                           </Label>
                         </div>
-                        {false && !hasRandomFilamentItems && (
+                        {halfPaymentGloballyEnabled && !hasRandomFilamentItems && (
                         <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                           preOrderPaymentOption === 'half' 
                             ? 'border-primary bg-primary/5' 
