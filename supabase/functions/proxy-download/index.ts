@@ -47,6 +47,10 @@ serve(async (req) => {
     if (!ALLOWED_EXT.test(parsed.pathname)) {
       return json({ error: "URL must point to .stl/.3mf/.obj/.glb/.gltf" }, 400);
     }
+    if (!ALLOWED_HOSTS.has(parsed.hostname.toLowerCase())) {
+      return json({ error: "Host not allowed" }, 403);
+    }
+
 
     const upstream = await fetch(parsed.toString(), {
       headers: { "User-Agent": "Mozilla/5.0 LevoModelProxy/1.0" },
