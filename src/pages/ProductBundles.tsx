@@ -53,8 +53,9 @@ const ProductBundles = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_bundles')
-        .select('id, title_ar, title_en, title_ku, description_ar, description_en, description_ku, image_url, bundle_price, original_price, sale_type, display_order, bundle_items(product_id, quantity, selected_color, selected_option_id)')
+        .select('id, title_ar, title_en, title_ku, description_ar, description_en, description_ku, image_url, bundle_price, original_price, sale_type, display_order, offer_ends_at, bundle_items(product_id, quantity, selected_color, selected_option_id)')
         .eq('is_active', true)
+        .or(`offer_ends_at.is.null,offer_ends_at.gt.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}`)
         .order('display_order');
       if (error) throw error;
 
