@@ -14,6 +14,37 @@ import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
 import { usePageTitle } from '@/island/usePageTitle';
 
+function DetailCountdownBanner({ endsAt }: { endsAt: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = new Date(endsAt).getTime() - now;
+  if (diff <= 0) {
+    return (
+      <div className="mt-3 p-3 rounded-2xl bg-destructive/10 backdrop-blur-xl border border-destructive/30 text-destructive text-sm font-bold text-center">
+        انتهى وقت العرض
+      </div>
+    );
+  }
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return (
+    <div className="mt-3 p-3 rounded-2xl bg-primary/10 backdrop-blur-xl border border-primary/30 flex items-center justify-between gap-2">
+      <span className="text-xs font-bold text-foreground">ينتهي العرض خلال</span>
+      <span dir="ltr" className="font-mono text-base font-black text-primary">
+        {days > 0 ? `${days}:${pad(hours)}:${pad(minutes)}` : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`}
+      </span>
+    </div>
+  );
+}
+
+
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
   if (colors.length === 0) {
