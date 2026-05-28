@@ -530,6 +530,7 @@ const AdminProductBundles = () => {
       is_active: bundle.is_active,
       sale_type: saleType,
       items,
+      offer_ends_at: bundle.offer_ends_at || null,
     });
     setDialogOpen(true);
   };
