@@ -93,90 +93,24 @@ export default function PointsStorePanel() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Purchase mutation
+  // Purchase mutation (atomic, server-side)
   const purchaseMutation = useMutation({
     mutationFn: async (product: RedeemableProduct) => {
       if (!user) throw new Error(t('points_login_required'));
 
-      const availablePoints = userPoints?.available_points || 0;
-      if (availablePoints < product.points_cost) {
-        throw new Error(t('comp_insufficient_balance'));
+      const { data, error } = await supabase.rpc(
+        'redeem_points_store_product' as any,
+        { p_product_id: product.id }
+      );
+      if (error) {
+        const msg = error.message || '';
+        if (msg.includes('insufficient_points')) throw new Error(t('comp_insufficient_balance'));
+        if (msg.includes('limit_reached')) throw new Error(t('points_reached_limit'));
+        if (msg.includes('out_of_stock')) throw new Error(t('common_error'));
+        throw error;
       }
 
-      // Check if user already hit the limit
-      const userPurchaseCount = userRedemptions?.filter(r => r.product_id === product.id).length || 0;
-      if (userPurchaseCount >= product.max_per_user) {
-        throw new Error(t('points_reached_limit'));
-      }
-
-      // Deduct points
-      const { error: pointsError } = await supabase
-        .from('user_points')
-        .update({
-          available_points: availablePoints - product.points_cost,
-        })
-        .eq('user_id', user.id);
-      if (pointsError) throw pointsError;
-
-      // Record transaction
-      const { error: transError } = await supabase
-        .from('points_transactions')
-        .insert({
-          user_id: user.id,
-          points: product.points_cost,
-          type: 'spent',
-          source: 'product_redemption',
-          description: `${t('points_redeem_action')}: ${product.title_ar}`,
-          related_id: product.id,
-        });
-      if (transError) throw transError;
-
-      // Record redemption
-      const { error: redeemError } = await supabase
-        .from('points_product_redemptions' as any)
-        .insert({
-          user_id: user.id,
-          product_id: product.id,
-          points_spent: product.points_cost,
-        });
-      if (redeemError) throw redeemError;
-
-      // Decrease stock
-      const { error: stockError } = await supabase
-        .from('points_redeemable_products')
-        .update({ stock_quantity: product.stock_quantity - 1 })
-        .eq('id', product.id);
-      if (stockError) throw stockError;
-
-      // Handle based on product type
-      if (product.product_type === 'coupon' || product.product_type === 'free_shipping') {
-        // Create a coupon for the user
-        const couponCode = `RED${Date.now().toString(36).toUpperCase()}`;
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + (product.valid_days || 30));
-        
-        await supabase.from('user_coupons').insert({
-          user_id: user.id,
-          coupon_code: couponCode,
-          discount_type: product.product_type === 'free_shipping' ? 'free_shipping' : 'fixed',
-          discount_value: product.value_amount || 0,
-          expires_at: expiresAt.toISOString(),
-          source: 'points_store',
-        });
-      } else if (product.product_type === 'physical') {
-        // Add to user storage for shipping
-        await supabase.from('product_offer_purchases').insert({
-          user_id: user.id,
-          offer_id: product.id, // Using product id as offer reference
-          quantity: 1,
-          unit_price: 0,
-          total_price: 0,
-          gift_tickets_awarded: 0,
-          purchase_status: 'pending',
-        });
-      }
-
-      return product;
+      return { product, result: data as any };
     },
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
