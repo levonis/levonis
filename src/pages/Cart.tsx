@@ -1027,6 +1027,9 @@ const Cart = () => {
     if (preOrderPaymentOption === 'cod' && !showCodOption) {
       setPreOrderPaymentOption('full');
     }
+    if (preOrderPaymentOption === 'half' && !halfPaymentGloballyEnabled) {
+      setPreOrderPaymentOption('full');
+    }
     if (hasRandomFilamentItems && preOrderPaymentOption !== 'full') {
       setPreOrderPaymentOption('full');
     }
