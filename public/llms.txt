@@ -1,0 +1,21 @@
+# LEVONIS
+
+> LEVONIS is Iraq's trusted electronics and 3D printing store — Bambu Lab, Creality, Resin printers, filaments, smart devices, and a merchant community marketplace.
+
+LEVONIS sells 3D printers (Bambu Lab, Creality, Resin), filaments and resins, accessories and spare parts, plus a curated catalog of electronics and smart devices shipped across Iraq with official warranty and fast delivery. The site also hosts a merchant community for custom prints and a rewards / loyalty program.
+
+## Pages
+
+- [Home](/): Featured products, categories, and offers.
+- [About](/about): Company story, mission, and contact info.
+- [FAQ](/faq): Common questions about ordering, warranty, and delivery.
+- [Bundles](/bundles): Time-limited product bundles and discounted kits.
+- [Offers](/offers): Active product offers and promotions.
+- [Community](/community): Merchant marketplace for custom 3D print requests.
+- [Donations](/donations): Public donation leaderboard and giving page.
+- [Download App](/download-app): Android app for LEVONIS.
+
+## Optional
+
+- [Privacy Policy](/privacy): How user data is handled.
+- [Terms of Service](/terms): Site usage terms.

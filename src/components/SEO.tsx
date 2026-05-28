@@ -28,7 +28,10 @@ const SEO = ({
   locale = 'ar_IQ',
   keywords,
 }: SEOProps) => {
-  const fullTitle = title ? `${title} — LEVONIS` : 'LEVONIS — متجرك الموثوق للتقنية في العراق';
+  const hasBrand = title ? /levonis/i.test(title) : false;
+  const fullTitle = title
+    ? (hasBrand ? title : `${title} — LEVONIS`)
+    : 'LEVONIS — متجرك الموثوق للتقنية في العراق';
   const finalUrl = url || (typeof window !== 'undefined' ? window.location.href : SITE);
   const finalCanonical = canonical || finalUrl.split('?')[0].split('#')[0];
   const ldArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
