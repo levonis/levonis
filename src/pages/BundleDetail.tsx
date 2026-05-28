@@ -122,6 +122,10 @@ const BundleDetail = () => {
   const handleAddToCart = async () => {
     if (!user) { navigate('/auth'); return; }
     if (!bundle || bundle.isOutOfStock) { toast.error('هذا العرض انتهى - المخزون غير كافٍ'); return; }
+    if ((bundle as any).offer_ends_at && new Date((bundle as any).offer_ends_at).getTime() <= Date.now()) {
+      toast.error('انتهى وقت العرض');
+      return;
+    }
 
     const bundleSaleType = bundle.sale_type === 'direct' ? 'direct' : 'preorder';
     setIsAdding(true);
