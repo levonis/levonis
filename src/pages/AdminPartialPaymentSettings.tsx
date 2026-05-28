@@ -84,6 +84,8 @@ export default function AdminPartialPaymentSettings() {
         ...defaultSettings,
         ...value,
         fee_tiers: hydratedTiers,
+        cod_enabled: value.cod_enabled !== false,
+        half_payment_enabled: value.half_payment_enabled !== false,
       });
     }
   }, [settings, formData]);
