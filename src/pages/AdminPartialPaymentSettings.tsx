@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Save, Percent, Plus, Trash2, Calculator } from 'lucide-react';
+import { Loader2, Save, Percent, Plus, Trash2, Calculator, Power } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminLoading } from "@/components/admin/AdminLayout";
 
 interface FeeTier {
@@ -27,6 +28,9 @@ interface PartialPaymentSettings {
   // Kept for backward compatibility (fallback when a tier has no COD value)
   cod_default_fee_type?: 'percentage' | 'fixed';
   cod_default_fee_value?: number;
+  // Global on/off toggles
+  cod_enabled?: boolean;
+  half_payment_enabled?: boolean;
 }
 
 const defaultSettings: PartialPaymentSettings = {
@@ -41,6 +45,8 @@ const defaultSettings: PartialPaymentSettings = {
   cod_label_ar: 'رسوم الدفع عند الاستلام',
   cod_default_fee_type: 'percentage',
   cod_default_fee_value: 5,
+  cod_enabled: true,
+  half_payment_enabled: true,
 };
 
 export default function AdminPartialPaymentSettings() {
@@ -78,6 +84,8 @@ export default function AdminPartialPaymentSettings() {
         ...defaultSettings,
         ...value,
         fee_tiers: hydratedTiers,
+        cod_enabled: value.cod_enabled !== false,
+        half_payment_enabled: value.half_payment_enabled !== false,
       });
     }
   }, [settings, formData]);
@@ -205,6 +213,43 @@ export default function AdminPartialPaymentSettings() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* تفعيل / تعطيل طرق الدفع */}
+        <AdminCard>
+          <AdminCardHeader
+            title="تفعيل طرق الدفع"
+            description="تحكم في إظهار خيارات الدفع للعميل في السلة"
+            icon={<Power className="h-5 w-5" />}
+          />
+          <AdminCardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 border border-border/40 rounded-lg bg-muted/30">
+                <div>
+                  <Label className="text-sm font-semibold">الدفع عند الاستلام (COD)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    عند التعطيل سيختفي خيار الدفع عند الاستلام من السلة لجميع المستخدمين
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.cod_enabled !== false}
+                  onCheckedChange={(v) => setFormData({ ...formData, cod_enabled: v })}
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 border border-border/40 rounded-lg bg-muted/30">
+                <div>
+                  <Label className="text-sm font-semibold">دفع نصف المبلغ (الدفع الجزئي)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    عند التعطيل سيختفي خيار دفع نصف المبلغ من السلة لجميع المستخدمين
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.half_payment_enabled !== false}
+                  onCheckedChange={(v) => setFormData({ ...formData, half_payment_enabled: v })}
+                />
+              </div>
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+
         {/* شرائح الرسوم */}
         <AdminCard>
           <AdminCardHeader 

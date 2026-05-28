@@ -603,6 +603,8 @@ const Cart = () => {
     cod_label_ar?: string;
     cod_default_fee_type?: 'percentage' | 'fixed';
     cod_default_fee_value?: number;
+    cod_enabled?: boolean;
+    half_payment_enabled?: boolean;
   }
   
   const { data: partialPaymentSettings } = useQuery({
@@ -1015,19 +1017,23 @@ const Cart = () => {
   const allItemsSupportCod = hasPreOrderItems && !hasRandomFilamentItems && items.length > 0 && items.every((item: any) => {
     return item.products?.cod_enabled === true;
   });
-  // مؤقتاً: تعطيل الدفع عند الاستلام بالكامل
-  const TEMP_DISABLE_COD = true;
-  const showCodOption = TEMP_DISABLE_COD ? false : allItemsSupportCod;
+  // التحكم العام من إعدادات الإدمن (/partial-payment-settings)
+  const codGloballyEnabled = partialPaymentSettings?.cod_enabled !== false;
+  const halfPaymentGloballyEnabled = partialPaymentSettings?.half_payment_enabled !== false;
+  const showCodOption = codGloballyEnabled && allItemsSupportCod;
 
   // إعادة ضبط الخيار إذا اختفى الشرط، وإجبار الدفع الكامل عند وجود فلمنت عشوائي
   useEffect(() => {
     if (preOrderPaymentOption === 'cod' && !showCodOption) {
       setPreOrderPaymentOption('full');
     }
+    if (preOrderPaymentOption === 'half' && !halfPaymentGloballyEnabled) {
+      setPreOrderPaymentOption('full');
+    }
     if (hasRandomFilamentItems && preOrderPaymentOption !== 'full') {
       setPreOrderPaymentOption('full');
     }
-  }, [showCodOption, preOrderPaymentOption, hasRandomFilamentItems]);
+  }, [showCodOption, preOrderPaymentOption, hasRandomFilamentItems, halfPaymentGloballyEnabled]);
 
   // حساب رسوم الدفع عند الاستلام لكل منتج
   // المنتجات المربوطة بـ link_direct_commission_to_cod: نستخدم نفس حساب سعر "البيع المباشر"
@@ -3746,7 +3752,7 @@ const Cart = () => {
                             </div>
                           </Label>
                         </div>
-                        {false && !hasRandomFilamentItems && (
+                        {halfPaymentGloballyEnabled && !hasRandomFilamentItems && (
                         <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                           preOrderPaymentOption === 'half' 
                             ? 'border-primary bg-primary/5' 
