@@ -58,17 +58,25 @@ const ProductBundles = () => {
         .or(`offer_ends_at.is.null,offer_ends_at.gt.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}`)
         .order('display_order');
       if (error) throw error;
-
-      // Check stock for each bundle
       if (!data?.length) return [];
-      const productIds = [...new Set(data.flatMap((b: any) => b.bundle_items?.map((i: any) => i.product_id) || []))];
-      const { data: stockData } = await supabase
-        .from('products')
-        .select('id, direct_stock, colors')
-        .in('id', productIds);
-      const stockMap = new Map((stockData || []).map((p: any) => [p.id, p]));
+
+      // Stock check applies ONLY to direct-sale bundles.
+      // Pre-order bundles (preorder-air / preorder-sea) do NOT consume direct stock
+      // and must never be marked as out of stock based on products.direct_stock.
+      const directBundles = data.filter((b: any) => (b.sale_type || 'direct') === 'direct');
+      const productIds = [...new Set(directBundles.flatMap((b: any) => b.bundle_items?.map((i: any) => i.product_id) || []))];
+      const stockMap = new Map<string, any>();
+      if (productIds.length > 0) {
+        const { data: stockData } = await supabase
+          .from('products')
+          .select('id, direct_stock, colors')
+          .in('id', productIds);
+        (stockData || []).forEach((p: any) => stockMap.set(p.id, p));
+      }
 
       return data.map((b: any) => {
+        const saleType = b.sale_type || 'direct';
+        if (saleType !== 'direct') return { ...b, outOfStock: false };
         let outOfStock = false;
         for (const item of (b.bundle_items || [])) {
           const product = stockMap.get(item.product_id);
@@ -95,7 +103,8 @@ const ProductBundles = () => {
         return { ...b, outOfStock };
       });
     },
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   return (
