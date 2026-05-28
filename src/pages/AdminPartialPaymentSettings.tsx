@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Save, Percent, Plus, Trash2, Calculator } from 'lucide-react';
+import { Loader2, Save, Percent, Plus, Trash2, Calculator, Power } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminLoading } from "@/components/admin/AdminLayout";
 
 interface FeeTier {
