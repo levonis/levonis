@@ -213,6 +213,43 @@ export default function AdminPartialPaymentSettings() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* تفعيل / تعطيل طرق الدفع */}
+        <AdminCard>
+          <AdminCardHeader
+            title="تفعيل طرق الدفع"
+            description="تحكم في إظهار خيارات الدفع للعميل في السلة"
+            icon={<Power className="h-5 w-5" />}
+          />
+          <AdminCardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 border border-border/40 rounded-lg bg-muted/30">
+                <div>
+                  <Label className="text-sm font-semibold">الدفع عند الاستلام (COD)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    عند التعطيل سيختفي خيار الدفع عند الاستلام من السلة لجميع المستخدمين
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.cod_enabled !== false}
+                  onCheckedChange={(v) => setFormData({ ...formData, cod_enabled: v })}
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 border border-border/40 rounded-lg bg-muted/30">
+                <div>
+                  <Label className="text-sm font-semibold">دفع نصف المبلغ (الدفع الجزئي)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    عند التعطيل سيختفي خيار دفع نصف المبلغ من السلة لجميع المستخدمين
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.half_payment_enabled !== false}
+                  onCheckedChange={(v) => setFormData({ ...formData, half_payment_enabled: v })}
+                />
+              </div>
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+
         {/* شرائح الرسوم */}
         <AdminCard>
           <AdminCardHeader 
