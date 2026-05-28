@@ -1,13 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { Package, ArrowRight, Sparkles } from 'lucide-react';
+import { Package, ArrowRight, Sparkles, Clock } from 'lucide-react';
 import { ListCardsSkeleton } from '@/components/ui/PageSkeletons';
 import { formatPrice } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
+
+// Compact countdown shown on bundle cards.
+// Renders D:H:M when > 1 day remains, otherwise H:M:S.
+function BundleCountdown({ endsAt, onExpire }: { endsAt: string; onExpire?: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = new Date(endsAt).getTime() - now;
+  useEffect(() => {
+    if (diff <= 0) onExpire?.();
+  }, [diff <= 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (diff <= 0) return null;
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const label = days > 0
+    ? `${days}:${pad(hours)}:${pad(minutes)}`
+    : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return (
+    <div className="absolute bottom-1.5 left-1.5 right-1.5 z-20 flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-xl border border-primary/30 text-primary text-[9px] font-bold leading-none shadow-md font-mono">
+      <Clock className="h-2.5 w-2.5 animate-pulse" />
+      <span dir="ltr">{label}</span>
+    </div>
+  );
+}
 
 const SALE_TYPE_KEYS: Record<string, 'sale_type_direct' | 'sale_type_preorder_air' | 'sale_type_preorder_sea'> = {
   'direct': 'sale_type_direct',
