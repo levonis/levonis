@@ -2090,6 +2090,7 @@ export const ku: TranslationKeys = {
   bundles_back_home: 'گەڕانەوە بۆ ماڵپەڕی سەرەکی',
   bundles_empty: 'هیچ پاکێجێک ئێستا بەردەست نییە',
   bundles_out_of_stock: 'لە کۆگا نییە',
+  bundles_offer_ended: 'پێشنیار کۆتایی هات',
 
   // Sale type badges
   sale_type_direct: 'فرۆشتنی ڕاستەوخۆ',
