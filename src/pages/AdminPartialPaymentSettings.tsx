@@ -45,6 +45,8 @@ const defaultSettings: PartialPaymentSettings = {
   cod_label_ar: 'رسوم الدفع عند الاستلام',
   cod_default_fee_type: 'percentage',
   cod_default_fee_value: 5,
+  cod_enabled: true,
+  half_payment_enabled: true,
 };
 
 export default function AdminPartialPaymentSettings() {
