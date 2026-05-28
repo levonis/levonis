@@ -112,13 +112,13 @@ export default function PointsStorePanel() {
 
       return { product, result: data as any };
     },
-    onSuccess: (product) => {
+    onSuccess: ({ product }) => {
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['user-points-store'] });
       queryClient.invalidateQueries({ queryKey: ['points-redeemable-products'] });
       queryClient.invalidateQueries({ queryKey: ['user-product-redemptions'] });
       queryClient.invalidateQueries({ queryKey: ['user-coupons'] });
-      
+
       if (product.product_type === 'physical') {
         toast.success(t('points_product_added_storage'));
       } else {
