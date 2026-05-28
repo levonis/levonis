@@ -1017,9 +1017,10 @@ const Cart = () => {
   const allItemsSupportCod = hasPreOrderItems && !hasRandomFilamentItems && items.length > 0 && items.every((item: any) => {
     return item.products?.cod_enabled === true;
   });
-  // مؤقتاً: تعطيل الدفع عند الاستلام بالكامل
-  const TEMP_DISABLE_COD = true;
-  const showCodOption = TEMP_DISABLE_COD ? false : allItemsSupportCod;
+  // التحكم العام من إعدادات الإدمن (/partial-payment-settings)
+  const codGloballyEnabled = partialPaymentSettings?.cod_enabled !== false;
+  const halfPaymentGloballyEnabled = partialPaymentSettings?.half_payment_enabled !== false;
+  const showCodOption = codGloballyEnabled && allItemsSupportCod;
 
   // إعادة ضبط الخيار إذا اختفى الشرط، وإجبار الدفع الكامل عند وجود فلمنت عشوائي
   useEffect(() => {
