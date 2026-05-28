@@ -1,7 +1,8 @@
 // Edge function: proxy-download
 // Streams a remote model file (STL/3MF/OBJ/GLB/GLTF) to the client to bypass CORS.
-// Public (no JWT) — read-only download proxy with strict size + extension guard.
+// Authenticated-only — read-only download proxy with strict size + extension guard.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,10 +11,33 @@ const corsHeaders = {
 
 const MAX_BYTES = 200 * 1024 * 1024; // 200MB
 const ALLOWED_EXT = /\.(stl|3mf|obj|glb|gltf)(\?.*)?$/i;
+const ALLOWED_HOSTS = new Set([
+  "thingiverse.com", "www.thingiverse.com", "cdn.thingiverse.com",
+  "makerworld.com", "www.makerworld.com", "public-cdn.bambulab.cn", "public-cdn.bblmw.com",
+  "printables.com", "www.printables.com", "media.printables.com", "cdn.printables.com",
+  "cults3d.com", "www.cults3d.com", "images.cults3d.com",
+]);
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    // Require authenticated caller to prevent bandwidth/IP abuse
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    );
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
     const u = new URL(req.url);
     const target = u.searchParams.get("url");
     if (!target) return json({ error: "Missing url" }, 400);
@@ -23,6 +47,10 @@ serve(async (req) => {
     if (!ALLOWED_EXT.test(parsed.pathname)) {
       return json({ error: "URL must point to .stl/.3mf/.obj/.glb/.gltf" }, 400);
     }
+    if (!ALLOWED_HOSTS.has(parsed.hostname.toLowerCase())) {
+      return json({ error: "Host not allowed" }, 403);
+    }
+
 
     const upstream = await fetch(parsed.toString(), {
       headers: { "User-Agent": "Mozilla/5.0 LevoModelProxy/1.0" },
