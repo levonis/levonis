@@ -469,6 +469,7 @@ const AdminProductBundles = () => {
         original_price: data.original_price,
         sale_type: data.sale_type,
         is_active: data.is_active,
+        offer_ends_at: data.offer_ends_at || null,
         updated_at: new Date().toISOString(),
       };
       let bundleId = editingId;
