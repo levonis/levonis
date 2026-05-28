@@ -21,7 +21,8 @@ const BundlesSection = () => {
       if (error) throw error;
       return data;
     },
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   if (!bundles || bundles.length === 0) return null;
