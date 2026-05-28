@@ -132,6 +132,9 @@ const ProductBundles = () => {
                 ? Math.round(((bundle.original_price - bundle.bundle_price) / bundle.original_price) * 100)
                 : 0;
               const saleType = bundle.sale_type || 'direct';
+              const endsAt = bundle.offer_ends_at ? new Date(bundle.offer_ends_at).getTime() : null;
+              const isExpired = endsAt !== null && endsAt <= Date.now();
+              const isDisabled = bundle.outOfStock || isExpired;
 
               return (
                 <motion.div
