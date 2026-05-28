@@ -28,6 +28,9 @@ interface PartialPaymentSettings {
   // Kept for backward compatibility (fallback when a tier has no COD value)
   cod_default_fee_type?: 'percentage' | 'fixed';
   cod_default_fee_value?: number;
+  // Global on/off toggles
+  cod_enabled?: boolean;
+  half_payment_enabled?: boolean;
 }
 
 const defaultSettings: PartialPaymentSettings = {
