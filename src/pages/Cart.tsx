@@ -603,6 +603,8 @@ const Cart = () => {
     cod_label_ar?: string;
     cod_default_fee_type?: 'percentage' | 'fixed';
     cod_default_fee_value?: number;
+    cod_enabled?: boolean;
+    half_payment_enabled?: boolean;
   }
   
   const { data: partialPaymentSettings } = useQuery({
