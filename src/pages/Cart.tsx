@@ -1033,7 +1033,7 @@ const Cart = () => {
     if (hasRandomFilamentItems && preOrderPaymentOption !== 'full') {
       setPreOrderPaymentOption('full');
     }
-  }, [showCodOption, preOrderPaymentOption, hasRandomFilamentItems]);
+  }, [showCodOption, preOrderPaymentOption, hasRandomFilamentItems, halfPaymentGloballyEnabled]);
 
   // حساب رسوم الدفع عند الاستلام لكل منتج
   // المنتجات المربوطة بـ link_direct_commission_to_cod: نستخدم نفس حساب سعر "البيع المباشر"
