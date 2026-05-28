@@ -1,0 +1,1 @@
+ALTER TABLE public.product_bundles ADD COLUMN IF NOT EXISTS offer_ends_at timestamptz NULL;

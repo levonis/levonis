@@ -2090,6 +2090,7 @@ export const en: TranslationKeys = {
   bundles_back_home: 'Back to Home',
   bundles_empty: 'No bundles available right now',
   bundles_out_of_stock: 'Out of Stock',
+  bundles_offer_ended: 'Offer Ended',
 
   // Sale type badges
   sale_type_direct: 'Direct Sale',

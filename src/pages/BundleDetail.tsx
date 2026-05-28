@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,37 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
 import { usePageTitle } from '@/island/usePageTitle';
+
+function DetailCountdownBanner({ endsAt }: { endsAt: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = new Date(endsAt).getTime() - now;
+  if (diff <= 0) {
+    return (
+      <div className="mt-3 p-3 rounded-2xl bg-destructive/10 backdrop-blur-xl border border-destructive/30 text-destructive text-sm font-bold text-center">
+        انتهى وقت العرض
+      </div>
+    );
+  }
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return (
+    <div className="mt-3 p-3 rounded-2xl bg-primary/10 backdrop-blur-xl border border-primary/30 flex items-center justify-between gap-2">
+      <span className="text-xs font-bold text-foreground">ينتهي العرض خلال</span>
+      <span dir="ltr" className="font-mono text-base font-black text-primary">
+        {days > 0 ? `${days}:${pad(hours)}:${pad(minutes)}` : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`}
+      </span>
+    </div>
+  );
+}
+
 
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
@@ -122,6 +153,10 @@ const BundleDetail = () => {
   const handleAddToCart = async () => {
     if (!user) { navigate('/auth'); return; }
     if (!bundle || bundle.isOutOfStock) { toast.error('هذا العرض انتهى - المخزون غير كافٍ'); return; }
+    if ((bundle as any).offer_ends_at && new Date((bundle as any).offer_ends_at).getTime() <= Date.now()) {
+      toast.error('انتهى وقت العرض');
+      return;
+    }
 
     const bundleSaleType = bundle.sale_type === 'direct' ? 'direct' : 'preorder';
     setIsAdding(true);
@@ -180,6 +215,8 @@ const BundleDetail = () => {
     : 0;
   const activeImage = bundle.allImages?.[selectedImageIndex] || bundle.image_url;
   const maxQty = bundle.maxQuantity || 0;
+  const offerEndsAt = (bundle as any).offer_ends_at as string | null | undefined;
+  const isOfferExpired = !!offerEndsAt && new Date(offerEndsAt).getTime() <= Date.now();
 
   return (
     <div className="min-h-screen bg-transparent" dir="rtl">
@@ -282,6 +319,13 @@ const BundleDetail = () => {
             )}
           </div>
         </div>
+
+        {/* Offer countdown / ended banner */}
+        {offerEndsAt && (
+          <DetailCountdownBanner endsAt={offerEndsAt} />
+        )}
+
+
 
         {/* Bundle Contents */}
         <div className="mt-4">

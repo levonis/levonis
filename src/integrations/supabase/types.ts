@@ -9042,6 +9042,7 @@ export type Database = {
           image_url: string | null
           images: string[] | null
           is_active: boolean
+          offer_ends_at: string | null
           original_price: number
           sale_type: string
           title_ar: string
@@ -9060,6 +9061,7 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean
+          offer_ends_at?: string | null
           original_price?: number
           sale_type?: string
           title_ar: string
@@ -9078,6 +9080,7 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean
+          offer_ends_at?: string | null
           original_price?: number
           sale_type?: string
           title_ar?: string

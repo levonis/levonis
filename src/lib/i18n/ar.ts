@@ -2090,6 +2090,7 @@ export const ar: TranslationKeys = {
   bundles_back_home: 'العودة إلى الصفحة الرئيسية',
   bundles_empty: 'لا توجد باقات متاحة حالياً',
   bundles_out_of_stock: 'نفذ من المخزون',
+  bundles_offer_ended: 'انتهى العرض',
 
   // Sale type badges
   sale_type_direct: 'بيع مباشر',

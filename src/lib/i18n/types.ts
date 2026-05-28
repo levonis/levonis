@@ -2101,6 +2101,7 @@ export type TranslationKeys = {
   bundles_back_home: string;
   bundles_empty: string;
   bundles_out_of_stock: string;
+  bundles_offer_ended: string;
 
   // Sale type badges
   sale_type_direct: string;

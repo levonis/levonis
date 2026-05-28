@@ -46,11 +46,13 @@ interface BundleForm {
   is_active: boolean;
   sale_type: BundleSaleType;
   items: BundleItem[];
+  offer_ends_at: string | null;
 }
 
 const emptyForm: BundleForm = {
   title_ar: '', title_en: '', description_ar: '', image_url: '', images: [],
   bundle_price: 0, original_price: 0, is_active: true, sale_type: 'direct', items: [],
+  offer_ends_at: null,
 };
 
 function getAvailableStock(product: any, colorName?: string, optionId?: string): number {
@@ -467,6 +469,7 @@ const AdminProductBundles = () => {
         original_price: data.original_price,
         sale_type: data.sale_type,
         is_active: data.is_active,
+        offer_ends_at: data.offer_ends_at || null,
         updated_at: new Date().toISOString(),
       };
       let bundleId = editingId;
@@ -527,6 +530,7 @@ const AdminProductBundles = () => {
       is_active: bundle.is_active,
       sale_type: saleType,
       items,
+      offer_ends_at: bundle.offer_ends_at || null,
     });
     setDialogOpen(true);
   };
@@ -875,6 +879,31 @@ const AdminProductBundles = () => {
             <div className="flex items-center gap-2">
               <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
               <Label>فعال</Label>
+            </div>
+
+            <div className="border-t pt-4 space-y-2">
+              <Label className="text-sm font-bold">تاريخ انتهاء العرض (اختياري)</Label>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                عند انتهاء الوقت يُعلَّم العرض كـ"منتهي" ويُخفى تلقائياً من الواجهة العامة بعد 24 ساعة. اتركه فارغاً لعرض دائم.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="datetime-local"
+                  value={form.offer_ends_at ? new Date(new Date(form.offer_ends_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                  onChange={e => setForm(f => ({ ...f, offer_ends_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
+                  className="flex-1"
+                />
+                {form.offer_ends_at && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setForm(f => ({ ...f, offer_ends_at: null }))}>
+                    مسح
+                  </Button>
+                )}
+              </div>
+              {form.offer_ends_at && (
+                <p className="text-[11px] font-semibold text-primary">
+                  {new Date(form.offer_ends_at).getTime() <= Date.now() ? '⏱️ منتهي حالياً' : `ينتهي: ${new Date(form.offer_ends_at).toLocaleString('ar')}`}
+                </p>
+              )}
             </div>
 
             {/* Bundle Items */}

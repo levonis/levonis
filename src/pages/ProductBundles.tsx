@@ -1,13 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { Package, ArrowRight, Sparkles } from 'lucide-react';
+import { Package, ArrowRight, Sparkles, Clock } from 'lucide-react';
 import { ListCardsSkeleton } from '@/components/ui/PageSkeletons';
 import { formatPrice } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
+
+// Compact countdown shown on bundle cards.
+// Renders D:H:M when > 1 day remains, otherwise H:M:S.
+function BundleCountdown({ endsAt, onExpire }: { endsAt: string; onExpire?: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = new Date(endsAt).getTime() - now;
+  useEffect(() => {
+    if (diff <= 0) onExpire?.();
+  }, [diff <= 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (diff <= 0) return null;
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const label = days > 0
+    ? `${days}:${pad(hours)}:${pad(minutes)}`
+    : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return (
+    <div className="absolute bottom-1.5 left-1.5 right-1.5 z-20 flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-xl border border-primary/30 text-primary text-[9px] font-bold leading-none shadow-md font-mono">
+      <Clock className="h-2.5 w-2.5 animate-pulse" />
+      <span dir="ltr">{label}</span>
+    </div>
+  );
+}
 
 const SALE_TYPE_KEYS: Record<string, 'sale_type_direct' | 'sale_type_preorder_air' | 'sale_type_preorder_sea'> = {
   'direct': 'sale_type_direct',
@@ -22,8 +53,9 @@ const ProductBundles = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_bundles')
-        .select('id, title_ar, title_en, title_ku, description_ar, description_en, description_ku, image_url, bundle_price, original_price, sale_type, display_order, bundle_items(product_id, quantity, selected_color, selected_option_id)')
+        .select('id, title_ar, title_en, title_ku, description_ar, description_en, description_ku, image_url, bundle_price, original_price, sale_type, display_order, offer_ends_at, bundle_items(product_id, quantity, selected_color, selected_option_id)')
         .eq('is_active', true)
+        .or(`offer_ends_at.is.null,offer_ends_at.gt.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}`)
         .order('display_order');
       if (error) throw error;
 
@@ -100,6 +132,9 @@ const ProductBundles = () => {
                 ? Math.round(((bundle.original_price - bundle.bundle_price) / bundle.original_price) * 100)
                 : 0;
               const saleType = bundle.sale_type || 'direct';
+              const endsAt = bundle.offer_ends_at ? new Date(bundle.offer_ends_at).getTime() : null;
+              const isExpired = endsAt !== null && endsAt <= Date.now();
+              const isDisabled = bundle.outOfStock || isExpired;
 
               return (
                 <motion.div
@@ -124,7 +159,7 @@ const ProductBundles = () => {
                         <img
                           src={bundle.image_url}
                           alt=""
-                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${bundle.outOfStock ? 'opacity-50 grayscale' : ''}`}
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isDisabled ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/5" aria-hidden="true">
@@ -133,12 +168,12 @@ const ProductBundles = () => {
                       )}
                       <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background/40 to-transparent backdrop-blur-[1px]" />
 
-                      {/* Out of stock diagonal ribbon */}
-                      {bundle.outOfStock && (
+                      {/* Diagonal ribbon: expired takes precedence over out-of-stock */}
+                      {(isExpired || bundle.outOfStock) && (
                         <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none" aria-hidden="true">
                           <div className="absolute bg-destructive text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap shadow-lg"
                             style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-35deg)', minWidth: '150%', textAlign: 'center' }}>
-                            {t('bundles_out_of_stock')}
+                            {isExpired ? t('bundles_offer_ended') : t('bundles_out_of_stock')}
                           </div>
                         </div>
                       )}
@@ -152,6 +187,11 @@ const ProductBundles = () => {
                       <div className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-md bg-background/70 backdrop-blur-xl border border-white/30 dark:border-white/15 text-foreground text-[8px] font-semibold leading-none shadow-sm" aria-hidden="true">
                         {SALE_TYPE_KEYS[saleType] ? t(SALE_TYPE_KEYS[saleType]) : saleType}
                       </div>
+
+                      {/* Countdown timer */}
+                      {bundle.offer_ends_at && !isExpired && !bundle.outOfStock && (
+                        <BundleCountdown endsAt={bundle.offer_ends_at} />
+                      )}
                     </div>
 
                     {/* Info */}
