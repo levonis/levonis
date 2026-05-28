@@ -881,6 +881,31 @@ const AdminProductBundles = () => {
               <Label>فعال</Label>
             </div>
 
+            <div className="border-t pt-4 space-y-2">
+              <Label className="text-sm font-bold">تاريخ انتهاء العرض (اختياري)</Label>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                عند انتهاء الوقت يُعلَّم العرض كـ"منتهي" ويُخفى تلقائياً من الواجهة العامة بعد 24 ساعة. اتركه فارغاً لعرض دائم.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="datetime-local"
+                  value={form.offer_ends_at ? new Date(new Date(form.offer_ends_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                  onChange={e => setForm(f => ({ ...f, offer_ends_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
+                  className="flex-1"
+                />
+                {form.offer_ends_at && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setForm(f => ({ ...f, offer_ends_at: null }))}>
+                    مسح
+                  </Button>
+                )}
+              </div>
+              {form.offer_ends_at && (
+                <p className="text-[11px] font-semibold text-primary">
+                  {new Date(form.offer_ends_at).getTime() <= Date.now() ? '⏱️ منتهي حالياً' : `ينتهي: ${new Date(form.offer_ends_at).toLocaleString('ar')}`}
+                </p>
+              )}
+            </div>
+
             {/* Bundle Items */}
             <div className="border-t pt-4">
               <Label className="text-base font-bold">منتجات البندل</Label>
