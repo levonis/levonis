@@ -1307,6 +1307,7 @@ serve(async (req) => {
       'e3d-online.com','slice3dengineering.com','sliceengineering.com',
       'mandala-rose-works.com','fabreeko.com','kb-3d.com','triangle-labs.com',
       'biqu.equipment','biqu3d.com','phaetus.com','mellow.klipper.cn',
+      'snapmaker.com','shop.snapmaker.com','us.snapmaker.com','eu.snapmaker.com',
     ];
     const host = parsedUrl.hostname.toLowerCase();
     const allowed = ALLOWED_DOMAINS.some(d => host === d || host.endsWith('.' + d));
