@@ -1300,7 +1300,13 @@ serve(async (req) => {
       'anycubic.com','elegoo.com','prusa3d.com','prusaprinters.org',
       'qidi3d.com','qidi3dprinter.com','qidi3dofficial.com','qidi-tech.com',
       'thingiverse.com','printables.com','makerworld.com','cults3d.com',
-      'shopify.com',
+      'shopify.com','myshopify.com',
+      // 3D printing retailers (mostly Shopify-hosted)
+      'west3d.com','matterhackers.com','printedsolid.com','3djake.com','3djake.us','3djake.uk',
+      'filastruder.com','atomicfilament.com','protopasta.com','polymaker.com',
+      'e3d-online.com','slice3dengineering.com','sliceengineering.com',
+      'mandala-rose-works.com','fabreeko.com','kb-3d.com','triangle-labs.com',
+      'biqu.equipment','biqu3d.com','phaetus.com','mellow.klipper.cn',
     ];
     const host = parsedUrl.hostname.toLowerCase();
     const allowed = ALLOWED_DOMAINS.some(d => host === d || host.endsWith('.' + d));
