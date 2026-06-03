@@ -58,8 +58,32 @@ interface ShippingSettings {
 }
 
 export const useShippingSettings = () => {
+  const qc = useQueryClient();
+
+  // Realtime sync: when admin updates shipping rates / USD rate / CNY rate,
+  // invalidate all queries that derive prices from them so product cards,
+  // cart totals, and detail pages refresh immediately.
+  useEffect(() => {
+    const channel = supabase
+      .channel('shipping-settings-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shipping_settings' },
+        () => {
+          RATE_DEPENDENT_KEYS.forEach((key) => {
+            qc.invalidateQueries({ queryKey: key });
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
   return useQuery({
-    queryKey: ['shipping-settings'],
+    queryKey: SHIPPING_QUERY_KEY,
+    staleTime: 30 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('shipping_settings')
@@ -79,16 +103,6 @@ export const useShippingSettings = () => {
         cny_to_usd_rate: 6.7,
       };
 
-      data?.forEach((item) => {
-        if (item.setting_key in settings) {
-          (settings as any)[item.setting_key] = Number(item.setting_value);
-        }
-      });
-
-      return settings;
-    },
-  });
-};
 
 export const calculateShippingCost = (
   sourceCountry: SourceCountry,
