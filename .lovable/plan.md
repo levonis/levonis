@@ -1,86 +1,113 @@
-## نظرة عامة
-إضافة "تأمين إضافي" دفعة واحدة (12 أو 24 شهر) للطابعات، يُضاف من السلة كسطر منفصل لكل طابعة ضمن نفس مجموعة المنتجات، ومتاح أيضاً في `/printer-protection`. السعر = نسبة مئوية من سعر الطابعة يحددها الادمن. التفعيل مشروط بامتلاك بطاقة Levo فعالة في `user_cards`.
+# مكتبة ملفات الطباعة ثلاثية الأبعاد (3D Files Library)
 
-## 1) قاعدة البيانات (migration)
+قسم جديد داخل صفحة المجتمع `/community` يتيح للتجار الموثقين الذين يملكون **بطاقة Levo فعالة** فقط: التصفح، البحث، المعاينة، والتحميل لملفات STL/OBJ/3MF وغيرها. الأدمن يدير المكتبة بالكامل، والتجار يستطيعون رفع ملفات بانتظار الموافقة.
 
-توحيد الباقات في `protection_plans` بإضافة حقول جديدة بدل نظام مستقل:
-- `coverage_months int` (12 أو 24) — null للباقات الشهرية الحالية
-- `price_percentage numeric` — نسبة من سعر الطابعة (مثلاً 8.00 لـ 8%)
-- `is_addon_insurance boolean default false` — لتمييز باقات التأمين الإضافي عن الاشتراك الشهري
-- `requires_active_card boolean default true`
+---
 
-جدول جديد `cart_insurance_addons`:
-- `id`, `user_id`, `cart_item_id` (fk + cascade), `plan_id` (fk protection_plans), `printer_product_id`, `coverage_months`, `price_iqd` (مُخزَّن وقت الإضافة), `created_at`
-- UNIQUE(cart_item_id) — تأمين واحد فقط لكل سطر سلة طابعة
-- RLS: المالك فقط + service_role + GRANT للـ authenticated
+## 1. قاعدة البيانات (Migration)
 
-عند تحويل السلة إلى طلب، تُنشأ `printer_subscriptions` بعدد = quantity للطابعة، حالة `pending_activation` حتى تأكيد الطلب، ثم تُفعّل تلقائياً بعد التسليم (trigger أو edge function).
+### جداول جديدة
+- **`stl_categories`**: `id`, `name_ar`, `name_en`, `name_ku`, `slug`, `icon`, `display_order`, `is_active`
+- **`stl_files`**:
+  - `id`, `uploader_id` (fk profiles), `category_id`, `status` (`pending`/`approved`/`rejected`)
+  - `title_ar/en/ku`, `description_ar/en/ku`
+  - `cover_image_url`, `gallery_images` (jsonb array)، `video_url` (يوتيوب/رابط)
+  - `model_preview_url` (ملف STL/OBJ صغير للمعاينة 3D)
+  - `download_file_path` (مسار في bucket)، `file_size_bytes`, `file_format`
+  - `tags` (text[])
+  - `price_type` (`free`/`paid`/`daily_limit`)، `price_points` (إن كان مدفوع)
+  - `min_card_tier_id` (fk membership_cards, nullable — لتقييد ملف معين لمستوى بطاقة)
+  - `downloads_count`, `views_count`, `rejection_reason`
+- **`stl_file_downloads`**: `id`, `user_id`, `file_id`, `downloaded_at` — لتتبع التحميلات اليومية والإحصاء
+- **`stl_card_download_limits`**: `id`, `card_id` (fk membership_cards), `daily_download_limit` (int, NULL = غير محدود)
 
-## 2) لوحة الادمن `/printer-protection-admin`
+### Storage Buckets
+- `stl-files` (private) — ملفات التحميل الفعلية. RLS: SELECT للتجار المؤهلين فقط عبر signed URLs من Edge Function، INSERT للمالك في مسار `{user_id}/...`
+- `stl-previews` (public) — صور الغلاف والمعرض والفيديو ثامبنيل
 
-إضافة تبويب جديد "باقات التأمين الإضافي" يحوي:
-- إنشاء/تعديل/حذف باقات بـ `is_addon_insurance=true`
-- حقول: الاسم بـ 3 لغات، coverage_months (12/24)، price_percentage، الفئات المؤهلة (categories متعددة)، حد أدنى/أعلى للسعر، نص الشرح للنافذة المنبثقة، حالة نشط/معطل
+### RLS Policies
+- `stl_files` SELECT: `status='approved'` لكل authenticated؛ أو `uploader_id = auth.uid()`؛ أو admin
+- `stl_files` INSERT: authenticated فقط (يُجبر `status='pending'`)
+- `stl_files` UPDATE/DELETE: المالك (إذا pending) أو admin
+- `stl_file_downloads` INSERT: authenticated، `user_id = auth.uid()`
+- `stl_card_download_limits` SELECT: authenticated، UPDATE/DELETE: admin
 
-## 3) السلة `Cart.tsx` + `GroupedCartItem.tsx`
+### Function أهلية ومنطق التحميل
+- `can_access_stl_library(uid)` — يُرجع true إذا: التاجر معتمد (`merchant_applications.status='approved'`) **و** يملك `user_cards` فعال غير منتهي
+- `request_stl_download(file_id)` RPC — يتحقق من الأهلية، يجلب حد البطاقة اليومي، يحسب التحميلات لهذا اليوم من `stl_file_downloads`، يُرجع `{allowed, remaining, reason}`. إذا مدفوع: يخصم نقاط (`add_user_points` مع رصيد سالب أو RPC مخصص).
 
-داخل كل مجموعة طابعة:
-- زر "🛡️ أضف تأمين إضافي" + أيقونة (i) صغيرة تفتح `InsuranceInfoDialog` (شرح + شروط)
-- عند الضغط: `AddInsuranceDialog` يعرض الباقات المتاحة (12/24 شهر) بالسعر المحسوب من سعر الطابعة الفعلي
-- التحقق:
-  - وجود `user_cards` نشطة → وإلا CTA "احصل على بطاقة Levo" يوجه `/membership-cards`
-  - المنتج في فئة طابعات مؤهلة
-- عند الإضافة: insert في `cart_insurance_addons` (للسطر فقط)؛ السعر يتضاعف تلقائياً مع `quantity` عبر hook `useCartInsurance` الذي يضرب `price_iqd × quantity`
-- يظهر سطر فرعي تحت الطابعة: "🛡️ تأمين إضافي 12 شهر × N = X د.ع" مع زر حذف
-- إجمالي السلة + checkout يضيف مجموع التأمين كبند مستقل
+---
 
-Hook جديد `useCartInsurance(items)` يجلب الإضافات ويحسب الإجمالي + يبثها لـ Cart للـ totals.
+## 2. Edge Function
 
-## 4) صفحة `/printer-protection`
+**`stl-download`** — يتحقق من JWT والأهلية ويستدعي `request_stl_download`، ثم يولّد signed URL من `stl-files` ويسجل التحميل في `stl_file_downloads`.
 
-إضافة Tab "تأمين إضافي" بجانب الباقات الشهرية الحالية:
-- يعرض بطاقات الـ 12 و24 شهر
-- اختيار طابعة من طابعات المستخدم → عرض السعر المحسوب → دفع من المحفظة أو COD
-- نفس شرط بطاقة Levo النشطة، مع نفس InsuranceInfoDialog
+---
 
-## 5) مكونات جديدة
+## 3. الواجهة (Frontend)
 
-- `src/components/insurance/InsuranceInfoDialog.tsx` — نافذة شرح (ما يغطيه التأمين، الشروط، مدة الصلاحية، شرط بطاقة Levo)
-- `src/components/insurance/AddInsuranceDialog.tsx` — اختيار 12/24 شهر داخل السلة
-- `src/components/insurance/CartInsuranceLineItem.tsx` — عرض السطر تحت الطابعة
-- `src/hooks/useActiveLevoCard.ts` — يتحقق من `user_cards` نشطة
-- `src/hooks/useCartInsurance.tsx` — جلب/إضافة/حذف + total
+### دخول من `CommunitySection.tsx`
+زر جديد ضمن البطاقات العلوية في `/community` بعنوان «مكتبة ملفات الطباعة 3D» (أيقونة `FileBox`/`Boxes`)، يظهر لكل مستخدم لكن الدخول مقيد.
 
-## 6) i18n
+### صفحات جديدة
+- **`/community/stl-library`** — التصفح
+  - شريط بحث + شرائط فئات أفقية + chips للعلامات (tags)
+  - شبكة بطاقات (cover image + title + uploader badge + downloads count + سعر/مجاني)
+  - فلاتر: السعر/الفئة/الأحدث/الأكثر تحميلاً
+  - إن لم يكن المستخدم مؤهلاً → بطاقة تشرح الشروط (تاجر معتمد + بطاقة Levo فعالة) مع زر للانتقال
+- **`/community/stl-library/:id`** — تفاصيل الملف
+  - معرض صور (carousel)، فيديو شرح مضمّن
+  - وصف، علامات، فئة، الرافع، حجم الملف، عدد التحميلات
+  - زر **تحميل** يستدعي `stl-download` ويعرض المتبقي اليومي
+  - أسفل الصفحة: عارض 3D للملف عبر `Model3DViewer` (موجود في المشروع) باستخدام `model_preview_url`
+- **`/community/stl-library/upload`** — رفع ملف (للتجار المؤهلين فقط)
+  - نموذج: عنوان+وصف بـ3 لغات، فئة، علامات، صورة غلاف، معرض، فيديو، ملف STL/OBJ للمعاينة، ملف التحميل الفعلي (TUS resumable حتى 10GB)
+  - حالة الإرسال = `pending`
 
-إضافة المفاتيح في `src/lib/i18n/{ar,en,ku}.ts`:
-- `insurance.addExtra`, `insurance.12months`, `insurance.24months`, `insurance.requiresLevoCard`, `insurance.dialogTitle`, `insurance.dialogContent`, إلخ.
+### صفحة الأدمن
+- **`/stl-library-admin`** (تحت `ADMIN_BASE_PATH`)
+  - تبويب «الفئات»: CRUD لـ `stl_categories`
+  - تبويب «الملفات»: قائمة بكل الملفات مع فلتر حالة، إجراءات Approve/Reject/Edit/Delete
+  - تبويب «حدود البطاقات»: لكل `membership_card` يحدد الأدمن `daily_download_limit` (فارغ = لا حد)
+  - تبويب «رفع ملف»: نفس نموذج التاجر لكن يُعتمد فورًا
+- رابط داخل لوحة الأدمن الرئيسية
 
-## 7) قواعد قائمة بالفعل تُحترم
+### Hooks جديدة
+- `useStlLibraryAccess()` — يجمع تحقق التاجر + `useActiveLevoCard` + حد البطاقة اليومي
+- `useStlFiles({ search, category, tag, sort })`
+- `useStlDownload(fileId)` — يستدعي edge function
 
-- منع خلط فئات السلة: التأمين ليس سطر سلة منفصل بل ملحق لسطر طابعة موجود، لذا لا يكسر `getCartCategories`
-- Glassmorphism في كل النوافذ
-- `price_adjustment` IQD مباشرة (السعر مُخزَّن مرة واحدة وقت الإضافة)
-- استخدام `modal={true}` للحوارات المتداخلة داخل Cart
+### i18n
+إضافة مفاتيح في `ar.ts`/`en.ts`/`ku.ts` + `types.ts` لكل النصوص (عناوين، فلاتر، رسائل أهلية، رسائل الحد اليومي، حالات الموافقة).
 
-## الملفات
+---
 
-**جديدة:**
-- migration واحد
-- `src/components/insurance/InsuranceInfoDialog.tsx`
-- `src/components/insurance/AddInsuranceDialog.tsx`
-- `src/components/insurance/CartInsuranceLineItem.tsx`
-- `src/hooks/useActiveLevoCard.ts`
-- `src/hooks/useCartInsurance.tsx`
+## 4. القواعد والقيود
 
-**معدَّلة:**
-- `src/pages/Cart.tsx` (إجمالي + تمرير hooks)
-- `src/components/GroupedCartItem.tsx` (زر التأمين + سطر فرعي + نافذة شرح)
-- `src/pages/PrinterProtection.tsx` (تبويب جديد)
-- `src/pages/AdminPrinterProtection.tsx` (تبويب إدارة باقات التأمين)
-- ملفات i18n الثلاثة
+- **الأهلية**: تاجر `merchant_applications.status='approved'` **و** بطاقة `user_cards` فعالة وغير منتهية. غير ذلك = عرض القسم لكن منع التحميل/الرفع.
+- **سياسة السعر**:
+  - `free` → يخضع فقط للحد اليومي للبطاقة
+  - `paid` → خصم نقاط من رصيد المستخدم
+  - `daily_limit` → ضمن `stl_card_download_limits` فقط
+- **الحجم**: حتى 10GB لكل ملف عبر TUS resumable upload (`@supabase/storage-js`). صور المعرض ≤ 5MB، الفيديو يفضل رابط YouTube/Vimeo لتفادي تخزين كبير، أو ملف ≤ 100MB.
+- **UI Style**: Glassmorphism Professional (نفس معيار المشروع — `.glass-panel`, Dialogs بـ `!overflow-hidden !max-h-none`).
+- **عارض 3D**: إعادة استخدام `Model3DViewer` الموجود.
+- **Side-effects**: تسجيل التحميل وإشعار الرافع non-blocking try/catch.
+- **Memory update**: إضافة memory جديد `features/community/stl-library` بعد التنفيذ.
 
-## مخاطر/ملاحظات
-- خصومات/تأمين موجود (`useCartProtectionDiscount`) منفصل ولا يتعارض
-- عند تغيير `quantity` للطابعة، التأمين يُحسب تلقائياً × quantity (لا insert إضافي)
-- عند حذف سطر الطابعة من السلة، يُحذف التأمين بـ ON DELETE CASCADE
+---
+
+## 5. الملفات المتأثرة
+
+**جديدة**
+- `src/pages/StlLibrary.tsx`, `src/pages/StlFileDetails.tsx`, `src/pages/StlLibraryUpload.tsx`, `src/pages/AdminStlLibrary.tsx`
+- `src/components/stl/StlFileCard.tsx`, `StlCategoryStrip.tsx`, `StlAccessGate.tsx`, `StlUploadForm.tsx`, `StlFileGallery.tsx`
+- `src/hooks/useStlLibraryAccess.ts`, `useStlFiles.ts`, `useStlDownload.ts`
+- `supabase/functions/stl-download/index.ts`
+- Migration: الجداول + RLS + buckets + RPCs
+
+**معدّلة**
+- `src/components/community/CommunitySection.tsx` (زر دخول جديد)
+- `src/App.tsx` (المسارات الجديدة)
+- `src/lib/i18n/ar.ts`, `en.ts`, `ku.ts`, `types.ts`
+- صفحة لوحة الأدمن الرئيسية (رابط `/stl-library-admin`)
