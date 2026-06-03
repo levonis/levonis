@@ -1,5 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+
+const SHIPPING_QUERY_KEY = ['shipping-settings'];
+
+/**
+ * Keys that depend on USD-to-IQD rate or shipping prices.
+ * When admin updates shipping_settings, these need to refresh so
+ * product cards, cart totals, bundles, etc. recompute instantly.
+ */
+const RATE_DEPENDENT_KEYS = [
+  ['shipping-settings'],
+  ['products'],
+  ['product'],
+  ['featured-products'],
+  ['bundles'],
+  ['home-bundles'],
+  ['cart'],
+  ['cod-default-settings-global'],
+  ['live-direct-prices'],
+];
 
 interface ProductDimensions {
   length: number; // cm
@@ -38,8 +58,32 @@ interface ShippingSettings {
 }
 
 export const useShippingSettings = () => {
+  const qc = useQueryClient();
+
+  // Realtime sync: when admin updates shipping rates / USD rate / CNY rate,
+  // invalidate all queries that derive prices from them so product cards,
+  // cart totals, and detail pages refresh immediately.
+  useEffect(() => {
+    const channel = supabase
+      .channel('shipping-settings-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shipping_settings' },
+        () => {
+          RATE_DEPENDENT_KEYS.forEach((key) => {
+            qc.invalidateQueries({ queryKey: key });
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
   return useQuery({
-    queryKey: ['shipping-settings'],
+    queryKey: SHIPPING_QUERY_KEY,
+    staleTime: 30 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('shipping_settings')
@@ -69,6 +113,9 @@ export const useShippingSettings = () => {
     },
   });
 };
+
+
+
 
 export const calculateShippingCost = (
   sourceCountry: SourceCountry,
