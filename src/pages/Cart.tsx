@@ -3195,6 +3195,12 @@ const Cart = () => {
                     <span>{t('cart_subtotal')}</span>
                     <span className="font-bold"><AnimatedPrice value={effectiveSubtotal} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
                   </div>
+                  {insuranceTotal > 0 && (
+                    <div className="flex justify-between text-primary text-xs">
+                      <span>🛡️ {t('insurance_subtotal')}</span>
+                      <span className="font-bold">+<AnimatedPrice value={insuranceTotal} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
+                    </div>
+                  )}
                   
                   {appliedCoupon && discount > 0 && (
                     <div className="flex justify-between animate-fade-in">
