@@ -1,6 +1,6 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Users, MessageCircle, Store, Package, FileText, Search, UserCircle, Sparkles, Gift } from 'lucide-react';
+import { Users, MessageCircle, Store, Package, FileText, Search, UserCircle, Sparkles, Gift, FileBox } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -164,6 +164,25 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
               <p className="text-[10px] text-muted-foreground">Thingiverse · Printables · MakerWorld · Cults</p>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">جديد</span>
+          </button>
+        </div>
+      )}
+
+      {/* STL Library entry */}
+      {isCommunityHub && user && (
+        <div className="mb-4">
+          <button
+            onClick={() => navigate("/community/stl-library")}
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-gradient-to-l from-accent/10 to-card hover:border-primary/40 hover:shadow-md transition-all"
+          >
+            <div className="w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
+              <FileBox className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 text-right">
+              <h3 className="text-sm font-black text-foreground">مكتبة ملفات الطباعة 3D</h3>
+              <p className="text-[10px] text-muted-foreground">STL · OBJ · 3MF — حصرياً لتجار Levo</p>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">حصري</span>
           </button>
         </div>
       )}
