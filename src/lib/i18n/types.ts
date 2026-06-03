@@ -2383,5 +2383,24 @@ export type TranslationKeys = {
   wishes_toast_duplicate: string;
   wishes_toast_generic_error: string;
   wishes_currency_iqd: string;
+  insurance_add_extra: string;
+  insurance_info_title: string;
+  insurance_info_what: string;
+  insurance_info_conditions: string;
+  insurance_requires_card: string;
+  insurance_get_card_cta: string;
+  insurance_choose_plan: string;
+  insurance_12_months: string;
+  insurance_24_months: string;
+  insurance_per_printer: string;
+  insurance_added: string;
+  insurance_removed: string;
+  insurance_line_label: string;
+  insurance_subtotal: string;
+  insurance_no_eligible_plans: string;
+  insurance_already_added: string;
+  insurance_addon_tab: string;
+  insurance_admin_tab: string;
+  insurance_select_printer: string;
 };
 
