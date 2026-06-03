@@ -25,6 +25,7 @@ import {
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import AdminQRPrinterTab from '@/components/admin/AdminQRPrinterTab';
+import AddonInsurancePlansAdmin from '@/components/insurance/AddonInsurancePlansAdmin';
 
 interface ProtectionPlan {
   id: string;
