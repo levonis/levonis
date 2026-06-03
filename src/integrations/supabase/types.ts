@@ -882,6 +882,64 @@ export type Database = {
           },
         ]
       }
+      cart_insurance_addons: {
+        Row: {
+          cart_item_id: string
+          coverage_months: number
+          created_at: string
+          id: string
+          plan_id: string
+          price_iqd: number
+          printer_product_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cart_item_id: string
+          coverage_months: number
+          created_at?: string
+          id?: string
+          plan_id: string
+          price_iqd: number
+          printer_product_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cart_item_id?: string
+          coverage_months?: number
+          created_at?: string
+          id?: string
+          plan_id?: string
+          price_iqd?: number
+          printer_product_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_insurance_addons_cart_item_id_fkey"
+            columns: ["cart_item_id"]
+            isOneToOne: true
+            referencedRelation: "cart_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_insurance_addons_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "protection_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_insurance_addons_printer_product_id_fkey"
+            columns: ["printer_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cart_items: {
         Row: {
           bundle_id: string | null
@@ -9715,10 +9773,12 @@ export type Database = {
           benefit_free_shipping_max_monthly: number
           benefit_free_shipping_methods: Json
           benefit_free_shipping_min_order: number
+          coverage_months: number | null
           created_at: string | null
           description_ar: string | null
           description_en: string | null
           display_order: number | null
+          eligible_category_ids: string[] | null
           features: Json | null
           filament_discount_percentage: number | null
           filament_weekly_limit: number | null
@@ -9726,13 +9786,20 @@ export type Database = {
           has_replacement_printer: boolean | null
           icon_name: string | null
           id: string
+          info_description_ar: string | null
+          info_description_en: string | null
+          info_description_ku: string | null
           is_active: boolean | null
+          is_addon_insurance: boolean
           maintenance_discount_percentage: number | null
           max_parts_discount_per_month: number | null
+          max_price_iqd: number | null
           max_service_requests_per_month: number | null
+          min_price_iqd: number | null
           monthly_price: number
           name_ar: string
           name_en: string
+          name_ku: string | null
           parts_discount_categories: string[] | null
           parts_discount_limit_count: number | null
           parts_discount_limit_type: string | null
@@ -9741,7 +9808,9 @@ export type Database = {
           parts_discount_value: number | null
           plan_type: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months: number | null
+          price_percentage: number | null
           priority_level: number | null
+          requires_active_card: boolean
           updated_at: string | null
           waiting_period_days: number | null
           warranty_duration_months: number | null
@@ -9756,10 +9825,12 @@ export type Database = {
           benefit_free_shipping_max_monthly?: number
           benefit_free_shipping_methods?: Json
           benefit_free_shipping_min_order?: number
+          coverage_months?: number | null
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
+          eligible_category_ids?: string[] | null
           features?: Json | null
           filament_discount_percentage?: number | null
           filament_weekly_limit?: number | null
@@ -9767,13 +9838,20 @@ export type Database = {
           has_replacement_printer?: boolean | null
           icon_name?: string | null
           id?: string
+          info_description_ar?: string | null
+          info_description_en?: string | null
+          info_description_ku?: string | null
           is_active?: boolean | null
+          is_addon_insurance?: boolean
           maintenance_discount_percentage?: number | null
           max_parts_discount_per_month?: number | null
+          max_price_iqd?: number | null
           max_service_requests_per_month?: number | null
+          min_price_iqd?: number | null
           monthly_price: number
           name_ar: string
           name_en: string
+          name_ku?: string | null
           parts_discount_categories?: string[] | null
           parts_discount_limit_count?: number | null
           parts_discount_limit_type?: string | null
@@ -9782,7 +9860,9 @@ export type Database = {
           parts_discount_value?: number | null
           plan_type: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months?: number | null
+          price_percentage?: number | null
           priority_level?: number | null
+          requires_active_card?: boolean
           updated_at?: string | null
           waiting_period_days?: number | null
           warranty_duration_months?: number | null
@@ -9797,10 +9877,12 @@ export type Database = {
           benefit_free_shipping_max_monthly?: number
           benefit_free_shipping_methods?: Json
           benefit_free_shipping_min_order?: number
+          coverage_months?: number | null
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
+          eligible_category_ids?: string[] | null
           features?: Json | null
           filament_discount_percentage?: number | null
           filament_weekly_limit?: number | null
@@ -9808,13 +9890,20 @@ export type Database = {
           has_replacement_printer?: boolean | null
           icon_name?: string | null
           id?: string
+          info_description_ar?: string | null
+          info_description_en?: string | null
+          info_description_ku?: string | null
           is_active?: boolean | null
+          is_addon_insurance?: boolean
           maintenance_discount_percentage?: number | null
           max_parts_discount_per_month?: number | null
+          max_price_iqd?: number | null
           max_service_requests_per_month?: number | null
+          min_price_iqd?: number | null
           monthly_price?: number
           name_ar?: string
           name_en?: string
+          name_ku?: string | null
           parts_discount_categories?: string[] | null
           parts_discount_limit_count?: number | null
           parts_discount_limit_type?: string | null
@@ -9823,7 +9912,9 @@ export type Database = {
           parts_discount_value?: number | null
           plan_type?: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months?: number | null
+          price_percentage?: number | null
           priority_level?: number | null
+          requires_active_card?: boolean
           updated_at?: string | null
           waiting_period_days?: number | null
           warranty_duration_months?: number | null
