@@ -11395,6 +11395,214 @@ export type Database = {
           },
         ]
       }
+      stl_card_download_limits: {
+        Row: {
+          card_id: string
+          created_at: string
+          daily_download_limit: number | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          daily_download_limit?: number | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          daily_download_limit?: number | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stl_card_download_limits_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: true
+            referencedRelation: "membership_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stl_categories: {
+        Row: {
+          created_at: string
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          name_ar: string
+          name_en: string | null
+          name_ku: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stl_file_downloads: {
+        Row: {
+          downloaded_at: string
+          file_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          downloaded_at?: string
+          file_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          downloaded_at?: string
+          file_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stl_file_downloads_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "stl_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stl_files: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          category_id: string | null
+          cover_image_url: string | null
+          created_at: string
+          description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
+          download_file_path: string | null
+          downloads_count: number
+          file_format: string | null
+          file_size_bytes: number | null
+          gallery_images: Json
+          id: string
+          min_card_tier_id: string | null
+          model_preview_url: string | null
+          price_points: number
+          price_type: string
+          rejection_reason: string | null
+          status: string
+          tags: string[]
+          title_ar: string
+          title_en: string | null
+          title_ku: string | null
+          updated_at: string
+          uploader_id: string
+          video_url: string | null
+          views_count: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category_id?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
+          download_file_path?: string | null
+          downloads_count?: number
+          file_format?: string | null
+          file_size_bytes?: number | null
+          gallery_images?: Json
+          id?: string
+          min_card_tier_id?: string | null
+          model_preview_url?: string | null
+          price_points?: number
+          price_type?: string
+          rejection_reason?: string | null
+          status?: string
+          tags?: string[]
+          title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
+          updated_at?: string
+          uploader_id: string
+          video_url?: string | null
+          views_count?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category_id?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
+          download_file_path?: string | null
+          downloads_count?: number
+          file_format?: string | null
+          file_size_bytes?: number | null
+          gallery_images?: Json
+          id?: string
+          min_card_tier_id?: string | null
+          model_preview_url?: string | null
+          price_points?: number
+          price_type?: string
+          rejection_reason?: string | null
+          status?: string
+          tags?: string[]
+          title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
+          updated_at?: string
+          uploader_id?: string
+          video_url?: string | null
+          views_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stl_files_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "stl_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stl_files_min_card_tier_id_fkey"
+            columns: ["min_card_tier_id"]
+            isOneToOne: false
+            referencedRelation: "membership_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_notifications: {
         Row: {
           created_at: string
@@ -14181,6 +14389,7 @@ export type Database = {
             Returns: string
           }
       calculate_user_level: { Args: { points: number }; Returns: string }
+      can_access_stl_library: { Args: { _uid: string }; Returns: boolean }
       can_read_print_file: { Args: { object_name: string }; Returns: boolean }
       cancel_order: {
         Args: { p_cancelled_by?: string; p_order_id: string }
