@@ -103,6 +103,19 @@ export const useShippingSettings = () => {
         cny_to_usd_rate: 6.7,
       };
 
+      data?.forEach((item) => {
+        if (item.setting_key in settings) {
+          (settings as any)[item.setting_key] = Number(item.setting_value);
+        }
+      });
+
+      return settings;
+    },
+  });
+};
+
+
+
 
 export const calculateShippingCost = (
   sourceCountry: SourceCountry,
