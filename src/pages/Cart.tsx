@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
+import { useCartInsuranceAddons } from '@/hooks/useCartInsurance';
 import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useCartWarrantyBenefits } from '@/hooks/useCartWarrantyBenefits';
 import { useCartSubscriptionBenefits } from '@/hooks/useCartSubscriptionBenefits';
