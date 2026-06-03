@@ -2389,7 +2389,7 @@ export type TranslationKeys = {
   insurance_info_conditions: string;
   insurance_requires_card: string;
   insurance_get_card_cta: string;
-  insurance_choose_plan: string;
+  insurance_choose_plan_addon: string;
   insurance_12_months: string;
   insurance_24_months: string;
   insurance_per_printer: string;
