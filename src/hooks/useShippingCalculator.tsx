@@ -1,5 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+
+const SHIPPING_QUERY_KEY = ['shipping-settings'];
+
+/**
+ * Keys that depend on USD-to-IQD rate or shipping prices.
+ * When admin updates shipping_settings, these need to refresh so
+ * product cards, cart totals, bundles, etc. recompute instantly.
+ */
+const RATE_DEPENDENT_KEYS = [
+  ['shipping-settings'],
+  ['products'],
+  ['product'],
+  ['featured-products'],
+  ['bundles'],
+  ['home-bundles'],
+  ['cart'],
+  ['cod-default-settings-global'],
+  ['live-direct-prices'],
+];
 
 interface ProductDimensions {
   length: number; // cm
