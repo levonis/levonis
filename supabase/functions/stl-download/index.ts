@@ -91,9 +91,10 @@ Deno.serve(async (req) => {
     // Paid file → deduct points
     if (file.price_type === "paid" && Number(file.price_points) > 0) {
       const { error: deductErr } = await admin.rpc("deduct_user_points", {
-        _user_id: userId,
-        _amount: Number(file.price_points),
-        _reason: `STL file purchase: ${file.id}`,
+        p_user_id: userId,
+        p_amount: Number(file.price_points),
+        p_source: "stl_purchase",
+        p_description: `STL file purchase: ${file.id}`,
       });
       if (deductErr) {
         return json({ error: "insufficient_points", detail: deductErr.message }, 402);
