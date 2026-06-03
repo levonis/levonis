@@ -164,6 +164,10 @@ const AdminUserCardCycles = lazy(() => import("./pages/AdminUserCardCycles"));
 const AdminProtectionPlanBenefits = lazy(() => import("./pages/AdminProtectionPlanBenefits"));
 const AdminChunkErrors = lazy(() => import("./pages/AdminChunkErrors"));
 const AdminUrlAnalytics = lazy(() => import("./pages/AdminUrlAnalytics"));
+const StlLibrary = lazy(() => import("./pages/StlLibrary"));
+const StlFileDetails = lazy(() => import("./pages/StlFileDetails"));
+const StlLibraryUpload = lazy(() => import("./pages/StlLibraryUpload"));
+const AdminStlLibrary = lazy(() => import("./pages/AdminStlLibrary"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const About = lazy(() => import("./pages/About"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -509,6 +513,11 @@ function AppContent() {
             <Route path="/community/requests" element={<RequireCommunityProfile><CommunityRequestsBrowse /></RequireCommunityProfile>} />
             <Route path="/community/merchants" element={<RequireCommunityProfile><CommunityMerchantsPages /></RequireCommunityProfile>} />
             <Route path="/community/store/:merchantId" element={<CommunityMerchantStorePage />} />
+            {/* STL Library */}
+            <Route path="/community/stl-library" element={<RequireAuth><StlLibrary /></RequireAuth>} />
+            <Route path="/community/stl-library/upload" element={<RequireAuth><StlLibraryUpload /></RequireAuth>} />
+            <Route path="/community/stl-library/:id" element={<RequireAuth><StlFileDetails /></RequireAuth>} />
+            <Route path={`${ADMIN_BASE_PATH}/stl-library`} element={<AdminRoute><AdminStlLibrary /></AdminRoute>} />
             <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
             {/* Standalone merchant storefront — feels like a separate site */}
             <Route path="/s/:slug" element={<MerchantStandalone />} />
