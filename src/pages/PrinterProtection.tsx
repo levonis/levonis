@@ -408,6 +408,11 @@ const PrinterProtection = () => {
           </p>
         </div>
 
+        <div className="mb-8">
+          <AddonInsuranceShowcase />
+        </div>
+
+
         {/* My Eligible Printers Section */}
         {user && (
           <section className="mb-12">
