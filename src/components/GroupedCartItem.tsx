@@ -33,12 +33,20 @@ const GroupedCartItem = ({
   outOfStockItemIds = new Set(),
   lowStockItems = new Map(),
 }: GroupedCartItemProps) => {
+  const { t } = useLanguage();
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [addOpenFor, setAddOpenFor] = useState<string | null>(null);
   const firstItem = items[0];
   const product = firstItem.products;
   const { data: shippingSettings } = useShippingSettings();
   const { data: codDefaults } = useCodDefaults();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
+  const { byCartItemId, removeInsurance, isRemoving: isRemovingInsurance } = useCartInsuranceAddons();
+  const productCategoryId = (product as any)?.category_id || null;
+  const { data: insurancePlans = [] } = useInsurancePlans(productCategoryId);
+  const insuranceEligible = insurancePlans.length > 0;
+  
   
   if (!product) return null;
 
