@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 import Footer from '@/components/Footer';
+import AddonInsuranceShowcase from '@/components/insurance/AddonInsuranceShowcase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -407,6 +408,11 @@ const PrinterProtection = () => {
             احمِ استثمارك مع باقات الحماية الشاملة. صيانة دورية، دعم فني متخصص، وراحة بال كاملة.
           </p>
         </div>
+
+        <div className="mb-8">
+          <AddonInsuranceShowcase />
+        </div>
+
 
         {/* My Eligible Printers Section */}
         {user && (

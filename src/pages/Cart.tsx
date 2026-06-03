@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
+import { useCartInsuranceAddons } from '@/hooks/useCartInsurance';
 import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useCartWarrantyBenefits } from '@/hooks/useCartWarrantyBenefits';
 import { useCartSubscriptionBenefits } from '@/hooks/useCartSubscriptionBenefits';
@@ -65,6 +66,7 @@ const Cart = () => {
   };
 
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
+  const { addons: insuranceAddons } = useCartInsuranceAddons();
   const { cardDiscount: rawCardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const { warrantyBenefits } = useCartWarrantyBenefits(items, getCartItemPrice, total);
   // Paid protection-plan subscriptions are an independent system that STACKS with
@@ -970,9 +972,15 @@ const Cart = () => {
     pendingCartRequest.status === 'adjusted' &&
     pendingCartRequest.adjusted_total != null &&
     Number(pendingCartRequest.adjusted_total) > 0;
-  const effectiveSubtotal = hasAdjustedTotal
+  // Extra insurance addons total (per cart item × quantity)
+  const itemQtyMap = new Map<string, number>(items.map((it: any) => [it.id, it.quantity || 0]));
+  const insuranceTotal = (insuranceAddons || []).reduce((sum: number, a: any) => {
+    const qty = itemQtyMap.get(a.cart_item_id) ?? 0;
+    return qty > 0 ? sum + Number(a.price_iqd) * qty : sum;
+  }, 0);
+  const effectiveSubtotal = (hasAdjustedTotal
     ? Number(pendingCartRequest!.adjusted_total)
-    : total;
+    : total) + insuranceTotal;
 
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
@@ -3187,6 +3195,12 @@ const Cart = () => {
                     <span>{t('cart_subtotal')}</span>
                     <span className="font-bold"><AnimatedPrice value={effectiveSubtotal} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
                   </div>
+                  {insuranceTotal > 0 && (
+                    <div className="flex justify-between text-primary text-xs">
+                      <span>🛡️ {t('insurance_subtotal')}</span>
+                      <span className="font-bold">+<AnimatedPrice value={insuranceTotal} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
+                    </div>
+                  )}
                   
                   {appliedCoupon && discount > 0 && (
                     <div className="flex justify-between animate-fade-in">

@@ -25,6 +25,7 @@ import {
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import AdminQRPrinterTab from '@/components/admin/AdminQRPrinterTab';
+import AddonInsurancePlansAdmin from '@/components/insurance/AddonInsurancePlansAdmin';
 
 interface ProtectionPlan {
   id: string;
@@ -633,10 +634,11 @@ const AdminPrinterProtection = () => {
         </div>
 
         <Tabs defaultValue="qr-printers" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="qr-printers">إنشاء + QR</TabsTrigger>
             <TabsTrigger value="subscriptions">الاشتراكات</TabsTrigger>
             <TabsTrigger value="plans">الباقات</TabsTrigger>
+            <TabsTrigger value="addon-insurance">تأمين إضافي</TabsTrigger>
             <TabsTrigger value="requests" className="relative">
               طلبات السيريال
               {pendingRequests > 0 && (
@@ -646,6 +648,10 @@ const AdminPrinterProtection = () => {
             <TabsTrigger value="delivered">طلبات الطابعات</TabsTrigger>
             <TabsTrigger value="logs">السجل</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="addon-insurance" className="space-y-4">
+            <AddonInsurancePlansAdmin />
+          </TabsContent>
 
           {/* QR Printers Tab */}
           <TabsContent value="qr-printers" className="space-y-4">

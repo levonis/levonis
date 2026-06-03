@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, Trash2, Package, Gift } from 'lucide-react';
+import { Minus, Plus, Trash2, Package, Gift, ShieldCheck, Info } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
 import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
+import { useCartInsuranceAddons, useInsurancePlans } from '@/hooks/useCartInsurance';
+import InsuranceInfoDialog from '@/components/insurance/InsuranceInfoDialog';
+import AddInsuranceDialog from '@/components/insurance/AddInsuranceDialog';
+import { useLanguage } from '@/lib/i18n';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface GroupedCartItemProps {
@@ -29,12 +33,20 @@ const GroupedCartItem = ({
   outOfStockItemIds = new Set(),
   lowStockItems = new Map(),
 }: GroupedCartItemProps) => {
+  const { t } = useLanguage();
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [addOpenFor, setAddOpenFor] = useState<string | null>(null);
   const firstItem = items[0];
   const product = firstItem.products;
   const { data: shippingSettings } = useShippingSettings();
   const { data: codDefaults } = useCodDefaults();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
+  const { byCartItemId, removeInsurance, isRemoving: isRemovingInsurance } = useCartInsuranceAddons();
+  const productCategoryId = (product as any)?.category_id || null;
+  const { data: insurancePlans = [] } = useInsurancePlans(productCategoryId);
+  const insuranceEligible = insurancePlans.length > 0;
+  
   
   if (!product) return null;
 
@@ -199,6 +211,67 @@ const GroupedCartItem = ({
             })}
           </div>
 
+          {/* Extra Insurance Add-on (per shipping variant when eligible) */}
+          {insuranceEligible && items.map((item) => {
+            if (item.is_gift) return null;
+            const addon = byCartItemId.get(item.id);
+            const itemBasePrice = calculateItemPrice(item);
+            return (
+              <div key={`ins-${item.id}`} className="mt-2">
+                {addon ? (
+                  <div className="rounded-lg border border-primary/40 bg-primary/5 p-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="text-[11px] font-bold text-primary truncate">
+                        {t('insurance_line_label')} {addon.coverage_months} {t('insurance_month' as any)} × {item.quantity}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[11px] font-black text-primary">
+                        {formatPrice(addon.price_iqd * item.quantity)} د.ع
+                      </span>
+                      <Button type="button" size="icon" variant="ghost" disabled={isRemovingInsurance}
+                        className="text-destructive hover:bg-destructive/10 h-6 w-6"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeInsurance(item.id); }}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-2">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAddOpenFor(item.id); }}
+                      className="flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {t('insurance_add_extra')}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="info"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setInfoOpen(true); }}
+                      className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30"
+                    >
+                      <Info className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {addOpenFor === item.id && (
+                  <AddInsuranceDialog
+                    open={addOpenFor === item.id}
+                    onOpenChange={(o) => !o && setAddOpenFor(null)}
+                    cartItemId={item.id}
+                    printerProductId={product.id}
+                    printerCategoryId={productCategoryId}
+                    printerPriceIqd={itemBasePrice}
+                    printerNameAr={product.name_ar || ''}
+                  />
+                )}
+              </div>
+            );
+          })}
+
           {/* Group Total */}
           <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-border/20">
             <span className="text-[11px] text-muted-foreground">إجمالي ({totalQuantity} قطع)</span>
@@ -208,6 +281,7 @@ const GroupedCartItem = ({
           </div>
         </div>
       </div>
+      <InsuranceInfoDialog open={infoOpen} onOpenChange={setInfoOpen} />
     </div>
   );
 };
