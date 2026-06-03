@@ -65,6 +65,7 @@ const Cart = () => {
   };
 
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
+  const { addons: insuranceAddons } = useCartInsuranceAddons();
   const { cardDiscount: rawCardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const { warrantyBenefits } = useCartWarrantyBenefits(items, getCartItemPrice, total);
   // Paid protection-plan subscriptions are an independent system that STACKS with
