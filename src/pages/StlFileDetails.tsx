@@ -1,4 +1,6 @@
 import { useEffect, useState, Suspense, lazy } from 'react';
+import ImageWithLoader from '@/components/ui/ImageWithLoader';
+
 import { useParams, Link } from 'react-router-dom';
 import { Download, ArrowRight, Loader2, FileBox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
