@@ -1,4 +1,6 @@
 import { useEffect, useState, Suspense, lazy } from 'react';
+import ImageWithLoader from '@/components/ui/ImageWithLoader';
+
 import { useParams, Link } from 'react-router-dom';
 import { Download, ArrowRight, Loader2, FileBox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,20 +49,39 @@ export default function StlFileDetails() {
       <div className="grid md:grid-cols-2 gap-5">
         <div className="space-y-2">
           <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
-            {cover ? <img src={cover} alt={title} className="w-full h-full object-cover" /> :
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground"><FileBox className="h-16 w-16" /></div>}
+            {cover ? (
+              <ImageWithLoader
+                src={cover}
+                alt={title}
+                width={800}
+                priority
+                containerClassName="w-full h-full"
+                className="w-full h-full object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground"><FileBox className="h-16 w-16" /></div>
+            )}
           </div>
           {gallery.length > 1 && (
             <div className="grid grid-cols-5 gap-2">
               {gallery.map((g, i) => (
                 <button key={i} onClick={() => setActiveImg(g)}
                   className={`aspect-square rounded-lg overflow-hidden border-2 ${cover === g ? 'border-primary' : 'border-transparent'}`}>
-                  <img src={g} alt="" className="w-full h-full object-cover" />
+                  <ImageWithLoader
+                    src={g}
+                    alt=""
+                    width={200}
+                    containerClassName="w-full h-full"
+                    className="w-full h-full object-cover"
+                    sizes="20vw"
+                  />
                 </button>
               ))}
             </div>
           )}
         </div>
+
 
         <div className="space-y-3">
           <h1 className="text-xl font-black">{title}</h1>

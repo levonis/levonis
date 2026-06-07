@@ -144,8 +144,18 @@ const ProductCard = ({
 
       <div className="relative mb-1.5">
         <div className="relative overflow-hidden rounded-md aspect-square bg-muted/20">
-          {/* Loading skeleton */}
-          {!imageLoaded && (
+          {/* LQIP blur-up placeholder */}
+          {imageUrl && (
+            <img
+              src={resizeSupabaseImage(imageUrl, 24, 20) || ''}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className={`absolute inset-0 w-full h-full object-cover lqip-blur ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}
+            />
+          )}
+          {/* Fallback skeleton only when no LQIP source */}
+          {!imageLoaded && !imageUrl && (
             <div className="absolute inset-0 bg-muted/30 animate-skeleton-shimmer skeleton-gradient" />
           )}
           <img 
@@ -153,7 +163,7 @@ const ProductCard = ({
             srcSet={srcSet}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
             alt={nameAr}
-            className={`w-full h-full object-cover group-hover:scale-103 transition-all duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`relative w-full h-full object-cover group-hover:scale-103 transition-all duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading={priority ? "eager" : "lazy"}
             {...({ fetchpriority: priority ? "high" : "auto" } as any)}
             decoding="async"
@@ -168,6 +178,7 @@ const ProductCard = ({
           />
         </div>
       </div>
+
       
       <h3 className="font-semibold text-xs leading-tight mb-0.5 text-foreground group-hover:text-primary transition-colors line-clamp-1">
         {displayName}

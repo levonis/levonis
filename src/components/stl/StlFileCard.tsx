@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Download, Eye, FileBox } from 'lucide-react';
 import type { StlFile } from '@/hooks/useStlFiles';
 import { useLanguage } from '@/lib/i18n';
+import ImageWithLoader from '@/components/ui/ImageWithLoader';
 
 export default function StlFileCard({ file }: { file: StlFile }) {
   const { language } = useLanguage();
@@ -20,18 +21,20 @@ export default function StlFileCard({ file }: { file: StlFile }) {
     >
       <div className="aspect-square bg-muted relative overflow-hidden">
         {file.cover_image_url ? (
-          <img
+          <ImageWithLoader
             src={file.cover_image_url}
             alt={title}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+            width={400}
+            containerClassName="w-full h-full"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 640px) 50vw, 25vw"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
             <FileBox className="h-12 w-12" />
           </div>
         )}
-        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/90 text-primary-foreground">
+        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/90 text-primary-foreground z-10">
           {priceLabel}
         </span>
       </div>

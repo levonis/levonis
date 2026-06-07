@@ -1,39 +1,37 @@
-## تحسين تحميل الصور بتأثير Blur (LQIP)
+## توسيع تأثير LQIP Blur ليشمل صفحات الموقع
 
-استبدال السكلتون الحالي بتأثير **LQIP** (Low-Quality Image Placeholder): يتم تحميل نسخة مصغرة (≈24px) ضبابية أولاً، ثم تظهر الصورة الأصلية بانتقال ناعم.
+تعميم تأثير LQIP الموجود حالياً في `ImageWithLoader` و `StoreBackgroundLayer` على باقي الصور المهمة في الموقع.
 
 ### النطاق
-- كل صور المنتجات والبطاقات
-- صور STL ومعرض الملفات
-- خلفيات المتاجر والصور الكبيرة (StoreBackgroundLayer)
-- جميع الصور التي تمر عبر `ImageWithLoader`
 
-### التنفيذ (Frontend فقط — لا تغيير في DB)
+**1. مكتبة STL (`src/pages/StlFileDetails.tsx` و `src/components/stl/StlFileCard.tsx`)**
+- استبدال `<img>` الخام لصورة الغلاف بـ `ImageWithLoader` (LQIP يعمل تلقائياً)
+- معرض الصور (gallery_images): تطبيق LQIP على كل صورة في الـ grid
 
-**1. تحديث `src/components/ui/ImageWithLoader.tsx`**
-- توليد URL مصغر (~24px, q=20) من `resizeSupabaseImage` كـ LQIP
-- عرض LQIP في طبقة `<img>` خلفية مع `filter: blur(20px) scale(1.1)` + `transform: scale(1.1)` لإخفاء حواف الـ blur
-- الصورة الأصلية فوقها مع `opacity-0` → `opacity-100` بانتقال 500ms
-- استبدال shimmer skeleton بـ LQIP (الـ skeleton يبقى fallback لحالة فقدان src)
-- الحفاظ على srcSet/sizes/fetchpriority الحالية
+**2. بطاقات المنتجات (صفحات المتجر)**
+- `src/components/ProductCard.tsx` — صورة المنتج الرئيسية في البطاقة
+- `src/components/ProductShopCard.tsx` — نفس الشيء لشاشة المتجر
 
-**2. تحديث `src/components/merchant/StoreBackgroundLayer.tsx`**
-- إضافة طبقة LQIP (نفس الـ URL بعرض 32px, q=15) خلف الـ `<img>` الرئيسية
-- blur 30px مع fade-out عندما تكتمل صورة الـ desktop
-- يحافظ على الـ decode-ahead الحالي ومستوى الـ veil
+**3. بطاقة ملف STL (`StlFileCard.tsx`)**
+- التحقق من نوع الصورة المستخدم وتحديثه لاستخدام `ImageWithLoader`
 
-**3. إضافة CSS utility في `src/index.css`**
-- `.lqip-blur` — `filter: blur(20px); transform: scale(1.08); transition: opacity 400ms ease-out;`
-- `.image-fade-in` — opacity transition + will-change
+### التنفيذ
+
+كل التعديلات تستخدم `ImageWithLoader` الموجود مسبقاً والذي يطبق LQIP تلقائياً (صورة 24px مضببة → تتلاشى للصورة الأصلية بانتقال 500ms). لا حاجة لمكون جديد.
+
+في الأماكن التي تستخدم `<img>` خام بدلاً من `ImageWithLoader`:
+- استبدالها مع الحفاظ على نفس الـ className والـ aspect ratio
+- تمرير `width` المناسب لتفعيل srcSet
+- استخدام `priority` فقط للصورة الأولى أو above-the-fold
 
 ### تفاصيل تقنية
-- LQIP يستخدم نفس endpoint الـ Supabase render: `?width=24&quality=20&format=webp` (سريع جداً، <5KB)
-- `aria-hidden` على طبقة LQIP لمنع تكرار alt text للـ screen readers
-- `pointer-events: none` على LQIP حتى لا يتعارض مع تفاعل الصورة
-- للصور غير-Supabase (مثل YouTube thumbnails)، fallback إلى skeleton shimmer الحالي
-- لا تغييرات على المنطق أو قواعد البيانات أو الـ RLS
+- الصور غير-Supabase ستحصل تلقائياً على fallback skeleton (LQIP يعمل فقط مع Supabase storage URLs)
+- الـ aspect-ratio محفوظ عبر container className
+- لا تغييرات على الـ logic أو DB أو RLS
+- لا إضافة CSS جديد — `.lqip-blur` موجود من الجولة السابقة
 
 ### الملفات المعدّلة
-- `src/components/ui/ImageWithLoader.tsx`
-- `src/components/merchant/StoreBackgroundLayer.tsx`
-- `src/index.css` (utilities فقط)
+- `src/pages/StlFileDetails.tsx`
+- `src/components/stl/StlFileCard.tsx`
+- `src/components/ProductCard.tsx`
+- `src/components/ProductShopCard.tsx`
