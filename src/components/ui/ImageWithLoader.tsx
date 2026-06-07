@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useMemo } from 'react';
+import { memo, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { resizeSupabaseImage, buildResponsiveSrcSet } from '@/lib/imageUtils';
 
 interface ImageWithLoaderProps {
@@ -21,8 +21,9 @@ function snapWidth(w?: number) {
 }
 
 /**
- * ImageWithLoader — LQIP blur-up pattern.
- * Loads a tiny 24px blurred version first, then fades in the full image.
+ * ImageWithLoader — LQIP blur-up without flicker.
+ * - Detects cached images on mount (skips fade-in entirely → no flash).
+ * - LQIP stays underneath; main image just fades in on top (no crossfade gap).
  */
 const ImageWithLoader = memo(({
   src,
@@ -36,14 +37,25 @@ const ImageWithLoader = memo(({
   srcSetWidths,
   sizes,
 }: ImageWithLoaderProps) => {
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [instant, setInstant] = useState(false);
 
   const handleLoad = useCallback(() => setIsLoaded(true), []);
   const handleError = useCallback(() => {
     setHasError(true);
     setIsLoaded(true);
   }, []);
+
+  // Detect images already in the browser cache to avoid a load-flash.
+  useEffect(() => {
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth > 0) {
+      setInstant(true);
+      setIsLoaded(true);
+    }
+  }, [src]);
 
   const baseWidth = snapWidth(width);
   const widths = useMemo(() => {
@@ -61,7 +73,6 @@ const ImageWithLoader = memo(({
     [src, widths, quality]
   );
 
-  // LQIP: tiny blurred preview (only works for Supabase storage URLs)
   const lqipSrc = useMemo(() => {
     const r = resizeSupabaseImage(src, 24, 20);
     return r && r !== src ? r : null;
@@ -69,22 +80,19 @@ const ImageWithLoader = memo(({
 
   return (
     <div className={`relative overflow-hidden ${containerClassName}`}>
-      {/* LQIP blurred preview layer */}
-      {lqipSrc && !hasError && (
+      {/* LQIP stays underneath — never fades out, so no gap between layers */}
+      {lqipSrc && !hasError && !instant && (
         <img
           src={lqipSrc}
           alt=""
           aria-hidden="true"
           draggable={false}
-          className={`absolute inset-0 w-full h-full object-cover lqip-blur ${
-            isLoaded ? 'opacity-0' : 'opacity-100'
-          }`}
+          className="absolute inset-0 w-full h-full object-cover lqip-blur opacity-100"
         />
       )}
 
-      {/* Fallback skeleton only when no LQIP available */}
       {!lqipSrc && !isLoaded && (
-        <div className="absolute inset-0 bg-muted/30 animate-skeleton-shimmer skeleton-gradient" />
+        <div className="absolute inset-0 bg-muted/20" />
       )}
 
       {hasError && (
@@ -94,6 +102,7 @@ const ImageWithLoader = memo(({
       )}
 
       <img
+        ref={imgRef}
         src={optimizedSrc}
         srcSet={srcSet}
         sizes={sizes ?? '(max-width: 640px) 50vw, 25vw'}
@@ -105,9 +114,9 @@ const ImageWithLoader = memo(({
         height={height}
         onLoad={handleLoad}
         onError={handleError}
-        className={`relative transition-opacity duration-500 ease-out ${
-          isLoaded ? 'opacity-100' : 'opacity-0'
-        } ${className}`}
+        className={`relative w-full h-full object-cover ${
+          instant ? '' : 'transition-opacity duration-300 ease-out'
+        } ${isLoaded ? 'opacity-100' : 'opacity-0'} ${className}`}
         style={{ maxWidth: width ? `${width}px` : undefined }}
       />
     </div>

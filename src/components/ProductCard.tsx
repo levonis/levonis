@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -61,19 +61,29 @@ const ProductCard = ({
   const resolvedCurrency = currency ?? t('product_default_currency');
   const [isAdding, setIsAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageInstant, setImageInstant] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const { getDiscount } = useProductCardDiscount();
   const cardDiscountInfo = getDiscount(cardDiscounts);
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
   const cardPrice = cardDiscountInfo ? price - cardDiscountInfo.discountAmount : null;
-  
+
   const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu, description_ar: descriptionAr, description_en: descriptionEn, description_ku: descriptionKu };
   const displayName = getLocalizedField(localProduct, 'name', language);
   const displayDescription = getLocalizedField(localProduct, 'description', language);
-  
+
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
   const optimizedImage = resizeSupabaseImage(displayImage, IMAGE_SIZES.card, IMAGE_QUALITY.medium);
   const srcSet = buildResponsiveSrcSet(displayImage, [200, 300, 400, 600], IMAGE_QUALITY.medium);
+
+  useEffect(() => {
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth > 0) {
+      setImageInstant(true);
+      setImageLoaded(true);
+    }
+  }, [optimizedImage]);
 
   const handleAddToFavorites = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -144,26 +154,23 @@ const ProductCard = ({
 
       <div className="relative mb-1.5">
         <div className="relative overflow-hidden rounded-md aspect-square bg-muted/20">
-          {/* LQIP blur-up placeholder */}
-          {imageUrl && (
+          {/* LQIP stays underneath until main image is loaded */}
+          {imageUrl && !imageInstant && (
             <img
               src={resizeSupabaseImage(imageUrl, 24, 20) || ''}
               alt=""
               aria-hidden="true"
               draggable={false}
-              className={`absolute inset-0 w-full h-full object-cover lqip-blur ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}
+              className="absolute inset-0 w-full h-full object-cover lqip-blur opacity-100"
             />
           )}
-          {/* Fallback skeleton only when no LQIP source */}
-          {!imageLoaded && !imageUrl && (
-            <div className="absolute inset-0 bg-muted/30 animate-skeleton-shimmer skeleton-gradient" />
-          )}
-          <img 
-            src={optimizedImage || '/placeholder.svg'} 
+          <img
+            ref={imgRef}
+            src={optimizedImage || '/placeholder.svg'}
             srcSet={srcSet}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
             alt={nameAr}
-            className={`relative w-full h-full object-cover group-hover:scale-103 transition-all duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`relative w-full h-full object-cover group-hover:scale-103 ${imageInstant ? 'transition-transform duration-500' : 'transition-opacity duration-300 ease-out'} ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading={priority ? "eager" : "lazy"}
             {...({ fetchpriority: priority ? "high" : "auto" } as any)}
             decoding="async"
