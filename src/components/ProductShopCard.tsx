@@ -169,16 +169,25 @@ const ProductShopCard = memo(({
             {/* Product Preview */}
             <div className="flex gap-3">
               {images[0] && (
-                <img 
-                  src={resizeSupabaseImage(images[0], 200, 75) || images[0]} 
-                  alt={product.title_ar}
-                  loading="lazy"
-                  decoding="async"
-                  width={80}
-                  height={80}
-                  className="w-20 h-20 rounded-lg object-cover"
-                />
+                <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted">
+                  <img
+                    src={resizeSupabaseImage(images[0], 24, 20) || ''}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover lqip-blur"
+                  />
+                  <img 
+                    src={resizeSupabaseImage(images[0], 200, 75) || images[0]} 
+                    alt={product.title_ar}
+                    loading="lazy"
+                    decoding="async"
+                    width={80}
+                    height={80}
+                    className="relative w-20 h-20 object-cover"
+                  />
+                </div>
               )}
+
               <div className="flex-1">
                 <h4 className="font-medium text-sm">{product.title_ar}</h4>
                 <p className="text-primary font-bold mt-1">{product.ticket_price.toLocaleString()} {product.currency}</p>
