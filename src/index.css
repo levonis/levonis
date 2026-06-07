@@ -1084,6 +1084,15 @@
   background-size: 200% 100%;
 }
 
+/* LQIP blur-up placeholder — tiny image rendered blurred under the full image */
+.lqip-blur {
+  filter: blur(20px) saturate(1.2);
+  transform: scale(1.1);
+  transition: opacity 500ms ease-out;
+  pointer-events: none;
+  will-change: opacity;
+}
+
 /* Content fade in for lazy loaded components */
 @keyframes content-fade {
   0% {
