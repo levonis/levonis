@@ -63,6 +63,20 @@ const ProductCard = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageInstant, setImageInstant] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const { getDiscount } = useProductCardDiscount();
+  const cardDiscountInfo = getDiscount(cardDiscounts);
+  const hasSale = originalPrice && originalPrice > price;
+  const savings = hasSale ? originalPrice - price : 0;
+  const cardPrice = cardDiscountInfo ? price - cardDiscountInfo.discountAmount : null;
+
+  const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu, description_ar: descriptionAr, description_en: descriptionEn, description_ku: descriptionKu };
+  const displayName = getLocalizedField(localProduct, 'name', language);
+  const displayDescription = getLocalizedField(localProduct, 'description', language);
+
+  const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
+  const optimizedImage = resizeSupabaseImage(displayImage, IMAGE_SIZES.card, IMAGE_QUALITY.medium);
+  const srcSet = buildResponsiveSrcSet(displayImage, [200, 300, 400, 600], IMAGE_QUALITY.medium);
+
   useEffect(() => {
     const el = imgRef.current;
     if (el && el.complete && el.naturalWidth > 0) {
@@ -70,19 +84,6 @@ const ProductCard = ({
       setImageLoaded(true);
     }
   }, [optimizedImage]);
-  const { getDiscount } = useProductCardDiscount();
-  const cardDiscountInfo = getDiscount(cardDiscounts);
-  const hasSale = originalPrice && originalPrice > price;
-  const savings = hasSale ? originalPrice - price : 0;
-  const cardPrice = cardDiscountInfo ? price - cardDiscountInfo.discountAmount : null;
-  
-  const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu, description_ar: descriptionAr, description_en: descriptionEn, description_ku: descriptionKu };
-  const displayName = getLocalizedField(localProduct, 'name', language);
-  const displayDescription = getLocalizedField(localProduct, 'description', language);
-  
-  const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
-  const optimizedImage = resizeSupabaseImage(displayImage, IMAGE_SIZES.card, IMAGE_QUALITY.medium);
-  const srcSet = buildResponsiveSrcSet(displayImage, [200, 300, 400, 600], IMAGE_QUALITY.medium);
 
   const handleAddToFavorites = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
