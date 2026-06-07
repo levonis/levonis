@@ -9,10 +9,8 @@ interface ImageWithLoaderProps {
   priority?: boolean;
   width?: number;
   height?: number;
-  quality?: number; // 1-100, default 75
-  /** Custom widths for the responsive srcSet. Defaults to a sensible ladder around `width`. */
+  quality?: number;
   srcSetWidths?: number[];
-  /** Custom `sizes` attribute. Defaults to "(max-width: 640px) 50vw, 25vw" for cards. */
   sizes?: string;
 }
 
@@ -23,9 +21,8 @@ function snapWidth(w?: number) {
 }
 
 /**
- * ImageWithLoader — auto-routes Supabase storage URLs through the WebP
- * render endpoint, builds a responsive srcSet, and shows a shimmer until
- * the image is decoded.
+ * ImageWithLoader — LQIP blur-up pattern.
+ * Loads a tiny 24px blurred version first, then fades in the full image.
  */
 const ImageWithLoader = memo(({
   src,
@@ -64,9 +61,29 @@ const ImageWithLoader = memo(({
     [src, widths, quality]
   );
 
+  // LQIP: tiny blurred preview (only works for Supabase storage URLs)
+  const lqipSrc = useMemo(() => {
+    const r = resizeSupabaseImage(src, 24, 20);
+    return r && r !== src ? r : null;
+  }, [src]);
+
   return (
     <div className={`relative overflow-hidden ${containerClassName}`}>
-      {!isLoaded && (
+      {/* LQIP blurred preview layer */}
+      {lqipSrc && !hasError && (
+        <img
+          src={lqipSrc}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className={`absolute inset-0 w-full h-full object-cover lqip-blur ${
+            isLoaded ? 'opacity-0' : 'opacity-100'
+          }`}
+        />
+      )}
+
+      {/* Fallback skeleton only when no LQIP available */}
+      {!lqipSrc && !isLoaded && (
         <div className="absolute inset-0 bg-muted/30 animate-skeleton-shimmer skeleton-gradient" />
       )}
 
@@ -88,7 +105,9 @@ const ImageWithLoader = memo(({
         height={height}
         onLoad={handleLoad}
         onError={handleError}
-        className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'} ${className}`}
+        className={`relative transition-opacity duration-500 ease-out ${
+          isLoaded ? 'opacity-100' : 'opacity-0'
+        } ${className}`}
         style={{ maxWidth: width ? `${width}px` : undefined }}
       />
     </div>
