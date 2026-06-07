@@ -191,10 +191,27 @@ function StoreBackgroundLayerImpl({
 
   const showImage = type === "image" && !!decodedUrl;
 
+  // LQIP: tiny blurred preview for image backgrounds while the full image decodes
+  const lqipUrl = useMemo(
+    () => (type === "image" && value ? pickBackgroundUrl(value, 32) : null),
+    [type, value],
+  );
+
   return (
     <div aria-hidden className={ROOT_CLASS}>
       {/* CSS wallpaper (color/gradient/glass fallback while image decodes). */}
       <div className={LAYER_CLASS} style={cssBgStyle} />
+
+      {/* LQIP blurred preview — shows instantly while full image decodes */}
+      {type === "image" && lqipUrl && (
+        <img
+          src={lqipUrl}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className={`${IMG_CLASS} lqip-blur ${decodedUrl ? "opacity-0" : "opacity-100"}`}
+        />
+      )}
 
       {/* Image wallpaper — responsive via srcSet, format-negotiated by Supabase. */}
       {showImage && (
