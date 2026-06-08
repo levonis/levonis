@@ -1,37 +1,44 @@
-## توسيع تأثير LQIP Blur ليشمل صفحات الموقع
+## المشكلة
 
-تعميم تأثير LQIP الموجود حالياً في `ImageWithLoader` و `StoreBackgroundLayer` على باقي الصور المهمة في الموقع.
+الوميض عند أول تحميل/تنقل بين الصفحات سببه تداخل تأثيرين على نفس اللحظة:
 
-### النطاق
+1. `RouteAwareSkeleton` يلفّ الـskeleton بـ `animate-in fade-in duration-300` → الـskeleton نفسه يبدأ شفافاً ثم يظهر تدريجياً (300ms).
+2. `PageTransition` على المحتوى الحقيقي يستخدم `animate-page-enter` (translateY + opacity 400ms) — معطّل على الموبايل لكن لا يزال نشطاً على الديسكتوب.
 
-**1. مكتبة STL (`src/pages/StlFileDetails.tsx` و `src/components/stl/StlFileCard.tsx`)**
-- استبدال `<img>` الخام لصورة الغلاف بـ `ImageWithLoader` (LQIP يعمل تلقائياً)
-- معرض الصور (gallery_images): تطبيق LQIP على كل صورة في الـ grid
+النتيجة: في أول 300ms من فتح أي صفحة، الـskeleton يومض من شفاف إلى ظاهر، ثم يُستبدل فجأة بالمحتوى الحقيقي = إحساس بقفزة/وميض.
 
-**2. بطاقات المنتجات (صفحات المتجر)**
-- `src/components/ProductCard.tsx` — صورة المنتج الرئيسية في البطاقة
-- `src/components/ProductShopCard.tsx` — نفس الشيء لشاشة المتجر
+## الحل
 
-**3. بطاقة ملف STL (`StlFileCard.tsx`)**
-- التحقق من نوع الصورة المستخدم وتحديثه لاستخدام `ImageWithLoader`
+اجعل الـskeleton يظهر فوراً بدون أي fade (هو placeholder، يجب أن يكون موجوداً منذ اللحظة 0)، واترك المحتوى الحقيقي ينزلق بسلاسة فوقه.
 
-### التنفيذ
+### التغييرات
 
-كل التعديلات تستخدم `ImageWithLoader` الموجود مسبقاً والذي يطبق LQIP تلقائياً (صورة 24px مضببة → تتلاشى للصورة الأصلية بانتقال 500ms). لا حاجة لمكون جديد.
+**1. `src/components/RouteAwareSkeleton.tsx`**
+- إزالة `<div className="animate-in fade-in duration-300 ease-out">` الذي يلفّ الـskeleton.
+- إرجاع الـskeleton مباشرة بدون أي wrapper animation → يظهر فوراً عند suspension بدون وميض.
 
-في الأماكن التي تستخدم `<img>` خام بدلاً من `ImageWithLoader`:
-- استبدالها مع الحفاظ على نفس الـ className والـ aspect ratio
-- تمرير `width` المناسب لتفعيل srcSet
-- استخدام `priority` فقط للصورة الأولى أو above-the-fold
+**2. `src/components/ui/PageTransition.tsx`**
+- تخفيف الحركة إلى opacity فقط بدون `translateY` (الـtranslateY يسبب الإحساس بـ"قفزة" خاصة عند الانتقال من skeleton للمحتوى).
+- تقليل المدة من 400ms إلى 200ms وتأخير بسيط (0ms) ليبدأ فور mount.
 
-### تفاصيل تقنية
-- الصور غير-Supabase ستحصل تلقائياً على fallback skeleton (LQIP يعمل فقط مع Supabase storage URLs)
-- الـ aspect-ratio محفوظ عبر container className
-- لا تغييرات على الـ logic أو DB أو RLS
-- لا إضافة CSS جديد — `.lqip-blur` موجود من الجولة السابقة
+**3. `src/index.css`** (تحديث keyframe `page-enter`)
+- تبسيط الـkeyframe: `opacity 0 → 1` فقط، مدة 200ms، easing `ease-out`.
+- إبقاء التعطيل على الموبايل كما هو (لا حاجة لأي حركة على الموبايل أصلاً).
+
+### لماذا يحل هذا الومضة
+
+- قبل: skeleton يظهر بـfade 300ms → محتوى يدخل بـtranslateY+fade 400ms = طبقتان متحركتان متتاليتان.
+- بعد: skeleton يظهر فوراً (0ms) → محتوى يحلّ محله بـfade خفيف 200ms فقط = انتقال واحد سلس، بدون قفز محور Y، بدون وميض في البداية.
+
+### ما لن يتغير
+
+- منطق `pickSkeleton` (الأشكال الخاصة بكل route تبقى كما هي).
+- LQIP blur على الصور كما هو (يعالج وميض الصور، ليس وميض الصفحات).
+- آلية stuck recovery في `RouteSuspenseFallback`.
+- لا تعديل على أي business logic، DB، أو RLS.
 
 ### الملفات المعدّلة
-- `src/pages/StlFileDetails.tsx`
-- `src/components/stl/StlFileCard.tsx`
-- `src/components/ProductCard.tsx`
-- `src/components/ProductShopCard.tsx`
+
+- `src/components/RouteAwareSkeleton.tsx` (سطر واحد: إزالة الـwrapper).
+- `src/components/ui/PageTransition.tsx` (تبسيط className/style).
+- `src/index.css` (تحديث keyframe `page-enter`).
