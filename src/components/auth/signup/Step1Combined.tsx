@@ -25,18 +25,22 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
     if (!validateUsername(username)) { setUsernameAvailable(null); return null; }
     setCheckingUsername(true);
     try {
-      const { data: existing } = await supabase
-        .from('profiles').select('username').ilike('username', username).maybeSingle();
-      const available = !existing;
-      setUsernameAvailable(available);
-      return available;
+      const { data: available, error } = await supabase
+        .rpc('check_username_available', { username_to_check: username });
+      if (error) { setUsernameAvailable(null); return null; }
+      const ok = !!available;
+      setUsernameAvailable(ok);
+      return ok;
     } finally { setCheckingUsername(false); }
   };
 
-  const checkEmailRegistered = async (email: string): Promise<boolean> => {
-    const { data: existing } = await supabase
-      .from('profiles').select('id').eq('email', email.trim().toLowerCase()).maybeSingle();
-    return !!existing;
+  const handleUsernameChange = (value: string) => {
+    updateData({ username: value });
+    setUsernameAvailable(null);
+    if (usernameTimeoutRef.current) clearTimeout(usernameTimeoutRef.current);
+    if (value.length >= 3) {
+      usernameTimeoutRef.current = setTimeout(() => checkUsername(value), 500);
+    }
   };
 
   const handleUsernameChange = (value: string) => {
