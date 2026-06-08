@@ -64,7 +64,6 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
     return Object.keys(e).length === 0 && uAvail !== false;
   };
 
-  const [verifyingEmail, setVerifyingEmail] = useState(false);
 
   const handleNext = async () => {
     // Cancel any pending debounce + run username check synchronously
