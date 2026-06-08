@@ -72,7 +72,7 @@ export default function Step2EmailVerification({
         body: { email: data.email, code, type: 'signup' },
       });
       if (error || !res?.success) {
-        toast.error(res?.error || t('signup_otp_invalid') || 'رمز غير صحيح');
+        toast.error(res?.error || 'رمز غير صحيح');
         setDigits(['', '', '', '', '', '']);
         updateData({ verificationCode: '' });
         inputsRef.current[0]?.focus();
