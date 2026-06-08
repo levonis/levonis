@@ -21,14 +21,22 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
   const isPasswordStrong = (p: string) =>
     p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p);
 
-  const checkUsername = async (username: string) => {
-    if (!validateUsername(username)) { setUsernameAvailable(null); return; }
+  const checkUsername = async (username: string): Promise<boolean | null> => {
+    if (!validateUsername(username)) { setUsernameAvailable(null); return null; }
     setCheckingUsername(true);
     try {
       const { data: existing } = await supabase
         .from('profiles').select('username').ilike('username', username).maybeSingle();
-      setUsernameAvailable(!existing);
+      const available = !existing;
+      setUsernameAvailable(available);
+      return available;
     } finally { setCheckingUsername(false); }
+  };
+
+  const checkEmailRegistered = async (email: string): Promise<boolean> => {
+    const { data: existing } = await supabase
+      .from('profiles').select('id').eq('email', email.trim().toLowerCase()).maybeSingle();
+    return !!existing;
   };
 
   const handleUsernameChange = (value: string) => {
@@ -40,7 +48,7 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
     }
   };
 
-  const validateForm = () => {
+  const validateForm = (overrideUsernameAvailable?: boolean | null) => {
     const e: Record<string, string> = {};
     if (!data.email) e.email = t('signup_email_required');
     else if (!validateEmail(data.email)) e.email = t('signup_email_invalid');
@@ -51,23 +59,43 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
     if (!data.fullName) e.fullName = t('signup_full_name_required');
     else if (data.fullName.length > 15) e.fullName = t('signup_full_name_too_long');
 
+    const uAvail = overrideUsernameAvailable !== undefined ? overrideUsernameAvailable : usernameAvailable;
     if (!data.username) e.username = t('signup_username_required');
     else if (!validateUsername(data.username)) e.username = t('signup_username_invalid');
-    else if (usernameAvailable === false) e.username = t('signup_username_taken');
+    else if (uAvail === false) e.username = t('signup_username_taken');
 
     setErrors(e);
-    return Object.keys(e).length === 0 && usernameAvailable !== false;
+    return Object.keys(e).length === 0 && uAvail !== false;
   };
 
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+
   const handleNext = async () => {
-    if (usernameAvailable === null && validateUsername(data.username)) {
-      await checkUsername(data.username);
+    // Cancel any pending debounce + run username check synchronously
+    if (usernameTimeoutRef.current) {
+      clearTimeout(usernameTimeoutRef.current);
+      usernameTimeoutRef.current = null;
     }
-    if (validateForm()) {
-      // Mirror password to confirmPassword for downstream submit logic
-      updateData({ confirmPassword: data.password });
-      onNext();
+    let uAvail = usernameAvailable;
+    if (validateUsername(data.username)) {
+      uAvail = await checkUsername(data.username);
     }
+    if (!validateForm(uAvail)) return;
+
+    // Verify email isn't already registered BEFORE proceeding (parent will send OTP)
+    setVerifyingEmail(true);
+    try {
+      const taken = await checkEmailRegistered(data.email);
+      if (taken) {
+        setErrors((prev) => ({ ...prev, email: t('signup_email_already') }));
+        return;
+      }
+    } finally {
+      setVerifyingEmail(false);
+    }
+
+    updateData({ confirmPassword: data.password });
+    onNext();
   };
 
   const startSide = isRtl ? 'right-3' : 'left-3';
@@ -160,9 +188,9 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
         {errors.username && <p className="text-xs text-destructive">{errors.username}</p>}
       </div>
 
-      <Button onClick={handleNext} disabled={loading || checkingUsername}
+      <Button onClick={handleNext} disabled={loading || checkingUsername || verifyingEmail}
         className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-base">
-        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+        {(loading || verifyingEmail) ? <Loader2 className="w-5 h-5 animate-spin" /> : (
           <>
             {t('signup_next')}
             <ArrowLeft className={cn("w-4 h-4", isRtl ? "mr-2" : "ml-2 rotate-180")} />
