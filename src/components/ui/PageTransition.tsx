@@ -11,12 +11,9 @@ interface PageTransitionProps {
  */
 const PageTransition = memo(({ children, className = '' }: PageTransitionProps) => {
   return (
-    <div 
+    <div
       className={`animate-page-enter ${className}`}
-      style={{ 
-        willChange: 'opacity, transform',
-        contain: 'layout'
-      }}
+      style={{ willChange: 'opacity', contain: 'layout' }}
     >
       {children}
     </div>
