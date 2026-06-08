@@ -19,7 +19,7 @@ export default function Step2EmailVerification({
   onVerified,
   submitting,
 }: Props) {
-  const { t, isRtl } = useLanguage();
+  const { isRtl } = useLanguage();
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
