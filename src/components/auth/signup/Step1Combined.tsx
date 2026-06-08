@@ -25,18 +25,13 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
     if (!validateUsername(username)) { setUsernameAvailable(null); return null; }
     setCheckingUsername(true);
     try {
-      const { data: existing } = await supabase
-        .from('profiles').select('username').ilike('username', username).maybeSingle();
-      const available = !existing;
-      setUsernameAvailable(available);
-      return available;
+      const { data: available, error } = await supabase
+        .rpc('check_username_available', { username_to_check: username });
+      if (error) { setUsernameAvailable(null); return null; }
+      const ok = !!available;
+      setUsernameAvailable(ok);
+      return ok;
     } finally { setCheckingUsername(false); }
-  };
-
-  const checkEmailRegistered = async (email: string): Promise<boolean> => {
-    const { data: existing } = await supabase
-      .from('profiles').select('id').eq('email', email.trim().toLowerCase()).maybeSingle();
-    return !!existing;
   };
 
   const handleUsernameChange = (value: string) => {
@@ -47,6 +42,7 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
       usernameTimeoutRef.current = setTimeout(() => checkUsername(value), 500);
     }
   };
+
 
   const validateForm = (overrideUsernameAvailable?: boolean | null) => {
     const e: Record<string, string> = {};
@@ -68,7 +64,6 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
     return Object.keys(e).length === 0 && uAvail !== false;
   };
 
-  const [verifyingEmail, setVerifyingEmail] = useState(false);
 
   const handleNext = async () => {
     // Cancel any pending debounce + run username check synchronously
@@ -81,18 +76,6 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
       uAvail = await checkUsername(data.username);
     }
     if (!validateForm(uAvail)) return;
-
-    // Verify email isn't already registered BEFORE proceeding (parent will send OTP)
-    setVerifyingEmail(true);
-    try {
-      const taken = await checkEmailRegistered(data.email);
-      if (taken) {
-        setErrors((prev) => ({ ...prev, email: t('signup_email_already') }));
-        return;
-      }
-    } finally {
-      setVerifyingEmail(false);
-    }
 
     updateData({ confirmPassword: data.password });
     onNext();
@@ -188,9 +171,9 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
         {errors.username && <p className="text-xs text-destructive">{errors.username}</p>}
       </div>
 
-      <Button onClick={handleNext} disabled={loading || checkingUsername || verifyingEmail}
+      <Button onClick={handleNext} disabled={loading || checkingUsername}
         className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-base">
-        {(loading || verifyingEmail) ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
           <>
             {t('signup_next')}
             <ArrowLeft className={cn("w-4 h-4", isRtl ? "mr-2" : "ml-2 rotate-180")} />

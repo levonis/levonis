@@ -35,18 +35,23 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
     setLoading(true);
     try {
       const email = formData.email.trim().toLowerCase();
-      const { data: existingProfile } = await supabase
-        .from('profiles').select('id').eq('email', email).maybeSingle();
-      if (existingProfile) {
-        toast.error(t('signup_email_already'));
-        return;
-      }
 
       const { data: res, error } = await supabase.functions.invoke('send-verification-code', {
         body: { email, type: 'signup' },
       });
+
+      // Extract server error body when invoke returns non-2xx
+      let serverMsg: string | undefined;
+      if (error && (error as any).context?.json) {
+        try {
+          const body = await (error as any).context.json();
+          serverMsg = body?.error;
+        } catch {}
+      }
+
       if (error || !res?.success) {
-        toast.error(res?.error || 'تعذر إرسال رمز التحقق');
+        const msg = res?.error || serverMsg || 'تعذر إرسال رمز التحقق';
+        toast.error(msg);
         return;
       }
       setCurrentStep(2);

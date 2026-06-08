@@ -240,6 +240,22 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
     }
+
+    // For signup, block if email is already registered
+    if (type === 'signup') {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('email', email)
+        .limit(1)
+        .maybeSingle();
+      if (existing?.id) {
+        return new Response(
+          JSON.stringify({ success: false, error: "البريد الإلكتروني مسجّل مسبقاً", code: "email_exists" }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
     // For signup, no user existence check needed - just send the code
 
     // Check rate limiting - max 3 codes per email per hour
