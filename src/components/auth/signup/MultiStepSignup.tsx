@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { trackMetaEvent } from '@/lib/metaPixel';
 import Step1Combined from './Step1Combined';
-import Step2QuickReview from './Step2QuickReview';
+import Step2EmailVerification from './Step2EmailVerification';
 import { SignupFormData, initialFormData } from './types';
 import { useLanguage } from '@/lib/i18n';
 
@@ -34,18 +34,28 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
   const handleStep1Next = async () => {
     setLoading(true);
     try {
+      const email = formData.email.trim().toLowerCase();
       const { data: existingProfile } = await supabase
-        .from('profiles').select('id').eq('email', formData.email.trim().toLowerCase()).maybeSingle();
+        .from('profiles').select('id').eq('email', email).maybeSingle();
       if (existingProfile) {
         toast.error(t('signup_email_already'));
         return;
       }
+
+      const { data: res, error } = await supabase.functions.invoke('send-verification-code', {
+        body: { email, type: 'signup' },
+      });
+      if (error || !res?.success) {
+        toast.error(res?.error || 'تعذر إرسال رمز التحقق');
+        return;
+      }
+      setCurrentStep(2);
     } catch (e: any) {
-      console.warn('Email check failed, continuing:', e?.message);
+      console.error('Step1 next failed:', e);
+      toast.error(e?.message || 'حدث خطأ');
     } finally {
       setLoading(false);
     }
-    setCurrentStep(2);
   };
 
   const handleFinalSubmit = async () => {
@@ -163,12 +173,12 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
           loading={loading}
         />
       ) : (
-        <Step2QuickReview
+        <Step2EmailVerification
           data={formData}
           updateData={updateFormData}
           onNext={() => {}}
           onBack={() => setCurrentStep(1)}
-          onSubmit={handleFinalSubmit}
+          onVerified={handleFinalSubmit}
           loading={loading}
           submitting={submitting}
         />
