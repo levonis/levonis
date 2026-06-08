@@ -7,6 +7,47 @@ import { installFriendlyFunctionErrorMessages } from "@/lib/functionErrors";
 
 installFriendlyFunctionErrorMessages();
 
+// Stale chunk recovery — after a new deploy, the old HTML still references
+// JS chunks that no longer exist on the CDN. Detect that specific failure
+// and reload once (guarded against loops).
+const isStaleChunkError = (msg: string) =>
+  /Importing a module script failed|Failed to fetch dynamically imported module|Loading chunk \d+ failed|ChunkLoadError|error loading dynamically imported module/i.test(msg);
+
+const recoverFromStaleChunk = async () => {
+  try {
+    if (sessionStorage.getItem('__levo_chunk_reload_v1') === '1') return;
+    sessionStorage.setItem('__levo_chunk_reload_v1', '1');
+  } catch {}
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {}
+  window.location.reload();
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (e) => {
+    const msg = e?.message || (e?.error && String(e.error?.message || e.error)) || '';
+    if (isStaleChunkError(msg)) recoverFromStaleChunk();
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const msg = String((e as any)?.reason?.message || (e as any)?.reason || '');
+    if (isStaleChunkError(msg)) recoverFromStaleChunk();
+  });
+  // Clear the guard after a successful first paint so future deploys can recover again.
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      try { sessionStorage.removeItem('__levo_chunk_reload_v1'); } catch {}
+    }, 4000);
+  });
+}
+
 // Defer non-critical perf instrumentation until the browser is idle so it
 // never competes with first paint on slow devices.
 const idle = (cb: () => void) => {
