@@ -182,7 +182,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
             onClick={onSwitchToLogin}
             className="text-primary hover:underline font-medium"
           >
-            {t('login_title') || 'تسجيل الدخول'}
+            تسجيل الدخول
           </button>
         </p>
       )}
