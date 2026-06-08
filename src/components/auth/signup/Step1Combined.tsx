@@ -43,14 +43,6 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
     }
   };
 
-  const handleUsernameChange = (value: string) => {
-    updateData({ username: value });
-    setUsernameAvailable(null);
-    if (usernameTimeoutRef.current) clearTimeout(usernameTimeoutRef.current);
-    if (value.length >= 3) {
-      usernameTimeoutRef.current = setTimeout(() => checkUsername(value), 500);
-    }
-  };
 
   const validateForm = (overrideUsernameAvailable?: boolean | null) => {
     const e: Record<string, string> = {};
@@ -85,18 +77,6 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
       uAvail = await checkUsername(data.username);
     }
     if (!validateForm(uAvail)) return;
-
-    // Verify email isn't already registered BEFORE proceeding (parent will send OTP)
-    setVerifyingEmail(true);
-    try {
-      const taken = await checkEmailRegistered(data.email);
-      if (taken) {
-        setErrors((prev) => ({ ...prev, email: t('signup_email_already') }));
-        return;
-      }
-    } finally {
-      setVerifyingEmail(false);
-    }
 
     updateData({ confirmPassword: data.password });
     onNext();
