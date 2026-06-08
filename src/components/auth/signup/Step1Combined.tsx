@@ -171,9 +171,9 @@ export default function Step1Combined({ data, updateData, onNext, loading }: Sig
         {errors.username && <p className="text-xs text-destructive">{errors.username}</p>}
       </div>
 
-      <Button onClick={handleNext} disabled={loading || checkingUsername || verifyingEmail}
+      <Button onClick={handleNext} disabled={loading || checkingUsername}
         className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-base">
-        {(loading || verifyingEmail) ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
           <>
             {t('signup_next')}
             <ArrowLeft className={cn("w-4 h-4", isRtl ? "mr-2" : "ml-2 rotate-180")} />
