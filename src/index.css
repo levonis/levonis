@@ -930,18 +930,12 @@
 
 /* Page entrance animation */
 @keyframes page-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 .animate-page-enter {
-  animation: page-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: page-enter 0.2s ease-out forwards;
 }
 
 /* Loader animations */
