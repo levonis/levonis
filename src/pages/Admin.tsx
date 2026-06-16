@@ -1314,6 +1314,25 @@ const Admin = () => {
     toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات${hasShippingCalc ? '، + سعر الشحن' : ''})`);
   };
 
+  // Publish a pending-review product (admin only). Clears the pending flag and marks pricing updated.
+  const handlePublishPendingProduct = async (product: any) => {
+    if (!isAdmin) return;
+    try {
+      await adminUpdateProduct(product.id, {
+        pending_admin_review: false,
+        is_pricing_updated: true,
+        updated_at: new Date().toISOString(),
+      } as any);
+      queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] === 'products' || q.queryKey[0] === 'featured-products'),
+      });
+      toast.success('تم نشر المنتج للمستخدمين');
+    } catch (e) {
+      console.error('[Admin] publish pending failed:', e);
+      toast.error('فشل نشر المنتج');
+    }
+
   // Legacy shipping functions removed - now handled by AdminProductPricingSection
 
   // Toggle product visibility (is_pricing_updated)
