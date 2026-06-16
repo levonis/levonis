@@ -333,50 +333,6 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     return { rate, priceIqd, results };
   }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
 
-  // Assistants: show ONLY dimensions/weight inputs + locked commission note.
-  if (!isAdmin) {
-    return (
-      <div className="space-y-3 border-t pt-4">
-        <input type="hidden" name="has_pre_order_pricing" value={editingProduct?.has_pre_order ? 'true' : 'false'} />
-        <input type="hidden" name="has_in_stock_pricing" value={editingProduct?.has_in_stock ? 'true' : 'false'} />
-        <input type="hidden" name="shipping_type" value={editingProduct?.shipping_type || 'sea'} />
-
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Package className="h-4 w-4" />
-          <span>الأبعاد والوزن (لحساب CBM / الكيلو)</span>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="length_cm" className="text-xs">الطول (سم)</Label>
-            <Input id="length_cm" name="length_cm" type="number" step="0.1" min="0"
-              value={lengthCm || ''} onChange={(e) => setLengthCm(Number(e.target.value))} placeholder="0" />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="width_cm" className="text-xs">العرض (سم)</Label>
-            <Input id="width_cm" name="width_cm" type="number" step="0.1" min="0"
-              value={widthCm || ''} onChange={(e) => setWidthCm(Number(e.target.value))} placeholder="0" />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="height_cm" className="text-xs">الارتفاع (سم)</Label>
-            <Input id="height_cm" name="height_cm" type="number" step="0.1" min="0"
-              value={heightCm || ''} onChange={(e) => setHeightCm(Number(e.target.value))} placeholder="0" />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="weight_kg" className="text-xs">الوزن (كغ)</Label>
-          <Input id="weight_kg" name="weight_kg" type="number" step="any" min="0"
-            value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="0" />
-        </div>
-
-        <div className="rounded-lg border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground flex items-center justify-center gap-2">
-          <Lock className="h-3.5 w-3.5" />
-          العمولة والأرباح والتكاليف وسعر التكلفة مخفية عن المساعدين — سيتولّاها الأدمن
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 border-t pt-4">
