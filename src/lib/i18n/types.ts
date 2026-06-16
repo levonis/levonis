@@ -926,6 +926,7 @@ export type TranslationKeys = {
   cart_products_count: string;
 
   profile_admin_panel: string;
+  profile_assistant_panel: string;
   profile_default_username: string;
   profile_points_to_next: string;
   profile_level_complete: string;
