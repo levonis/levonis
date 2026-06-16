@@ -60,6 +60,19 @@ export default function QuickServicesGrid() {
       <h2 className="text-base font-bold text-foreground mb-3">{t('profile_quick_services')}</h2>
 
       <div className="grid grid-cols-4 gap-3">
+        {showAdminEntry && (
+          <button
+            onClick={() => navigate(ADMIN_BASE_PATH)}
+            className="relative flex flex-col items-center gap-2 py-2 rounded-2xl transition-all duration-200 active:scale-[0.93]"
+          >
+            <div className="relative flex items-center justify-center h-11 w-11 rounded-2xl bg-primary/15 text-primary">
+              <LayoutDashboard className="h-5 w-5" strokeWidth={1.5} />
+            </div>
+            <span className="text-[11px] text-muted-foreground text-center leading-tight">
+              {isAdmin ? 'لوحة الإدارة' : 'لوحة المساعد'}
+            </span>
+          </button>
+        )}
         {SERVICES.map((s) => {
           const Icon = s.icon;
           const badge = s.key === "notifications" && unreadCount ? unreadCount : 0;
