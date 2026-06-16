@@ -36,8 +36,9 @@ const SERVICES: Array<{
 
 export default function QuickServicesGrid() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin, isAssistant } = useAuth();
   const { t } = useLanguage();
+  const showAdminEntry = isAdmin || isAssistant;
 
   const { data: unreadCount } = useQuery({
     queryKey: ["unread-notifications-count", user?.id],
