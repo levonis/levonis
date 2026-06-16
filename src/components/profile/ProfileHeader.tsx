@@ -32,7 +32,7 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHeaderProps) {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAssistant } = useAuth();
   const { t, language } = useLanguage();
   const [walletOpen, setWalletOpen] = useState(false);
   const [savingsOpen, setSavingsOpen] = useState(false);
