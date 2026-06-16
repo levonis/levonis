@@ -228,14 +228,23 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       >
         {/* Glassmorphism overlay */}
         <div className="relative p-5 backdrop-blur-xl">
-          {/* Admin quick access */}
-          {isAdmin && (
+          {/* Admin / Assistant quick access */}
+          {(isAdmin || isAssistant) && (
             <button
-              onClick={() => navigate(ADMIN_ROUTES.dashboard)}
+              onClick={() => navigate(isAdmin ? ADMIN_ROUTES.dashboard : ADMIN_BASE_PATH)}
               className="absolute top-3 left-3 flex items-center gap-1.5 rounded-xl bg-white/20 backdrop-blur-md border border-white/25 px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 active:scale-[0.95] hover:bg-white/30 z-10"
             >
-              <Shield className="h-3.5 w-3.5" />
-              <span>{t('profile_admin_panel')}</span>
+              {isAdmin ? (
+                <>
+                  <Shield className="h-3.5 w-3.5" />
+                  <span>{t('profile_admin_panel')}</span>
+                </>
+              ) : (
+                <>
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  <span>{t('profile_assistant_panel')}</span>
+                </>
+              )}
             </button>
           )}
 
