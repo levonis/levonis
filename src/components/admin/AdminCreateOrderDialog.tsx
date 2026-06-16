@@ -12,6 +12,7 @@ import { Loader2, Search, User, Package, Plus, Minus, Trash2, X } from 'lucide-r
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { adminCreateOrder } from '@/lib/adminMutations';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OrderItem {
   product_id: string;
@@ -30,6 +31,8 @@ interface AdminCreateOrderDialogProps {
 
 const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogProps) => {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
+
 
   // User search state
   const [userSearchTerm, setUserSearchTerm] = useState('');
@@ -373,7 +376,7 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                       <div className="flex-1">
                         <p className="font-medium">{product.name_ar}</p>
                         <p className="text-xs text-muted-foreground">
-                          السعر: {formatPrice(product.price)} • التكلفة: {formatPrice(product.cost_price || 0)}
+                          السعر: {formatPrice(product.price)}{isAdmin && <> • التكلفة: {formatPrice(product.cost_price || 0)}</>}
                         </p>
                       </div>
                       <Plus className="h-4 w-4 text-primary" />
@@ -399,7 +402,7 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                       <div className="flex-1 space-y-2">
                         <p className="font-medium text-sm">{item.product_name_ar}</p>
                         
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
                           {/* Quantity */}
                           <div className="flex items-center gap-1">
                             <Button
@@ -434,16 +437,18 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                             />
                           </div>
                           
-                          {/* Cost Price */}
-                          <div>
-                            <Label className="text-xs text-muted-foreground">التكلفة</Label>
-                            <Input
-                              type="number"
-                              value={item.cost_price}
-                              onChange={(e) => updateItemPrice(index, 'cost_price', parseFloat(e.target.value) || 0)}
-                              className="h-8 text-sm"
-                            />
-                          </div>
+                          {/* Cost Price — admin only */}
+                          {isAdmin && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">التكلفة</Label>
+                              <Input
+                                type="number"
+                                value={item.cost_price}
+                                onChange={(e) => updateItemPrice(index, 'cost_price', parseFloat(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                       
@@ -460,23 +465,27 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                   </Card>
                 ))}
                 
-                {/* Totals Summary */}
+                {/* Totals Summary — cost/profit hidden from assistants */}
                 <Card className="p-4 bg-muted/50">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-1'} gap-4 text-sm`}>
                     <div>
                       <p className="text-muted-foreground">إجمالي المبيعات</p>
                       <p className="font-bold text-lg">{formatPrice(totals.totalRevenue)}</p>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground">إجمالي التكلفة</p>
-                      <p className="font-bold text-lg text-orange-600">{formatPrice(totals.totalCost)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">الربح المتوقع</p>
-                      <p className={`font-bold text-lg ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatPrice(totals.profit)}
-                      </p>
-                    </div>
+                    {isAdmin && (
+                      <>
+                        <div>
+                          <p className="text-muted-foreground">إجمالي التكلفة</p>
+                          <p className="font-bold text-lg text-orange-600">{formatPrice(totals.totalCost)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">الربح المتوقع</p>
+                          <p className={`font-bold text-lg ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatPrice(totals.profit)}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </Card>
               </div>

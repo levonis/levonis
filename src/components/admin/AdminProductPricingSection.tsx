@@ -4,11 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck } from 'lucide-react';
+import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck, Lock } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AdminProductPricingSectionProps {
   editingProduct: any;
@@ -16,7 +17,10 @@ interface AdminProductPricingSectionProps {
 }
 
 const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProductPricingSectionProps) => {
+  const { isAdmin } = useAuth();
   const { data: shippingSettings } = useShippingSettings();
+
+
 
   // Fetch delivery methods to determine which categories support personal delivery
   const { data: personalDeliveryCategoryIds = [] } = useQuery({
@@ -328,6 +332,16 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
     return { rate, priceIqd, results };
   }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
+
+  // Assistants must NOT see commission, profit, cost or shipping details.
+  if (!isAdmin) {
+    return (
+      <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+        <Lock className="h-4 w-4" />
+        تفاصيل التسعير والعمولة والتكاليف مخفية عن المساعدين
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 border-t pt-4">
