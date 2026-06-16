@@ -9379,6 +9379,8 @@ export type Database = {
         Row: {
           available_for_direct_sale: boolean | null
           available_for_pre_order: boolean | null
+          cost_iqd: number | null
+          cost_usd: number | null
           created_at: string
           id: string
           image_url: string | null
@@ -9397,6 +9399,8 @@ export type Database = {
         Insert: {
           available_for_direct_sale?: boolean | null
           available_for_pre_order?: boolean | null
+          cost_iqd?: number | null
+          cost_usd?: number | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -9415,6 +9419,8 @@ export type Database = {
         Update: {
           available_for_direct_sale?: boolean | null
           available_for_pre_order?: boolean | null
+          cost_iqd?: number | null
+          cost_usd?: number | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -9458,6 +9464,7 @@ export type Database = {
           commission_sea_iqd: number | null
           cost_price: number | null
           created_at: string | null
+          created_by_assistant: string | null
           currency: string | null
           description: string | null
           description_ar: string | null
@@ -9485,6 +9492,7 @@ export type Database = {
           original_price: number | null
           original_price_usd: number | null
           other_costs_iqd: number | null
+          pending_admin_review: boolean
           personal_delivery_cost: number
           points_reward: number | null
           pre_order_fast_shipping_price: number | null
@@ -9529,6 +9537,7 @@ export type Database = {
           commission_sea_iqd?: number | null
           cost_price?: number | null
           created_at?: string | null
+          created_by_assistant?: string | null
           currency?: string | null
           description?: string | null
           description_ar?: string | null
@@ -9556,6 +9565,7 @@ export type Database = {
           original_price?: number | null
           original_price_usd?: number | null
           other_costs_iqd?: number | null
+          pending_admin_review?: boolean
           personal_delivery_cost?: number
           points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
@@ -9600,6 +9610,7 @@ export type Database = {
           commission_sea_iqd?: number | null
           cost_price?: number | null
           created_at?: string | null
+          created_by_assistant?: string | null
           currency?: string | null
           description?: string | null
           description_ar?: string | null
@@ -9627,6 +9638,7 @@ export type Database = {
           original_price?: number | null
           original_price_usd?: number | null
           other_costs_iqd?: number | null
+          pending_admin_review?: boolean
           personal_delivery_cost?: number
           points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
@@ -13741,6 +13753,7 @@ export type Database = {
           commission_sea_iqd: number | null
           cost_price: number | null
           created_at: string | null
+          created_by_assistant: string | null
           currency: string | null
           description: string | null
           description_ar: string | null
@@ -13768,6 +13781,7 @@ export type Database = {
           original_price: number | null
           original_price_usd: number | null
           other_costs_iqd: number | null
+          pending_admin_review: boolean | null
           personal_delivery_cost: number | null
           points_reward: number | null
           pre_order_fast_shipping_price: number | null
@@ -14028,6 +14042,7 @@ export type Database = {
           commission_sea_iqd: number | null
           cost_price: number | null
           created_at: string | null
+          created_by_assistant: string | null
           currency: string | null
           description: string | null
           description_ar: string | null
@@ -14055,6 +14070,7 @@ export type Database = {
           original_price: number | null
           original_price_usd: number | null
           other_costs_iqd: number | null
+          pending_admin_review: boolean
           personal_delivery_cost: number
           points_reward: number | null
           pre_order_fast_shipping_price: number | null

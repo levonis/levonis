@@ -190,6 +190,8 @@ const Admin = () => {
     available_for_direct_sale?: boolean;
     available_for_pre_order?: boolean;
     taobao_linked_name?: string | null;
+    cost_usd?: number;
+    cost_iqd?: number;
   }>>([]);
   const [productColors, setProductColors] = useState<Array<{
     name: string;
@@ -205,6 +207,8 @@ const Admin = () => {
     linked_options?: string[];
     direct_sale_price?: number;
     option_stocks?: Record<string, number>;
+    cost_usd?: number;
+    cost_iqd?: number;
   }>>([]);
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
@@ -350,7 +354,9 @@ const Admin = () => {
                   in_stock: opt.in_stock ?? true,
                   image_url: opt.image_url || undefined,
                   available_for_direct_sale: opt.available_for_direct_sale ?? true,
-                  available_for_pre_order: opt.available_for_pre_order ?? false
+                  available_for_pre_order: opt.available_for_pre_order ?? false,
+                  cost_usd: Number((opt as any).cost_usd) || 0,
+                  cost_iqd: Number((opt as any).cost_iqd) || 0,
                 }))
               );
             }
@@ -1274,7 +1280,9 @@ const Admin = () => {
         image_url: color.image_url || undefined,
         in_stock: color.in_stock ?? defaultColorInStock,
         available_for_direct_sale: color.available_for_direct_sale ?? defaultColorDirectSale,
-        available_for_pre_order: color.available_for_pre_order ?? defaultColorPreOrder
+        available_for_pre_order: color.available_for_pre_order ?? defaultColorPreOrder,
+        cost_usd: Number(color.cost_usd) || 0,
+        cost_iqd: Number(color.cost_iqd) || 0,
       })));
     }
 
@@ -1305,6 +1313,28 @@ const Admin = () => {
     const hasShippingCalc = productInfo.dimensions || productInfo.weight_kg;
     toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات${hasShippingCalc ? '، + سعر الشحن' : ''})`);
   };
+
+  // Publish a pending-review product (admin only). Clears the pending flag and marks pricing updated.
+  const handlePublishPendingProduct = async (product: any) => {
+    if (!isAdmin) return;
+    try {
+      await adminUpdateProduct(product.id, {
+        pending_admin_review: false,
+        is_pricing_updated: true,
+        updated_at: new Date().toISOString(),
+      } as any);
+      queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] === 'products' || q.queryKey[0] === 'featured-products'),
+      });
+      toast.success('تم نشر المنتج للمستخدمين');
+    } catch (e) {
+      console.error('[Admin] publish pending failed:', e);
+      toast.error('فشل نشر المنتج');
+    }
+  };
+
+
 
   // Legacy shipping functions removed - now handled by AdminProductPricingSection
 
@@ -1475,10 +1505,16 @@ const Admin = () => {
       }
       
       // Filter valid colors and features - include stock_quantity
-      const validColors = productColors.filter(c => c.name_ar.trim() && c.name.trim()).map(c => ({
-        ...c,
-        stock_quantity: c.stock_quantity ?? undefined
-      }));
+      const validColors = productColors.filter(c => c.name_ar.trim() && c.name.trim()).map(c => {
+        const costUsd = Number(c.cost_usd) || 0;
+        const costIqd = Number(c.cost_iqd) || Math.round(costUsd * usdToIqdRate);
+        return {
+          ...c,
+          stock_quantity: c.stock_quantity ?? undefined,
+          cost_usd: costUsd,
+          cost_iqd: costIqd,
+        };
+      });
       const validFeatures = productFeatures.filter(f => f.text_ar.trim() && f.text.trim());
       
       const values = {
@@ -1744,6 +1780,10 @@ const Admin = () => {
         // Use the lowest price as the main display price
         values.price = prices.length > 0 ? Math.min(...prices) : priceIqd;
         values.is_pricing_updated = true;
+        // When an admin edits a pending product (filling costs/commission), auto-publish it.
+        if (isAdmin && editingProduct?.pending_admin_review) {
+          (values as any).pending_admin_review = false;
+        }
 
         // Original price is entered directly in IQD by the admin (no USD conversion).
         // Apply optional rounding to nearest 250 if the toggle is on.
@@ -1784,6 +1824,8 @@ const Admin = () => {
           .filter(opt => opt.name_ar.trim() && opt.name.trim())
           .map(opt => {
             const adj = adjustmentUsdToIqd(Number(opt.price_adjustment || 0), usdToIqdRate);
+            const costUsd = Number(opt.cost_usd) || 0;
+            const costIqd = Number(opt.cost_iqd) || Math.round(costUsd * usdToIqdRate);
             return {
               product_id: productId,
               name: opt.name,
@@ -1793,7 +1835,9 @@ const Admin = () => {
               image_url: opt.image_url || null,
               stock_quantity: opt.stock_quantity ?? null,
               available_for_direct_sale: opt.available_for_direct_sale ?? true,
-              available_for_pre_order: opt.available_for_pre_order ?? false
+              available_for_pre_order: opt.available_for_pre_order ?? false,
+              cost_usd: costUsd,
+              cost_iqd: costIqd,
             };
           });
 
@@ -2984,23 +3028,57 @@ const Admin = () => {
                               </div>
 
                               <div className="space-y-3">
-                                <div className="space-y-1">
-                                  <Label className="text-xs">فرق السعر بالدولار ($)</Label>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={option.price_adjustment}
-                                    onChange={(e) => updateProductOption(index, 'price_adjustment', Number(e.target.value))}
-                                    placeholder="0"
-                                    className="h-9"
-                                  />
-                                  <p className="text-xs text-muted-foreground">
-                                    أدخل رقم موجب للإضافة أو سالب للخصم (بالدولار)
-                                  </p>
-                                  <OptionPricePreview
-                                    adjustment={option.price_adjustment}
-                                    editingProduct={editingProduct}
-                                  />
+                                {isAdmin && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">فرق السعر بالدولار ($)</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={option.price_adjustment}
+                                      onChange={(e) => updateProductOption(index, 'price_adjustment', Number(e.target.value))}
+                                      placeholder="0"
+                                      className="h-9"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      أدخل رقم موجب للإضافة أو سالب للخصم (بالدولار)
+                                    </p>
+                                    <OptionPricePreview
+                                      adjustment={option.price_adjustment}
+                                      editingProduct={editingProduct}
+                                    />
+                                  </div>
+                                )}
+
+                                {/* Cost per option (visible to both admin and assistant) */}
+                                <div className="grid grid-cols-2 gap-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">تكلفة الخيار ($)</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={option.cost_usd ?? ''}
+                                      onChange={(e) => {
+                                        const v = Number(e.target.value) || 0;
+                                        updateProductOption(index, 'cost_usd', v);
+                                        updateProductOption(index, 'cost_iqd', Math.round(v * usdToIqdRate));
+                                      }}
+                                      placeholder="0.00"
+                                      className="h-9"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">التكلفة (د.ع)</Label>
+                                    <Input
+                                      type="number"
+                                      step="250"
+                                      min="0"
+                                      value={option.cost_iqd ?? ''}
+                                      onChange={(e) => updateProductOption(index, 'cost_iqd', Number(e.target.value) || 0)}
+                                      placeholder="0"
+                                      className="h-9"
+                                    />
+                                  </div>
                                 </div>
                                 
                                 <div className="space-y-2">
@@ -3236,23 +3314,58 @@ const Admin = () => {
                                       />
                                     </div>
                                   </div>
+                                  {isAdmin && (
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">السعر (اختياري)</Label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={color.price || ''}
+                                        onChange={(e) => updateProductColor(index, 'price', e.target.value ? Number(e.target.value) : undefined)}
+                                        placeholder="السعر الافتراضي للمنتج"
+                                        className="h-9"
+                                      />
+                                      <p className="text-xs text-muted-foreground">
+                                        اتركه فارغاً لاستخدام السعر الأساسي
+                                      </p>
+                                      <ColorPricePreview color={color} editingProduct={editingProduct} />
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Cost per color (visible to both admin and assistant) */}
+                                <div className="grid grid-cols-2 gap-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
                                   <div className="space-y-1">
-                                    <Label className="text-xs">السعر (اختياري)</Label>
+                                    <Label className="text-xs">تكلفة اللون ($)</Label>
                                     <Input
                                       type="number"
                                       step="0.01"
                                       min="0"
-                                      value={color.price || ''}
-                                      onChange={(e) => updateProductColor(index, 'price', e.target.value ? Number(e.target.value) : undefined)}
-                                      placeholder="السعر الافتراضي للمنتج"
+                                      value={color.cost_usd ?? ''}
+                                      onChange={(e) => {
+                                        const v = Number(e.target.value) || 0;
+                                        updateProductColor(index, 'cost_usd', v);
+                                        updateProductColor(index, 'cost_iqd', Math.round(v * usdToIqdRate));
+                                      }}
+                                      placeholder="0.00"
                                       className="h-9"
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                      اتركه فارغاً لاستخدام السعر الأساسي
-                                    </p>
-                                    <ColorPricePreview color={color} editingProduct={editingProduct} />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">التكلفة (د.ع)</Label>
+                                    <Input
+                                      type="number"
+                                      step="250"
+                                      min="0"
+                                      value={color.cost_iqd ?? ''}
+                                      onChange={(e) => updateProductColor(index, 'cost_iqd', Number(e.target.value) || 0)}
+                                      placeholder="0"
+                                      className="h-9"
+                                    />
                                   </div>
                                 </div>
+
                                 
                                 <div className="space-y-1">
                                   <Label className="text-xs">صورة اللون (اختياري)</Label>
@@ -3771,10 +3884,16 @@ const Admin = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{product.name_ar}</span>
                             {!product.is_pricing_updated && (
                               <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px] px-1.5 py-0">غير محدّث</Badge>
+                            )}
+                            {isAdmin && (product as any).pending_admin_review && (
+                              <Badge className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-1.5 py-0 gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                بانتظار التسعير — مضاف من مساعد
+                              </Badge>
                             )}
                           </div>
                         </TableCell>
@@ -3787,6 +3906,17 @@ const Admin = () => {
                         </TableCell>
                         <TableCell className="text-left">
                           <div className="flex gap-2 justify-end">
+                            {isAdmin && (product as any).pending_admin_review && (
+                              <Button
+                                size="sm"
+                                onClick={() => handlePublishPendingProduct(product)}
+                                title="نشر المنتج للمستخدمين"
+                                className="bg-green-600 hover:bg-green-700 text-white gap-1"
+                              >
+                                <Check className="h-4 w-4" />
+                                نشر
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="outline"
@@ -3854,10 +3984,16 @@ const Admin = () => {
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <h4 className="text-sm font-bold text-foreground truncate">{product.name_ar}</h4>
                           {!product.is_pricing_updated && (
                             <Badge variant="outline" className="border-amber-500 text-amber-500 text-[9px] px-1 py-0 shrink-0">غير محدّث</Badge>
+                          )}
+                          {isAdmin && (product as any).pending_admin_review && (
+                            <Badge className="bg-red-500 hover:bg-red-600 text-white text-[9px] px-1 py-0 shrink-0 gap-0.5">
+                              <AlertCircle className="h-2.5 w-2.5" />
+                              بانتظار التسعير
+                            </Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{(product as any).categories?.name_ar || '-'}</p>
@@ -3870,6 +4006,12 @@ const Admin = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/30">
+                      {isAdmin && (product as any).pending_admin_review && (
+                        <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700 text-white gap-1" onClick={() => handlePublishPendingProduct(product)} title="نشر">
+                          <Check className="h-3.5 w-3.5" />
+                          <span className="text-xs">نشر</span>
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline" className={`h-8 w-8 p-0 ${!product.is_pricing_updated ? 'text-destructive border-destructive/50' : ''}`} onClick={() => handleToggleVisibility(product)} title={product.is_pricing_updated ? 'إخفاء المنتج' : 'إظهار المنتج'}>
                         {product.is_pricing_updated ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </Button>
