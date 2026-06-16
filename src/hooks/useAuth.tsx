@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       setIsAdmin(false);
+      setIsAssistant(false);
       // Clear all local storage auth data first for reliability on Android/Chrome
       const keysToRemove = Object.keys(localStorage).filter(k => 
         k.startsWith('sb-') || k.includes('supabase')
@@ -129,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isAssistant, isAdminOrAssistant: isAdmin || isAssistant, signOut }}>
       {children}
     </AuthContext.Provider>
   );
