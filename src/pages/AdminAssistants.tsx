@@ -174,7 +174,8 @@ const AdminAssistants = () => {
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
-                  </AlertDialog>
+                    </AlertDialog>
+                  </div>
                 </div>
               ))}
             </div>
