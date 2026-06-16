@@ -3947,10 +3947,16 @@ const Admin = () => {
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <h4 className="text-sm font-bold text-foreground truncate">{product.name_ar}</h4>
                           {!product.is_pricing_updated && (
                             <Badge variant="outline" className="border-amber-500 text-amber-500 text-[9px] px-1 py-0 shrink-0">غير محدّث</Badge>
+                          )}
+                          {isAdmin && (product as any).pending_admin_review && (
+                            <Badge className="bg-red-500 hover:bg-red-600 text-white text-[9px] px-1 py-0 shrink-0 gap-0.5">
+                              <AlertCircle className="h-2.5 w-2.5" />
+                              بانتظار التسعير
+                            </Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{(product as any).categories?.name_ar || '-'}</p>
