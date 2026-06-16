@@ -8,6 +8,7 @@ import { useStlLibraryAccess } from '@/hooks/useStlLibraryAccess';
 import StlFileCard from '@/components/stl/StlFileCard';
 import StlAccessGate from '@/components/stl/StlAccessGate';
 import { useLanguage } from '@/lib/i18n';
+import SEO from '@/components/SEO';
 
 export default function StlLibrary() {
   const { language } = useLanguage();
@@ -20,6 +21,19 @@ export default function StlLibrary() {
 
   return (
     <main className="container mx-auto px-4 py-6 max-w-6xl space-y-4">
+      <SEO
+        title="مكتبة ملفات الطباعة 3D — STL / OBJ / 3MF"
+        description="تصفح وحمّل ملفات STL و OBJ و 3MF جاهزة للطباعة ثلاثية الأبعاد من مجتمع تجار LEVONIS في العراق."
+        url="https://levonisiq.com/community/stl-library"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: 'مكتبة ملفات الطباعة 3D',
+          description: 'مجموعة ملفات STL/OBJ/3MF للطباعة ثلاثية الأبعاد على LEVONIS.',
+          url: 'https://levonisiq.com/community/stl-library',
+          isPartOf: { '@type': 'WebSite', name: 'LEVONIS', url: 'https://levonisiq.com' },
+        }}
+      />
       <header className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-black">مكتبة ملفات الطباعة 3D</h1>
