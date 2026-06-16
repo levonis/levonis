@@ -1971,7 +1971,7 @@ const AdminOrders = () => {
 
                       {/* Wallet audit log */}
                       <OrderWalletAuditLog orderId={editingOrder.id} formatPrice={formatPrice} />
-                    </TabsContent>
+                    </TabsContent>}
 
                     {/* ============ STATUS TAB ============ */}
                     <TabsContent value="status" className="mt-0 space-y-4">
