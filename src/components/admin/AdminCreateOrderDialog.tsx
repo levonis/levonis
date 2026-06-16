@@ -376,7 +376,7 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                       <div className="flex-1">
                         <p className="font-medium">{product.name_ar}</p>
                         <p className="text-xs text-muted-foreground">
-                          السعر: {formatPrice(product.price)} • التكلفة: {formatPrice(product.cost_price || 0)}
+                          السعر: {formatPrice(product.price)}{isAdmin && <> • التكلفة: {formatPrice(product.cost_price || 0)}</>}
                         </p>
                       </div>
                       <Plus className="h-4 w-4 text-primary" />
