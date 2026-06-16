@@ -14126,6 +14126,13 @@ export type Database = {
         Args: { p_amount: number; p_source?: string; p_user_id: string }
         Returns: boolean
       }
+      admin_add_assistant_by_email: {
+        Args: { _email: string }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       admin_adjust_order_inventory: {
         Args: {
           p_option_name?: string
@@ -14338,6 +14345,16 @@ export type Database = {
         Args: { p_admin_note?: string; p_card_id: string; p_user_id: string }
         Returns: Json
       }
+      admin_list_assistants: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          user_id: string
+        }[]
+      }
+      admin_remove_assistant: { Args: { _user_id: string }; Returns: undefined }
       admin_update_level_prize_claim: {
         Args: { p_claim_id: string; p_new_status: string; p_notes?: string }
         Returns: Json
@@ -14900,6 +14917,7 @@ export type Database = {
         Args: { p_prize_id: string; p_user_id: string }
         Returns: undefined
       }
+      has_admin_access: { Args: { _user_id: string }; Returns: boolean }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean
