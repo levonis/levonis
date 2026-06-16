@@ -2022,8 +2022,8 @@ const Admin = () => {
           <h1>لوحة التحكم</h1>
           <p>إدارة شاملة للمنتجات والأقسام والإعدادات</p>
         </div>
-        {/* Warning: Products missing cost_price */}
-        {(() => {
+        {/* Warning: Products missing cost_price — hidden from assistants */}
+        {isAdmin && (() => {
           const missingCostProducts = products?.filter((p: any) => !p.cost_price || p.cost_price <= 0) || [];
           if (missingCostProducts.length === 0) return null;
           return (
