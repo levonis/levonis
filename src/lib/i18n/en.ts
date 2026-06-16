@@ -924,6 +924,7 @@ export const en: TranslationKeys = {
   cart_products_count: '{count} items',
 
   profile_admin_panel: 'Admin Panel',
+  profile_assistant_panel: 'Assistant Panel',
   profile_default_username: 'Member',
   profile_points_to_next: '{points} points to next tier',
   profile_level_complete: 'Maxed out!',

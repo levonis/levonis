@@ -924,6 +924,7 @@ export const ku: TranslationKeys = {
   cart_products_count: '{count} بەرهەم',
 
   profile_admin_panel: 'پانێڵی بەڕێوەبردن',
+  profile_assistant_panel: 'پانێڵی یاریدەدەر',
   profile_default_username: 'بەکارهێنەر',
   profile_points_to_next: '{points} خاڵ بۆ بەرزکردنەوە',
   profile_level_complete: 'تەواو!',
