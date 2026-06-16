@@ -611,9 +611,10 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           />
           <p className="text-xs text-muted-foreground">عند استخدام كود إحالة على هذا المنتج، يحصل صاحب الكود على هذا المبلغ × الكمية. يُخصم من العائد المالي.</p>
         </div>
+        )}
 
-        {/* ===== DIRECT SALE SECTION ===== */}
-        {hasDirectSale && (
+        {/* ===== DIRECT SALE SECTION — admin only ===== */}
+        {isAdmin && hasDirectSale && (
           <div className="space-y-3 p-3 rounded-lg bg-card border border-border">
             <div className="flex items-center gap-2 text-sm font-medium">
               <ShoppingBag className="h-3 w-3" />
