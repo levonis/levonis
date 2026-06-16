@@ -1280,7 +1280,9 @@ const Admin = () => {
         image_url: color.image_url || undefined,
         in_stock: color.in_stock ?? defaultColorInStock,
         available_for_direct_sale: color.available_for_direct_sale ?? defaultColorDirectSale,
-        available_for_pre_order: color.available_for_pre_order ?? defaultColorPreOrder
+        available_for_pre_order: color.available_for_pre_order ?? defaultColorPreOrder,
+        cost_usd: Number(color.cost_usd) || 0,
+        cost_iqd: Number(color.cost_iqd) || 0,
       })));
     }
 
