@@ -10,6 +10,7 @@ import { useStlLibraryAccess } from '@/hooks/useStlLibraryAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/lib/i18n';
 import StlAccessGate from '@/components/stl/StlAccessGate';
+import SEO from '@/components/SEO';
 
 const Model3DViewer = lazy(() => import('@/components/community/viewer/Model3DViewer'));
 
@@ -40,8 +41,27 @@ export default function StlFileDetails() {
   const gallery = [file.cover_image_url, ...(file.gallery_images || [])].filter(Boolean) as string[];
   const cover = activeImg || gallery[0];
 
+  const pageUrl = `https://levonisiq.com/community/stl-library/${file.id}`;
+  const metaDesc = (desc || `ملف ${file.file_format?.toUpperCase() || '3D'} جاهز للطباعة من مكتبة LEVONIS.`).slice(0, 155);
+
   return (
     <main className="container mx-auto px-4 py-6 max-w-4xl space-y-5">
+      <SEO
+        title={`${title} — ملف طباعة 3D`}
+        description={metaDesc}
+        url={pageUrl}
+        image={cover || undefined}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: title,
+          description: metaDesc,
+          image: gallery,
+          url: pageUrl,
+          encodingFormat: file.file_format || undefined,
+          creator: { '@type': 'Organization', name: 'LEVONIS' },
+        }}
+      />
       <Button asChild variant="ghost" size="sm" className="gap-1">
         <Link to="/community/stl-library"><ArrowRight className="h-4 w-4" /> العودة للمكتبة</Link>
       </Button>
