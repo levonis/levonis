@@ -109,8 +109,8 @@ const Home = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       <SEO
-        title="LEVONIS — متجرك الموثوق للتقنية"
-        description="LEVONIS — متجر إلكتروني عراقي متخصص في طابعات 3D (Bambu Lab, Creality, Resin)، والـ Filaments، والإلكترونيات، ومجتمع التجار. ضمان رسمي وتوصيل سريع لكل العراق."
+        title="LEVONIS — متجرك الموثوق للتقنية في العراق"
+        description="متجر LEVONIS العراقي: طابعات 3D (Bambu Lab, Creality, Resin)، فلامنت، إلكترونيات ومجتمع تجار — ضمان رسمي وتوصيل سريع."
         url="https://levonisiq.com/"
         jsonLd={[organizationLd(), websiteLd()]}
       />
@@ -127,7 +127,7 @@ const Home = () => {
 
         <section className="container mx-auto px-4 py-6 md:py-10 text-center">
           <h1 className="text-3xl md:text-5xl font-black mb-3 text-gradient-gold">
-            LEVONIS
+            LEVONIS — متجر الإلكترونيات وطابعات 3D في العراق
           </h1>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-4 md:mb-6">
             {t('home_subtitle')}

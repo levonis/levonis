@@ -17,7 +17,8 @@ const Footer = () => {
           <div className="w-24 h-24 relative">
             <img 
               src={logoNew}
-              alt="LEVONIS Logo" 
+              alt=""
+              aria-hidden="true"
               className="w-full h-full object-contain animate-fade-in bg-transparent"
               loading="lazy"
               width="192"
