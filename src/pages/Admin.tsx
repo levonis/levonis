@@ -354,7 +354,9 @@ const Admin = () => {
                   in_stock: opt.in_stock ?? true,
                   image_url: opt.image_url || undefined,
                   available_for_direct_sale: opt.available_for_direct_sale ?? true,
-                  available_for_pre_order: opt.available_for_pre_order ?? false
+                  available_for_pre_order: opt.available_for_pre_order ?? false,
+                  cost_usd: Number((opt as any).cost_usd) || 0,
+                  cost_iqd: Number((opt as any).cost_iqd) || 0,
                 }))
               );
             }
