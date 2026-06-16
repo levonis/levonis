@@ -402,7 +402,7 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                       <div className="flex-1 space-y-2">
                         <p className="font-medium text-sm">{item.product_name_ar}</p>
                         
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
                           {/* Quantity */}
                           <div className="flex items-center gap-1">
                             <Button
@@ -437,16 +437,18 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                             />
                           </div>
                           
-                          {/* Cost Price */}
-                          <div>
-                            <Label className="text-xs text-muted-foreground">التكلفة</Label>
-                            <Input
-                              type="number"
-                              value={item.cost_price}
-                              onChange={(e) => updateItemPrice(index, 'cost_price', parseFloat(e.target.value) || 0)}
-                              className="h-8 text-sm"
-                            />
-                          </div>
+                          {/* Cost Price — admin only */}
+                          {isAdmin && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">التكلفة</Label>
+                              <Input
+                                type="number"
+                                value={item.cost_price}
+                                onChange={(e) => updateItemPrice(index, 'cost_price', parseFloat(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                       
