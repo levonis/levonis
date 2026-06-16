@@ -1,120 +1,69 @@
-# خطة: إضافة دور "مساعد الأدمن" (Admin Assistant)
+# خطة التعديلات
 
-## نظرة عامة
-إضافة دور جديد `assistant` للنظام يمنح المستخدم وصولاً إلى لوحة التحكم بصلاحيات محدودة وآمنة، مع إخفاء كامل للبيانات المالية الحساسة (الربح، التكلفة، تكلفة الشحن، عمولة، breakdown الدفع).
+## 1) قاعدة البيانات (migration واحد)
 
----
+### حقل التكلفة لكل خيار/لون
+- `product_options`: إضافة `cost_iqd numeric DEFAULT 0` و `cost_usd numeric DEFAULT 0` (المساعد/الادمن يدخل بالدولار أو باليوان والنظام يحفظ النسختين).
+- `products.colors` (jsonb): توسعة الـ shape ليشمل `cost_iqd` و `cost_usd` لكل لون (لا حاجة لـ migration، نضيف الحقول في الـ TS types والـ UI فقط).
+- إخفاء هذه الحقول عن غير الأدمن: إضافتها لمصفوفة الأعمدة المحجوبة في `products_admin` view ليصل المساعد للحقول الأساسية فقط (cost_iqd/cost_usd للخيارات تبقى visible للمساعد لأن طلب المستخدم صراحةً يسمح بها).
 
-## 1. قاعدة البيانات (Migration)
+### المنتجات المعلّقة من المساعد
+- `products`: إضافة عمودين:
+  - `pending_admin_review boolean DEFAULT false`
+  - `created_by_assistant uuid REFERENCES auth.users(id)`
+- تعديل trigger الإدراج على `products`: عندما يكون المستخدم المنشئ assistant (وليس admin) → ضبط `pending_admin_review=true`, `is_pricing_updated=false`, `created_by_assistant=auth.uid()`.
+- RLS قراءة `products` العامة: إضافة شرط `pending_admin_review=false OR <user is admin/assistant>` بحيث المنتج المعلّق لا يظهر للزبائن.
+- عند ضغط الادمن "نشر" (تعبئة التكاليف + حفظ) → trigger يحوّل `pending_admin_review=false` و `is_pricing_updated=true`.
 
-### أ. توسيع `app_role` enum
-```sql
-ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'assistant';
+## 2) إخفاء فرق السعر للألوان/الخيارات عن المساعدين
+
+`src/pages/Admin.tsx` (محرّر الخيارات/الألوان داخل ProductForm):
+- حقل `price_adjustment` للخيارات والألوان: لفّه بـ `{isAdmin && ...}`.
+- إظهار للمساعد فقط حقول: الاسم، حالة التوفر، المخزون، **التكلفة (USD + IQD)** الجديدة.
+- للأدمن: كل الحقول كما هي + إضافة حقول التكلفة الجديدة.
+- معاينة `OptionPricePreview` تُخفى عن المساعد.
+
+`src/components/admin/AdminProductPricingSection.tsx`:
+- قسم العمولات/التكاليف/الشحن الحالي: مخفي للمساعد (موجود مسبقاً).
+- **استثناء**: حقول الأبعاد (length/width/height/cm) والوزن (kg) → تصبح **مرئية وقابلة للتعديل من المساعد** (مطلوب لحساب CBM/الكيلو).
+- حقول `commission_sea_iqd / commission_air_iqd / commission_direct_iqd`: للمساعد تظهر كحقل قراءة فقط مع أيقونة قفل ونص `••••••` بدلاً من القيمة (مع toggle `link_direct_commission_to_cod` يبقى مخفي تماماً).
+
+## 3) شارة "بانتظار مراجعة الأدمن"
+
+`src/components/admin/ProductsTable.tsx` + قائمة المنتجات في `Admin.tsx`:
+- إضافة Badge أحمر/أصفر بارز "بانتظار التسعير من الأدمن" بجانب اسم المنتج عندما `pending_admin_review=true`.
+- فرز افتراضي: المنتجات المعلّقة في الأعلى (للأدمن فقط) عبر `.order('pending_admin_review', { ascending: false })`.
+- إخفاء البادج عن المساعد (يراه فقط الأدمن — رغم أن المساعد يستطيع رؤية منتجاته المعلّقة كمؤلف).
+
+## 4) زر النشر للأدمن
+
+في dialog تعديل المنتج المعلّق (للأدمن):
+- زر إضافي "نشر للمستخدمين" يظهر فقط إذا `pending_admin_review=true`.
+- يتحقق أن `cost_iqd` و `commission_*_iqd` ليست صفراً → ثم يحدّث `pending_admin_review=false, is_pricing_updated=true`.
+- toast: "تم نشر المنتج بنجاح".
+
+## 5) i18n
+إضافة مفاتيح في `ar.ts / en.ts / ku.ts`:
+- `pendingAdminReview`, `costPerOption`, `costPerColor`, `publishProduct`, `commissionLocked`, `addedByAssistant`.
+
+## 6) الحفظ على الذاكرة
+- memory: assistant product workflow + cost fields per option/color.
+
+## تقنيات
+
+```
+products
+  + pending_admin_review boolean
+  + created_by_assistant uuid
+
+product_options
+  + cost_iqd numeric
+  + cost_usd numeric
 ```
 
-### ب. دوال صلاحيات جديدة
-- `is_assistant_or_admin(_user_id uuid) → boolean` — يعيد true إذا كان admin أو assistant.
-- `is_admin_strict(_user_id uuid) → boolean` — admin فقط (للحقول الحساسة).
-
-### ج. تحديث RLS Policies
-- `orders` / `order_items` / `products` / `product_offers`: السماح للمساعد بـ SELECT/UPDATE على الأعمدة غير الحساسة.
-- منع المساعد من DELETE على `orders` و`products`.
-- منع UPDATE على أعمدة السعر/الخصم في `orders` (cart_total, discount_amount, wallet_used, cod_amount).
-
-### د. Views محدودة للمساعد
-- `orders_assistant` — يستثني: profit, cost, commission, shipping_cost, wallet breakdown, cod breakdown.
-- `order_items_assistant` — يستثني: cost, profit.
-- `products_assistant` — يستثني: cost, commission, shipping_cost, profit_margin.
-- `product_offers_assistant` — يستثني: cost_price.
-
-### هـ. RPC مقيدة
-- `assistant_update_order_status(_order_id, _status)` — تحديث الحالة فقط.
-- `assistant_update_product(_product_id, _updates jsonb)` — تتحقق من الحقول المسموحة فقط (name, description, images, colors, options, base price, original_price). ترفض أي حقل حساس.
-
-### و. إدارة المساعدين
-- جدول جديد للأذونات ليس مطلوباً — نستخدم `user_roles` الموجود.
-- RPC: `admin_add_assistant_by_email(_email text)` — يبحث في `profiles` بالإيميل، يضيف صف `('user_id', 'assistant')` في `user_roles`. service_role/admin فقط.
-- RPC: `admin_remove_assistant(_user_id uuid)` — حذف الصف.
-- RPC: `admin_list_assistants()` — يعيد قائمة المساعدين مع إيميلاتهم وأسمائهم.
-
----
-
-## 2. الواجهة الأمامية
-
-### أ. تحديث `useAuth`
-- إضافة `isAssistant: boolean` و`isAdminOrAssistant: boolean` بجانب `isAdmin`.
-- جلب الدور من `user_roles` كما هو الحال.
-
-### ب. تحديث `AdminRoute`
-- السماح بالدخول لـ admin و assistant.
-- إضافة prop جديد: `requireFullAdmin?: boolean` — لو true، يسمح فقط للأدمن الكامل.
-
-### ج. مكون جديد: `AssistantRoute`
-- مثل `AdminRoute` لكن يقبل assistant.
-
-### د. تعديل الراوتر (`App.tsx`)
-- الصفحات التالية تُغلَّف بـ `AssistantRoute` (متاحة للمساعد):
-  - Orders, Notifications, Announcements (الشريط), Coupons, ProductBundles, CustomRequests, DefaultSettings, PointsSettings, LoyaltyLevels, LoyaltyCardCodes, Wallet, WalletSettings, Chats, SavedInvoices, Donations, PartialPaymentSettings, Competitions, ProductOffers, OfferPurchases, PrinterProtection, ShippingSettings, LevoCommunity (+children), Users, Stories, GamesSettings, PriceMatch, Wishes, Reviews, PriceProtection, Winners, RandomFilament, Print3DPricing.
-- الصفحات التالية تبقى محصورة على الأدمن فقط (`requireFullAdmin`):
-  - Financials, FinancialDrafts, Inventory (التكلفة), Dashboard المالي، إدارة المساعدين، RotateKeys، إلخ.
-
-### هـ. صفحة جديدة: `AdminAssistants.tsx`
-- المسار: `${ADMIN_BASE_PATH}/assistants` (admin فقط).
-- نموذج: حقل إيميل + زر "إضافة مساعد" → ينادي `admin_add_assistant_by_email`.
-- قائمة المساعدين الحاليين مع زر "إزالة".
-
-### و. تعديل صفحات الطلبات والمنتجات للمساعد
-- `AdminOrders` / `OrderDetailsDialog`: لو `isAssistant && !isAdmin`:
-  - يستعلم من `orders_assistant` / `order_items_assistant` بدلاً من الجداول الأصلية.
-  - يخفي بطاقات: الأرباح، التكلفة، Wallet/COD breakdown، تعديل السعر، حذف الطلب.
-  - يبقي: العنوان، المنتجات، الكمية، الحالة، تحديث الحالة.
-- `AdminProducts` / `ProductsTable` / `EditProductDialog`:
-  - استعلام من `products_assistant`.
-  - يخفي حقول: cost, commission, shipping_cost, profit.
-  - يعطل: زر الحذف، زر الإنشاء الجديد.
-  - يبقي: تعديل name/description/images/colors/options/price/original_price فقط.
-
-### ز. لوحة التحكم الجانبية (Sidebar)
-- إخفاء روابط الأقسام المالية الحساسة وزر "حذف الطلب" و"إنشاء منتج جديد" عند `isAssistant && !isAdmin`.
-- إخفاء رابط "المساعدين" من لوحة المساعد.
-
----
-
-## 3. الأمان (مهم جداً)
-
-- جميع التحققات تتم على **مستوى قاعدة البيانات** عبر RLS + Views + RPC، وليس على مستوى الواجهة فقط.
-- الواجهة تخفي العناصر لتحسين UX، لكن حتى لو حاول المساعد استدعاء API مباشر، سيرفضه الـ RLS/Views.
-- الـ Views تعتمد `WITH (security_invoker=on)` لتطبيق RLS.
-- `admin_add_assistant_by_email` تتحقق `has_role(auth.uid(), 'admin')` قبل التنفيذ.
-
----
-
-## 4. التفاصيل التقنية
-
-```text
-الملفات الجديدة:
-- src/components/AssistantRoute.tsx
-- src/pages/AdminAssistants.tsx
-
-الملفات المعدلة:
-- src/hooks/useAuth.tsx (إضافة isAssistant)
-- src/App.tsx (لف المسارات المسموحة بـ AssistantRoute)
-- src/config/adminConfig.ts (إضافة مسار assistants)
-- src/components/admin/AdminSidebar (أو ما يعادله) (إخفاء عناصر)
-- src/pages/AdminOrders.tsx + OrderDetailsDialog (استعلام مشروط)
-- src/pages/Admin (products page) + ProductsTable + EditProductDialog (استعلام/إخفاء مشروط)
-
-Migration واحدة تشمل:
-- ALTER TYPE app_role
-- security definer functions
-- views (orders_assistant, order_items_assistant, products_assistant, product_offers_assistant)
-- RPCs (assistant_update_order_status, assistant_update_product, admin_add_assistant_by_email, admin_remove_assistant, admin_list_assistants)
-- GRANT على الـ views للـ authenticated
-- تحديث RLS على orders/products للسماح للمساعد بالقراءة
-```
-
----
-
-## 5. خارج النطاق (لاحقاً عند الطلب)
-- صلاحيات أدق لكل قسم (الآن: متطابقة مع الأدمن في الأقسام الإدارية المذكورة).
-- سجل تدقيق لتعديلات المساعد (audit log).
+ملفات للتعديل:
+- migration جديد
+- `src/pages/Admin.tsx` (محرّر الخيارات/الألوان + قائمة المنتجات + زر النشر)
+- `src/components/admin/AdminProductPricingSection.tsx` (إظهار الأبعاد للمساعد + قفل العمولة)
+- `src/components/admin/ProductsTable.tsx` (شارة "معلّق")
+- `src/lib/i18n/{ar,en,ku}.ts` + `types.ts`
