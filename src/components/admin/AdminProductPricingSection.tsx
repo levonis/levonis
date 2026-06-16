@@ -19,18 +19,6 @@ interface AdminProductPricingSectionProps {
 const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProductPricingSectionProps) => {
   const { isAdmin } = useAuth();
 
-  // Assistants must NOT see commission, profit, cost or shipping-cost details.
-  if (!isAdmin) {
-    return (
-      <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
-        <Lock className="h-4 w-4" />
-        تفاصيل التسعير والعمولة والتكاليف مخفية عن المساعدين
-      </div>
-    );
-  }
-
-  const { data: shippingSettings } = useShippingSettings();
-
   // Fetch delivery methods to determine which categories support personal delivery
   const { data: personalDeliveryCategoryIds = [] } = useQuery({
     queryKey: ['personal-delivery-categories'],
