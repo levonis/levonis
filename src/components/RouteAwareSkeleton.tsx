@@ -153,7 +153,7 @@ function pickSkeleton(pathname: string) {
   // no flash of a different layout on first paint.
   if (p === "/auth" || p.startsWith("/auth")) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-3">
             <div className="h-8 w-40 mx-auto rounded bg-muted/60 animate-pulse" />
