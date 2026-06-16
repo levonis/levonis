@@ -31,6 +31,8 @@ interface AdminCreateOrderDialogProps {
 
 const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogProps) => {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
+
 
   // User search state
   const [userSearchTerm, setUserSearchTerm] = useState('');
