@@ -3288,23 +3288,58 @@ const Admin = () => {
                                       />
                                     </div>
                                   </div>
+                                  {isAdmin && (
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">السعر (اختياري)</Label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={color.price || ''}
+                                        onChange={(e) => updateProductColor(index, 'price', e.target.value ? Number(e.target.value) : undefined)}
+                                        placeholder="السعر الافتراضي للمنتج"
+                                        className="h-9"
+                                      />
+                                      <p className="text-xs text-muted-foreground">
+                                        اتركه فارغاً لاستخدام السعر الأساسي
+                                      </p>
+                                      <ColorPricePreview color={color} editingProduct={editingProduct} />
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Cost per color (visible to both admin and assistant) */}
+                                <div className="grid grid-cols-2 gap-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
                                   <div className="space-y-1">
-                                    <Label className="text-xs">السعر (اختياري)</Label>
+                                    <Label className="text-xs">تكلفة اللون ($)</Label>
                                     <Input
                                       type="number"
                                       step="0.01"
                                       min="0"
-                                      value={color.price || ''}
-                                      onChange={(e) => updateProductColor(index, 'price', e.target.value ? Number(e.target.value) : undefined)}
-                                      placeholder="السعر الافتراضي للمنتج"
+                                      value={color.cost_usd ?? ''}
+                                      onChange={(e) => {
+                                        const v = Number(e.target.value) || 0;
+                                        updateProductColor(index, 'cost_usd', v);
+                                        updateProductColor(index, 'cost_iqd', Math.round(v * usdToIqdRate));
+                                      }}
+                                      placeholder="0.00"
                                       className="h-9"
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                      اتركه فارغاً لاستخدام السعر الأساسي
-                                    </p>
-                                    <ColorPricePreview color={color} editingProduct={editingProduct} />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">التكلفة (د.ع)</Label>
+                                    <Input
+                                      type="number"
+                                      step="250"
+                                      min="0"
+                                      value={color.cost_iqd ?? ''}
+                                      onChange={(e) => updateProductColor(index, 'cost_iqd', Number(e.target.value) || 0)}
+                                      placeholder="0"
+                                      className="h-9"
+                                    />
                                   </div>
                                 </div>
+
                                 
                                 <div className="space-y-1">
                                   <Label className="text-xs">صورة اللون (اختياري)</Label>
