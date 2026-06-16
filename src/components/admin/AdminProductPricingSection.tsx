@@ -18,6 +18,9 @@ interface AdminProductPricingSectionProps {
 
 const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProductPricingSectionProps) => {
   const { isAdmin } = useAuth();
+  const { data: shippingSettings } = useShippingSettings();
+
+
 
   // Fetch delivery methods to determine which categories support personal delivery
   const { data: personalDeliveryCategoryIds = [] } = useQuery({
