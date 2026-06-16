@@ -2397,7 +2397,12 @@ const Admin = () => {
                   }
                 }}>
                   <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
+                    <Button
+                      className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                      disabled={!isAdmin}
+                      title={!isAdmin ? 'هذه الميزة للأدمن فقط' : undefined}
+                      style={!isAdmin ? { display: 'none' } : undefined}
+                    >
                       <Plus className="ml-2 h-4 w-4" />
                       إضافة منتج جديد
                     </Button>
