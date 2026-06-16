@@ -3,7 +3,7 @@ import type { OriginRect } from "./OriginExpandShell";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Coins, Ticket, Wallet, TrendingUp, ChevronLeft, Shield } from "lucide-react";
+import { Coins, Ticket, Wallet, TrendingUp, ChevronLeft, Shield, LayoutDashboard } from "lucide-react";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import type { FrameAnimationType } from "@/components/merchant/AvatarWithFrame";
 import LevelBadge from "@/components/LevelBadge";
