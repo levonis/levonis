@@ -333,50 +333,6 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     return { rate, priceIqd, results };
   }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
 
-  // Assistants: show ONLY dimensions/weight inputs + locked commission note.
-  if (!isAdmin) {
-    return (
-      <div className="space-y-3 border-t pt-4">
-        <input type="hidden" name="has_pre_order_pricing" value={editingProduct?.has_pre_order ? 'true' : 'false'} />
-        <input type="hidden" name="has_in_stock_pricing" value={editingProduct?.has_in_stock ? 'true' : 'false'} />
-        <input type="hidden" name="shipping_type" value={editingProduct?.shipping_type || 'sea'} />
-
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Package className="h-4 w-4" />
-          <span>الأبعاد والوزن (لحساب CBM / الكيلو)</span>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="length_cm" className="text-xs">الطول (سم)</Label>
-            <Input id="length_cm" name="length_cm" type="number" step="0.1" min="0"
-              value={lengthCm || ''} onChange={(e) => setLengthCm(Number(e.target.value))} placeholder="0" />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="width_cm" className="text-xs">العرض (سم)</Label>
-            <Input id="width_cm" name="width_cm" type="number" step="0.1" min="0"
-              value={widthCm || ''} onChange={(e) => setWidthCm(Number(e.target.value))} placeholder="0" />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="height_cm" className="text-xs">الارتفاع (سم)</Label>
-            <Input id="height_cm" name="height_cm" type="number" step="0.1" min="0"
-              value={heightCm || ''} onChange={(e) => setHeightCm(Number(e.target.value))} placeholder="0" />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="weight_kg" className="text-xs">الوزن (كغ)</Label>
-          <Input id="weight_kg" name="weight_kg" type="number" step="any" min="0"
-            value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="0" />
-        </div>
-
-        <div className="rounded-lg border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground flex items-center justify-center gap-2">
-          <Lock className="h-3.5 w-3.5" />
-          العمولة والأرباح والتكاليف وسعر التكلفة مخفية عن المساعدين — سيتولّاها الأدمن
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 border-t pt-4">
@@ -571,11 +527,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                       value={heightCm || ''} onChange={(e) => setHeightCm(Number(e.target.value))} placeholder="سم" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="commission_sea_iqd">العمولة - بحري (د.ع)</Label>
-                  <Input id="commission_sea_iqd" type="number" min="0"
-                    value={commissionSeaIqd || ''} onChange={(e) => setCommissionSeaIqd(Number(e.target.value))} placeholder="0" />
-                </div>
+                {isAdmin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="commission_sea_iqd">العمولة - بحري (د.ع)</Label>
+                    <Input id="commission_sea_iqd" type="number" min="0"
+                      value={commissionSeaIqd || ''} onChange={(e) => setCommissionSeaIqd(Number(e.target.value))} placeholder="0" />
+                  </div>
+                )}
               </div>
             )}
 
@@ -604,19 +562,21 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                     </div>
                   </div>
                 )}
-                <div className="space-y-2">
-                  <Label htmlFor="commission_air_iqd">العمولة - جوي (د.ع)</Label>
-                  <Input id="commission_air_iqd" type="number" min="0"
-                    value={commissionAirIqd || ''} onChange={(e) => setCommissionAirIqd(Number(e.target.value))} placeholder="0" />
-                </div>
+                {isAdmin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="commission_air_iqd">العمولة - جوي (د.ع)</Label>
+                    <Input id="commission_air_iqd" type="number" min="0"
+                      value={commissionAirIqd || ''} onChange={(e) => setCommissionAirIqd(Number(e.target.value))} placeholder="0" />
+                  </div>
+                )}
               </div>
             )}
 
           </div>
         )}
 
-        {/* ===== DELIVERY COST (printers only) ===== */}
-        {isPrinterCategory && (hasPreOrder || hasDirectSale) && (
+        {/* ===== DELIVERY COST (printers only) — admin only ===== */}
+        {isAdmin && isPrinterCategory && (hasPreOrder || hasDirectSale) && (
           <div className="space-y-2 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
             <Label htmlFor="personal_delivery_cost" className="flex items-center gap-1.5">
               <Truck className="h-3 w-3 text-emerald-500" />
@@ -634,7 +594,8 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           </div>
         )}
 
-        {/* ===== VIP+ REFERRAL EARNINGS ===== */}
+        {/* ===== VIP+ REFERRAL EARNINGS — admin only ===== */}
+        {isAdmin && (
         <div className="space-y-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
           <Label htmlFor="referral_earnings_iqd" className="flex items-center gap-1.5">
             <DollarSign className="h-3 w-3 text-amber-500" />
@@ -650,9 +611,10 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           />
           <p className="text-xs text-muted-foreground">عند استخدام كود إحالة على هذا المنتج، يحصل صاحب الكود على هذا المبلغ × الكمية. يُخصم من العائد المالي.</p>
         </div>
+        )}
 
-        {/* ===== DIRECT SALE SECTION ===== */}
-        {hasDirectSale && (
+        {/* ===== DIRECT SALE SECTION — admin only ===== */}
+        {isAdmin && hasDirectSale && (
           <div className="space-y-3 p-3 rounded-lg bg-card border border-border">
             <div className="flex items-center gap-2 text-sm font-medium">
               <ShoppingBag className="h-3 w-3" />
@@ -718,8 +680,8 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           </div>
         )}
 
-        {/* Calculation Preview */}
-        {calculations && priceUsd > 0 && calculations.results.length > 0 && (
+        {/* Calculation Preview — admin only (shows commissions/profit) */}
+        {isAdmin && calculations && priceUsd > 0 && calculations.results.length > 0 && (
           <div className="mt-4 p-3 rounded-lg bg-card border border-border space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Calculator className="h-4 w-4 text-primary" />
