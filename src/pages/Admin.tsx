@@ -1780,6 +1780,10 @@ const Admin = () => {
         // Use the lowest price as the main display price
         values.price = prices.length > 0 ? Math.min(...prices) : priceIqd;
         values.is_pricing_updated = true;
+        // When an admin edits a pending product (filling costs/commission), auto-publish it.
+        if (isAdmin && editingProduct?.pending_admin_review) {
+          (values as any).pending_admin_review = false;
+        }
 
         // Original price is entered directly in IQD by the admin (no USD conversion).
         // Apply optional rounding to nearest 250 if the toggle is on.
