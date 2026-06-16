@@ -680,8 +680,8 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           </div>
         )}
 
-        {/* Calculation Preview */}
-        {calculations && priceUsd > 0 && calculations.results.length > 0 && (
+        {/* Calculation Preview — admin only (shows commissions/profit) */}
+        {isAdmin && calculations && priceUsd > 0 && calculations.results.length > 0 && (
           <div className="mt-4 p-3 rounded-lg bg-card border border-border space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Calculator className="h-4 w-4 text-primary" />
