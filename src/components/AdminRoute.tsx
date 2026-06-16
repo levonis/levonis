@@ -102,10 +102,10 @@ const AdminRoute = ({ children, requireFullAdmin = false }: AdminRouteProps) => 
     verifyAdminAccess();
   }, [user, session, authLoading, navigate, location.pathname, requireFullAdmin]);
 
-  // Show loading while verifying
+  // Show loading while verifying (transparent so AppBackground shows through)
   if (authLoading || verifying) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -114,7 +114,7 @@ const AdminRoute = ({ children, requireFullAdmin = false }: AdminRouteProps) => 
   // Don't render children if not verified
   if (!verified) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
