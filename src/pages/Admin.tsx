@@ -3858,10 +3858,16 @@ const Admin = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{product.name_ar}</span>
                             {!product.is_pricing_updated && (
                               <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px] px-1.5 py-0">غير محدّث</Badge>
+                            )}
+                            {isAdmin && (product as any).pending_admin_review && (
+                              <Badge className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-1.5 py-0 gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                بانتظار التسعير — مضاف من مساعد
+                              </Badge>
                             )}
                           </div>
                         </TableCell>
