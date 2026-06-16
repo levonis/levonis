@@ -4002,6 +4002,12 @@ const Admin = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/30">
+                      {isAdmin && (product as any).pending_admin_review && (
+                        <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700 text-white gap-1" onClick={() => handlePublishPendingProduct(product)} title="نشر">
+                          <Check className="h-3.5 w-3.5" />
+                          <span className="text-xs">نشر</span>
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline" className={`h-8 w-8 p-0 ${!product.is_pricing_updated ? 'text-destructive border-destructive/50' : ''}`} onClick={() => handleToggleVisibility(product)} title={product.is_pricing_updated ? 'إخفاء المنتج' : 'إظهار المنتج'}>
                         {product.is_pricing_updated ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </Button>
