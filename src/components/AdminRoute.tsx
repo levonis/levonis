@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface AdminRouteProps {
   children: ReactNode;
+  /** If true, only strict admin (not assistant) may pass. */
+  requireFullAdmin?: boolean;
 }
 
 /**
@@ -18,7 +20,7 @@ interface AdminRouteProps {
  * - Prevents access via cached pages
  * - Session validation on every access
  */
-const AdminRoute = ({ children }: AdminRouteProps) => {
+const AdminRoute = ({ children, requireFullAdmin = false }: AdminRouteProps) => {
   const { user, isAdmin, loading: authLoading, session } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,19 +58,30 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         return;
       }
 
-      // Server-side admin role verification (don't trust client state alone)
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+      // Server-side admin/assistant role verification (don't trust client state alone)
+      const rolesQuery = requireFullAdmin
+        ? supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'admin')
+            .maybeSingle()
+        : supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .in('role', ['admin', 'assistant'])
+            .limit(1)
+            .maybeSingle();
+
+      const { data: roleData, error: roleError } = await rolesQuery;
 
       if (roleError || !roleData) {
         // Log failed admin access attempt
         console.warn('[Security] Non-admin access attempt to admin route:', {
           path: location.pathname,
           userId: user.id,
+          requireFullAdmin,
           timestamp: new Date().toISOString(),
         });
         
@@ -87,7 +100,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     setVerified(false);
     setVerifying(true);
     verifyAdminAccess();
-  }, [user, session, authLoading, navigate, location.pathname]);
+  }, [user, session, authLoading, navigate, location.pathname, requireFullAdmin]);
 
   // Show loading while verifying
   if (authLoading || verifying) {

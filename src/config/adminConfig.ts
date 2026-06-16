@@ -65,6 +65,7 @@ export const ADMIN_ROUTES = {
   productColorQa: `${ADMIN_BASE_PATH}/product-color-qa`,
   randomFilament: `${ADMIN_BASE_PATH}/random-filament`,
   printMaterials: `${ADMIN_BASE_PATH}/print-materials`,
+  assistants: `${ADMIN_BASE_PATH}/assistants`,
 
 } as const;
 

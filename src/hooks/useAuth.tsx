@@ -8,6 +8,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isAssistant: boolean;
+  isAdminOrAssistant: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -18,6 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAssistant, setIsAssistant] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,15 +93,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
+        .in('role', ['admin', 'assistant']);
 
       if (error) throw error;
-      setIsAdmin(!!data);
-      return !!data;
+      const roles = (data ?? []).map((r: any) => r.role);
+      setIsAdmin(roles.includes('admin'));
+      setIsAssistant(roles.includes('assistant'));
+      return roles.includes('admin');
     } catch (error) {
       console.error('Admin role check failed:', error);
       setIsAdmin(false);
+      setIsAssistant(false);
       return false;
     }
   };
@@ -106,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       setIsAdmin(false);
+      setIsAssistant(false);
       // Clear all local storage auth data first for reliability on Android/Chrome
       const keysToRemove = Object.keys(localStorage).filter(k => 
         k.startsWith('sb-') || k.includes('supabase')
@@ -124,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isAssistant, isAdminOrAssistant: isAdmin || isAssistant, signOut }}>
       {children}
     </AuthContext.Provider>
   );

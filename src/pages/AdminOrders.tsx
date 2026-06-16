@@ -95,7 +95,7 @@ const getStatusOptionsForOrder = (order: any, checkFn: (items: any[]) => boolean
 };
 
 const AdminOrders = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isAssistant, isAdminOrAssistant, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const ordersTableScrollRef = useHorizontalWheelScroll<HTMLDivElement>();
@@ -216,7 +216,7 @@ const AdminOrders = () => {
   }, [editingOrder, usdToIqdRate]);
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ['admin-orders', isAdmin],
+    queryKey: ['admin-orders', isAdminOrAssistant],
     queryFn: async () => {
       // Fetch orders via admin view (includes internal cost/profit columns)
       const { data: ordersData, error: ordersErr } = await supabase
@@ -276,7 +276,7 @@ const AdminOrders = () => {
         random_filament_orders: rfByOrder.get(o.id) || [],
       }));
     },
-    enabled: isAdmin,
+    enabled: isAdminOrAssistant,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
@@ -957,7 +957,7 @@ const AdminOrders = () => {
     return <AdminLoading />;
   }
 
-  if (!isAdmin) {
+  if (!isAdminOrAssistant) {
     navigate('/');
     return null;
   }
@@ -1596,6 +1596,7 @@ const AdminOrders = () => {
                               >
                                 <MessageCircle className="h-4 w-4" />
                               </Button>
+                              {isAdmin && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
@@ -1625,6 +1626,7 @@ const AdminOrders = () => {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
