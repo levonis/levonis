@@ -1483,10 +1483,16 @@ const Admin = () => {
       }
       
       // Filter valid colors and features - include stock_quantity
-      const validColors = productColors.filter(c => c.name_ar.trim() && c.name.trim()).map(c => ({
-        ...c,
-        stock_quantity: c.stock_quantity ?? undefined
-      }));
+      const validColors = productColors.filter(c => c.name_ar.trim() && c.name.trim()).map(c => {
+        const costUsd = Number(c.cost_usd) || 0;
+        const costIqd = Number(c.cost_iqd) || Math.round(costUsd * usdToIqdRate);
+        return {
+          ...c,
+          stock_quantity: c.stock_quantity ?? undefined,
+          cost_usd: costUsd,
+          cost_iqd: costIqd,
+        };
+      });
       const validFeatures = productFeatures.filter(f => f.text_ar.trim() && f.text.trim());
       
       const values = {
