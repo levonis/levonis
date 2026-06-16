@@ -171,7 +171,7 @@ function pickSkeleton(pathname: string) {
 
   // Default — generic shell
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6 max-w-lg space-y-4">
         <HeaderSkeleton />
         <div className="rounded-2xl border border-border/30 bg-card p-4 space-y-3">
