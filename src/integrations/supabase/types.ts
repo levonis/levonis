@@ -15168,7 +15168,7 @@ export type Database = {
       verify_wallet_pin: { Args: { pin_code: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user" | "manager" | "worker"
+      app_role: "admin" | "user" | "manager" | "worker" | "assistant"
       competition_status: "draft" | "active" | "completed" | "cancelled"
       competition_type:
         | "ticket_count"
@@ -15334,7 +15334,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "manager", "worker"],
+      app_role: ["admin", "user", "manager", "worker", "assistant"],
       competition_status: ["draft", "active", "completed", "cancelled"],
       competition_type: [
         "ticket_count",
