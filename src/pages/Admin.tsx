@@ -3902,6 +3902,17 @@ const Admin = () => {
                         </TableCell>
                         <TableCell className="text-left">
                           <div className="flex gap-2 justify-end">
+                            {isAdmin && (product as any).pending_admin_review && (
+                              <Button
+                                size="sm"
+                                onClick={() => handlePublishPendingProduct(product)}
+                                title="نشر المنتج للمستخدمين"
+                                className="bg-green-600 hover:bg-green-700 text-white gap-1"
+                              >
+                                <Check className="h-4 w-4" />
+                                نشر
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="outline"
