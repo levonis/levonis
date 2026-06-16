@@ -1996,7 +1996,7 @@ const Admin = () => {
     return matchesSearch && matchesMainSection;
   });
 
-  if (authLoading || !isAdmin) {
+  if (authLoading || !isAdminOrAssistant) {
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto space-y-6">
