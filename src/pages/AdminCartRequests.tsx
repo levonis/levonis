@@ -315,7 +315,7 @@ export default function AdminCartRequests() {
                         تعديل
                       </Button>
                       {request.conversation_id && (
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/cp-x9A3kL7m/chats')}>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/cp-x9A3kL5a/chats')}>
                           <MessageCircle className="h-4 w-4 ml-1" />
                           المحادثة
                         </Button>

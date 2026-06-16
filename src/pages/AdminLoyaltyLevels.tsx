@@ -1817,7 +1817,7 @@ export default function AdminLoyaltyLevels() {
                     <p className="text-sm font-medium mb-2">معلومة</p>
                     <p className="text-xs text-muted-foreground">
                       يمكنك التحكم في إعدادات النقاط والمهام اليومية من خلال صفحة 
-                      <a href="/cp-x9A3kL7m/points-settings" className="text-primary mr-1 hover:underline">
+                      <a href="/cp-x9A3kL5a/points-settings" className="text-primary mr-1 hover:underline">
                         إعدادات النقاط
                       </a>
                     </p>
@@ -1871,7 +1871,7 @@ export default function AdminLoyaltyLevels() {
               <AdminCardContent>
                 <div className="grid grid-cols-1 gap-3">
                   <a 
-                    href="/cp-x9A3kL7m/points-settings" 
+                    href="/cp-x9A3kL5a/points-settings" 
                     className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <div className="p-2 bg-amber-500/10 rounded-lg">
@@ -1884,7 +1884,7 @@ export default function AdminLoyaltyLevels() {
                   </a>
                   
                   <a 
-                    href="/cp-x9A3kL7m/coupons" 
+                    href="/cp-x9A3kL5a/coupons" 
                     className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <div className="p-2 bg-green-500/10 rounded-lg">
@@ -1897,7 +1897,7 @@ export default function AdminLoyaltyLevels() {
                   </a>
 
                   <a 
-                    href="/cp-x9A3kL7m/competitions" 
+                    href="/cp-x9A3kL5a/competitions" 
                     className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <div className="p-2 bg-purple-500/10 rounded-lg">
