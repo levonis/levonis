@@ -465,23 +465,27 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                   </Card>
                 ))}
                 
-                {/* Totals Summary */}
+                {/* Totals Summary — cost/profit hidden from assistants */}
                 <Card className="p-4 bg-muted/50">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-1'} gap-4 text-sm`}>
                     <div>
                       <p className="text-muted-foreground">إجمالي المبيعات</p>
                       <p className="font-bold text-lg">{formatPrice(totals.totalRevenue)}</p>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground">إجمالي التكلفة</p>
-                      <p className="font-bold text-lg text-orange-600">{formatPrice(totals.totalCost)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">الربح المتوقع</p>
-                      <p className={`font-bold text-lg ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatPrice(totals.profit)}
-                      </p>
-                    </div>
+                    {isAdmin && (
+                      <>
+                        <div>
+                          <p className="text-muted-foreground">إجمالي التكلفة</p>
+                          <p className="font-bold text-lg text-orange-600">{formatPrice(totals.totalCost)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">الربح المتوقع</p>
+                          <p className={`font-bold text-lg ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatPrice(totals.profit)}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </Card>
               </div>
