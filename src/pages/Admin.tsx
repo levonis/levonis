@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, Users, Music, BadgeDollarSign, Star, Eye, EyeOff, Flag, Heart } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, ShieldCheck, Users, Music, BadgeDollarSign, Star, Eye, EyeOff, Flag, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -2121,7 +2121,7 @@ const Admin = () => {
           </div>
           <div className="admin-card-content">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-2.5">
-              {[
+              {([
                 { icon: Bell, title: 'الإشعارات', desc: 'إرسال إشعارات', path: ADMIN_ROUTES.notifications },
                 { icon: Megaphone, title: 'الشريط الإخباري', desc: 'إعلانات متحركة', path: ADMIN_ROUTES.announcements },
                 { icon: Ticket, title: 'الكوبونات', desc: 'خصومات', path: ADMIN_ROUTES.coupons },
@@ -2136,7 +2136,7 @@ const Admin = () => {
                 { icon: MessageCircle, title: 'المحادثات', desc: 'دعم', path: ADMIN_ROUTES.chats },
                 { icon: Receipt, title: 'الفواتير', desc: 'قوالب', path: ADMIN_ROUTES.invoiceTemplates },
                 { icon: FileText, title: 'فواتير محفوظة', desc: 'مراجعة', path: ADMIN_ROUTES.savedInvoices },
-                { icon: TrendingUp, title: 'المالية', desc: 'تحليلات', path: ADMIN_ROUTES.financials },
+                { icon: TrendingUp, title: 'المالية', desc: 'تحليلات', path: ADMIN_ROUTES.financials, adminOnly: true },
                 { icon: Heart, title: 'التبرعات', desc: 'سجل ومراجعة', path: ADMIN_ROUTES.donations },
                 { icon: Percent, title: 'دفع جزئي', desc: 'رسوم', path: ADMIN_ROUTES.partialPaymentSettings },
                 { icon: Trophy, title: 'المسابقات', desc: 'سحوبات', path: ADMIN_ROUTES.competitions },
@@ -2155,8 +2155,10 @@ const Admin = () => {
                 { icon: Flag, title: 'فحص الألوان', desc: 'مطابقة الصور', path: ADMIN_ROUTES.productColorQa },
                 { icon: Sparkles, title: 'فلمنت عشوائي', desc: 'إعدادات وحظر', path: ADMIN_ROUTES.randomFilament },
                 { icon: BadgeDollarSign, title: 'تسعير الطباعة 3D', desc: 'مواد ومحرك السعر', path: ADMIN_ROUTES.printMaterials },
-
-              ].map((item, idx) => (
+                { icon: ShieldCheck, title: 'المساعدون', desc: 'إدارة صلاحيات', path: ADMIN_ROUTES.assistants, adminOnly: true },
+              ] as Array<{ icon: any; title: string; desc: string; path?: string; action?: () => void; badge?: number; adminOnly?: boolean }>)
+                .filter((item) => !item.adminOnly || isAdmin)
+                .map((item, idx) => (
                 <button
                   key={idx}
                   onClick={() => item.path ? navigate(item.path) : item.action?.()}
