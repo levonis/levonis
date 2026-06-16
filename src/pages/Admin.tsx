@@ -1792,6 +1792,8 @@ const Admin = () => {
           .filter(opt => opt.name_ar.trim() && opt.name.trim())
           .map(opt => {
             const adj = adjustmentUsdToIqd(Number(opt.price_adjustment || 0), usdToIqdRate);
+            const costUsd = Number(opt.cost_usd) || 0;
+            const costIqd = Number(opt.cost_iqd) || Math.round(costUsd * usdToIqdRate);
             return {
               product_id: productId,
               name: opt.name,
@@ -1801,7 +1803,9 @@ const Admin = () => {
               image_url: opt.image_url || null,
               stock_quantity: opt.stock_quantity ?? null,
               available_for_direct_sale: opt.available_for_direct_sale ?? true,
-              available_for_pre_order: opt.available_for_pre_order ?? false
+              available_for_pre_order: opt.available_for_pre_order ?? false,
+              cost_usd: costUsd,
+              cost_iqd: costIqd,
             };
           });
 
