@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, UserPlus, Trash2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Loader2, UserPlus, Trash2, ArrowRight, ShieldCheck, ExternalLink } from 'lucide-react';
+import { ADMIN_BASE_PATH } from '@/config/adminConfig';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -140,12 +141,22 @@ const AdminAssistants = () => {
                     <p className="font-medium truncate">{a.full_name || 'مستخدم'}</p>
                     <p className="text-xs text-muted-foreground truncate">{a.email}</p>
                   </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(ADMIN_BASE_PATH, '_blank')}
+                      className="gap-1"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">لوحة الإدارة</span>
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>حذف صلاحيات المساعد</AlertDialogTitle>
@@ -163,7 +174,8 @@ const AdminAssistants = () => {
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
-                  </AlertDialog>
+                    </AlertDialog>
+                  </div>
                 </div>
               ))}
             </div>
