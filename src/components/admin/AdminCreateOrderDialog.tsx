@@ -12,6 +12,7 @@ import { Loader2, Search, User, Package, Plus, Minus, Trash2, X } from 'lucide-r
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { adminCreateOrder } from '@/lib/adminMutations';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OrderItem {
   product_id: string;
