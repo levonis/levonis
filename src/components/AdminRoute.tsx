@@ -100,7 +100,7 @@ const AdminRoute = ({ children, requireFullAdmin = false }: AdminRouteProps) => 
     setVerified(false);
     setVerifying(true);
     verifyAdminAccess();
-  }, [user, session, authLoading, navigate, location.pathname]);
+  }, [user, session, authLoading, navigate, location.pathname, requireFullAdmin]);
 
   // Show loading while verifying
   if (authLoading || verifying) {
