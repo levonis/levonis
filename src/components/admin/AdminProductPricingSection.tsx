@@ -575,8 +575,8 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           </div>
         )}
 
-        {/* ===== DELIVERY COST (printers only) ===== */}
-        {isPrinterCategory && (hasPreOrder || hasDirectSale) && (
+        {/* ===== DELIVERY COST (printers only) — admin only ===== */}
+        {isAdmin && isPrinterCategory && (hasPreOrder || hasDirectSale) && (
           <div className="space-y-2 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
             <Label htmlFor="personal_delivery_cost" className="flex items-center gap-1.5">
               <Truck className="h-3 w-3 text-emerald-500" />
@@ -594,7 +594,8 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           </div>
         )}
 
-        {/* ===== VIP+ REFERRAL EARNINGS ===== */}
+        {/* ===== VIP+ REFERRAL EARNINGS — admin only ===== */}
+        {isAdmin && (
         <div className="space-y-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
           <Label htmlFor="referral_earnings_iqd" className="flex items-center gap-1.5">
             <DollarSign className="h-3 w-3 text-amber-500" />
