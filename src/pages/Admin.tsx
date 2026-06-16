@@ -162,7 +162,7 @@ function ColorPricePreview({ color, editingProduct }: { color: any; editingProdu
 }
 
 const Admin = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isAssistant, isAdminOrAssistant, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: shippingSettings } = useShippingSettings();
@@ -266,11 +266,11 @@ const Admin = () => {
   const [formKey, setFormKey] = useState(0); // Key to force form re-render with correct defaults
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || !isAdminOrAssistant)) {
       navigate('/');
       toast.error('ليس لديك صلاحية الوصول');
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, isAdminOrAssistant, authLoading, navigate]);
 
   // Fetch default settings
   const { data: defaultSettings } = useQuery({
