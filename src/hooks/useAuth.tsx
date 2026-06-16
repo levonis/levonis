@@ -8,6 +8,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isAssistant: boolean;
+  isAdminOrAssistant: boolean;
   signOut: () => Promise<void>;
 }
 
