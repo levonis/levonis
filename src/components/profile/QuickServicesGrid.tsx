@@ -11,7 +11,9 @@ import {
   Headphones,
   Settings,
   Gift,
+  LayoutDashboard,
 } from "lucide-react";
+import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import { useLanguage } from "@/lib/i18n";
 import type { TranslationKeys } from "@/lib/i18n/types";
 
