@@ -1,58 +1,120 @@
-# خطة تبسيط صفحة إنشاء الحساب
+# خطة: إضافة دور "مساعد الأدمن" (Admin Assistant)
 
-دمج كل المقاربات الثلاث (A تقليل الخطوات + B تقليل الحقول + C تبسيط التصميم) في تدفق واحد سلس وسريع.
+## نظرة عامة
+إضافة دور جديد `assistant` للنظام يمنح المستخدم وصولاً إلى لوحة التحكم بصلاحيات محدودة وآمنة، مع إخفاء كامل للبيانات المالية الحساسة (الربح، التكلفة، تكلفة الشحن، عمولة، breakdown الدفع).
 
-## الهدف
-تقليل صفحة التسجيل من **5 خطوات** إلى **خطوتين فقط**، مع إزالة الحقول غير الضرورية، وتصميم أنظف وأوسع.
+---
 
-## التدفق الجديد
+## 1. قاعدة البيانات (Migration)
 
-```text
-الخطوة 1: الحساب الأساسي          الخطوة 2: مراجعة سريعة
-────────────────────────         ──────────────────────
-• البريد الإلكتروني               • عرض ملخص بسيط
-• كلمة المرور                     • زر "إنشاء الحساب"
-• الاسم الكامل                    
-• اسم المستخدم                   
-• (صورة افتراضية تلقائية)         
+### أ. توسيع `app_role` enum
+```sql
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'assistant';
 ```
 
-## التغييرات التفصيلية
+### ب. دوال صلاحيات جديدة
+- `is_assistant_or_admin(_user_id uuid) → boolean` — يعيد true إذا كان admin أو assistant.
+- `is_admin_strict(_user_id uuid) → boolean` — admin فقط (للحقول الحساسة).
 
-### 1. دمج الخطوات
-- **دمج Step1 + Step2** في خطوة واحدة (الحساب + الملف الشخصي معاً).
-- **حذف Step3 (التحقق من البريد بـ OTP)** — يكفي تأكيد البريد بعد التسجيل عبر الإيميل.
-- **حذف Step4 (المعلومات الاختيارية)** — تُنقل إلى صفحة الإعدادات/الملف الشخصي بعد التسجيل.
-- **Step5 يصبح Step2** — مراجعة سريعة مبسطة.
+### ج. تحديث RLS Policies
+- `orders` / `order_items` / `products` / `product_offers`: السماح للمساعد بـ SELECT/UPDATE على الأعمدة غير الحساسة.
+- منع المساعد من DELETE على `orders` و`products`.
+- منع UPDATE على أعمدة السعر/الخصم في `orders` (cart_total, discount_amount, wallet_used, cod_amount).
 
-### 2. تقليل الحقول
-- **حذف**: رقم الهاتف، العنوان (المحافظة/المدينة/المنطقة/الشارع/أقرب معلم)، روابط السوشيال (إنستغرام/واتساب/فيسبوك)، كود الإحالة (يمكن إضافته لاحقاً من الإعدادات أو عبر رابط دعوة).
-- **حذف اختيار الصورة الرمزية يدوياً** — تُعيَّن صورة افتراضية عشوائية تلقائياً (يمكن تغييرها من الملف الشخصي لاحقاً).
-- **الإبقاء على**: البريد، كلمة المرور، الاسم الكامل، اسم المستخدم.
+### د. Views محدودة للمساعد
+- `orders_assistant` — يستثني: profit, cost, commission, shipping_cost, wallet breakdown, cod breakdown.
+- `order_items_assistant` — يستثني: cost, profit.
+- `products_assistant` — يستثني: cost, commission, shipping_cost, profit_margin.
+- `product_offers_assistant` — يستثني: cost_price.
 
-### 3. تبسيط التصميم
-- إزالة `StepIndicator` المعقد، استبداله بشريط تقدم بسيط (خطوة 1 من 2).
-- حقول إدخال أكبر (h-12 بدل h-10) وفراغات أوسع.
-- زر CTA واحد كبير وواضح في كل خطوة.
-- إزالة الأيقونات والبطاقات الزخرفية من شاشة المراجعة، الإبقاء على ملخص نصي بسيط.
-- رسائل خطأ inline تحت كل حقل بدل toast.
+### هـ. RPC مقيدة
+- `assistant_update_order_status(_order_id, _status)` — تحديث الحالة فقط.
+- `assistant_update_product(_product_id, _updates jsonb)` — تتحقق من الحقول المسموحة فقط (name, description, images, colors, options, base price, original_price). ترفض أي حقل حساس.
 
-## الملفات المتأثرة
+### و. إدارة المساعدين
+- جدول جديد للأذونات ليس مطلوباً — نستخدم `user_roles` الموجود.
+- RPC: `admin_add_assistant_by_email(_email text)` — يبحث في `profiles` بالإيميل، يضيف صف `('user_id', 'assistant')` في `user_roles`. service_role/admin فقط.
+- RPC: `admin_remove_assistant(_user_id uuid)` — حذف الصف.
+- RPC: `admin_list_assistants()` — يعيد قائمة المساعدين مع إيميلاتهم وأسمائهم.
 
-**تعديل:**
-- `src/components/auth/signup/MultiStepSignup.tsx` — تدفق خطوتين، حذف منطق Step3/Step4/Step5 القديم وحذف منطق OTP والعنوان والسوشيال من `handleFinalSubmit`.
-- `src/components/auth/signup/types.ts` — تقليص `SignupFormData` للحقول الأساسية فقط.
-- `src/components/auth/signup/StepIndicator.tsx` — تبسيط مرئي.
+---
 
-**إنشاء:**
-- `src/components/auth/signup/Step1Combined.tsx` — حقول الحساب + الاسم + اسم المستخدم في شاشة واحدة.
-- `src/components/auth/signup/Step2QuickReview.tsx` — مراجعة مبسطة + زر إنشاء.
+## 2. الواجهة الأمامية
 
-**حذف (لم تعد مستخدمة):**
-- `Step1Account.tsx`, `Step2Profile.tsx`, `Step3Verification.tsx`, `Step4OptionalInfo.tsx`, `Step5Review.tsx`.
+### أ. تحديث `useAuth`
+- إضافة `isAssistant: boolean` و`isAdminOrAssistant: boolean` بجانب `isAdmin`.
+- جلب الدور من `user_roles` كما هو الحال.
 
-## ملاحظات تقنية
-- التحقق من تكرار البريد واسم المستخدم يتم دفعة واحدة عند الانتقال للمراجعة.
-- يبقى إنشاء الحساب فعلياً عند زر "إنشاء الحساب" النهائي (نفس منطق `signUp` الحالي).
-- يبقى تتبع Meta Pixel `CompleteRegistration` كما هو.
-- منطق `referralCode` يُنقل ليُقرأ من URL params (إن وُجد) بدل حقل إدخال يدوي.
+### ب. تحديث `AdminRoute`
+- السماح بالدخول لـ admin و assistant.
+- إضافة prop جديد: `requireFullAdmin?: boolean` — لو true، يسمح فقط للأدمن الكامل.
+
+### ج. مكون جديد: `AssistantRoute`
+- مثل `AdminRoute` لكن يقبل assistant.
+
+### د. تعديل الراوتر (`App.tsx`)
+- الصفحات التالية تُغلَّف بـ `AssistantRoute` (متاحة للمساعد):
+  - Orders, Notifications, Announcements (الشريط), Coupons, ProductBundles, CustomRequests, DefaultSettings, PointsSettings, LoyaltyLevels, LoyaltyCardCodes, Wallet, WalletSettings, Chats, SavedInvoices, Donations, PartialPaymentSettings, Competitions, ProductOffers, OfferPurchases, PrinterProtection, ShippingSettings, LevoCommunity (+children), Users, Stories, GamesSettings, PriceMatch, Wishes, Reviews, PriceProtection, Winners, RandomFilament, Print3DPricing.
+- الصفحات التالية تبقى محصورة على الأدمن فقط (`requireFullAdmin`):
+  - Financials, FinancialDrafts, Inventory (التكلفة), Dashboard المالي، إدارة المساعدين، RotateKeys، إلخ.
+
+### هـ. صفحة جديدة: `AdminAssistants.tsx`
+- المسار: `${ADMIN_BASE_PATH}/assistants` (admin فقط).
+- نموذج: حقل إيميل + زر "إضافة مساعد" → ينادي `admin_add_assistant_by_email`.
+- قائمة المساعدين الحاليين مع زر "إزالة".
+
+### و. تعديل صفحات الطلبات والمنتجات للمساعد
+- `AdminOrders` / `OrderDetailsDialog`: لو `isAssistant && !isAdmin`:
+  - يستعلم من `orders_assistant` / `order_items_assistant` بدلاً من الجداول الأصلية.
+  - يخفي بطاقات: الأرباح، التكلفة، Wallet/COD breakdown، تعديل السعر، حذف الطلب.
+  - يبقي: العنوان، المنتجات، الكمية، الحالة، تحديث الحالة.
+- `AdminProducts` / `ProductsTable` / `EditProductDialog`:
+  - استعلام من `products_assistant`.
+  - يخفي حقول: cost, commission, shipping_cost, profit.
+  - يعطل: زر الحذف، زر الإنشاء الجديد.
+  - يبقي: تعديل name/description/images/colors/options/price/original_price فقط.
+
+### ز. لوحة التحكم الجانبية (Sidebar)
+- إخفاء روابط الأقسام المالية الحساسة وزر "حذف الطلب" و"إنشاء منتج جديد" عند `isAssistant && !isAdmin`.
+- إخفاء رابط "المساعدين" من لوحة المساعد.
+
+---
+
+## 3. الأمان (مهم جداً)
+
+- جميع التحققات تتم على **مستوى قاعدة البيانات** عبر RLS + Views + RPC، وليس على مستوى الواجهة فقط.
+- الواجهة تخفي العناصر لتحسين UX، لكن حتى لو حاول المساعد استدعاء API مباشر، سيرفضه الـ RLS/Views.
+- الـ Views تعتمد `WITH (security_invoker=on)` لتطبيق RLS.
+- `admin_add_assistant_by_email` تتحقق `has_role(auth.uid(), 'admin')` قبل التنفيذ.
+
+---
+
+## 4. التفاصيل التقنية
+
+```text
+الملفات الجديدة:
+- src/components/AssistantRoute.tsx
+- src/pages/AdminAssistants.tsx
+
+الملفات المعدلة:
+- src/hooks/useAuth.tsx (إضافة isAssistant)
+- src/App.tsx (لف المسارات المسموحة بـ AssistantRoute)
+- src/config/adminConfig.ts (إضافة مسار assistants)
+- src/components/admin/AdminSidebar (أو ما يعادله) (إخفاء عناصر)
+- src/pages/AdminOrders.tsx + OrderDetailsDialog (استعلام مشروط)
+- src/pages/Admin (products page) + ProductsTable + EditProductDialog (استعلام/إخفاء مشروط)
+
+Migration واحدة تشمل:
+- ALTER TYPE app_role
+- security definer functions
+- views (orders_assistant, order_items_assistant, products_assistant, product_offers_assistant)
+- RPCs (assistant_update_order_status, assistant_update_product, admin_add_assistant_by_email, admin_remove_assistant, admin_list_assistants)
+- GRANT على الـ views للـ authenticated
+- تحديث RLS على orders/products للسماح للمساعد بالقراءة
+```
+
+---
+
+## 5. خارج النطاق (لاحقاً عند الطلب)
+- صلاحيات أدق لكل قسم (الآن: متطابقة مع الأدمن في الأقسام الإدارية المذكورة).
+- سجل تدقيق لتعديلات المساعد (audit log).
