@@ -138,6 +138,7 @@ const AdminWishes = lazy(() => import("./pages/AdminWishes"));
 const AdminProductBundles = lazy(() => import("./pages/AdminProductBundles"));
 const AdminFinancialDrafts = lazy(() => import("./pages/AdminFinancialDrafts"));
 const AdminInventory = lazy(() => import("./pages/AdminInventory"));
+const AdminAssistants = lazy(() => import("./pages/AdminAssistants"));
 const AdminReviews = lazy(() => import("./pages/AdminReviews"));
 const AdminPriceProtection = lazy(() => import("./pages/AdminPriceProtection"));
 const PriceProtection = lazy(() => import("./pages/PriceProtection"));
@@ -451,7 +452,8 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/wallet-settings`} element={<AdminRoute><AdminWalletSettings /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/invoice-templates`} element={<AdminRoute><AdminInvoiceTemplates /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/saved-invoices`} element={<AdminRoute><AdminSavedInvoices /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/financials`} element={<AdminRoute><AdminFinancials /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/financials`} element={<AdminRoute requireFullAdmin><AdminFinancials /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/assistants`} element={<AdminRoute requireFullAdmin><AdminAssistants /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/donations`} element={<AdminRoute><AdminDonations /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/partial-payment-settings`} element={<AdminRoute><AdminPartialPaymentSettings /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/competitions`} element={<AdminRoute><AdminCompetitions /></AdminRoute>} />
@@ -480,8 +482,8 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/print-materials`} element={<AdminRoute><AdminPrintMaterials /></AdminRoute>} />
 
             <Route path={`${ADMIN_BASE_PATH}/product-bundles`} element={<AdminRoute><AdminProductBundles /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/financial-drafts`} element={<AdminRoute><AdminFinancialDrafts /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/inventory`} element={<AdminRoute><AdminInventory /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/financial-drafts`} element={<AdminRoute requireFullAdmin><AdminFinancialDrafts /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/inventory`} element={<AdminRoute requireFullAdmin><AdminInventory /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/reviews`} element={<AdminRoute><AdminReviews /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/price-protection`} element={<AdminRoute><AdminPriceProtection /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/winners`} element={<AdminRoute><AdminWinners /></AdminRoute>} />
