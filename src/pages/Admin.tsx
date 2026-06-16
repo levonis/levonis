@@ -1332,6 +1332,9 @@ const Admin = () => {
       console.error('[Admin] publish pending failed:', e);
       toast.error('فشل نشر المنتج');
     }
+  };
+
+
 
   // Legacy shipping functions removed - now handled by AdminProductPricingSection
 
