@@ -3002,23 +3002,57 @@ const Admin = () => {
                               </div>
 
                               <div className="space-y-3">
-                                <div className="space-y-1">
-                                  <Label className="text-xs">فرق السعر بالدولار ($)</Label>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={option.price_adjustment}
-                                    onChange={(e) => updateProductOption(index, 'price_adjustment', Number(e.target.value))}
-                                    placeholder="0"
-                                    className="h-9"
-                                  />
-                                  <p className="text-xs text-muted-foreground">
-                                    أدخل رقم موجب للإضافة أو سالب للخصم (بالدولار)
-                                  </p>
-                                  <OptionPricePreview
-                                    adjustment={option.price_adjustment}
-                                    editingProduct={editingProduct}
-                                  />
+                                {isAdmin && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">فرق السعر بالدولار ($)</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={option.price_adjustment}
+                                      onChange={(e) => updateProductOption(index, 'price_adjustment', Number(e.target.value))}
+                                      placeholder="0"
+                                      className="h-9"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      أدخل رقم موجب للإضافة أو سالب للخصم (بالدولار)
+                                    </p>
+                                    <OptionPricePreview
+                                      adjustment={option.price_adjustment}
+                                      editingProduct={editingProduct}
+                                    />
+                                  </div>
+                                )}
+
+                                {/* Cost per option (visible to both admin and assistant) */}
+                                <div className="grid grid-cols-2 gap-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">تكلفة الخيار ($)</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={option.cost_usd ?? ''}
+                                      onChange={(e) => {
+                                        const v = Number(e.target.value) || 0;
+                                        updateProductOption(index, 'cost_usd', v);
+                                        updateProductOption(index, 'cost_iqd', Math.round(v * usdToIqdRate));
+                                      }}
+                                      placeholder="0.00"
+                                      className="h-9"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">التكلفة (د.ع)</Label>
+                                    <Input
+                                      type="number"
+                                      step="250"
+                                      min="0"
+                                      value={option.cost_iqd ?? ''}
+                                      onChange={(e) => updateProductOption(index, 'cost_iqd', Number(e.target.value) || 0)}
+                                      placeholder="0"
+                                      className="h-9"
+                                    />
+                                  </div>
                                 </div>
                                 
                                 <div className="space-y-2">
