@@ -562,11 +562,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                     </div>
                   </div>
                 )}
-                <div className="space-y-2">
-                  <Label htmlFor="commission_air_iqd">العمولة - جوي (د.ع)</Label>
-                  <Input id="commission_air_iqd" type="number" min="0"
-                    value={commissionAirIqd || ''} onChange={(e) => setCommissionAirIqd(Number(e.target.value))} placeholder="0" />
-                </div>
+                {isAdmin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="commission_air_iqd">العمولة - جوي (د.ع)</Label>
+                    <Input id="commission_air_iqd" type="number" min="0"
+                      value={commissionAirIqd || ''} onChange={(e) => setCommissionAirIqd(Number(e.target.value))} placeholder="0" />
+                  </div>
+                )}
               </div>
             )}
 
