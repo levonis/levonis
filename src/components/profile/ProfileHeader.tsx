@@ -10,7 +10,7 @@ import LevelBadge from "@/components/LevelBadge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { ADMIN_ROUTES } from "@/config/adminConfig";
+import { ADMIN_ROUTES, ADMIN_BASE_PATH } from "@/config/adminConfig";
 import WalletDialog from "@/components/WalletDialog";
 import SavingsPopup from "./SavingsPopup";
 import CouponsPopup from "./CouponsPopup";
