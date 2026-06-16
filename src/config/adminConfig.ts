@@ -12,7 +12,7 @@
 
 // Secure admin base path - change this to customize your admin URL
 // This replaces the default /admin path with a non-guessable alternative
-export const ADMIN_BASE_PATH = '/cp-x9A3kL7m';
+export const ADMIN_BASE_PATH = '/cp-x9A3kL5a';
 
 // All admin route paths - used for route definitions and navigation
 export const ADMIN_ROUTES = {
