@@ -153,7 +153,7 @@ function pickSkeleton(pathname: string) {
   // no flash of a different layout on first paint.
   if (p === "/auth" || p.startsWith("/auth")) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-3">
             <div className="h-8 w-40 mx-auto rounded bg-muted/60 animate-pulse" />
@@ -171,7 +171,7 @@ function pickSkeleton(pathname: string) {
 
   // Default — generic shell
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6 max-w-lg space-y-4">
         <HeaderSkeleton />
         <div className="rounded-2xl border border-border/30 bg-card p-4 space-y-3">
