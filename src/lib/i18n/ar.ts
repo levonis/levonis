@@ -924,6 +924,7 @@ export const ar: TranslationKeys = {
   cart_products_count: '{count} منتجات',
 
   profile_admin_panel: 'لوحة الإدارة',
+  profile_assistant_panel: 'لوحة المساعد',
   profile_default_username: 'مستخدم',
   profile_points_to_next: '{points} نقطة للترقية',
   profile_level_complete: 'مكتمل!',
