@@ -190,6 +190,8 @@ const Admin = () => {
     available_for_direct_sale?: boolean;
     available_for_pre_order?: boolean;
     taobao_linked_name?: string | null;
+    cost_usd?: number;
+    cost_iqd?: number;
   }>>([]);
   const [productColors, setProductColors] = useState<Array<{
     name: string;
@@ -205,6 +207,8 @@ const Admin = () => {
     linked_options?: string[];
     direct_sale_price?: number;
     option_stocks?: Record<string, number>;
+    cost_usd?: number;
+    cost_iqd?: number;
   }>>([]);
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
