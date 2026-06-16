@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAssistant, setIsAssistant] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -92,15 +93,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
+        .in('role', ['admin', 'assistant']);
 
       if (error) throw error;
-      setIsAdmin(!!data);
-      return !!data;
+      const roles = (data ?? []).map((r: any) => r.role);
+      setIsAdmin(roles.includes('admin'));
+      setIsAssistant(roles.includes('assistant'));
+      return roles.includes('admin');
     } catch (error) {
       console.error('Admin role check failed:', error);
       setIsAdmin(false);
+      setIsAssistant(false);
       return false;
     }
   };
