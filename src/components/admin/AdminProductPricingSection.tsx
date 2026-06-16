@@ -333,6 +333,16 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     return { rate, priceIqd, results };
   }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
 
+  // Assistants must NOT see commission, profit, cost or shipping details.
+  if (!isAdmin) {
+    return (
+      <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+        <Lock className="h-4 w-4" />
+        تفاصيل التسعير والعمولة والتكاليف مخفية عن المساعدين
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 border-t pt-4">
       {/* Hidden inputs for form submission */}
