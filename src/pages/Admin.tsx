@@ -269,6 +269,92 @@ const Admin = () => {
   const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
   const [formKey, setFormKey] = useState(0); // Key to force form re-render with correct defaults
 
+  // ===== Product draft autosave =====
+  const PRODUCT_DRAFT_KEY = 'admin-product-draft-v1';
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const restoredDraftRef = useRef(false);
+  const draftRestoredOnceRef = useRef(false);
+
+  const clearProductDraft = useCallback(() => {
+    try { localStorage.removeItem(PRODUCT_DRAFT_KEY); } catch {}
+  }, []);
+
+  // Restore draft on first mount
+  useEffect(() => {
+    if (draftRestoredOnceRef.current) return;
+    draftRestoredOnceRef.current = true;
+    try {
+      const raw = localStorage.getItem(PRODUCT_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (!draft || !draft.open) return;
+      restoredDraftRef.current = true;
+      setEditingProduct(draft.editingProduct ?? null);
+      setUploadedImages(Array.isArray(draft.uploadedImages) ? draft.uploadedImages : []);
+      setProductOptions(Array.isArray(draft.productOptions) ? draft.productOptions : []);
+      setProductColors(Array.isArray(draft.productColors) ? draft.productColors : []);
+      setProductFeatures(Array.isArray(draft.productFeatures) ? draft.productFeatures : []);
+      setProductCardDiscounts(Array.isArray(draft.productCardDiscounts) ? draft.productCardDiscounts : []);
+      setProductAIContent(draft.productAIContent ?? {});
+      setProductShortSummary(draft.productShortSummary ?? {});
+      setProductSearchableAttrs(Array.isArray(draft.productSearchableAttrs) ? draft.productSearchableAttrs : []);
+      setProductUrl(typeof draft.productUrl === 'string' ? draft.productUrl : '');
+      setActiveTab('products');
+      setProductDialogOpen(true);
+      toast.info('تم استرجاع مسودة المنتج المحفوظة');
+    } catch (e) {
+      console.warn('[Admin] Failed to restore product draft', e);
+    }
+  }, []);
+
+  // Autosave draft (debounced via interval snapshot of form values)
+  useEffect(() => {
+    if (!productDialogOpen) return;
+    const snapshot = () => {
+      try {
+        const formValues: Record<string, any> = {};
+        if (formRef.current) {
+          const fd = new FormData(formRef.current);
+          for (const [k, v] of fd.entries()) {
+            if (typeof v === 'string') formValues[k] = v;
+          }
+        }
+        const mergedEditing = { ...(editingProduct || {}), ...formValues };
+        const draft = {
+          open: true,
+          editingProduct: mergedEditing,
+          uploadedImages,
+          productOptions,
+          productColors,
+          productFeatures,
+          productCardDiscounts,
+          productAIContent,
+          productShortSummary,
+          productSearchableAttrs,
+          productUrl,
+          savedAt: Date.now(),
+        };
+        localStorage.setItem(PRODUCT_DRAFT_KEY, JSON.stringify(draft));
+      } catch (e) {
+        // localStorage can throw (quota); ignore
+      }
+    };
+    snapshot();
+    const id = window.setInterval(snapshot, 1500);
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      snapshot();
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [productDialogOpen, editingProduct, uploadedImages, productOptions, productColors, productFeatures, productCardDiscounts, productAIContent, productShortSummary, productSearchableAttrs, productUrl]);
+
+
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/');
