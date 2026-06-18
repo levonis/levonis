@@ -356,10 +356,13 @@ const Admin = () => {
           for (const [k, v] of fd.entries()) {
             if (typeof v === 'string') formValues[k] = v;
           }
-          // Also capture textareas/inputs whose value isn't picked up by FormData (no name)
         }
-        latestFormValuesRef.current = formValues;
-        const mergedEditing = { ...(editingProduct || {}), ...formValues };
+        // If the form isn't mounted yet (e.g. tab not visible), keep the previous snapshot
+        const effectiveValues = Object.keys(formValues).length === 0 && Object.keys(latestFormValuesRef.current).length > 0
+          ? latestFormValuesRef.current
+          : formValues;
+        latestFormValuesRef.current = effectiveValues;
+        const mergedEditing = { ...(editingProduct || {}), ...effectiveValues };
         const draft = {
           open: true,
           editingProduct: mergedEditing,
