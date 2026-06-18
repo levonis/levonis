@@ -914,29 +914,42 @@ const Admin = () => {
     }
   });
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const uploadImageFiles = async (files: File[]) => {
     if (!files || files.length === 0) return;
+
+    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const MAX_BYTES = 5 * 1024 * 1024;
 
     setUploadingImages(true);
     const newImageUrls: string[] = [];
     const failedUploads: string[] = [];
 
     try {
-      for (const file of Array.from(files)) {
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      for (const file of files) {
+        const mime = file.type || `image/${(file.name.split('.').pop() || 'jpg').toLowerCase()}`;
+        if (!ALLOWED.includes(mime.toLowerCase())) {
+          toast.error(`نوع الملف غير مدعوم: ${file.name}`);
+          failedUploads.push(file.name);
+          continue;
+        }
+        if (file.size > MAX_BYTES) {
+          toast.error(`${file.name} أكبر من 5MB`);
+          failedUploads.push(file.name);
+          continue;
+        }
+
+        const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
         const timestamp = Date.now();
         const random = Math.random().toString().substring(2, 10);
         const fileName = `manual-${timestamp}-${random}.${fileExt}`;
 
-        console.log(`[ImageUpload] Uploading: ${fileName} (${file.size} bytes)`);
-
         const { error: uploadError } = await supabase.storage
           .from('product-images')
-          .upload(fileName, file);
+          .upload(fileName, file, { contentType: mime, upsert: false });
 
         if (uploadError) {
           console.error(`[ImageUpload] Upload error for ${file.name}:`, uploadError);
+          toast.error(`فشل رفع ${file.name}: ${uploadError.message}`);
           failedUploads.push(file.name);
           continue;
         }
@@ -945,28 +958,10 @@ const Admin = () => {
           .from('product-images')
           .getPublicUrl(fileName);
 
-        // Verify the upload was successful
-        try {
-          const verifyResponse = await fetch(publicUrl, { method: 'HEAD' });
-          if (!verifyResponse.ok) {
-            console.error(`[ImageUpload] Verification failed for ${fileName}`);
-            failedUploads.push(file.name);
-            // Clean up failed upload
-            await supabase.storage.from('product-images').remove([fileName]);
-            continue;
-          }
-          console.log(`[ImageUpload] Verified: ${fileName}`);
-        } catch (verifyErr) {
-          console.warn(`[ImageUpload] Could not verify ${fileName}, but proceeding`);
-        }
-
         newImageUrls.push(publicUrl);
       }
 
       if (newImageUrls.length > 0) {
-        // If editing an existing product, append directly to its images array
-        // so the new images appear immediately in the main draggable grid
-        // (allowing set-as-main and reordering without saving first).
         if (editingProduct) {
           const merged = [...(editingProduct.images || []), ...newImageUrls];
           setEditingProduct({
@@ -979,16 +974,20 @@ const Admin = () => {
         }
         toast.success(`تم رفع ${newImageUrls.length} صورة بنجاح`);
       }
-      
-      if (failedUploads.length > 0) {
-        toast.error(`فشل رفع ${failedUploads.length} صورة: ${failedUploads.join(', ')}`);
-      }
     } catch (error) {
       console.error('[ImageUpload] Error:', error);
       toast.error('حدث خطأ أثناء رفع الصور');
     } finally {
       setUploadingImages(false);
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await uploadImageFiles(Array.from(files));
+    // reset so same file can be picked again
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
