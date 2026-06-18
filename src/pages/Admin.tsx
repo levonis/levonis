@@ -3040,12 +3040,32 @@ const Admin = () => {
                         </div>
                       )}
 
-                      {/* Upload new images */}
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                      {/* Upload new images (click or drag & drop) */}
+                      <div
+                        className="border-2 border-dashed border-border rounded-lg p-6 text-center transition-colors hover:border-primary/50"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.dataTransfer.dropEffect = 'copy';
+                          e.currentTarget.classList.add('border-primary', 'bg-primary/5');
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
+                          const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+                          if (files.length > 0) uploadImageFiles(files);
+                        }}
+                      >
                         <Input
                           id="image-upload"
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/*"
                           multiple
                           onChange={handleImageUpload}
                           className="hidden"
@@ -3060,10 +3080,10 @@ const Admin = () => {
                             <Upload className="h-8 w-8 text-muted-foreground" />
                           )}
                           <span className="text-sm text-muted-foreground">
-                            {uploadingImages ? 'جاري الرفع...' : 'اضغط لرفع الصور'}
+                            {uploadingImages ? 'جاري الرفع...' : 'اضغط أو اسحب الصور هنا لرفعها'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            يمكنك اختيار عدة صور مرة واحدة
+                            JPG / PNG / WEBP / GIF — حتى 5MB لكل صورة
                           </span>
                         </Label>
                       </div>
