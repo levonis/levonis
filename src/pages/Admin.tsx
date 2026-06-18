@@ -691,6 +691,7 @@ const Admin = () => {
       // Toast handled in handleSubmitProduct
       setProductDialogOpen(false);
       setEditingProduct(null);
+      clearProductDraft();
     },
     onError: (error) => {
       toast.error('حدث خطأ أثناء تحديث المنتج');
