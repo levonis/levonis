@@ -1227,9 +1227,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    const { data: roleRow } = await authClient
-      .from('user_roles').select('role').eq('user_id', userData.user.id).eq('role', 'admin').maybeSingle();
-    if (!roleRow) {
+    const { data: roleRows } = await authClient
+      .from('user_roles').select('role').eq('user_id', userData.user.id).in('role', ['admin', 'assistant']);
+    if (!roleRows || roleRows.length === 0) {
       return new Response(JSON.stringify({ success: false, error: 'Forbidden' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
