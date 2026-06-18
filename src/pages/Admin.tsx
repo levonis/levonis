@@ -2760,9 +2760,19 @@ const Admin = () => {
                           defaultValue={editingProduct?.name_ar}
                           required 
                         />
-                        <p className="text-[10px] text-muted-foreground">يُترجم تلقائياً للإنجليزية والكردية عند العرض</p>
                       </div>
-                      {/* English name auto-filled from Arabic; translated lazily by translate-product */}
+                      <div className="space-y-2 col-span-2">
+                        <Label htmlFor="name_en">الاسم بالإنجليزي (Name in English)</Label>
+                        <Input
+                          id="name_en"
+                          name="name_en"
+                          defaultValue={editingProduct?.name_en || editingProduct?.name || ''}
+                          placeholder="مثال: Bambu Lab X1 Carbon"
+                          dir="ltr"
+                        />
+                        <p className="text-[10px] text-muted-foreground">يُستخدم للعرض بالإنجليزية والـ SEO. اتركه فارغاً ليُترجم تلقائياً.</p>
+                      </div>
+                      {/* Mirror name_en into legacy `name` column on submit */}
                       <input type="hidden" name="name" defaultValue={editingProduct?.name || ''} />
                     </div>
 
