@@ -1608,14 +1608,21 @@ const Admin = () => {
           cost_iqd: costIqd,
         };
       });
-      const validFeatures = productFeatures.filter(f => f.text_ar.trim() && f.text.trim());
+      const validFeatures = productFeatures
+        .filter(f => f.text_ar.trim())
+        .map(f => ({ ...f, text: (f.text || '').trim() || f.text_ar.trim() }));
       
+      const nameArVal = (formData.get('name_ar') as string) || '';
+      const nameEnVal = ((formData.get('name') as string) || '').trim() || nameArVal;
+      const descArVal = (formData.get('description_ar') as string) || '';
+      const descEnVal = ((formData.get('description') as string) || '').trim() || descArVal || null;
+
       const values = {
-        name_ar: formData.get('name_ar') as string,
-        name: formData.get('name') as string,
+        name_ar: nameArVal,
+        name: nameEnVal,
         slug: formData.get('slug') as string,
-        description_ar: (formData.get('description_ar') as string) || null,
-        description: (formData.get('description') as string) || null,
+        description_ar: descArVal || null,
+        description: descEnVal,
         price: formData.get('price') && formData.get('price') !== '' ? Number(formData.get('price')) : 0,
         original_price: formData.get('original_price_iqd') && formData.get('original_price_iqd') !== ''
           ? Number(formData.get('original_price_iqd'))
