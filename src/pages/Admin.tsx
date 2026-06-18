@@ -914,29 +914,42 @@ const Admin = () => {
     }
   });
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const uploadImageFiles = async (files: File[]) => {
     if (!files || files.length === 0) return;
+
+    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const MAX_BYTES = 5 * 1024 * 1024;
 
     setUploadingImages(true);
     const newImageUrls: string[] = [];
     const failedUploads: string[] = [];
 
     try {
-      for (const file of Array.from(files)) {
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      for (const file of files) {
+        const mime = file.type || `image/${(file.name.split('.').pop() || 'jpg').toLowerCase()}`;
+        if (!ALLOWED.includes(mime.toLowerCase())) {
+          toast.error(`نوع الملف غير مدعوم: ${file.name}`);
+          failedUploads.push(file.name);
+          continue;
+        }
+        if (file.size > MAX_BYTES) {
+          toast.error(`${file.name} أكبر من 5MB`);
+          failedUploads.push(file.name);
+          continue;
+        }
+
+        const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
         const timestamp = Date.now();
         const random = Math.random().toString().substring(2, 10);
         const fileName = `manual-${timestamp}-${random}.${fileExt}`;
 
-        console.log(`[ImageUpload] Uploading: ${fileName} (${file.size} bytes)`);
-
         const { error: uploadError } = await supabase.storage
           .from('product-images')
-          .upload(fileName, file);
+          .upload(fileName, file, { contentType: mime, upsert: false });
 
         if (uploadError) {
           console.error(`[ImageUpload] Upload error for ${file.name}:`, uploadError);
+          toast.error(`فشل رفع ${file.name}: ${uploadError.message}`);
           failedUploads.push(file.name);
           continue;
         }
@@ -945,28 +958,10 @@ const Admin = () => {
           .from('product-images')
           .getPublicUrl(fileName);
 
-        // Verify the upload was successful
-        try {
-          const verifyResponse = await fetch(publicUrl, { method: 'HEAD' });
-          if (!verifyResponse.ok) {
-            console.error(`[ImageUpload] Verification failed for ${fileName}`);
-            failedUploads.push(file.name);
-            // Clean up failed upload
-            await supabase.storage.from('product-images').remove([fileName]);
-            continue;
-          }
-          console.log(`[ImageUpload] Verified: ${fileName}`);
-        } catch (verifyErr) {
-          console.warn(`[ImageUpload] Could not verify ${fileName}, but proceeding`);
-        }
-
         newImageUrls.push(publicUrl);
       }
 
       if (newImageUrls.length > 0) {
-        // If editing an existing product, append directly to its images array
-        // so the new images appear immediately in the main draggable grid
-        // (allowing set-as-main and reordering without saving first).
         if (editingProduct) {
           const merged = [...(editingProduct.images || []), ...newImageUrls];
           setEditingProduct({
@@ -979,16 +974,20 @@ const Admin = () => {
         }
         toast.success(`تم رفع ${newImageUrls.length} صورة بنجاح`);
       }
-      
-      if (failedUploads.length > 0) {
-        toast.error(`فشل رفع ${failedUploads.length} صورة: ${failedUploads.join(', ')}`);
-      }
     } catch (error) {
       console.error('[ImageUpload] Error:', error);
       toast.error('حدث خطأ أثناء رفع الصور');
     } finally {
       setUploadingImages(false);
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await uploadImageFiles(Array.from(files));
+    // reset so same file can be picked again
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
@@ -1661,13 +1660,16 @@ const Admin = () => {
         .map(f => ({ ...f, text: (f.text || '').trim() || f.text_ar.trim() }));
       
       const nameArVal = (formData.get('name_ar') as string) || '';
-      const nameEnVal = ((formData.get('name') as string) || '').trim() || nameArVal;
+      const nameEnInput = ((formData.get('name_en') as string) || '').trim();
+      const nameLegacyInput = ((formData.get('name') as string) || '').trim();
+      const nameEnVal = nameEnInput || nameLegacyInput || nameArVal;
       const descArVal = (formData.get('description_ar') as string) || '';
       const descEnVal = ((formData.get('description') as string) || '').trim() || descArVal || null;
 
       const values = {
         name_ar: nameArVal,
         name: nameEnVal,
+        name_en: nameEnInput || null,
         slug: formData.get('slug') as string,
         description_ar: descArVal || null,
         description: descEnVal,
@@ -2760,9 +2762,19 @@ const Admin = () => {
                           defaultValue={editingProduct?.name_ar}
                           required 
                         />
-                        <p className="text-[10px] text-muted-foreground">يُترجم تلقائياً للإنجليزية والكردية عند العرض</p>
                       </div>
-                      {/* English name auto-filled from Arabic; translated lazily by translate-product */}
+                      <div className="space-y-2 col-span-2">
+                        <Label htmlFor="name_en">الاسم بالإنجليزي (Name in English)</Label>
+                        <Input
+                          id="name_en"
+                          name="name_en"
+                          defaultValue={editingProduct?.name_en || editingProduct?.name || ''}
+                          placeholder="مثال: Bambu Lab X1 Carbon"
+                          dir="ltr"
+                        />
+                        <p className="text-[10px] text-muted-foreground">يُستخدم للعرض بالإنجليزية والـ SEO. اتركه فارغاً ليُترجم تلقائياً.</p>
+                      </div>
+                      {/* Mirror name_en into legacy `name` column on submit */}
                       <input type="hidden" name="name" defaultValue={editingProduct?.name || ''} />
                     </div>
 
@@ -3000,7 +3012,41 @@ const Admin = () => {
                                   <div className="absolute bottom-1 left-1 bg-background/80 text-muted-foreground p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                                     <GripVertical className="h-3 w-3" />
                                   </div>
-                                  
+
+                                  {/* Mobile-friendly reorder buttons (always visible) */}
+                                  <div className="absolute bottom-1 right-1 flex gap-1">
+                                    <button
+                                      type="button"
+                                      disabled={index === 0}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (index === 0) return;
+                                        const arr = [...editingProduct.images];
+                                        [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+                                        setEditingProduct({ ...editingProduct, images: arr, image_url: arr[0] });
+                                      }}
+                                      className="bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground w-6 h-6 rounded flex items-center justify-center text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed shadow"
+                                      title="نقل لليمين (للأمام)"
+                                    >
+                                      ›
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={index === editingProduct.images.length - 1}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (index === editingProduct.images.length - 1) return;
+                                        const arr = [...editingProduct.images];
+                                        [arr[index + 1], arr[index]] = [arr[index], arr[index + 1]];
+                                        setEditingProduct({ ...editingProduct, images: arr, image_url: arr[0] });
+                                      }}
+                                      className="bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground w-6 h-6 rounded flex items-center justify-center text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed shadow"
+                                      title="نقل لليسار (للخلف)"
+                                    >
+                                      ‹
+                                    </button>
+                                  </div>
+
                                   {isMainImage && (
                                     <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium">
                                       رئيسية
@@ -3028,12 +3074,32 @@ const Admin = () => {
                         </div>
                       )}
 
-                      {/* Upload new images */}
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                      {/* Upload new images (click or drag & drop) */}
+                      <div
+                        className="border-2 border-dashed border-border rounded-lg p-6 text-center transition-colors hover:border-primary/50"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.dataTransfer.dropEffect = 'copy';
+                          e.currentTarget.classList.add('border-primary', 'bg-primary/5');
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
+                          const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+                          if (files.length > 0) uploadImageFiles(files);
+                        }}
+                      >
                         <Input
                           id="image-upload"
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/*"
                           multiple
                           onChange={handleImageUpload}
                           className="hidden"
@@ -3048,10 +3114,10 @@ const Admin = () => {
                             <Upload className="h-8 w-8 text-muted-foreground" />
                           )}
                           <span className="text-sm text-muted-foreground">
-                            {uploadingImages ? 'جاري الرفع...' : 'اضغط لرفع الصور'}
+                            {uploadingImages ? 'جاري الرفع...' : 'اضغط أو اسحب الصور هنا لرفعها'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            يمكنك اختيار عدة صور مرة واحدة
+                            JPG / PNG / WEBP / GIF — حتى 5MB لكل صورة
                           </span>
                         </Label>
                       </div>
