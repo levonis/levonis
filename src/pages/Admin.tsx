@@ -3797,27 +3797,16 @@ const Admin = () => {
                                   </select>
                                 </div>
                                 
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">النص بالعربي</Label>
-                                    <Input
-                                      type="text"
-                                      value={feature.text_ar}
-                                      onChange={(e) => updateProductFeature(index, 'text_ar', e.target.value)}
-                                      placeholder="ذاكرة 16 جيجابايت"
-                                      className="h-9"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">النص بالإنجليزي</Label>
-                                    <Input
-                                      type="text"
-                                      value={feature.text}
-                                      onChange={(e) => updateProductFeature(index, 'text', e.target.value)}
-                                      placeholder="16GB Memory"
-                                      className="h-9"
-                                    />
-                                  </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">النص بالعربي</Label>
+                                  <Input
+                                    type="text"
+                                    value={feature.text_ar}
+                                    onChange={(e) => updateProductFeature(index, 'text_ar', e.target.value)}
+                                    placeholder="ذاكرة 16 جيجابايت"
+                                    className="h-9"
+                                  />
+                                  <p className="text-[10px] text-muted-foreground">يُترجم تلقائياً للإنجليزية والكردية</p>
                                 </div>
                               </div>
                             </div>
