@@ -1571,9 +1571,11 @@ const Admin = () => {
   };
 
   const updateProductOption = (index: number, field: string, value: any) => {
-    const updated = [...productOptions];
-    updated[index] = { ...updated[index], [field]: value };
-    setProductOptions(updated);
+    setProductOptions((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
   const addProductColor = () => {
