@@ -3822,29 +3822,14 @@ const Admin = () => {
                         <p className="text-xs text-muted-foreground mb-3">
                           سطر واحد يلخص المنتج. يستخدم في وصف صفحة جوجل و OG ومساعدي الذكاء الاصطناعي.
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                          <Input
-                            value={productShortSummary.ar || ''}
-                            onChange={(e) => setProductShortSummary({ ...productShortSummary, ar: e.target.value })}
-                            placeholder="بالعربية (≤ 160 حرف)"
-                            dir="rtl"
-                            maxLength={200}
-                          />
-                          <Input
-                            value={productShortSummary.en || ''}
-                            onChange={(e) => setProductShortSummary({ ...productShortSummary, en: e.target.value })}
-                            placeholder="English (≤ 160 chars)"
-                            dir="ltr"
-                            maxLength={200}
-                          />
-                          <Input
-                            value={productShortSummary.ku || ''}
-                            onChange={(e) => setProductShortSummary({ ...productShortSummary, ku: e.target.value })}
-                            placeholder="بە کوردی"
-                            dir="rtl"
-                            maxLength={200}
-                          />
-                        </div>
+                        <Input
+                          value={productShortSummary.ar || ''}
+                          onChange={(e) => setProductShortSummary({ ...productShortSummary, ar: e.target.value })}
+                          placeholder="بالعربية (≤ 160 حرف)"
+                          dir="rtl"
+                          maxLength={200}
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">يُترجم تلقائياً للإنجليزية والكردية عند العرض</p>
                       </div>
 
                       <div>
