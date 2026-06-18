@@ -1670,6 +1670,7 @@ const Admin = () => {
       const values = {
         name_ar: nameArVal,
         name: nameEnVal,
+        name_en: nameEnInput || null,
         slug: formData.get('slug') as string,
         description_ar: descArVal || null,
         description: descEnVal,
