@@ -2542,19 +2542,22 @@ const Admin = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
+                          const ok = window.confirm('سيتم حذف المسودة المحفوظة. هل تريد المتابعة؟');
+                          if (!ok) return;
                           setProductDialogOpen(false);
                           setEditingProduct(null);
                           setUploadedImages([]);
                           setProductOptions([]);
                           setProductColors([]);
                           setProductFeatures([]);
+                          clearProductDraft();
                         }}
                       >
                         إغلاق
                       </Button>
                     </div>
                     <div className="max-w-3xl mx-auto p-4">
-                  <form key={editingProduct?.id || `new-${formKey}`} onSubmit={handleProductSubmit} className="space-y-4">
+                  <form ref={formRef} key={editingProduct?.id || `new-${formKey}`} onSubmit={handleProductSubmit} className="space-y-4">
 
                     {/* Text Paste & URL Extraction Section - For Quick Access */}
                     <div className="p-4 border-2 border-dashed border-amber-500/30 rounded-lg bg-amber-500/5 space-y-3">
