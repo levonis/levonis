@@ -2697,7 +2697,7 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
 
-                      <div className="space-y-2">
+                      <div className="space-y-2 col-span-2">
                         <Label htmlFor="name_ar">الاسم بالعربي *</Label>
                         <Input 
                           id="name_ar" 
@@ -2705,17 +2705,10 @@ const Admin = () => {
                           defaultValue={editingProduct?.name_ar}
                           required 
                         />
+                        <p className="text-[10px] text-muted-foreground">يُترجم تلقائياً للإنجليزية والكردية عند العرض</p>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="name">الاسم بالإنجليزي *</Label>
-                        <Input 
-                          id="name" 
-                          name="name"
-                          defaultValue={editingProduct?.name}
-                          required 
-                        />
-                      </div>
+                      {/* English name auto-filled from Arabic; translated lazily by translate-product */}
+                      <input type="hidden" name="name" defaultValue={editingProduct?.name || ''} />
                     </div>
 
                     <div className="space-y-2">
