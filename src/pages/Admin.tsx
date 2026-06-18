@@ -2722,26 +2722,16 @@ const Admin = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="description_ar">الوصف بالعربي</Label>
-                        <Textarea 
-                          id="description_ar" 
-                          name="description_ar"
-                          defaultValue={editingProduct?.description_ar}
-                          rows={3}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="description">الوصف بالإنجليزي</Label>
-                        <Textarea 
-                          id="description" 
-                          name="description"
-                          defaultValue={editingProduct?.description}
-                          rows={3}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description_ar">الوصف بالعربي</Label>
+                      <Textarea 
+                        id="description_ar" 
+                        name="description_ar"
+                        defaultValue={editingProduct?.description_ar}
+                        rows={3}
+                      />
+                      <p className="text-[10px] text-muted-foreground">يُترجم تلقائياً للإنجليزية والكردية عند العرض</p>
+                      <input type="hidden" name="description" defaultValue={editingProduct?.description || ''} />
                     </div>
 
                     {/* Price fields moved to AdminProductPricingSection */}
