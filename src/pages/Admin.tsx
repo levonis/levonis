@@ -316,6 +316,17 @@ const Admin = () => {
       const draft = JSON.parse(raw);
       if (!draft || !draft.open) return;
       restoredDraftRef.current = true;
+      // Seed form snapshot so the form hydrates its inputs as soon as it mounts
+      if (draft.formValues && typeof draft.formValues === 'object') {
+        latestFormValuesRef.current = { ...draft.formValues };
+      } else if (draft.editingProduct && typeof draft.editingProduct === 'object') {
+        // Backwards compat: older drafts stored values inside editingProduct
+        const seed: Record<string, string> = {};
+        for (const [k, v] of Object.entries(draft.editingProduct)) {
+          if (typeof v === 'string' || typeof v === 'number') seed[k] = String(v);
+        }
+        latestFormValuesRef.current = seed;
+      }
       setEditingProduct(draft.editingProduct ?? null);
       setUploadedImages(Array.isArray(draft.uploadedImages) ? draft.uploadedImages : []);
       setProductOptions(Array.isArray(draft.productOptions) ? draft.productOptions : []);
