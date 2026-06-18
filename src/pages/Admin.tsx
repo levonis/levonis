@@ -1608,14 +1608,21 @@ const Admin = () => {
           cost_iqd: costIqd,
         };
       });
-      const validFeatures = productFeatures.filter(f => f.text_ar.trim() && f.text.trim());
+      const validFeatures = productFeatures
+        .filter(f => f.text_ar.trim())
+        .map(f => ({ ...f, text: (f.text || '').trim() || f.text_ar.trim() }));
       
+      const nameArVal = (formData.get('name_ar') as string) || '';
+      const nameEnVal = ((formData.get('name') as string) || '').trim() || nameArVal;
+      const descArVal = (formData.get('description_ar') as string) || '';
+      const descEnVal = ((formData.get('description') as string) || '').trim() || descArVal || null;
+
       const values = {
-        name_ar: formData.get('name_ar') as string,
-        name: formData.get('name') as string,
+        name_ar: nameArVal,
+        name: nameEnVal,
         slug: formData.get('slug') as string,
-        description_ar: (formData.get('description_ar') as string) || null,
-        description: (formData.get('description') as string) || null,
+        description_ar: descArVal || null,
+        description: descEnVal,
         price: formData.get('price') && formData.get('price') !== '' ? Number(formData.get('price')) : 0,
         original_price: formData.get('original_price_iqd') && formData.get('original_price_iqd') !== ''
           ? Number(formData.get('original_price_iqd'))
@@ -2697,7 +2704,7 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
 
-                      <div className="space-y-2">
+                      <div className="space-y-2 col-span-2">
                         <Label htmlFor="name_ar">الاسم بالعربي *</Label>
                         <Input 
                           id="name_ar" 
@@ -2705,17 +2712,10 @@ const Admin = () => {
                           defaultValue={editingProduct?.name_ar}
                           required 
                         />
+                        <p className="text-[10px] text-muted-foreground">يُترجم تلقائياً للإنجليزية والكردية عند العرض</p>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="name">الاسم بالإنجليزي *</Label>
-                        <Input 
-                          id="name" 
-                          name="name"
-                          defaultValue={editingProduct?.name}
-                          required 
-                        />
-                      </div>
+                      {/* English name auto-filled from Arabic; translated lazily by translate-product */}
+                      <input type="hidden" name="name" defaultValue={editingProduct?.name || ''} />
                     </div>
 
                     <div className="space-y-2">
@@ -2729,26 +2729,16 @@ const Admin = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="description_ar">الوصف بالعربي</Label>
-                        <Textarea 
-                          id="description_ar" 
-                          name="description_ar"
-                          defaultValue={editingProduct?.description_ar}
-                          rows={3}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="description">الوصف بالإنجليزي</Label>
-                        <Textarea 
-                          id="description" 
-                          name="description"
-                          defaultValue={editingProduct?.description}
-                          rows={3}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description_ar">الوصف بالعربي</Label>
+                      <Textarea 
+                        id="description_ar" 
+                        name="description_ar"
+                        defaultValue={editingProduct?.description_ar}
+                        rows={3}
+                      />
+                      <p className="text-[10px] text-muted-foreground">يُترجم تلقائياً للإنجليزية والكردية عند العرض</p>
+                      <input type="hidden" name="description" defaultValue={editingProduct?.description || ''} />
                     </div>
 
                     {/* Price fields moved to AdminProductPricingSection */}
@@ -3814,27 +3804,16 @@ const Admin = () => {
                                   </select>
                                 </div>
                                 
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">النص بالعربي</Label>
-                                    <Input
-                                      type="text"
-                                      value={feature.text_ar}
-                                      onChange={(e) => updateProductFeature(index, 'text_ar', e.target.value)}
-                                      placeholder="ذاكرة 16 جيجابايت"
-                                      className="h-9"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">النص بالإنجليزي</Label>
-                                    <Input
-                                      type="text"
-                                      value={feature.text}
-                                      onChange={(e) => updateProductFeature(index, 'text', e.target.value)}
-                                      placeholder="16GB Memory"
-                                      className="h-9"
-                                    />
-                                  </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">النص بالعربي</Label>
+                                  <Input
+                                    type="text"
+                                    value={feature.text_ar}
+                                    onChange={(e) => updateProductFeature(index, 'text_ar', e.target.value)}
+                                    placeholder="ذاكرة 16 جيجابايت"
+                                    className="h-9"
+                                  />
+                                  <p className="text-[10px] text-muted-foreground">يُترجم تلقائياً للإنجليزية والكردية</p>
                                 </div>
                               </div>
                             </div>
@@ -3850,29 +3829,14 @@ const Admin = () => {
                         <p className="text-xs text-muted-foreground mb-3">
                           سطر واحد يلخص المنتج. يستخدم في وصف صفحة جوجل و OG ومساعدي الذكاء الاصطناعي.
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                          <Input
-                            value={productShortSummary.ar || ''}
-                            onChange={(e) => setProductShortSummary({ ...productShortSummary, ar: e.target.value })}
-                            placeholder="بالعربية (≤ 160 حرف)"
-                            dir="rtl"
-                            maxLength={200}
-                          />
-                          <Input
-                            value={productShortSummary.en || ''}
-                            onChange={(e) => setProductShortSummary({ ...productShortSummary, en: e.target.value })}
-                            placeholder="English (≤ 160 chars)"
-                            dir="ltr"
-                            maxLength={200}
-                          />
-                          <Input
-                            value={productShortSummary.ku || ''}
-                            onChange={(e) => setProductShortSummary({ ...productShortSummary, ku: e.target.value })}
-                            placeholder="بە کوردی"
-                            dir="rtl"
-                            maxLength={200}
-                          />
-                        </div>
+                        <Input
+                          value={productShortSummary.ar || ''}
+                          onChange={(e) => setProductShortSummary({ ...productShortSummary, ar: e.target.value })}
+                          placeholder="بالعربية (≤ 160 حرف)"
+                          dir="rtl"
+                          maxLength={200}
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">يُترجم تلقائياً للإنجليزية والكردية عند العرض</p>
                       </div>
 
                       <div>
