@@ -2430,33 +2430,38 @@ const Admin = () => {
               
               <div className="flex items-center gap-2">
                 
-                <Dialog open={productDialogOpen} onOpenChange={(open) => {
-                  setProductDialogOpen(open);
-                  if (!open) {
-                    setEditingProduct(null);
-                    setUploadedImages([]);
-                    setProductOptions([]);
-                    setProductColors([]);
-                    setProductFeatures([]);
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button
-                      className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                      disabled={!isAdmin}
-                      title={!isAdmin ? 'هذه الميزة للأدمن فقط' : undefined}
-                      style={!isAdmin ? { display: 'none' } : undefined}
-                    >
-                      <Plus className="ml-2 h-4 w-4" />
-                      إضافة منتج جديد
-                    </Button>
-                  </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>{editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}</DialogTitle>
-                  </DialogHeader>
-                  
+                <Button
+                  onClick={() => setProductDialogOpen(true)}
+                  className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                  disabled={!isAdmin}
+                  title={!isAdmin ? 'هذه الميزة للأدمن فقط' : undefined}
+                  style={!isAdmin ? { display: 'none' } : undefined}
+                >
+                  <Plus className="ml-2 h-4 w-4" />
+                  إضافة منتج جديد
+                </Button>
+                {productDialogOpen && (
+                  <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+                    <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-4 py-3 border-b bg-background/95 backdrop-blur">
+                      <h2 className="text-lg font-bold">{editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setProductDialogOpen(false);
+                          setEditingProduct(null);
+                          setUploadedImages([]);
+                          setProductOptions([]);
+                          setProductColors([]);
+                          setProductFeatures([]);
+                        }}
+                      >
+                        إغلاق
+                      </Button>
+                    </div>
+                    <div className="max-w-3xl mx-auto p-4">
                   <form key={editingProduct?.id || `new-${formKey}`} onSubmit={handleProductSubmit} className="space-y-4">
+
                     {/* Text Paste & URL Extraction Section - For Quick Access */}
                     <div className="p-4 border-2 border-dashed border-amber-500/30 rounded-lg bg-amber-500/5 space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
@@ -3847,8 +3852,10 @@ const Admin = () => {
                       {editingProduct ? 'تحديث المنتج' : 'إضافة المنتج'}
                     </Button>
                   </form>
-                </DialogContent>
-              </Dialog>
+                    </div>
+                  </div>
+                )}
+
               </div>
             </div>
 
