@@ -661,6 +661,7 @@ const Admin = () => {
       });
       toast.success('تم إضافة المنتج بنجاح');
       setProductDialogOpen(false);
+      clearProductDraft();
     },
     onError: (error) => {
       toast.error('حدث خطأ أثناء إضافة المنتج');
