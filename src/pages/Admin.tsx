@@ -366,7 +366,7 @@ const Admin = () => {
         const draft = {
           open: true,
           editingProduct: mergedEditing,
-          formValues,
+          formValues: effectiveValues,
           uploadedImages,
           productOptions,
           productColors,
