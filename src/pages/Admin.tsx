@@ -271,12 +271,39 @@ const Admin = () => {
 
   // ===== Product draft autosave =====
   const PRODUCT_DRAFT_KEY = 'admin-product-draft-v1';
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const formNodeRef = useRef<HTMLFormElement | null>(null);
+  const latestFormValuesRef = useRef<Record<string, string>>({});
   const restoredDraftRef = useRef(false);
   const draftRestoredOnceRef = useRef(false);
 
+  // Hydrate form inputs from the latest snapshot (used on form remount, e.g. after tab switch)
+  const hydrateFormFromSnapshot = useCallback((node: HTMLFormElement) => {
+    const values = latestFormValuesRef.current;
+    if (!values || Object.keys(values).length === 0) return;
+    for (const [k, v] of Object.entries(values)) {
+      const el = node.querySelector(`[name="${CSS.escape(k)}"]`) as
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | HTMLSelectElement
+        | null;
+      if (el && 'value' in el && typeof v === 'string') {
+        try { (el as any).value = v; } catch {}
+      }
+    }
+  }, []);
+
+  // Callback ref that hydrates the form whenever it remounts (e.g. after tab switch)
+  const formRefCallback = useCallback((node: HTMLFormElement | null) => {
+    formNodeRef.current = node;
+    if (node) hydrateFormFromSnapshot(node);
+  }, [hydrateFormFromSnapshot]);
+
+  // Backwards-compat alias (some places still read formRef.current)
+  const formRef = formNodeRef;
+
   const clearProductDraft = useCallback(() => {
     try { localStorage.removeItem(PRODUCT_DRAFT_KEY); } catch {}
+    latestFormValuesRef.current = {};
   }, []);
 
   // Restore draft on first mount
