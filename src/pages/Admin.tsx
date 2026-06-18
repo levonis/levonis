@@ -1661,7 +1661,9 @@ const Admin = () => {
         .map(f => ({ ...f, text: (f.text || '').trim() || f.text_ar.trim() }));
       
       const nameArVal = (formData.get('name_ar') as string) || '';
-      const nameEnVal = ((formData.get('name') as string) || '').trim() || nameArVal;
+      const nameEnInput = ((formData.get('name_en') as string) || '').trim();
+      const nameLegacyInput = ((formData.get('name') as string) || '').trim();
+      const nameEnVal = nameEnInput || nameLegacyInput || nameArVal;
       const descArVal = (formData.get('description_ar') as string) || '';
       const descEnVal = ((formData.get('description') as string) || '').trim() || descArVal || null;
 
