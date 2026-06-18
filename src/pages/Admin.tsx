@@ -3852,8 +3852,10 @@ const Admin = () => {
                       {editingProduct ? 'تحديث المنتج' : 'إضافة المنتج'}
                     </Button>
                   </form>
-                </DialogContent>
-              </Dialog>
+                    </div>
+                  </div>
+                )}
+
               </div>
             </div>
 
