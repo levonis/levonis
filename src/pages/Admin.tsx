@@ -1597,9 +1597,11 @@ const Admin = () => {
   };
 
   const updateProductColor = (index: number, field: string, value: any) => {
-    const updated = [...productColors];
-    updated[index] = { ...updated[index], [field]: value };
-    setProductColors(updated);
+    setProductColors((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
   const addProductFeature = () => {
