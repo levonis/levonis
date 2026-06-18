@@ -1989,6 +1989,7 @@ const Admin = () => {
       setProductColors([]);
       setProductFeatures([]);
       setProductCardDiscounts([]);
+      clearProductDraft();
 
       // Auto-translate product to English and Kurdish (non-blocking)
       if (productId && values.name_ar) {
