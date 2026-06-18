@@ -397,6 +397,11 @@ const Admin = () => {
 
   // Ensure product options, colors, and features load reliably when opening the editor
   useEffect(() => {
+    if (restoredDraftRef.current) {
+      // Skip the auto-init once after restoring a saved draft so we don't clobber it
+      restoredDraftRef.current = false;
+      return;
+    }
     if (productDialogOpen && editingProduct) {
       // Initialize from the current product - include stock_quantity from colors
       const colorsWithStock = Array.isArray(editingProduct.colors) 
