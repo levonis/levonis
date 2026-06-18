@@ -3012,7 +3012,41 @@ const Admin = () => {
                                   <div className="absolute bottom-1 left-1 bg-background/80 text-muted-foreground p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                                     <GripVertical className="h-3 w-3" />
                                   </div>
-                                  
+
+                                  {/* Mobile-friendly reorder buttons (always visible) */}
+                                  <div className="absolute bottom-1 right-1 flex gap-1">
+                                    <button
+                                      type="button"
+                                      disabled={index === 0}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (index === 0) return;
+                                        const arr = [...editingProduct.images];
+                                        [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+                                        setEditingProduct({ ...editingProduct, images: arr, image_url: arr[0] });
+                                      }}
+                                      className="bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground w-6 h-6 rounded flex items-center justify-center text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed shadow"
+                                      title="نقل لليمين (للأمام)"
+                                    >
+                                      ›
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={index === editingProduct.images.length - 1}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (index === editingProduct.images.length - 1) return;
+                                        const arr = [...editingProduct.images];
+                                        [arr[index + 1], arr[index]] = [arr[index], arr[index + 1]];
+                                        setEditingProduct({ ...editingProduct, images: arr, image_url: arr[0] });
+                                      }}
+                                      className="bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground w-6 h-6 rounded flex items-center justify-center text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed shadow"
+                                      title="نقل لليسار (للخلف)"
+                                    >
+                                      ‹
+                                    </button>
+                                  </div>
+
                                   {isMainImage && (
                                     <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium">
                                       رئيسية
