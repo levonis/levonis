@@ -271,12 +271,39 @@ const Admin = () => {
 
   // ===== Product draft autosave =====
   const PRODUCT_DRAFT_KEY = 'admin-product-draft-v1';
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const formNodeRef = useRef<HTMLFormElement | null>(null);
+  const latestFormValuesRef = useRef<Record<string, string>>({});
   const restoredDraftRef = useRef(false);
   const draftRestoredOnceRef = useRef(false);
 
+  // Hydrate form inputs from the latest snapshot (used on form remount, e.g. after tab switch)
+  const hydrateFormFromSnapshot = useCallback((node: HTMLFormElement) => {
+    const values = latestFormValuesRef.current;
+    if (!values || Object.keys(values).length === 0) return;
+    for (const [k, v] of Object.entries(values)) {
+      const el = node.querySelector(`[name="${CSS.escape(k)}"]`) as
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | HTMLSelectElement
+        | null;
+      if (el && 'value' in el && typeof v === 'string') {
+        try { (el as any).value = v; } catch {}
+      }
+    }
+  }, []);
+
+  // Callback ref that hydrates the form whenever it remounts (e.g. after tab switch)
+  const formRefCallback = useCallback((node: HTMLFormElement | null) => {
+    formNodeRef.current = node;
+    if (node) hydrateFormFromSnapshot(node);
+  }, [hydrateFormFromSnapshot]);
+
+  // Backwards-compat alias (some places still read formRef.current)
+  const formRef = formNodeRef;
+
   const clearProductDraft = useCallback(() => {
     try { localStorage.removeItem(PRODUCT_DRAFT_KEY); } catch {}
+    latestFormValuesRef.current = {};
   }, []);
 
   // Restore draft on first mount
@@ -289,6 +316,17 @@ const Admin = () => {
       const draft = JSON.parse(raw);
       if (!draft || !draft.open) return;
       restoredDraftRef.current = true;
+      // Seed form snapshot so the form hydrates its inputs as soon as it mounts
+      if (draft.formValues && typeof draft.formValues === 'object') {
+        latestFormValuesRef.current = { ...draft.formValues };
+      } else if (draft.editingProduct && typeof draft.editingProduct === 'object') {
+        // Backwards compat: older drafts stored values inside editingProduct
+        const seed: Record<string, string> = {};
+        for (const [k, v] of Object.entries(draft.editingProduct)) {
+          if (typeof v === 'string' || typeof v === 'number') seed[k] = String(v);
+        }
+        latestFormValuesRef.current = seed;
+      }
       setEditingProduct(draft.editingProduct ?? null);
       setUploadedImages(Array.isArray(draft.uploadedImages) ? draft.uploadedImages : []);
       setProductOptions(Array.isArray(draft.productOptions) ? draft.productOptions : []);
@@ -312,17 +350,23 @@ const Admin = () => {
     if (!productDialogOpen) return;
     const snapshot = () => {
       try {
-        const formValues: Record<string, any> = {};
-        if (formRef.current) {
-          const fd = new FormData(formRef.current);
+        const formValues: Record<string, string> = {};
+        if (formNodeRef.current) {
+          const fd = new FormData(formNodeRef.current);
           for (const [k, v] of fd.entries()) {
             if (typeof v === 'string') formValues[k] = v;
           }
         }
-        const mergedEditing = { ...(editingProduct || {}), ...formValues };
+        // If the form isn't mounted yet (e.g. tab not visible), keep the previous snapshot
+        const effectiveValues = Object.keys(formValues).length === 0 && Object.keys(latestFormValuesRef.current).length > 0
+          ? latestFormValuesRef.current
+          : formValues;
+        latestFormValuesRef.current = effectiveValues;
+        const mergedEditing = { ...(editingProduct || {}), ...effectiveValues };
         const draft = {
           open: true,
           editingProduct: mergedEditing,
+          formValues: effectiveValues,
           uploadedImages,
           productOptions,
           productColors,
@@ -2564,7 +2608,7 @@ const Admin = () => {
                       </Button>
                     </div>
                     <div className="max-w-3xl mx-auto p-4">
-                  <form ref={formRef} key={editingProduct?.id || `new-${formKey}`} onSubmit={handleProductSubmit} className="space-y-4">
+                  <form ref={formRefCallback} key={editingProduct?.id || `new-${formKey}`} onSubmit={handleProductSubmit} className="space-y-4">
 
                     {/* Text Paste & URL Extraction Section - For Quick Access */}
                     <div className="p-4 border-2 border-dashed border-amber-500/30 rounded-lg bg-amber-500/5 space-y-3">
