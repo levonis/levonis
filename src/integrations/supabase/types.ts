@@ -15057,6 +15057,11 @@ export type Database = {
         }[]
       }
       recalculate_user_level: { Args: { p_user_id: string }; Returns: Json }
+      recompute_all_product_prices: { Args: never; Returns: number }
+      recompute_product_prices: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
       record_ad_watch_and_award: {
         Args: {
           p_session_id: string
