@@ -350,17 +350,20 @@ const Admin = () => {
     if (!productDialogOpen) return;
     const snapshot = () => {
       try {
-        const formValues: Record<string, any> = {};
-        if (formRef.current) {
-          const fd = new FormData(formRef.current);
+        const formValues: Record<string, string> = {};
+        if (formNodeRef.current) {
+          const fd = new FormData(formNodeRef.current);
           for (const [k, v] of fd.entries()) {
             if (typeof v === 'string') formValues[k] = v;
           }
+          // Also capture textareas/inputs whose value isn't picked up by FormData (no name)
         }
+        latestFormValuesRef.current = formValues;
         const mergedEditing = { ...(editingProduct || {}), ...formValues };
         const draft = {
           open: true,
           editingProduct: mergedEditing,
+          formValues,
           uploadedImages,
           productOptions,
           productColors,
