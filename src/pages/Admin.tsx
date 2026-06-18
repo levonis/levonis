@@ -270,11 +270,11 @@ const Admin = () => {
   const [formKey, setFormKey] = useState(0); // Key to force form re-render with correct defaults
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdminOrAssistant)) {
+    if (!authLoading && !user) {
       navigate('/');
       toast.error('ليس لديك صلاحية الوصول');
     }
-  }, [user, isAdminOrAssistant, authLoading, navigate]);
+  }, [user, authLoading, navigate]);
 
   // Fetch default settings
   const { data: defaultSettings } = useQuery({
@@ -384,7 +384,7 @@ const Admin = () => {
   }, [productDialogOpen, editingProduct, defaultSettings]);
 
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
-    queryKey: ['admin-products-with-options'],
+    queryKey: ['admin-products-with-options', isAdminOrAssistant],
     queryFn: async () => {
       const { data: productRows, error } = await (supabase as any)
         .from('products_admin')
@@ -422,7 +422,7 @@ const Admin = () => {
         product_options: optionsByProduct.get(product.id) || [],
       }));
     },
-    enabled: isAdmin
+    enabled: isAdminOrAssistant
   });
 
   const { data: categories } = useQuery({
@@ -518,7 +518,7 @@ const Admin = () => {
 
   // Statistics queries
   const { data: stats } = useQuery({
-    queryKey: ['admin-stats', isAdmin],
+    queryKey: ['admin-stats', isAdminOrAssistant],
     queryFn: async () => {
       const [productsResult, featuredResult, categoriesResult, outOfStockResult, pendingOrdersResult] = await Promise.all([
         (supabase as any).from('products_admin').select('id', { count: 'exact', head: true }),
@@ -536,17 +536,17 @@ const Admin = () => {
         pendingOrders: pendingOrdersResult.count || 0
       };
     },
-    enabled: !!isAdmin,
+    enabled: !!isAdminOrAssistant,
     refetchInterval: 60000
   });
 
-  // Refetch when isAdmin changes
+  // Refetch when admin/assistant access changes
   useEffect(() => {
-    if (isAdmin) {
-      console.log('Admin status confirmed, refetching data...');
+    if (isAdminOrAssistant) {
+      console.log('Admin/assistant access confirmed, refetching data...');
       refetchRequests();
     }
-  }, [isAdmin, refetchRequests]);
+  }, [isAdminOrAssistant, refetchRequests]);
 
   const createProduct = useMutation({
     mutationFn: async (values: any) => {
