@@ -14379,10 +14379,9 @@ export type Database = {
         Args: { _order_id: string; _updates: Json }
         Returns: undefined
       }
-      admin_update_product: {
-        Args: { _product_id: string; _updates: Json }
-        Returns: undefined
-      }
+      admin_update_product:
+        | { Args: { _product_id: string; _updates: Json }; Returns: undefined }
+        | { Args: { _updates: Json }; Returns: undefined }
       apply_referral_coupon: {
         Args: { p_buyer_user_id: string; p_code: string }
         Returns: Json
