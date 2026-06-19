@@ -21,31 +21,18 @@ const TriLangInput = ({
   placeholderAr?: string;
   rows?: number;
 }) => {
+  // Admin/assistant edit Arabic only. English & Kurdish are produced by the
+  // automatic translation flow on save, so we keep any existing en/ku values
+  // intact via the spread in onChange.
   const Comp: any = rows && rows > 1 ? Textarea : Input;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-      <Comp
-        value={value?.ar || ''}
-        onChange={(e: any) => onChange({ ...value, ar: e.target.value })}
-        placeholder={placeholderAr || 'بالعربية'}
-        dir="rtl"
-        rows={rows}
-      />
-      <Comp
-        value={value?.en || ''}
-        onChange={(e: any) => onChange({ ...value, en: e.target.value })}
-        placeholder="English"
-        dir="ltr"
-        rows={rows}
-      />
-      <Comp
-        value={value?.ku || ''}
-        onChange={(e: any) => onChange({ ...value, ku: e.target.value })}
-        placeholder="بە کوردی"
-        dir="rtl"
-        rows={rows}
-      />
-    </div>
+    <Comp
+      value={value?.ar || ''}
+      onChange={(e: any) => onChange({ ...value, ar: e.target.value })}
+      placeholder={placeholderAr || 'بالعربية'}
+      dir="rtl"
+      rows={rows}
+    />
   );
 };
 
