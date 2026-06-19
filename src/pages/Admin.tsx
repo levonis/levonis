@@ -738,9 +738,10 @@ const Admin = () => {
       setEditingProduct(null);
       clearProductDraft();
     },
-    onError: (error) => {
-      toast.error('حدث خطأ أثناء تحديث المنتج');
-      console.error(error);
+    onError: (error: any) => {
+      const msg = error?.message || error?.details || error?.hint || 'حدث خطأ أثناء تحديث المنتج';
+      toast.error(msg, { duration: 8000 });
+      console.error('[updateProduct] error:', error);
     }
   });
 
