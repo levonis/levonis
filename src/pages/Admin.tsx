@@ -707,9 +707,10 @@ const Admin = () => {
       setProductDialogOpen(false);
       clearProductDraft();
     },
-    onError: (error) => {
-      toast.error('حدث خطأ أثناء إضافة المنتج');
-      console.error(error);
+    onError: (error: any) => {
+      const msg = error?.message || error?.details || error?.hint || 'حدث خطأ أثناء إضافة المنتج';
+      toast.error(msg, { duration: 8000 });
+      console.error('[addProduct] error:', error);
     }
   });
 
