@@ -24,7 +24,21 @@ export const adminUpdateProduct = async (productId: string, updates: Record<stri
     _product_id: productId,
     _updates: updates,
   });
-  if (error) throw error;
+  if (!error) return;
+  // Fallback for stale PostgREST schema cache that only sees a single-arg overload
+  const msg = String(error?.message || '');
+  const isSchemaCacheMiss =
+    error?.code === 'PGRST202' ||
+    /schema cache/i.test(msg) ||
+    /Could not find the function/i.test(msg);
+  if (isSchemaCacheMiss) {
+    const { error: error2 } = await (supabase as any).rpc('admin_update_product', {
+      _updates: { id: productId, ...updates },
+    });
+    if (error2) throw error2;
+    return;
+  }
+  throw error;
 };
 
 export const adminCreateProduct = async (values: Record<string, any>) => {
