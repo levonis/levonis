@@ -3237,7 +3237,7 @@ const Admin = () => {
                               </div>
 
                               <div className="space-y-3">
-                                {isAdmin && (
+                                {isAdminOrAssistant && (
                                   <div className="space-y-1">
                                     <Label className="text-xs">سعر البيع المضاف ($)</Label>
                                     <Input
@@ -3527,7 +3527,7 @@ const Admin = () => {
                                       />
                                     </div>
                                   </div>
-                                  {isAdmin && (
+                                  {isAdminOrAssistant && (
                                     <div className="space-y-1">
                                       <Label className="text-xs">سعر البيع لهذا اللون (د.ع، اختياري)</Label>
                                       <Input
