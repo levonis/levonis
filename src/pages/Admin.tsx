@@ -3239,7 +3239,7 @@ const Admin = () => {
                               <div className="space-y-3">
                                 {isAdmin && (
                                   <div className="space-y-1">
-                                    <Label className="text-xs">فرق السعر بالدولار ($)</Label>
+                                    <Label className="text-xs">سعر البيع المضاف ($)</Label>
                                     <Input
                                       type="number"
                                       step="0.01"
@@ -3249,8 +3249,12 @@ const Admin = () => {
                                       className="h-9"
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                      أدخل رقم موجب للإضافة أو سالب للخصم (بالدولار)
+                                      سعر مستقل يُضاف إلى سعر المنتج عند اختيار هذا الخيار (بالدولار، يقبل القيم السالبة للخصم)
                                     </p>
+                                    <CnyConvertButton
+                                      targetCurrency="USD"
+                                      onConvert={(v) => updateProductOption(index, 'price_adjustment', v)}
+                                    />
                                     <OptionPricePreview
                                       adjustment={option.price_adjustment}
                                       editingProduct={editingProduct}
