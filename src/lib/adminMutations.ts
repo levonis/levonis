@@ -22,7 +22,9 @@ export const adminDeleteOrder = async (orderId: string) => {
 export const adminUpdateProduct = async (productId: string, updates: Record<string, any>) => {
   const { error } = await (supabase as any).rpc('admin_update_product', {
     _product_id: productId,
-    _updates: updates,
+    // Keep id inside _updates too: if PostgREST routes this overloaded RPC
+    // to the single-jsonb compatibility function, it receives only _updates.
+    _updates: { id: productId, ...updates },
   });
   if (!error) return;
   // Fallback for stale PostgREST schema cache that only sees a single-arg overload
