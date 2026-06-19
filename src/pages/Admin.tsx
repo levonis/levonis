@@ -28,6 +28,7 @@ import { ExtractionProgress, type ExtractionStep } from '@/components/admin/Extr
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import PermissionsHealthPanel from '@/components/admin/PermissionsHealthPanel';
 import { adminCreateProduct, adminDeleteProduct, adminUpdateProduct } from '@/lib/adminMutations';
+import CnyConvertButton from '@/components/admin/CnyConvertButton';
 
 const EXTRACTION_STEP_DEFS: { key: string; label: string }[] = [
   { key: 'fetch', label: 'جلب صفحة المنتج' },
@@ -3238,7 +3239,7 @@ const Admin = () => {
                               <div className="space-y-3">
                                 {isAdmin && (
                                   <div className="space-y-1">
-                                    <Label className="text-xs">فرق السعر بالدولار ($)</Label>
+                                    <Label className="text-xs">سعر البيع المضاف ($)</Label>
                                     <Input
                                       type="number"
                                       step="0.01"
@@ -3248,8 +3249,12 @@ const Admin = () => {
                                       className="h-9"
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                      أدخل رقم موجب للإضافة أو سالب للخصم (بالدولار)
+                                      سعر مستقل يُضاف إلى سعر المنتج عند اختيار هذا الخيار (بالدولار، يقبل القيم السالبة للخصم)
                                     </p>
+                                    <CnyConvertButton
+                                      targetCurrency="USD"
+                                      onConvert={(v) => updateProductOption(index, 'price_adjustment', v)}
+                                    />
                                     <OptionPricePreview
                                       adjustment={option.price_adjustment}
                                       editingProduct={editingProduct}
@@ -3524,7 +3529,7 @@ const Admin = () => {
                                   </div>
                                   {isAdmin && (
                                     <div className="space-y-1">
-                                      <Label className="text-xs">السعر (اختياري)</Label>
+                                      <Label className="text-xs">سعر البيع لهذا اللون (د.ع، اختياري)</Label>
                                       <Input
                                         type="number"
                                         step="0.01"
@@ -3535,8 +3540,12 @@ const Admin = () => {
                                         className="h-9"
                                       />
                                       <p className="text-xs text-muted-foreground">
-                                        اتركه فارغاً لاستخدام السعر الأساسي
+                                        سعر بيع مستقل لهذا اللون (بالدينار). اتركه فارغاً لاستخدام سعر المنتج.
                                       </p>
+                                      <CnyConvertButton
+                                        targetCurrency="IQD"
+                                        onConvert={(v) => updateProductColor(index, 'price', v)}
+                                      />
                                       <ColorPricePreview color={color} editingProduct={editingProduct} />
                                     </div>
                                   )}
