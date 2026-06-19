@@ -1,69 +1,47 @@
-# خطة التعديلات
+## الهدف
+استبدال حقل "فرق السعر" في الخيارات والألوان بحقل "سعر البيع المضاف" (سعر مستقل بالدولار) مع زر صغير لتحويل القيمة من اليوان الصيني إلى الدولار، مع تحويل تلقائي للقيم القديمة عند فتح المنتج.
 
-## 1) قاعدة البيانات (migration واحد)
+## نطاق التعديل
 
-### حقل التكلفة لكل خيار/لون
-- `product_options`: إضافة `cost_iqd numeric DEFAULT 0` و `cost_usd numeric DEFAULT 0` (المساعد/الادمن يدخل بالدولار أو باليوان والنظام يحفظ النسختين).
-- `products.colors` (jsonb): توسعة الـ shape ليشمل `cost_iqd` و `cost_usd` لكل لون (لا حاجة لـ migration، نضيف الحقول في الـ TS types والـ UI فقط).
-- إخفاء هذه الحقول عن غير الأدمن: إضافتها لمصفوفة الأعمدة المحجوبة في `products_admin` view ليصل المساعد للحقول الأساسية فقط (cost_iqd/cost_usd للخيارات تبقى visible للمساعد لأن طلب المستخدم صراحةً يسمح بها).
+### 1) واجهة الخيارات والألوان في صفحة الأدمن
+**ملف**: `src/pages/Admin.tsx`
 
-### المنتجات المعلّقة من المساعد
-- `products`: إضافة عمودين:
-  - `pending_admin_review boolean DEFAULT false`
-  - `created_by_assistant uuid REFERENCES auth.users(id)`
-- تعديل trigger الإدراج على `products`: عندما يكون المستخدم المنشئ assistant (وليس admin) → ضبط `pending_admin_review=true`, `is_pricing_updated=false`, `created_by_assistant=auth.uid()`.
-- RLS قراءة `products` العامة: إضافة شرط `pending_admin_review=false OR <user is admin/assistant>` بحيث المنتج المعلّق لا يظهر للزبائن.
-- عند ضغط الادمن "نشر" (تعبئة التكاليف + حفظ) → trigger يحوّل `pending_admin_review=false` و `is_pricing_updated=true`.
+- استبدال تسمية الحقل من **"فرق السعر بالدولار ($)"** إلى **"سعر البيع المضاف ($)"** في كل من الخيارات (سطر ~3241) والألوان.
+- إضافة زر صغير 🔄 بجانب الحقل بنفس نمط `AdminProductPricingSection`:
+  - عند الضغط يفتح حقل صغير لإدخال القيمة باليوان + زر "تحويل".
+  - يستخدم `cny_to_usd_rate` من `shipping_settings` (افتراضي 6.7).
+  - يحوّل القيمة إلى دولار ويضعها مباشرة في حقل السعر المضاف.
+- تعديل النص التوضيحي ليعكس أن القيمة سعر بيع مستقل وليست فرقاً.
+- `OptionPricePreview` يعرض السعر الإجمالي الناتج (سعر المنتج + سعر البيع المضاف) — يبقى كما هو لأنه يجمع القيمتين أصلاً.
 
-## 2) إخفاء فرق السعر للألوان/الخيارات عن المساعدين
+### 2) التحويل التلقائي للقيم القديمة عند الفتح
+**ملف**: `src/pages/Admin.tsx` (دالة فتح/تحرير المنتج، حيث تُملأ `productOptions` و`productColors`)
 
-`src/pages/Admin.tsx` (محرّر الخيارات/الألوان داخل ProductForm):
-- حقل `price_adjustment` للخيارات والألوان: لفّه بـ `{isAdmin && ...}`.
-- إظهار للمساعد فقط حقول: الاسم، حالة التوفر، المخزون، **التكلفة (USD + IQD)** الجديدة.
-- للأدمن: كل الحقول كما هي + إضافة حقول التكلفة الجديدة.
-- معاينة `OptionPricePreview` تُخفى عن المساعد.
+- لكل منتج قديم يحتوي `price_adjustment` بقيمة سالبة أو موجبة:
+  - عرض القيمة كما هي في الحقل الجديد (لأن نموذج التخزين يبقى `price_adjustment` يساوي السعر المضاف نفسه — لا تغيير في قاعدة البيانات).
+- بمعنى آخر: المعنى الدلالي في الواجهة يتغير من "فرق" إلى "سعر مضاف"، لكن العمود نفسه يستمر كما هو لتجنب كسر التوافق. كل المنتجات الموجودة ستعمل بشكل طبيعي.
 
-`src/components/admin/AdminProductPricingSection.tsx`:
-- قسم العمولات/التكاليف/الشحن الحالي: مخفي للمساعد (موجود مسبقاً).
-- **استثناء**: حقول الأبعاد (length/width/height/cm) والوزن (kg) → تصبح **مرئية وقابلة للتعديل من المساعد** (مطلوب لحساب CBM/الكيلو).
-- حقول `commission_sea_iqd / commission_air_iqd / commission_direct_iqd`: للمساعد تظهر كحقل قراءة فقط مع أيقونة قفل ونص `••••••` بدلاً من القيمة (مع toggle `link_direct_commission_to_cod` يبقى مخفي تماماً).
+### 3) المنطق الحسابي في باقي الكود
+**لا تغيير** على:
+- `cart`, `OptionPricePreview`, `ProductOfferDetailModal`, إلخ — كلها تجمع `price_adjustment` مع سعر المنتج، وهذا هو نفس السلوك المطلوب للسعر المضاف.
 
-## 3) شارة "بانتظار مراجعة الأدمن"
+## التفاصيل التقنية
 
-`src/components/admin/ProductsTable.tsx` + قائمة المنتجات في `Admin.tsx`:
-- إضافة Badge أحمر/أصفر بارز "بانتظار التسعير من الأدمن" بجانب اسم المنتج عندما `pending_admin_review=true`.
-- فرز افتراضي: المنتجات المعلّقة في الأعلى (للأدمن فقط) عبر `.order('pending_admin_review', { ascending: false })`.
-- إخفاء البادج عن المساعد (يراه فقط الأدمن — رغم أن المساعد يستطيع رؤية منتجاته المعلّقة كمؤلف).
-
-## 4) زر النشر للأدمن
-
-في dialog تعديل المنتج المعلّق (للأدمن):
-- زر إضافي "نشر للمستخدمين" يظهر فقط إذا `pending_admin_review=true`.
-- يتحقق أن `cost_iqd` و `commission_*_iqd` ليست صفراً → ثم يحدّث `pending_admin_review=false, is_pricing_updated=true`.
-- toast: "تم نشر المنتج بنجاح".
-
-## 5) i18n
-إضافة مفاتيح في `ar.ts / en.ts / ku.ts`:
-- `pendingAdminReview`, `costPerOption`, `costPerColor`, `publishProduct`, `commissionLocked`, `addedByAssistant`.
-
-## 6) الحفظ على الذاكرة
-- memory: assistant product workflow + cost fields per option/color.
-
-## تقنيات
-
-```
-products
-  + pending_admin_review boolean
-  + created_by_assistant uuid
-
-product_options
-  + cost_iqd numeric
-  + cost_usd numeric
+```text
+┌─────────────────────────────────────────────┐
+│ سعر البيع المضاف ($)    [____10.00____] [¥] │
+│ ▼ (عند فتح زر ¥)                            │
+│ ┌──────────┐ ┌────────┐                     │
+│ │ ¥ 67     │ │ تحويل  │  = 10.00$           │
+│ └──────────┘ └────────┘                     │
+└─────────────────────────────────────────────┘
 ```
 
-ملفات للتعديل:
-- migration جديد
-- `src/pages/Admin.tsx` (محرّر الخيارات/الألوان + قائمة المنتجات + زر النشر)
-- `src/components/admin/AdminProductPricingSection.tsx` (إظهار الأبعاد للمساعد + قفل العمولة)
-- `src/components/admin/ProductsTable.tsx` (شارة "معلّق")
-- `src/lib/i18n/{ar,en,ku}.ts` + `types.ts`
+- المصدر: `useShippingCalculator` أو استعلام مباشر لـ `shipping_settings.cny_to_usd_rate`.
+- يُطبَّق نفس النمط على حقول الخيارات (سطور ~3238-3257) وحقول الألوان (سطور ~3525-3540 تقريباً).
+- لا تغييرات في قاعدة البيانات ولا في RPC.
+
+## ما لن يتم
+- لا تغيير لاسم العمود `price_adjustment` في الجدول.
+- لا تعديل لحسابات السلة أو العرض في صفحة المنتج.
+- لا تعديل لحقول التكلفة (cost_usd/cost_iqd) الموجودة أصلاً.
