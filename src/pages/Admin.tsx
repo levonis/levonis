@@ -28,6 +28,7 @@ import { ExtractionProgress, type ExtractionStep } from '@/components/admin/Extr
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import PermissionsHealthPanel from '@/components/admin/PermissionsHealthPanel';
 import { adminCreateProduct, adminDeleteProduct, adminUpdateProduct } from '@/lib/adminMutations';
+import CnyConvertButton from '@/components/admin/CnyConvertButton';
 
 const EXTRACTION_STEP_DEFS: { key: string; label: string }[] = [
   { key: 'fetch', label: 'جلب صفحة المنتج' },
