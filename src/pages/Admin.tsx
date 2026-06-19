@@ -3529,7 +3529,7 @@ const Admin = () => {
                                   </div>
                                   {isAdmin && (
                                     <div className="space-y-1">
-                                      <Label className="text-xs">السعر (اختياري)</Label>
+                                      <Label className="text-xs">سعر البيع لهذا اللون (د.ع، اختياري)</Label>
                                       <Input
                                         type="number"
                                         step="0.01"
@@ -3540,8 +3540,12 @@ const Admin = () => {
                                         className="h-9"
                                       />
                                       <p className="text-xs text-muted-foreground">
-                                        اتركه فارغاً لاستخدام السعر الأساسي
+                                        سعر بيع مستقل لهذا اللون (بالدينار). اتركه فارغاً لاستخدام سعر المنتج.
                                       </p>
+                                      <CnyConvertButton
+                                        targetCurrency="IQD"
+                                        onConvert={(v) => updateProductColor(index, 'price', v)}
+                                      />
                                       <ColorPricePreview color={color} editingProduct={editingProduct} />
                                     </div>
                                   )}
