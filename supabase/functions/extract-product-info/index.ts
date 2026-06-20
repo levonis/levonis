@@ -277,6 +277,82 @@ function getImageBaseUrl(url: string): string {
   }
 }
 
+function cleanExtractedText(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  let s = value;
+  s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  s = s.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
+  s = s.replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  const named: Record<string, string> = {
+    '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>',
+    '&nbsp;': ' ', '&ndash;': '-', '&mdash;': '-', '&hellip;': '…',
+  };
+  s = s.replace(/&[a-zA-Z]+;/g, (m) => named[m.toLowerCase()] ?? m);
+  s = s.replace(/<[^>]*>/g, ' ');
+  s = s.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[\u00A0\s]+/g, ' ').trim();
+  return s;
+}
+
+function isUsefulProductName(value: string): boolean {
+  const s = cleanExtractedText(value);
+  if (s.length < 3 || s.length > 220) return false;
+  if (/^(product|منتج|home|shop|store|cart|login|undefined|null)$/i.test(s)) return false;
+  if (/404|not found|access denied|captcha|enable javascript/i.test(s)) return false;
+  return true;
+}
+
+function firstUsefulNameFromObject(value: unknown, depth = 0): string {
+  if (!value || depth > 4) return '';
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = firstUsefulNameFromObject(item, depth + 1);
+      if (found) return found;
+    }
+    return '';
+  }
+  if (typeof value !== 'object') return '';
+  const obj = value as Record<string, unknown>;
+  const keys = ['productName', 'product_name', 'spuName', 'goodsName', 'title', 'name'];
+  for (const key of keys) {
+    const candidate = cleanExtractedText(obj[key]);
+    if (isUsefulProductName(candidate)) return candidate;
+  }
+  for (const child of Object.values(obj)) {
+    const found = firstUsefulNameFromObject(child, depth + 1);
+    if (found) return found;
+  }
+  return '';
+}
+
+function extractDirectProductName(html: string, platformApiData?: unknown, nextData?: unknown): string {
+  const jsonLdMatches = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  for (const match of jsonLdMatches) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      for (const product of collectJsonLdProducts(parsed)) {
+        const name = cleanExtractedText(product.name);
+        if (isUsefulProductName(name)) return name;
+      }
+    } catch {}
+  }
+
+  const metaPatterns = [
+    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i,
+    /<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:title["']/i,
+    /<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i,
+    /<title[^>]*>([\s\S]*?)<\/title>/i,
+  ];
+  for (const pattern of metaPatterns) {
+    const raw = html.match(pattern)?.[1] || '';
+    const name = cleanExtractedText(raw).split(/\s+[|]\s+/)[0]?.trim() || '';
+    if (isUsefulProductName(name)) return name;
+  }
+
+  return firstUsefulNameFromObject(platformApiData) || firstUsefulNameFromObject(nextData);
+}
+
 // Extract product images
 function extractImages(html: string): string[] {
   const seenBases = new Set<string>();
