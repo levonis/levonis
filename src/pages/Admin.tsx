@@ -2989,6 +2989,8 @@ const Admin = () => {
                                   onDragStart={(e) => {
                                     setDraggedImageIndex(index);
                                     e.dataTransfer.effectAllowed = 'move';
+                                    // Firefox requires setData() to actually initiate the drag
+                                    try { e.dataTransfer.setData('text/plain', String(index)); } catch (_) { /* noop */ }
                                   }}
                                   onDragEnd={() => setDraggedImageIndex(null)}
                                   onDragOver={(e) => {
