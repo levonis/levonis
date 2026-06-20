@@ -1484,6 +1484,7 @@ const ProductDetail = () => {
               size="icon"
               variant="outline"
               className="h-9 w-9 rounded-xl shrink-0"
+              aria-label={t('pd_share') || 'Share product'}
               onClick={async () => {
                 const ogUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-og?slug=${slug}`;
                 const directUrl = `${window.location.origin}/product/${slug}`;
@@ -1497,10 +1498,11 @@ const ProductDetail = () => {
                 } catch {}
               }}
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
+
       </div>
 
       {/* Sale Type Conflict Dialog */}
