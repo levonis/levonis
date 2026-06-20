@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Static import to avoid `Cannot access 'ImageType' before initialization`
 // race-condition that occurs when imagescript is dynamically imported
 // concurrently from multiple Promise.all branches.
@@ -1279,7 +1278,7 @@ function extractStructuredPrices(html: string, platform: string, url: string): {
   return { price, originalPrice, currency };
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
