@@ -1090,103 +1090,9 @@ const Admin = () => {
   };
 
   // Handle extracting URL from pasted messy text
-  // Re-run AI extraction: refresh ONLY summary, searchable tags, and AI content
+  // Re-run AI extraction: behaves exactly like full extract — refreshes all product info and images
   const handleRerunAIExtraction = async () => {
-    if (!productUrl.trim()) {
-      toast.error('يرجى إدخال رابط المنتج');
-      return;
-    }
-
-    setExtractingInfo(true);
-    initExtractionSteps();
-    advanceExtractionStep('fetch', 'active');
-    toast.info('جاري إعادة توليد المحتوى بالذكاء الاصطناعي...');
-
-    const phaseTimers: ReturnType<typeof setTimeout>[] = [];
-    phaseTimers.push(setTimeout(() => advanceExtractionStep('parse', 'active'), 700));
-    phaseTimers.push(setTimeout(() => advanceExtractionStep('ai', 'active'), 1500));
-
-    try {
-      const response = await supabase.functions.invoke('extract-product-info', {
-        body: { url: productUrl }
-      });
-
-      phaseTimers.forEach(clearTimeout);
-
-      if (response.error) {
-        const errorData: any = response.data;
-        if (errorData?.requiresManualInput) {
-          setExtractionItemId(errorData.item_id || '');
-          setExtractionPlatform(errorData.platform || 'taobao');
-          setShowManualInput(true);
-          toast.info(errorData.message || 'يرجى إدخال البيانات يدوياً', { duration: 5000 });
-          return;
-        }
-        throw new Error(response.error.message || 'فشل في إعادة التوليد');
-      }
-
-      const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message } = response.data || {};
-
-      if (requiresManualInput) {
-        setExtractionItemId(item_id || '');
-        setExtractionPlatform(platform || 'taobao');
-        setShowManualInput(true);
-        toast.info(message || 'يرجى إدخال البيانات يدوياً', { duration: 5000 });
-        return;
-      }
-
-      if (!success || extractError || !productInfo) {
-        toast.error(extractError || 'لم يتم العثور على بيانات للتحديث');
-        return;
-      }
-
-      ['fetch', 'parse', 'price', 'images', 'options', 'ai'].forEach((k) => advanceExtractionStep(k, 'done'));
-      advanceExtractionStep('apply', 'active');
-
-      let updated = 0;
-
-      if (productInfo.short_summary && typeof productInfo.short_summary === 'object') {
-        setProductShortSummary({
-          ar: productInfo.short_summary.ar || '',
-          en: productInfo.short_summary.en || '',
-          ku: productInfo.short_summary.ku || '',
-        });
-        markFieldFilled('short_summary');
-        updated++;
-      }
-
-      if (Array.isArray(productInfo.searchable_tags) && productInfo.searchable_tags.length > 0) {
-        const cleaned = productInfo.searchable_tags
-          .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
-          .filter((t: string) => t.length > 0);
-        setProductSearchableAttrs(Array.from(new Set(cleaned)));
-        markFieldFilled('searchable_tags');
-        updated++;
-      }
-
-      if (productInfo.ai_content && typeof productInfo.ai_content === 'object') {
-        setProductAIContent(productInfo.ai_content);
-        markFieldFilled('ai_content');
-        updated++;
-      }
-
-      // Fallback: if no AI-specific fields returned, apply full productInfo
-      // so the user sees a real update instead of an empty no-op
-      if (updated === 0) {
-        applyProductInfo(productInfo);
-        toast.success('تم تحديث بيانات المنتج من الرابط');
-      } else {
-        toast.success(`تم تحديث ${updated} حقل بالذكاء الاصطناعي`);
-      }
-
-      advanceExtractionStep('apply', 'done');
-    } catch (error) {
-      phaseTimers.forEach(clearTimeout);
-      console.error('Re-run AI extraction error:', error);
-      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء إعادة التوليد');
-    } finally {
-      setExtractingInfo(false);
-    }
+    await handleExtractProductInfo();
   };
 
   // Handle extracting URL from pasted messy text
@@ -2765,14 +2671,14 @@ const Admin = () => {
                           onClick={handleRerunAIExtraction}
                           disabled={extractingInfo || !productUrl.trim()}
                           className="gap-2"
-                          title="إعادة توليد الملخص والكلمات المفتاحية ومحتوى الذكاء الاصطناعي فقط"
+                          title="إعادة استخراج جميع معلومات وصور المنتج من الرابط"
                         >
                           {extractingInfo ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <RefreshCw className="h-4 w-4" />
                           )}
-                          إعادة توليد بالذكاء
+                          إعادة الاستخراج
                         </Button>
                       </div>
                       <ExtractionProgress
