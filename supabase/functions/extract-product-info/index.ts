@@ -1510,11 +1510,12 @@ serve(async (req) => {
     }
 
     // Direct extraction
+    const directProductName = extractDirectProductName(pageContent, platformApiData, nextData);
     const directImages = extractImages(pageContent);
     const directPrice = extractPrice(pageContent);
     const structuredPrices = extractStructuredPrices(pageContent, platform, url);
     const directSkuData = extractSkuData(pageContent);
-    console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
+    console.log('Direct extraction - name:', directProductName || '-', 'images:', directImages.length, 'price:', directPrice);
     console.log('Structured prices:', structuredPrices);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
@@ -1671,7 +1672,7 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
     });
 
     let productInfo: any = {
-      name: 'Product',
+      name: directProductName || 'Product',
       name_ar: 'منتج',
       description: '',
       description_ar: '',
@@ -1699,7 +1700,8 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
         if (jsonMatch) {
           const ai = JSON.parse(jsonMatch[0]);
           
-          productInfo.name = ai.name || productInfo.name;
+          const aiName = cleanExtractedText(ai.name);
+          productInfo.name = isUsefulProductName(aiName) ? aiName : (directProductName || productInfo.name);
           productInfo.name_ar = ai.name_ar || productInfo.name_ar;
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
