@@ -15152,6 +15152,41 @@ export type Database = {
       start_crossy_road: { Args: never; Returns: Json }
       start_knife_rain: { Args: never; Returns: Json }
       start_stack_game: { Args: never; Returns: Json }
+      submit_knife_rain_score: {
+        Args: { _session_id: string }
+        Returns: {
+          all_time_high_score: number | null
+          best_stage: number
+          high_score: number
+          id: string
+          season: number | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knife_rain_high_scores"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_stack_game_score: {
+        Args: { _session_id: string }
+        Returns: {
+          achieved_at: string
+          all_time_high_score: number | null
+          high_score: number
+          id: string
+          season: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "stack_game_high_scores"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       toggle_reel_interaction: {
         Args: { p_reel_id: string; p_type: string; p_user_id: string }
         Returns: boolean
