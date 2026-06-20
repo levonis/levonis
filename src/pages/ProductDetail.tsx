@@ -1472,9 +1472,12 @@ const ProductDetail = () => {
               className={cn("h-9 w-9 rounded-xl shrink-0", isFavorite && "text-destructive border-destructive/50")}
               onClick={handleToggleFavorite}
               disabled={favoriteLoading || toggleFavoriteMutation.isPending}
+              aria-label={isFavorite ? t('favorites_remove') || 'Remove from favorites' : t('favorites_add') || 'Add to favorites'}
+              aria-pressed={!!isFavorite}
             >
-              <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
+              <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} aria-hidden="true" />
             </Button>
+
 
             {/* Share */}
             <Button
