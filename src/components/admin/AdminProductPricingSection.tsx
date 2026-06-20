@@ -182,10 +182,18 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         setPriceUsd(detail.priceUsd);
       }
       // Packaging dimensions / gross weight from extraction
+      const hasAnyDim =
+        (typeof detail?.length_cm === 'number' && detail.length_cm > 0) ||
+        (typeof detail?.width_cm === 'number' && detail.width_cm > 0) ||
+        (typeof detail?.height_cm === 'number' && detail.height_cm > 0);
+      const hasWeight = typeof detail?.weight_kg === 'number' && detail.weight_kg > 0;
       if (typeof detail?.length_cm === 'number' && detail.length_cm > 0) setLengthCm(detail.length_cm);
       if (typeof detail?.width_cm === 'number' && detail.width_cm > 0) setWidthCm(detail.width_cm);
       if (typeof detail?.height_cm === 'number' && detail.height_cm > 0) setHeightCm(detail.height_cm);
-      if (typeof detail?.weight_kg === 'number' && detail.weight_kg > 0) setWeightKg(String(detail.weight_kg));
+      if (hasWeight) setWeightKg(String(detail!.weight_kg));
+      // Auto-enable Sea/Air toggles so the extracted values become visible & editable
+      if (hasAnyDim) setHasSea((prev) => prev || true);
+      if (hasWeight) setHasAir((prev) => prev || true);
     };
 
     window.addEventListener('admin-product-pricing-autofill', handleAutofill);
