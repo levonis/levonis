@@ -1114,10 +1114,26 @@ const Admin = () => {
       phaseTimers.forEach(clearTimeout);
 
       if (response.error) {
+        const errorData: any = response.data;
+        if (errorData?.requiresManualInput) {
+          setExtractionItemId(errorData.item_id || '');
+          setExtractionPlatform(errorData.platform || 'taobao');
+          setShowManualInput(true);
+          toast.info(errorData.message || 'يرجى إدخال البيانات يدوياً', { duration: 5000 });
+          return;
+        }
         throw new Error(response.error.message || 'فشل في إعادة التوليد');
       }
 
-      const { productInfo, success, error: extractError } = response.data || {};
+      const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message } = response.data || {};
+
+      if (requiresManualInput) {
+        setExtractionItemId(item_id || '');
+        setExtractionPlatform(platform || 'taobao');
+        setShowManualInput(true);
+        toast.info(message || 'يرجى إدخال البيانات يدوياً', { duration: 5000 });
+        return;
+      }
 
       if (!success || extractError || !productInfo) {
         toast.error(extractError || 'لم يتم العثور على بيانات للتحديث');
@@ -1154,13 +1170,16 @@ const Admin = () => {
         updated++;
       }
 
-      advanceExtractionStep('apply', 'done');
-
-      if (updated > 0) {
-        toast.success(`تم تحديث ${updated} حقل بالذكاء الاصطناعي`);
+      // Fallback: if no AI-specific fields returned, apply full productInfo
+      // so the user sees a real update instead of an empty no-op
+      if (updated === 0) {
+        applyProductInfo(productInfo);
+        toast.success('تم تحديث بيانات المنتج من الرابط');
       } else {
-        toast.info('لم يتم العثور على محتوى ذكاء اصطناعي للتحديث');
+        toast.success(`تم تحديث ${updated} حقل بالذكاء الاصطناعي`);
       }
+
+      advanceExtractionStep('apply', 'done');
     } catch (error) {
       phaseTimers.forEach(clearTimeout);
       console.error('Re-run AI extraction error:', error);
