@@ -2671,14 +2671,14 @@ const Admin = () => {
                           onClick={handleRerunAIExtraction}
                           disabled={extractingInfo || !productUrl.trim()}
                           className="gap-2"
-                          title="إعادة توليد الملخص والكلمات المفتاحية ومحتوى الذكاء الاصطناعي فقط"
+                          title="إعادة استخراج جميع معلومات وصور المنتج من الرابط"
                         >
                           {extractingInfo ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <RefreshCw className="h-4 w-4" />
                           )}
-                          إعادة توليد بالذكاء
+                          إعادة الاستخراج
                         </Button>
                       </div>
                       <ExtractionProgress
