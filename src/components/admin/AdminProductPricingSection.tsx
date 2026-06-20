@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -161,6 +161,19 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
   }, [editingProduct, shippingSettings?.usd_to_iqd_rate]);
 
+  // Keep a ref to the latest USD->IQD rate so the autofill listener (registered once) can read it.
+  const usdRateRef = useRef<number>(0);
+  useEffect(() => {
+    usdRateRef.current = shippingSettings?.usd_to_iqd_rate || 0;
+    // If we had a pending USD original price waiting for the rate, apply it now.
+    if (usdRateRef.current > 0 && pendingOriginalPriceUsdRef.current && pendingOriginalPriceUsdRef.current > 0) {
+      setOriginalPriceIqd(Math.round(pendingOriginalPriceUsdRef.current * usdRateRef.current));
+      pendingOriginalPriceUsdRef.current = 0;
+    }
+  }, [shippingSettings?.usd_to_iqd_rate]);
+
+  const pendingOriginalPriceUsdRef = useRef<number>(0);
+
   useEffect(() => {
     const handleAutofill = (event: Event) => {
       const detail = (event as CustomEvent<{
@@ -172,11 +185,16 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         height_cm?: number;
         weight_kg?: number;
       }>).detail;
-      const rate = shippingSettings?.usd_to_iqd_rate || 0;
+      const rate = usdRateRef.current;
       if (detail?.originalPriceIqd && detail.originalPriceIqd > 0) {
         setOriginalPriceIqd(Math.round(detail.originalPriceIqd));
-      } else if (detail?.originalPriceUsd && detail.originalPriceUsd > 0 && rate > 0) {
-        setOriginalPriceIqd(Math.round(detail.originalPriceUsd * rate));
+      } else if (detail?.originalPriceUsd && detail.originalPriceUsd > 0) {
+        if (rate > 0) {
+          setOriginalPriceIqd(Math.round(detail.originalPriceUsd * rate));
+        } else {
+          // Rate not loaded yet — stash for later conversion.
+          pendingOriginalPriceUsdRef.current = detail.originalPriceUsd;
+        }
       }
       if (detail?.priceUsd && detail.priceUsd > 0) {
         setPriceUsd(detail.priceUsd);
@@ -198,7 +216,8 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
     window.addEventListener('admin-product-pricing-autofill', handleAutofill);
     return () => window.removeEventListener('admin-product-pricing-autofill', handleAutofill);
-  }, [shippingSettings?.usd_to_iqd_rate]);
+  }, []);
+
 
   // Derive shipping_type value for hidden input
   const shippingTypeValue = useMemo(() => {
