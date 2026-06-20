@@ -3060,23 +3060,104 @@ const Admin = () => {
                         </Label>
                       </div>
 
-                      {/* Uploaded images preview */}
                       {uploadedImages.length > 0 && (
                         <div className="mt-4">
-                          <p className="text-sm text-muted-foreground mb-2">الصور الجديدة:</p>
-                          <div className="grid grid-cols-4 gap-2">
-                            {uploadedImages.map((img, index) => (
-                              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
-                                <img src={img} alt={`صورة جديدة ${index + 1}`} className="w-full h-full object-cover" />
-                                <button
-                                  type="button"
-                                  onClick={() => removeImage(index)}
-                                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          <p className="text-sm text-muted-foreground mb-2">
+                            الصور الجديدة: <span className="text-primary">(اسحب لإعادة الترتيب - الصورة الأولى هي الرئيسية إذا لم تكن هناك صور حالية)</span>
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                            {uploadedImages.map((img, index) => {
+                              const isMainImage = index === 0 && (!editingProduct?.images || editingProduct.images.length === 0);
+                              return (
+                                <div
+                                  key={`${img}-${index}`}
+                                  draggable
+                                  onDragStart={(e) => {
+                                    setDraggedImageIndex(index);
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    try { e.dataTransfer.setData('text/plain', `uploaded-${index}`); } catch (_) { /* noop */ }
+                                  }}
+                                  onDragEnd={() => setDraggedImageIndex(null)}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = 'move';
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    if (draggedImageIndex === null || draggedImageIndex === index) return;
+                                    const newImages = [...uploadedImages];
+                                    const [dragged] = newImages.splice(draggedImageIndex, 1);
+                                    newImages.splice(index, 0, dragged);
+                                    setUploadedImages(newImages);
+                                    setDraggedImageIndex(null);
+                                    toast.success('تم إعادة ترتيب الصور');
+                                  }}
+                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 group cursor-grab active:cursor-grabbing transition-all ${
+                                    isMainImage
+                                      ? 'border-primary ring-2 ring-primary/30'
+                                      : 'border-border hover:border-primary/50'
+                                  } ${draggedImageIndex === index ? 'opacity-50 scale-95' : ''}`}
                                 >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ))}
+                                  <img src={img} alt={`صورة جديدة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
+
+                                  {/* Drag handle indicator */}
+                                  <div className="absolute bottom-1 left-1 bg-background/80 text-muted-foreground p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <GripVertical className="h-3 w-3" />
+                                  </div>
+
+                                  {/* Mobile-friendly reorder buttons */}
+                                  <div className="absolute bottom-1 right-1 flex gap-1">
+                                    <button
+                                      type="button"
+                                      disabled={index === 0}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (index === 0) return;
+                                        const arr = [...uploadedImages];
+                                        [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+                                        setUploadedImages(arr);
+                                      }}
+                                      className="bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground w-6 h-6 rounded flex items-center justify-center text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed shadow"
+                                      title="نقل لليمين (للأمام)"
+                                    >
+                                      ›
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={index === uploadedImages.length - 1}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (index === uploadedImages.length - 1) return;
+                                        const arr = [...uploadedImages];
+                                        [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
+                                        setUploadedImages(arr);
+                                      }}
+                                      className="bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground w-6 h-6 rounded flex items-center justify-center text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed shadow"
+                                      title="نقل لليسار (للخلف)"
+                                    >
+                                      ‹
+                                    </button>
+                                  </div>
+
+                                  {isMainImage && (
+                                    <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-bold shadow">
+                                      رئيسية
+                                    </div>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeImage(index);
+                                    }}
+                                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
