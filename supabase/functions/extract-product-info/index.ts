@@ -1,9 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// Static import to avoid `Cannot access 'ImageType' before initialization`
-// race-condition that occurs when imagescript is dynamically imported
-// concurrently from multiple Promise.all branches.
-import { decode as decodeImage } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -275,6 +269,82 @@ function getImageBaseUrl(url: string): string {
   } catch {
     return url;
   }
+}
+
+function cleanExtractedText(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  let s = value;
+  s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  s = s.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
+  s = s.replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  const named: Record<string, string> = {
+    '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>',
+    '&nbsp;': ' ', '&ndash;': '-', '&mdash;': '-', '&hellip;': '…',
+  };
+  s = s.replace(/&[a-zA-Z]+;/g, (m) => named[m.toLowerCase()] ?? m);
+  s = s.replace(/<[^>]*>/g, ' ');
+  s = s.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[\u00A0\s]+/g, ' ').trim();
+  return s;
+}
+
+function isUsefulProductName(value: string): boolean {
+  const s = cleanExtractedText(value);
+  if (s.length < 3 || s.length > 220) return false;
+  if (/^(product|منتج|home|shop|store|cart|login|undefined|null)$/i.test(s)) return false;
+  if (/404|not found|access denied|captcha|enable javascript/i.test(s)) return false;
+  return true;
+}
+
+function firstUsefulNameFromObject(value: unknown, depth = 0): string {
+  if (!value || depth > 4) return '';
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = firstUsefulNameFromObject(item, depth + 1);
+      if (found) return found;
+    }
+    return '';
+  }
+  if (typeof value !== 'object') return '';
+  const obj = value as Record<string, unknown>;
+  const keys = ['productName', 'product_name', 'spuName', 'goodsName', 'title', 'name'];
+  for (const key of keys) {
+    const candidate = cleanExtractedText(obj[key]);
+    if (isUsefulProductName(candidate)) return candidate;
+  }
+  for (const child of Object.values(obj)) {
+    const found = firstUsefulNameFromObject(child, depth + 1);
+    if (found) return found;
+  }
+  return '';
+}
+
+function extractDirectProductName(html: string, platformApiData?: unknown, nextData?: unknown): string {
+  const jsonLdMatches = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  for (const match of jsonLdMatches) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      for (const product of collectJsonLdProducts(parsed)) {
+        const name = cleanExtractedText(product.name);
+        if (isUsefulProductName(name)) return name;
+      }
+    } catch {}
+  }
+
+  const metaPatterns = [
+    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i,
+    /<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:title["']/i,
+    /<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i,
+    /<title[^>]*>([\s\S]*?)<\/title>/i,
+  ];
+  for (const pattern of metaPatterns) {
+    const raw = html.match(pattern)?.[1] || '';
+    const name = cleanExtractedText(raw).split(/\s+[|]\s+/)[0]?.trim() || '';
+    if (isUsefulProductName(name)) return name;
+  }
+
+  return firstUsefulNameFromObject(platformApiData) || firstUsefulNameFromObject(nextData);
 }
 
 // Extract product images
@@ -674,74 +744,12 @@ function translateBambuOption(name: string): string {
   return name;
 }
 
-// Sample REAL dominant color from a PNG/JPEG swatch using imagescript decoder.
-// Returns "#RRGGBB" or null on failure. Caches per URL within a single invocation.
+// Returns null when exact swatch color cannot be read; downstream color-name maps provide fallback hex.
 const swatchHexCache = new Map<string, string | null>();
 async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
   if (swatchHexCache.has(imageUrl)) return swatchHexCache.get(imageUrl)!;
-  try {
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 6000);
-    const resp = await fetch(imageUrl, { signal: ctrl.signal });
-    clearTimeout(timeout);
-    if (!resp.ok) { swatchHexCache.set(imageUrl, null); return null; }
-    const buf = new Uint8Array(await resp.arrayBuffer());
-    if (buf.length < 100 || buf.length > 4_000_000) { swatchHexCache.set(imageUrl, null); return null; }
-
-    const img: any = await decodeImage(buf);
-    if (!img || !img.bitmap) { swatchHexCache.set(imageUrl, null); return null; }
-
-    // Histogram quantized RGB. Two passes:
-    //   pass 1: skip near-white / near-black / fully-transparent (the swatch matte).
-    //   pass 2 (only if pass 1 is empty): allow extremes, since the swatch itself
-    //   may legitimately be pure white or pure black.
-    const w = img.width, h = img.height;
-    const stepX = Math.max(1, Math.floor(w / 32));
-    const stepY = Math.max(1, Math.floor(h / 32));
-
-    const sample = (allowExtremes: boolean) => {
-      const counts = new Map<number, [number, number, number, number]>();
-      for (let y = 0; y < h; y += stepY) {
-        for (let x = 0; x < w; x += stepX) {
-          const px = img.getPixelAt(x + 1, y + 1); // 0xRRGGBBAA
-          const r = (px >>> 24) & 0xff;
-          const g = (px >>> 16) & 0xff;
-          const b = (px >>> 8) & 0xff;
-          const a = px & 0xff;
-          if (a < 64) continue;
-          if (!allowExtremes) {
-            if (r > 245 && g > 245 && b > 245) continue;
-            if (r < 12 && g < 12 && b < 12) continue;
-          }
-          const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
-          const cur = counts.get(key);
-          if (cur) { cur[0] += r; cur[1] += g; cur[2] += b; cur[3] += 1; }
-          else counts.set(key, [r, g, b, 1]);
-        }
-      }
-      return counts;
-    };
-
-    let counts = sample(false);
-    if (counts.size === 0) counts = sample(true);
-    if (counts.size === 0) { swatchHexCache.set(imageUrl, null); return null; }
-
-    let best: [number, number, number, number] | null = null;
-    for (const v of counts.values()) {
-      if (!best || v[3] > best[3]) best = v;
-    }
-    if (!best) { swatchHexCache.set(imageUrl, null); return null; }
-    const r = Math.round(best[0] / best[3]);
-    const g = Math.round(best[1] / best[3]);
-    const b = Math.round(best[2] / best[3]);
-    const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
-    swatchHexCache.set(imageUrl, hex);
-    return hex;
-  } catch (e) {
-    console.log('sampleSwatchColor failed for', imageUrl, e);
-    swatchHexCache.set(imageUrl, null);
-    return null;
-  }
+  swatchHexCache.set(imageUrl, null);
+  return null;
 }
 
 export interface BambuExtractResult {
@@ -1203,7 +1211,7 @@ function extractStructuredPrices(html: string, platform: string, url: string): {
   return { price, originalPrice, currency };
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -1434,11 +1442,12 @@ serve(async (req) => {
     }
 
     // Direct extraction
+    const directProductName = extractDirectProductName(pageContent, platformApiData, nextData);
     const directImages = extractImages(pageContent);
     const directPrice = extractPrice(pageContent);
     const structuredPrices = extractStructuredPrices(pageContent, platform, url);
     const directSkuData = extractSkuData(pageContent);
-    console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
+    console.log('Direct extraction - name:', directProductName || '-', 'images:', directImages.length, 'price:', directPrice);
     console.log('Structured prices:', structuredPrices);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
@@ -1595,7 +1604,7 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
     });
 
     let productInfo: any = {
-      name: 'Product',
+      name: directProductName || 'Product',
       name_ar: 'منتج',
       description: '',
       description_ar: '',
@@ -1623,7 +1632,8 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
         if (jsonMatch) {
           const ai = JSON.parse(jsonMatch[0]);
           
-          productInfo.name = ai.name || productInfo.name;
+          const aiName = cleanExtractedText(ai.name);
+          productInfo.name = isUsefulProductName(aiName) ? aiName : (directProductName || productInfo.name);
           productInfo.name_ar = ai.name_ar || productInfo.name_ar;
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';

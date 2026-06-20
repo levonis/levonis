@@ -1198,13 +1198,21 @@ const Admin = () => {
       if (input) input.value = productInfo.name_ar;
       markFieldFilled('name_ar');
     }
-    if (productInfo.name) {
-      const input = form.querySelector('#name') as HTMLInputElement;
-      if (input) input.value = productInfo.name;
+    const extractedNameEn = String(productInfo.name_en || productInfo.name || '').trim();
+    if (extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
+      const nameEnInput = form.querySelector('#name_en') as HTMLInputElement | null;
+      const legacyNameInput = form.querySelector('input[name="name"]') as HTMLInputElement | null;
+      if (nameEnInput) {
+        nameEnInput.value = extractedNameEn;
+        nameEnInput.dispatchEvent(new Event('input', { bubbles: true }));
+        nameEnInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (legacyNameInput) legacyNameInput.value = extractedNameEn;
+      markFieldFilled('name_en');
       markFieldFilled('name');
     }
-    if (productInfo.name_ar && productInfo.name) {
-      const slug = productInfo.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    if (productInfo.name_ar && extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
+      const slug = extractedNameEn.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const input = form.querySelector('#slug') as HTMLInputElement;
       if (input) input.value = slug;
       markFieldFilled('slug');
