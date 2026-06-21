@@ -1054,6 +1054,7 @@ export const ku: TranslationKeys = {
   pd_color_unavailable_switched: 'ڕەنگی دیاریکراو بۆ فرۆشتنی ڕاستەوخۆ بەردەست نییە، گۆڕدرا بۆ پێشداواکاری',
   pd_shipping_sea: '🚢 گەیاندنی دەریایی',
   pd_shipping_air: '✈️ گەیاندنی ئاسمانی',
+  pd_shipping_land: '🚚 گەیاندنی وشکانی',
   pd_cart_cleared_added: 'سەبەتە بەتاڵکرا و بەرهەم زیادکرا 🛒',
   pd_login_required: 'تکایە سەرەتا بچۆ ژوورەوە',
   pd_notify_cancelled: 'ئاگادارکردنەوەی بەردەستی هەڵوەشایەوە',

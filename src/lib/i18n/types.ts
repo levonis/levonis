@@ -1057,6 +1057,7 @@ export type TranslationKeys = {
   pd_color_unavailable_switched: string;
   pd_shipping_sea: string;
   pd_shipping_air: string;
+  pd_shipping_land: string;
   pd_cart_cleared_added: string;
   pd_login_required: string;
   pd_notify_cancelled: string;

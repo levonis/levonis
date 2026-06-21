@@ -1054,6 +1054,7 @@ export const en: TranslationKeys = {
   pd_color_unavailable_switched: 'Selected color is not available for direct sale; switched to pre-order.',
   pd_shipping_sea: '🚢 Sea shipping',
   pd_shipping_air: '✈️ Air shipping',
+  pd_shipping_land: '🚚 Land shipping',
   pd_cart_cleared_added: 'Cart cleared and product added successfully 🛒',
   pd_login_required: 'Please sign in first',
   pd_notify_cancelled: 'Restock notification cancelled',

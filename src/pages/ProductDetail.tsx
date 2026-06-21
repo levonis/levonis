@@ -104,7 +104,7 @@ const ProductDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, features, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, pre_order_shipping_options, points_reward, card_discounts, ticket_reward, price_usd, original_price_usd, shipping_type, is_pricing_updated, direct_sale_price, sea_price, air_price, round_up_price, sold_count, direct_stock, pre_order_stock, personal_delivery_cost, referral_earnings_iqd, cod_enabled, cod_fee_type, cod_fee_value, link_direct_commission_to_cod, ai_content, short_summary, searchable_attributes, taobao_url, categories!products_category_id_fkey(name_ar, name, name_ku)')
+        .select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, features, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, pre_order_shipping_options, points_reward, card_discounts, ticket_reward, price_usd, original_price_usd, shipping_type, is_pricing_updated, direct_sale_price, sea_price, air_price, land_price, round_up_price, sold_count, direct_stock, pre_order_stock, personal_delivery_cost, referral_earnings_iqd, cod_enabled, cod_fee_type, cod_fee_value, link_direct_commission_to_cod, ai_content, short_summary, searchable_attributes, taobao_url, categories!products_category_id_fkey(name_ar, name, name_ku)')
         .eq('slug', slug)
         .maybeSingle();
       if (data && !data.is_pricing_updated && !isAdmin) throw new Error('Product not found');
@@ -196,7 +196,7 @@ const ProductDetail = () => {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!product || !product.category_id) return [];
-      const { data, error } = await supabase.from('products').select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, direct_sale_price, sea_price, air_price, round_up_price, direct_stock, pre_order_stock, sold_count, points_reward, ticket_reward, link_direct_commission_to_cod, cod_enabled, cod_fee_type, cod_fee_value, shipping_type, price_usd, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)').eq('category_id', product.category_id).eq('in_stock', true).neq('id', product.id).limit(4);
+      const { data, error } = await supabase.from('products').select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, direct_sale_price, sea_price, air_price, land_price, round_up_price, direct_stock, pre_order_stock, sold_count, points_reward, ticket_reward, link_direct_commission_to_cod, cod_enabled, cod_fee_type, cod_fee_value, shipping_type, price_usd, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)').eq('category_id', product.category_id).eq('in_stock', true).neq('id', product.id).limit(4);
       if (error) throw error;
       return data || [];
     },
@@ -540,17 +540,21 @@ const ProductDetail = () => {
       // Fall through to regular price logic
     }
     if (activeSaleType === 'preorder') {
-      // Use sea_price or air_price based on shipping type
-      const shippingType = product.shipping_type;
-      if (shippingType === 'sea' && guardedPrices.sea_price != null) return guardedPrices.sea_price;
-      if (shippingType === 'air' && guardedPrices.air_price != null) return guardedPrices.air_price;
-      // For 'both', use the lower price as base (shipping options handle the adjustment)
-      if (shippingType === 'both') {
-        const seaP = guardedPrices.sea_price;
-        const airP = guardedPrices.air_price;
-        if (seaP && airP) return Math.min(seaP, airP);
-        if (seaP) return seaP;
-        if (airP) return airP;
+      const shippingType: string = (product as any).shipping_type || '';
+      const tokens = shippingType === 'both' ? ['sea', 'air'] : shippingType.split(',').map((t: string) => t.trim()).filter(Boolean);
+      // Single mode — use that mode's price directly
+      if (tokens.length === 1) {
+        const t = tokens[0];
+        if (t === 'sea' && guardedPrices.sea_price != null) return guardedPrices.sea_price;
+        if (t === 'air' && guardedPrices.air_price != null) return guardedPrices.air_price;
+        if (t === 'land' && (guardedPrices as any).land_price != null) return (guardedPrices as any).land_price;
+      } else if (tokens.length > 1) {
+        // Multi mode — base is the cheapest option, adjustments handle the rest
+        const opts: number[] = [];
+        if (tokens.includes('sea') && guardedPrices.sea_price != null) opts.push(guardedPrices.sea_price);
+        if (tokens.includes('air') && guardedPrices.air_price != null) opts.push(guardedPrices.air_price);
+        if (tokens.includes('land') && (guardedPrices as any).land_price != null) opts.push((guardedPrices as any).land_price);
+        if (opts.length > 0) return Math.min(...opts);
       }
     }
     const base = selectedColorData?.price != null
@@ -678,12 +682,19 @@ const ProductDetail = () => {
     // Build fallback options same as in the UI
     const fallbackOpts: any[] = [];
     if (preOrderShippingOptions.length === 0 && activeSaleType === 'preorder') {
-      const st = product.shipping_type;
-      if ((st === 'both' || st === 'sea') && (product as any).sea_price) fallbackOpts.push({ name_ar: t('pd_shipping_sea'), price_adjustment: 0, type: 'sea' });
-      if ((st === 'both' || st === 'air') && (product as any).air_price) {
-        const adj = st === 'both' ? (Number((product as any).air_price || 0) - Number((product as any).sea_price || 0)) : 0;
-        fallbackOpts.push({ name_ar: t('pd_shipping_air'), price_adjustment: adj, type: 'air' });
-      }
+      const st: string = (product as any).shipping_type || '';
+      const tokens = st === 'both' ? ['sea', 'air'] : st.split(',').map((t: string) => t.trim()).filter(Boolean);
+      const seaP = Number((product as any).sea_price || 0);
+      const airP = Number((product as any).air_price || 0);
+      const landP = Number((product as any).land_price || 0);
+      const activePrices: number[] = [];
+      if (tokens.includes('sea') && seaP > 0) activePrices.push(seaP);
+      if (tokens.includes('air') && airP > 0) activePrices.push(airP);
+      if (tokens.includes('land') && landP > 0) activePrices.push(landP);
+      const base = activePrices.length > 0 ? Math.min(...activePrices) : 0;
+      if (tokens.includes('sea') && seaP > 0) fallbackOpts.push({ name_ar: t('pd_shipping_sea'), price_adjustment: seaP - base, type: 'sea' });
+      if (tokens.includes('air') && airP > 0) fallbackOpts.push({ name_ar: t('pd_shipping_air'), price_adjustment: airP - base, type: 'air' });
+      if (tokens.includes('land') && landP > 0) fallbackOpts.push({ name_ar: t('pd_shipping_land'), price_adjustment: landP - base, type: 'land' });
     }
     const allShippingOpts = preOrderShippingOptions.length > 0 ? preOrderShippingOptions : fallbackOpts;
     if (activeSaleType === 'preorder' && allShippingOpts.length > 1 && selectedShippingOption === null) {
@@ -1069,18 +1080,27 @@ const ProductDetail = () => {
                 {/* Shipping Options */}
                 {activeSaleType === 'preorder' && (() => {
                   const preOrderOpts = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
-                  const shippingType = product.shipping_type;
-                  // Build fallback options from sea_price/air_price when no custom options exist
+                  const shippingType: string = (product as any).shipping_type || '';
+                  const stTokens = shippingType === 'both' ? ['sea', 'air'] : shippingType.split(',').map((t: string) => t.trim()).filter(Boolean);
+                  // Build fallback options from sea_price/air_price/land_price when no custom options exist
                   const fallbackOptions: any[] = [];
-                  if (preOrderOpts.length === 0 && (shippingType === 'both' || shippingType === 'sea' || shippingType === 'air')) {
-                    if ((shippingType === 'both' || shippingType === 'sea') && (product as any).sea_price) {
-                      fallbackOptions.push({ name_ar: t('pd_shipping_sea'), description: 'توصيل خلال 45-55 يوم', price_adjustment: 0, type: 'sea' });
+                  if (preOrderOpts.length === 0 && stTokens.length > 0) {
+                    const seaP = Number((product as any).sea_price || 0);
+                    const airP = Number((product as any).air_price || 0);
+                    const landP = Number((product as any).land_price || 0);
+                    const activePrices: number[] = [];
+                    if (stTokens.includes('sea') && seaP > 0) activePrices.push(seaP);
+                    if (stTokens.includes('air') && airP > 0) activePrices.push(airP);
+                    if (stTokens.includes('land') && landP > 0) activePrices.push(landP);
+                    const base = activePrices.length > 0 ? Math.min(...activePrices) : 0;
+                    if (stTokens.includes('sea') && seaP > 0) {
+                      fallbackOptions.push({ name_ar: t('pd_shipping_sea'), description: 'توصيل خلال 45-55 يوم', price_adjustment: seaP - base, type: 'sea' });
                     }
-                    if ((shippingType === 'both' || shippingType === 'air') && (product as any).air_price) {
-                      const seaP = Number((product as any).sea_price || 0);
-                      const airP = Number((product as any).air_price || 0);
-                      const adj = shippingType === 'both' ? (airP - seaP) : 0;
-                      fallbackOptions.push({ name_ar: t('pd_shipping_air'), description: 'توصيل خلال 7-15 يوم', price_adjustment: adj, type: 'air' });
+                    if (stTokens.includes('air') && airP > 0) {
+                      fallbackOptions.push({ name_ar: t('pd_shipping_air'), description: 'توصيل خلال 7-15 يوم', price_adjustment: airP - base, type: 'air' });
+                    }
+                    if (stTokens.includes('land') && landP > 0) {
+                      fallbackOptions.push({ name_ar: t('pd_shipping_land'), description: 'توصيل خلال 20-30 يوم', price_adjustment: landP - base, type: 'land' });
                     }
                   }
                   const displayOptions = preOrderOpts.length > 0 ? preOrderOpts : fallbackOptions;
