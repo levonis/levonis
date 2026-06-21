@@ -720,25 +720,32 @@ export default function AdminShippingSettings() {
       if (shouldRoundUp) {
         if (updates.sea_price) updates.sea_price = roundUpTo250(updates.sea_price);
         if (updates.air_price) updates.air_price = roundUpTo250(updates.air_price);
+        if (updates.land_price) updates.land_price = roundUpTo250(updates.land_price);
         if (updates.direct_sale_price) updates.direct_sale_price = roundUpTo250(updates.direct_sale_price);
       }
 
       // Collect prices
       if (updates.sea_price) prices.push(updates.sea_price);
       if (updates.air_price) prices.push(updates.air_price);
+      if (updates.land_price) prices.push(updates.land_price);
       if (updates.direct_sale_price) prices.push(updates.direct_sale_price);
 
       if (prices.length > 0) {
         updates.price = Math.min(...prices);
       }
 
-      // Pre-order shipping options
-      if (shippingType === 'both' && updates.sea_price && updates.air_price) {
-        const basePreOrderPrice = Math.min(updates.sea_price, updates.air_price);
-        updates.pre_order_shipping_options = [
-          { name_ar: 'شحن بحري', price_adjustment: updates.sea_price - basePreOrderPrice },
-          { name_ar: 'شحن جوي', price_adjustment: updates.air_price - basePreOrderPrice },
-        ];
+      // Pre-order shipping options (multi-mode)
+      const activeShipping: Array<{ key: string; name_ar: string; price: number }> = [];
+      if (hasSea && updates.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن بحري', price: updates.sea_price });
+      if (hasAir && updates.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن جوي', price: updates.air_price });
+      if (hasLand && updates.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن بري', price: updates.land_price });
+      if (activeShipping.length >= 2) {
+        const basePreOrderPrice = Math.min(...activeShipping.map((s) => s.price));
+        updates.pre_order_shipping_options = activeShipping.map((s) => ({
+          name_ar: s.name_ar,
+          type: s.key,
+          price_adjustment: s.price - basePreOrderPrice,
+        }));
       }
 
       // Recalculate original_price
@@ -747,12 +754,15 @@ export default function AdminShippingSettings() {
         const origPriceIqd = Math.round(origUsd * rate);
         if (hasInStock) {
           updates.original_price = origPriceIqd + otherCostsIqd + commissionDirectIqd;
-        } else if (hasPreOrder && (shippingType === 'sea' || shippingType === 'both')) {
+        } else if (hasPreOrder && hasSea) {
           const seaCalc2 = calculateShippingCost('china', 'sea', dims, null, shippingSettingsObj);
           updates.original_price = origPriceIqd + seaCalc2.shippingCost + commissionSeaIqd;
-        } else if (hasPreOrder && shippingType === 'air') {
+        } else if (hasPreOrder && hasAir) {
           const airCalc2 = calculateShippingCost('china', 'air', dims, (p.weight_kg || 0) > 0 ? p.weight_kg : null, shippingSettingsObj);
           updates.original_price = origPriceIqd + airCalc2.shippingCost + commissionAirIqd;
+        } else if (hasPreOrder && hasLand) {
+          const landCalc2 = calculateShippingCost('china', 'land', null, (p.weight_kg || 0) > 0 ? p.weight_kg : null, shippingSettingsObj);
+          updates.original_price = origPriceIqd + landCalc2.shippingCost + commissionLandIqd;
         }
         if (shouldRoundUp && updates.original_price) {
           updates.original_price = roundUpTo250(updates.original_price);
