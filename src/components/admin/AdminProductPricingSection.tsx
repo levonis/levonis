@@ -119,20 +119,20 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     // Reset extraction flag whenever a different product is opened/closed.
     extractedRef.current = false;
     if (editingProduct) {
-      setPriceUsd(editingProduct.price_usd || 0);
+      setPriceUsd(Number(editingProduct.price_usd) || 0);
       // Original price is now stored/edited directly in IQD.
-      if (editingProduct.original_price && editingProduct.original_price > 0) {
+      if (editingProduct.original_price && Number(editingProduct.original_price) > 0) {
         setOriginalPriceIqd(Number(editingProduct.original_price));
       } else {
         setOriginalPriceIqd(0);
       }
-      setLengthCm(editingProduct.length_cm || 0);
-      setWidthCm(editingProduct.width_cm || 0);
-      setHeightCm(editingProduct.height_cm || 0);
+      setLengthCm(Number(editingProduct.length_cm) || 0);
+      setWidthCm(Number(editingProduct.width_cm) || 0);
+      setHeightCm(Number(editingProduct.height_cm) || 0);
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
       // other_costs_iqd is deprecated for direct sale — kept at 0
-      setPersonalDeliveryCost(editingProduct.personal_delivery_cost || 0);
-      setReferralEarningsIqd(editingProduct.referral_earnings_iqd || 0);
+      setPersonalDeliveryCost(Number(editingProduct.personal_delivery_cost) || 0);
+      setReferralEarningsIqd(Number(editingProduct.referral_earnings_iqd) || 0);
       setRoundUp(editingProduct.round_up_price ?? true);
 
       // Determine sale types
@@ -151,10 +151,12 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       }
 
       // Commissions - support per-type or single legacy
-      setCommissionSeaIqd(editingProduct.commission_sea_iqd || editingProduct.commission_iqd || 0);
-      setCommissionAirIqd(editingProduct.commission_air_iqd || editingProduct.commission_iqd || 0);
-      setCommissionLandIqd(editingProduct.commission_land_iqd || 0);
-      setCommissionDirectIqd(editingProduct.commission_direct_iqd || editingProduct.commission_iqd || 0);
+      // Coerce to Number — Supabase returns numeric columns as strings, which would
+      // cause string concatenation in price calculations instead of arithmetic addition.
+      setCommissionSeaIqd(Number(editingProduct.commission_sea_iqd ?? editingProduct.commission_iqd) || 0);
+      setCommissionAirIqd(Number(editingProduct.commission_air_iqd ?? editingProduct.commission_iqd) || 0);
+      setCommissionLandIqd(Number(editingProduct.commission_land_iqd) || 0);
+      setCommissionDirectIqd(Number(editingProduct.commission_direct_iqd ?? editingProduct.commission_iqd) || 0);
 
       // COD settings (toggle only)
       setCodEnabled(!!editingProduct.cod_enabled);
@@ -282,46 +284,51 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Direct portion only (the user-entered or COD-derived part — without sea commission)
   const directCommissionPortion = useMemo(() => {
     if (linkDirectCommissionToCod && codDefaults && shippingSettings && priceUsd) {
-      const priceIqd = Math.round(priceUsd * shippingSettings.usd_to_iqd_rate);
-      const pdc = effectivePersonalDeliveryCost;
-      let preorderFinal = priceIqd + pdc + referralEarningsIqd;
+      const N = (v: any) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const priceIqd = Math.round(N(priceUsd) * N(shippingSettings.usd_to_iqd_rate));
+      const pdc = N(effectivePersonalDeliveryCost);
+      const refEarn = N(referralEarningsIqd);
+      let preorderFinal = priceIqd + pdc + refEarn;
       if (hasPreOrder && hasSea) {
         const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
           ? { length: lengthCm, width: widthCm, height: heightCm } : null;
         const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
-        preorderFinal = priceIqd + calc.shippingCost + commissionSeaIqd + pdc + referralEarningsIqd;
+        preorderFinal = priceIqd + N(calc.shippingCost) + N(commissionSeaIqd) + pdc + refEarn;
       } else if (hasPreOrder && hasAir) {
         const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
           ? { length: lengthCm, width: widthCm, height: heightCm } : null;
         const weightNum = parseFloat(weightKg) || 0;
         const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
-        preorderFinal = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
+        preorderFinal = priceIqd + N(calc.shippingCost) + N(commissionAirIqd) + pdc + refEarn;
       } else if (hasPreOrder && hasLand) {
         const weightNum = parseFloat(weightKg) || 0;
         const calc = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings);
-        preorderFinal = priceIqd + calc.shippingCost + commissionLandIqd + pdc + referralEarningsIqd;
+        preorderFinal = priceIqd + N(calc.shippingCost) + N(commissionLandIqd) + pdc + refEarn;
       }
 
       // Pick matching tier; fall back to legacy default
       let codType: 'percentage' | 'fixed' = codDefaults.type;
-      let codValue = codDefaults.value;
+      let codValue = N(codDefaults.value);
       const tiers = (codDefaults as any).tiers;
       if (Array.isArray(tiers) && tiers.length > 0) {
         const tier = tiers.find(
           (t: any) =>
-            preorderFinal >= Number(t.min_amount || 0) &&
-            preorderFinal <= Number(t.max_amount || 0)
+            preorderFinal >= N(t.min_amount) &&
+            preorderFinal <= N(t.max_amount)
         );
         if (tier && tier.cod_fee_value != null) {
           codType = (tier.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed';
-          codValue = Number(tier.cod_fee_value) || 0;
+          codValue = N(tier.cod_fee_value);
         }
       }
 
       if (codType === 'fixed') return Math.ceil(codValue);
       return Math.ceil(preorderFinal * codValue / 100);
     }
-    return commissionDirectIqd;
+    return Number(commissionDirectIqd) || 0;
   }, [linkDirectCommissionToCod, codDefaults, commissionDirectIqd, shippingSettings, priceUsd, hasPreOrder, hasSea, hasAir, hasLand, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionLandIqd, effectivePersonalDeliveryCost, referralEarningsIqd]);
 
   // Effective commission for direct sale display/calc = pre-order sea commission + direct portion
@@ -334,22 +341,33 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
   const calculations = useMemo(() => {
     if (!shippingSettings || !priceUsd) return null;
-    const rate = shippingSettings.usd_to_iqd_rate;
-    const priceIqd = Math.round(priceUsd * rate);
-    const pdc = effectivePersonalDeliveryCost;
+    // Defensive: coerce every numeric input — Supabase numeric columns arrive as strings,
+    // and `+` would concatenate instead of add, producing absurd 20+ digit totals.
+    const N = (v: any) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const rate = N(shippingSettings.usd_to_iqd_rate);
+    const priceIqd = Math.round(N(priceUsd) * rate);
+    const pdc = N(effectivePersonalDeliveryCost);
+    const refEarn = N(referralEarningsIqd);
+    const commSea = N(commissionSeaIqd);
+    const commAir = N(commissionAirIqd);
+    const commLand = N(commissionLandIqd);
+    const commDirect = N(effectiveCommissionDirect);
     const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; finalRounded: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number; personalDelivery?: number }> = [];
 
     if (hasPreOrder && hasSea) {
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + N(calc.shippingCost) + commSea + pdc + refEarn;
       results.push({
         label: 'حجز مسبق - بحري',
         type: 'sea',
         priceIqd,
-        shipping: calc.shippingCost,
-        commission: commissionSeaIqd,
+        shipping: N(calc.shippingCost),
+        commission: commSea,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         personalDelivery: pdc,
@@ -361,13 +379,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const weightNum = parseFloat(weightKg) || 0;
       const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + N(calc.shippingCost) + commAir + pdc + refEarn;
       results.push({
         label: 'حجز مسبق - جوي',
         type: 'air',
         priceIqd,
-        shipping: calc.shippingCost,
-        commission: commissionAirIqd,
+        shipping: N(calc.shippingCost),
+        commission: commAir,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         breakdown: calc.breakdown,
@@ -381,13 +399,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     if (hasPreOrder && hasLand) {
       const weightNum = parseFloat(weightKg) || 0;
       const calc = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionLandIqd + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + N(calc.shippingCost) + commLand + pdc + refEarn;
       results.push({
         label: 'حجز مسبق - بري',
         type: 'land',
         priceIqd,
-        shipping: calc.shippingCost,
-        commission: commissionLandIqd,
+        shipping: N(calc.shippingCost),
+        commission: commLand,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         breakdown: calc.breakdown,
@@ -413,13 +431,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           directShipping = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings).shippingCost;
         }
       }
-      const finalPrice = priceIqd + directShipping + effectiveCommissionDirect + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + N(directShipping) + commDirect + pdc + refEarn;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
         priceIqd,
-        shipping: directShipping,
-        commission: effectiveCommissionDirect,
+        shipping: N(directShipping),
+        commission: commDirect,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         personalDelivery: pdc,
