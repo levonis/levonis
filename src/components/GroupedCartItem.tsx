@@ -47,22 +47,22 @@ const GroupedCartItem = ({
   const { data: insurancePlans = [] } = useInsurancePlans(productCategoryId);
   const insuranceEligible = insurancePlans.length > 0;
 
-
-  if (!product) return null;
-
   // Server-computed live direct-sale price for COD-linked products.
   // Without it, getGuardedCartItemPrice falls back to the stored direct_sale_price
   // and undercharges vs the product card / detail page.
   const [liveDirectMap, setLiveDirectMap] = useState<Map<string, number> | null>(null);
-  const needsLive = (product as any)?.link_direct_commission_to_cod && items.some((i: any) => i.sale_type === 'direct');
+  const productId = product?.id;
+  const needsLive = !!(product as any)?.link_direct_commission_to_cod && items.some((i: any) => i.sale_type === 'direct');
   useEffect(() => {
-    if (!needsLive || !product?.id) return;
+    if (!needsLive || !productId) return;
     let cancelled = false;
-    fetchLiveDirectSalePrices([product.id]).then((map) => {
+    fetchLiveDirectSalePrices([productId]).then((map) => {
       if (!cancelled) setLiveDirectMap(map);
     });
     return () => { cancelled = true; };
-  }, [needsLive, product?.id, usdToIqd, codDefaults?.value, codDefaults?.type]);
+  }, [needsLive, productId, usdToIqd, codDefaults?.value, codDefaults?.type]);
+
+  if (!product) return null;
 
   const calculateItemPrice = (item: CartItem) => {
     return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults ?? null, liveDirectMap);
