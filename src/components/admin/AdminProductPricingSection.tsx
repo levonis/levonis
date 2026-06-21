@@ -296,6 +296,10 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         const weightNum = parseFloat(weightKg) || 0;
         const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
         preorderFinal = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
+      } else if (hasPreOrder && hasLand) {
+        const weightNum = parseFloat(weightKg) || 0;
+        const calc = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings);
+        preorderFinal = priceIqd + calc.shippingCost + commissionLandIqd + pdc + referralEarningsIqd;
       }
 
       // Pick matching tier; fall back to legacy default
@@ -318,7 +322,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       return Math.ceil(preorderFinal * codValue / 100);
     }
     return commissionDirectIqd;
-  }, [linkDirectCommissionToCod, codDefaults, commissionDirectIqd, shippingSettings, priceUsd, hasPreOrder, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectivePersonalDeliveryCost, referralEarningsIqd]);
+  }, [linkDirectCommissionToCod, codDefaults, commissionDirectIqd, shippingSettings, priceUsd, hasPreOrder, hasSea, hasAir, hasLand, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionLandIqd, effectivePersonalDeliveryCost, referralEarningsIqd]);
 
   // Effective commission for direct sale display/calc = pre-order sea commission + direct portion
   const effectiveCommissionDirect = useMemo(
@@ -374,8 +378,27 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       });
     }
 
+    if (hasPreOrder && hasLand) {
+      const weightNum = parseFloat(weightKg) || 0;
+      const calc = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings);
+      const finalPrice = priceIqd + calc.shippingCost + commissionLandIqd + pdc + referralEarningsIqd;
+      results.push({
+        label: 'حجز مسبق - بري',
+        type: 'land',
+        priceIqd,
+        shipping: calc.shippingCost,
+        commission: commissionLandIqd,
+        final: finalPrice,
+        finalRounded: roundUpToNearest(finalPrice, 250),
+        breakdown: calc.breakdown,
+        actualWeight: calc.actualWeight,
+        usedWeight: calc.usedWeight,
+        personalDelivery: pdc,
+      });
+    }
+
     if (hasDirectSale) {
-      // Use the same shipping cost as pre-order (sea preferred, else air)
+      // Use the same shipping cost as pre-order (sea preferred, else air, else land)
       let directShipping = 0;
       if (hasPreOrder) {
         const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
@@ -385,6 +408,9 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         } else if (hasAir) {
           const weightNum = parseFloat(weightKg) || 0;
           directShipping = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings).shippingCost;
+        } else if (hasLand) {
+          const weightNum = parseFloat(weightKg) || 0;
+          directShipping = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings).shippingCost;
         }
       }
       const finalPrice = priceIqd + directShipping + effectiveCommissionDirect + pdc + referralEarningsIqd;
@@ -401,7 +427,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     return { rate, priceIqd, results };
-  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
+  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, hasLand, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionLandIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
 
 
   return (
@@ -412,6 +438,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="shipping_type" value={shippingTypeValue} />
       <input type="hidden" name="commission_sea_iqd" value={commissionSeaIqd} />
       <input type="hidden" name="commission_air_iqd" value={commissionAirIqd} />
+      <input type="hidden" name="commission_land_iqd" value={commissionLandIqd} />
       <input type="hidden" name="commission_direct_iqd" value={directCommissionPortion} />
       <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, directCommissionPortion)} />
       <input type="hidden" name="other_costs_iqd" value={0} />
