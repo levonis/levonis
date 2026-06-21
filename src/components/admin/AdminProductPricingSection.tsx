@@ -119,20 +119,20 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     // Reset extraction flag whenever a different product is opened/closed.
     extractedRef.current = false;
     if (editingProduct) {
-      setPriceUsd(editingProduct.price_usd || 0);
+      setPriceUsd(Number(editingProduct.price_usd) || 0);
       // Original price is now stored/edited directly in IQD.
-      if (editingProduct.original_price && editingProduct.original_price > 0) {
+      if (editingProduct.original_price && Number(editingProduct.original_price) > 0) {
         setOriginalPriceIqd(Number(editingProduct.original_price));
       } else {
         setOriginalPriceIqd(0);
       }
-      setLengthCm(editingProduct.length_cm || 0);
-      setWidthCm(editingProduct.width_cm || 0);
-      setHeightCm(editingProduct.height_cm || 0);
+      setLengthCm(Number(editingProduct.length_cm) || 0);
+      setWidthCm(Number(editingProduct.width_cm) || 0);
+      setHeightCm(Number(editingProduct.height_cm) || 0);
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
       // other_costs_iqd is deprecated for direct sale — kept at 0
-      setPersonalDeliveryCost(editingProduct.personal_delivery_cost || 0);
-      setReferralEarningsIqd(editingProduct.referral_earnings_iqd || 0);
+      setPersonalDeliveryCost(Number(editingProduct.personal_delivery_cost) || 0);
+      setReferralEarningsIqd(Number(editingProduct.referral_earnings_iqd) || 0);
       setRoundUp(editingProduct.round_up_price ?? true);
 
       // Determine sale types
@@ -151,10 +151,12 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       }
 
       // Commissions - support per-type or single legacy
-      setCommissionSeaIqd(editingProduct.commission_sea_iqd || editingProduct.commission_iqd || 0);
-      setCommissionAirIqd(editingProduct.commission_air_iqd || editingProduct.commission_iqd || 0);
-      setCommissionLandIqd(editingProduct.commission_land_iqd || 0);
-      setCommissionDirectIqd(editingProduct.commission_direct_iqd || editingProduct.commission_iqd || 0);
+      // Coerce to Number — Supabase returns numeric columns as strings, which would
+      // cause string concatenation in price calculations instead of arithmetic addition.
+      setCommissionSeaIqd(Number(editingProduct.commission_sea_iqd ?? editingProduct.commission_iqd) || 0);
+      setCommissionAirIqd(Number(editingProduct.commission_air_iqd ?? editingProduct.commission_iqd) || 0);
+      setCommissionLandIqd(Number(editingProduct.commission_land_iqd) || 0);
+      setCommissionDirectIqd(Number(editingProduct.commission_direct_iqd ?? editingProduct.commission_iqd) || 0);
 
       // COD settings (toggle only)
       setCodEnabled(!!editingProduct.cod_enabled);
