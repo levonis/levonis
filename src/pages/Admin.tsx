@@ -1788,7 +1788,9 @@ const Admin = () => {
               price_adjustment: s.price - basePreOrderPrice,
             }));
           } else {
-            values.pre_order_shipping_options = null;
+            // Single (or zero) shipping mode → omit the field entirely so Zod/PostgREST
+            // never see an unexpected null. `delete` keeps the key out of the payload.
+            delete (values as any).pre_order_shipping_options;
           }
         }
 
