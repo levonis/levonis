@@ -65,7 +65,7 @@ const productSchema = z.object({
   air_price: z.number().nullable().optional(),
   colors: z.array(z.any()).optional(),
   features: z.array(z.any()).optional(),
-  pre_order_shipping_options: z.array(z.any()).optional(),
+  pre_order_shipping_options: z.array(z.any()).nullable().optional(),
   display_order: z.number().int().min(0).optional(),
   brand: z.string().nullable().optional(),
 });
