@@ -960,6 +960,7 @@ export type Database = {
           selected_color: string | null
           shipping_option_index: number | null
           shipping_option_name_ar: string | null
+          shipping_type: string | null
           updated_at: string | null
           user_id: string
         }
@@ -982,6 +983,7 @@ export type Database = {
           selected_color?: string | null
           shipping_option_index?: number | null
           shipping_option_name_ar?: string | null
+          shipping_type?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1004,6 +1006,7 @@ export type Database = {
           selected_color?: string | null
           shipping_option_index?: number | null
           shipping_option_name_ar?: string | null
+          shipping_type?: string | null
           updated_at?: string | null
           user_id?: string
         }

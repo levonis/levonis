@@ -134,8 +134,8 @@ interface CartContextType {
   itemCount: number;
   total: number;
   pendingCartRequest: PendingCartRequest | null;
-  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
-  forceAddToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
+  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
+  forceAddToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
   addBundleToCart: (bundleId: string, saleType: 'direct' | 'preorder', quantity?: number) => Promise<boolean>;
   cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
@@ -673,7 +673,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user?.id, fetchCart, queryClient]);
 
-  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
+  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return false;
@@ -793,6 +793,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (safeShippingIndex !== null && Number.isFinite(safeShippingIndex)) {
         insertData.shipping_option_index = Math.trunc(safeShippingIndex);
         insertData.shipping_option_name_ar = safeShippingNameAr || null;
+      }
+      // Persist the chosen shipping type (sea/air/land) so cart pricing
+      // can use the exact selected price instead of Math.min over all modes.
+      if (shippingInfo?.type) {
+        insertData.shipping_type = shippingInfo.type;
       }
       // Don't set shipping_option_index at all if null — let DB default handle it
 
@@ -1021,7 +1026,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const forceAddToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
+  const forceAddToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) return false;
     // Block force-add when a matching RF item is already locked in the cart
     const normalize = (v: any) => v ? v.toString().trim() : null;
@@ -1089,6 +1094,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (shippingInfo?.index !== null && shippingInfo?.index !== undefined && Number.isFinite(shippingInfo.index)) {
         insertData.shipping_option_index = Math.trunc(shippingInfo.index);
         insertData.shipping_option_name_ar = shippingInfo.name_ar || null;
+      }
+      if (shippingInfo?.type) {
+        insertData.shipping_type = shippingInfo.type;
       }
 
       const { error } = await supabase.from('cart_items').insert([insertData]);

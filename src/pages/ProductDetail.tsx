@@ -702,7 +702,11 @@ const ProductDetail = () => {
       return;
     }
     const shippingInfo = selectedShippingOption !== null && allShippingOpts[selectedShippingOption]
-      ? { index: selectedShippingOption, name_ar: (allShippingOpts[selectedShippingOption] as any).name_ar }
+      ? {
+          index: selectedShippingOption,
+          name_ar: (allShippingOpts[selectedShippingOption] as any).name_ar,
+          type: (allShippingOpts[selectedShippingOption] as any).type,
+        }
       : undefined;
     try {
       const success = await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo, activeSaleType);
