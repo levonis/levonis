@@ -28,12 +28,14 @@ serve(async (req) => {
     if (!userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const { data: roleRow } = await userClient
+    const { data: roleRows } = await userClient
       .from("user_roles").select("role")
-      .eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
-    if (!roleRow) {
+      .eq("user_id", userData.user.id)
+      .in("role", ["admin", "assistant"]);
+    if (!roleRows || roleRows.length === 0) {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
 
     const { product_id, name_ar, description_ar } = await req.json();
 
