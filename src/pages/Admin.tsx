@@ -170,7 +170,9 @@ const Admin = () => {
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqdRate = shippingSettings?.usd_to_iqd_rate || 1410;
   const [activeTab, setActiveTab] = useState('products');
-  const [productDialogOpen, setProductDialogOpen] = useState(false);
+   const [productDialogOpen, setProductDialogOpen] = useState(false);
+   const [quickCostProduct, setQuickCostProduct] = useState<any>(null);
+   const [quickCostOpen, setQuickCostOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [mainSectionDialogOpen, setMainSectionDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
