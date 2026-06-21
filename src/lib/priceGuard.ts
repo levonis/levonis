@@ -398,28 +398,45 @@ export function getGuardedCartItemPrice(
     }
   }
 
-  // 3. Override with color-specific price (guard it too)
+  // 3+4. Independent-price overrides from color and/or option.
+  //  Semantics (new): price_adjustment is the option's INDEPENDENT IQD price.
+  //  When set (> 0), it REPLACES the base price. When both a color override
+  //  and an option override exist, their values SUM to replace the base.
+  //  When neither is set, the base price is used.
+  let colorOverride: number | null = null;
   const selColor = item.selected_color;
   if (selColor && product.colors) {
     const colorData = (product.colors as any[]).find(
       (c: any) => c.name === selColor || c.name_ar === selColor || c.hex_code === selColor
     );
     if (colorData) {
-      if (isDirect && colorData.direct_sale_price != null) {
-        price = ensurePriceIqd(Number(colorData.direct_sale_price), priceUsd, usdToIqd);
-      } else if (colorData.price != null) {
-        price = ensurePriceIqd(Number(colorData.price), priceUsd, usdToIqd);
+      const rawColor = isDirect && colorData.direct_sale_price != null
+        ? Number(colorData.direct_sale_price)
+        : colorData.price != null
+          ? Number(colorData.price)
+          : null;
+      if (rawColor != null && rawColor > 0) {
+        colorOverride = ensurePriceIqd(rawColor, priceUsd, usdToIqd);
       }
     }
   }
 
-  // 4. Add option price adjustment (may be in USD for some products)
+  let optionOverride: number | null = null;
   const optAdj = item.product_options?.price_adjustment;
-  if (optAdj) {
-    price += ensureAdjustmentIqd(Number(optAdj), usdToIqd, priceUsd);
+  if (optAdj != null && Number(optAdj) > 0) {
+    optionOverride = ensureAdjustmentIqd(Number(optAdj), usdToIqd, priceUsd);
   }
 
-  // 5. Add pre-order shipping adjustment
+  if (colorOverride != null && optionOverride != null) {
+    price = colorOverride + optionOverride;
+  } else if (colorOverride != null) {
+    price = colorOverride;
+  } else if (optionOverride != null) {
+    price = optionOverride;
+  }
+  // else: keep computed base/sale-type price from steps 1–2.
+
+  // 5. Add pre-order shipping adjustment (still additive — shipping is not a price replacement)
   const shippingIndex = item.shipping_option_index;
   const shippingOptions = product.pre_order_shipping_options;
   if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
