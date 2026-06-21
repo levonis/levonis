@@ -1,43 +1,46 @@
-## المشكلتان والسبب الجذري
+## السبب الجذري الفعلي
 
-### 1. الأبعاد (طول/عرض/ارتفاع) لا تمتلئ بعد الاستخراج
-- بعد الاستخراج، يستدعي `applyProductInfo` الدالة `setNumInput('#length_cm', ...)` ويرسل أيضاً CustomEvent باسم `admin-product-pricing-autofill`.
-- المُستمع موجود في `AdminProductPricingSection` لكنّه مرتبط بـ `useEffect` يعتمد على `[shippingSettings?.usd_to_iqd_rate]`، لذا يُعاد تسجيله عندما تُحمَّل إعدادات الشحن من جديد، وقد يفوت الحدث الذي أُطلق قبل تسجيله.
-- بالإضافة لذلك، حقول الإدخال `#length_cm` لا تُرسم في DOM إلا بعد تفعيل toggle "البحري"، لذا `setNumInput('#length_cm')` يكون no-op في أول استخراج.
-- النتيجة: السطر/الحدث الوحيد الذي كان يفترض ينقل القيم إلى حالة `lengthCm/widthCm/heightCm` لا يصل، فتبقى الحقول فارغة.
+`extract-product-info` يُرجِع الأبعاد فعلاً (اللوغات تؤكد: `Dimensions: {length_cm:30,width_cm:30,height_cm:0.5}`)، والحدث `admin-product-pricing-autofill` يصل ويُحدّث الـ state.
 
-### 2. سحب الصور بالماوس + الأزرار لا يعملان للمنتج الجديد
-- الصور المستخرجة من الرابط (وأي صور مرفوعة يدوياً) تُخزَّن في `uploadedImages` وتُعرض في القسم "الصور الجديدة" (سطر 3064).
-- هذا القسم يحتوي فقط على معاينة + زر حذف. لا يوجد `draggable`، لا `onDragStart/Drop`، ولا أزرار `‹ ›` لإعادة الترتيب.
-- لذلك بالنسبة للمنتج الجديد (لا يوجد `editingProduct.images`) لا تظهر أي وسيلة لإعادة الترتيب، وهو ما يطابق رد المستخدم "لا أزرار ولا سحب".
+**لكن** في `src/components/admin/AdminProductPricingSection.tsx` السطر 112-162، الـ `useEffect` الذي يقرأ من `editingProduct` يعتمد على:
 
----
+```ts
+}, [editingProduct, shippingSettings?.usd_to_iqd_rate]);
+```
 
-## خطة الإصلاح
+عند الاستخراج لمنتج جديد يحدث التسلسل التالي:
+1. الحدث autofill يُطلق → `setLengthCm(30)` ✓
+2. خلال ثوانٍ `shippingSettings` يعود من React Query أو يتغيّر بـ realtime → الـ effect يُعاد تنفيذه → يقرأ `editingProduct.length_cm` (= `undefined` لمنتج جديد) → **يدوس على القيم ويرجعها 0** ✗
 
-### A. إصلاح تعبئة الأبعاد (`AdminProductPricingSection.tsx`)
-1. فصل المستمع `admin-product-pricing-autofill` في `useEffect` مستقل بدون أي تبعيات (يُسجَّل مرة واحدة عند mount)، لضمان عدم تفويت الحدث.
-2. الإبقاء على تفعيل `hasSea` تلقائياً عند وصول أبعاد، و`hasAir` عند وصول وزن، حتى تظهر الحقول.
-3. (دعم احتياطي) داخل المستمع: إن لم تكن `shippingSettings` جاهزة عند وصول السعر الأصلي، نخزّن `originalPriceUsd` في حالة pending ونُحوّله لاحقاً عند توفّر السعر.
+نفس المشكلة تنطبق على `widthCm/heightCm/weightKg/originalPriceIqd` وكل الحقول الأخرى.
 
-### B. إصلاح سحب وإعادة ترتيب الصور الجديدة (`Admin.tsx` سطر 3064-3082)
-1. إضافة state موجود بالفعل `draggedImageIndex` (أو state ثانٍ `draggedUploadedIndex` للفصل) للتعامل مع `uploadedImages`.
-2. تحويل كل عنصر في grid "الصور الجديدة" إلى عنصر `draggable` مع:
-   - `onDragStart` يضبط الفهرس + `e.dataTransfer.setData('text/plain', ...)` (مطلوب لـ Firefox).
-   - `onDragOver` مع `preventDefault` و `dropEffect = 'move'`.
-   - `onDrop` يُعيد ترتيب `uploadedImages` عبر `setUploadedImages`.
-   - `onDragEnd` يصفّر الحالة.
-3. إضافة أزرار `‹ ›` (نقل لليمين/اليسار) كبديل احتياطي للموبايل والحالات التي لا تدعم HTML5 drag، مع نفس النمط البصري المستخدم في صور `editingProduct.images`.
-4. تأكيد أن `<img>` يحمل `pointer-events-none` حتى لا يبتلع حدث السحب.
-5. إذا كانت هناك صور حالية + صور جديدة معاً، تبقى كل قائمة قابلة لإعادة الترتيب داخل نفسها (لا يلزم دمجهما — الدمج يتم عند الحفظ في السطر 1568).
+## الإصلاح
 
-### C. التحقق
-- استخراج منتج جديد من رابط Bambu Lab نفسه المُختبَر في اللوغات: التأكد أن الطول/العرض/الارتفاع/الوزن تظهر مفعّلة في قسم التسعير وأن "البحري" و"الجوي" يُحسبان.
-- سحب صورة بالماوس داخل "الصور الجديدة" في Chrome وFirefox للتأكد من إعادة الترتيب.
-- اختبار الأزرار `‹ ›` كاحتياط.
+### `src/components/admin/AdminProductPricingSection.tsx`
 
-### تفاصيل تقنية
-- الملفات المتأثرة:
-  - `src/components/admin/AdminProductPricingSection.tsx` (فصل useEffect للمستمع)
-  - `src/pages/Admin.tsx` (إضافة drag + أزرار لـ uploadedImages)
-- لا تغييرات في قاعدة البيانات ولا في edge functions (الاستخراج نفسه يعمل — اللوغات تؤكد ذلك).
+1. **فصل الـ effect إلى اثنين** بدلاً من واحد مزدوج التبعيات:
+   - **Effect A**: يهيّئ كل الحقول من `editingProduct` فقط، deps = `[editingProduct]` (يعمل عند فتح المنتج، لا يُعاد عند تحديث الإعدادات).
+   - **Effect B** (موجود فعلاً في سطر 166-173): يتعامل مع `usd_to_iqd_rate` لتحويل `original_price_usd` القديم إلى IQD. سننقل إليه الحالة الوحيدة التي تعتمد على السعر:
+     ```ts
+     // داخل Effect B الموجود:
+     if (editingProduct && !editingProduct.original_price && editingProduct.original_price_usd > 0 && rate > 0) {
+       setOriginalPriceIqd(Math.round(editingProduct.original_price_usd * rate));
+     }
+     ```
+
+2. **حماية إضافية لمنع الدوس على قيم الاستخراج**: نُضيف ref `extractedRef` يُضبط `true` عند استقبال حدث `admin-product-pricing-autofill`، وفي Effect A نتخطّى إعادة تعيين الأبعاد/الوزن إذا كان `extractedRef.current === true` و`editingProduct.length_cm` فارغ (أي لا يوجد مصدر حقيقي ليُعاد منه).
+
+3. الإبقاء على باقي التهيئة كما هي (الأسعار/العمولات/التواقيع).
+
+### لا تغييرات في:
+- `src/pages/Admin.tsx` (الـ dispatch صحيح)
+- edge function `extract-product-info` (يعمل بشكل سليم — اللوغات تؤكد)
+- قاعدة البيانات
+
+## التحقق
+
+1. فتح Admin → "إضافة منتج" → لصق رابط Bambu → الضغط على استخراج.
+2. التأكد أن قسم "البحري" يُفتح تلقائياً والحقول الطول/العرض/الارتفاع/الوزن مملوءة بالأرقام المستخرجة (30/30/0.5/0.5).
+3. الانتظار ~3 ثوانٍ للتأكد أن القيم لا تُمسح بعد تحميل `shippingSettings`.
+4. التحقق أن سطر "تكلفة الشحن البحري/الجوي" يُحسب فوراً.
+5. اختبار نفس الشيء على منتج موجود (edit) للتأكد أن لا regression.
