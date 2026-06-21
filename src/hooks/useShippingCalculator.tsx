@@ -184,18 +184,16 @@ export const calculateShippingCost = (
       const actWeight = actualWeight || 0;
       usedWeight = useVolumetric ? Math.max(volWeight, actWeight) : actWeight;
 
-        
-        // Add safety margin
+      if (usedWeight > 0) {
         const safetyMargin = settings.air_china_weight_safety_margin / 100;
         const weightWithSafety = usedWeight * (1 + safetyMargin);
-        
-        // Only show final weight with packaging (which includes safety margin)
+
         breakdown.push({ label: 'الوزن مع التغليف', value: `${weightWithSafety.toFixed(2)} كغ` });
-        
+
         shippingCost = weightWithSafety * settings.air_china_volumetric_price;
         breakdown.push({ label: 'تكلفة الشحن الجوي', value: Math.round(shippingCost) });
       }
-      
+
       notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
     }
   } else if (shippingType === 'land') {
