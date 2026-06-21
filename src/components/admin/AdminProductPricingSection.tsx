@@ -229,6 +229,9 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       // Auto-enable Sea/Air toggles so the extracted values become visible & editable
       if (hasAnyDim) setHasSea((prev) => prev || true);
       if (hasWeight) setHasAir((prev) => prev || true);
+      // Mark that extraction populated these fields, so the editingProduct init
+      // effect won't blank them out on subsequent re-runs.
+      if (hasAnyDim || hasWeight) extractedRef.current = true;
     };
 
     window.addEventListener('admin-product-pricing-autofill', handleAutofill);
