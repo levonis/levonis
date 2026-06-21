@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
+import QuickCostEditDialog from '@/components/admin/QuickCostEditDialog';
 import AdminCustomRequests from './AdminCustomRequests';
 import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
@@ -169,7 +170,9 @@ const Admin = () => {
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqdRate = shippingSettings?.usd_to_iqd_rate || 1410;
   const [activeTab, setActiveTab] = useState('products');
-  const [productDialogOpen, setProductDialogOpen] = useState(false);
+   const [productDialogOpen, setProductDialogOpen] = useState(false);
+   const [quickCostProduct, setQuickCostProduct] = useState<any>(null);
+   const [quickCostOpen, setQuickCostOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [mainSectionDialogOpen, setMainSectionDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -4135,20 +4138,30 @@ const Admin = () => {
                             />
                           )}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-medium">{product.name_ar}</span>
-                            {!product.is_pricing_updated && (
-                              <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px] px-1.5 py-0">غير محدّث</Badge>
-                            )}
-                            {isAdmin && (product as any).pending_admin_review && (
-                              <Badge className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-1.5 py-0 gap-1">
-                                <AlertCircle className="h-3 w-3" />
-                                بانتظار التسعير — مضاف من مساعد
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
+                         <TableCell>
+                           <div className="flex items-center gap-1.5 flex-wrap">
+                             <span className="font-medium">{product.name_ar}</span>
+                             {!product.is_pricing_updated && (
+                               <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px] px-1.5 py-0">غير محدّث</Badge>
+                             )}
+                             {(() => {
+                               const lpu = (product as any).last_price_update;
+                               if (!lpu) return null;
+                               const days = Math.floor((Date.now() - new Date(lpu).getTime()) / 86400000);
+                               return (
+                                 <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${days >= 60 ? 'border-red-500 text-red-500' : days >= 45 ? 'border-amber-500 text-amber-500' : 'border-muted-foreground/30 text-muted-foreground'}`}>
+                                   آخر تحديث سعر: {days === 0 ? 'اليوم' : `قبل ${days} يوم`}
+                                 </Badge>
+                               );
+                             })()}
+                             {isAdmin && (product as any).pending_admin_review && (
+                               <Badge className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-1.5 py-0 gap-1">
+                                 <AlertCircle className="h-3 w-3" />
+                                 بانتظار التسعير — مضاف من مساعد
+                               </Badge>
+                             )}
+                           </div>
+                         </TableCell>
                         <TableCell>{(product as any).categories?.name_ar}</TableCell>
                         <TableCell>{formatPrice(Number(product.price))} د.ع</TableCell>
                         <TableCell>
@@ -4193,7 +4206,16 @@ const Admin = () => {
                               title="تعديل"
                             >
                               <Pencil className="h-4 w-4" />
-                            </Button>
+                             </Button>
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               className="text-amber-600 border-amber-500/40 hover:bg-amber-500/10"
+                               onClick={() => { setQuickCostProduct(product); setQuickCostOpen(true); }}
+                               title="تحديث التكلفة السريع"
+                             >
+                               <Zap className="h-4 w-4" />
+                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
@@ -4269,7 +4291,10 @@ const Admin = () => {
                       </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setEditingProduct(product); setProductFeatured(!!product.featured); setProductDialogOpen(true); }} title="تعديل">
                         <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                       </Button>
+                       <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-amber-600 border-amber-500/40" onClick={() => { setQuickCostProduct(product); setQuickCostOpen(true); }} title="تحديث التكلفة السريع">
+                         <Zap className="h-3.5 w-3.5" />
+                       </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleDuplicateProduct(product)} title="تكرار">
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
@@ -4699,10 +4724,16 @@ const Admin = () => {
               refetch={refetchRequests}
             />
           </TabsContent>
-        </Tabs>
-      </main>
-    </div>
-  );
+         </Tabs>
+       </main>
+       <QuickCostEditDialog
+         open={quickCostOpen}
+         onOpenChange={(o) => { setQuickCostOpen(o); if (!o) setQuickCostProduct(null); }}
+         product={quickCostProduct}
+         onSaved={() => { refetchProducts(); }}
+       />
+     </div>
+   );
 };
 
 export default Admin;
