@@ -66,7 +66,7 @@ const DialogContent = React.forwardRef<
           // Default padding - can be overridden
           "p-5 sm:p-6 gap-4",
           // Animations - unified glass expand/collapse
-          "data-[state=open]:animate-glass-expand data-[state=closed]:animate-glass-collapse",
+          "origin-center data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out",
           className,
         )}
         style={{ WebkitOverflowScrolling: 'touch' }}

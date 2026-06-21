@@ -380,7 +380,7 @@ const CategoryDetail = () => {
               className="gap-2 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground font-bold shadow-lg hover:scale-[1.02] transition"
             >
               <Sparkles className="h-5 w-5" />
-              اقترح لي طابعة بالذكاء الاصطناعي
+              اقتراح طابعة من ليفو
             </Button>
           </div>
         )}
