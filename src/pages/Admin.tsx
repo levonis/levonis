@@ -4206,7 +4206,16 @@ const Admin = () => {
                               title="تعديل"
                             >
                               <Pencil className="h-4 w-4" />
-                            </Button>
+                             </Button>
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               className="text-amber-600 border-amber-500/40 hover:bg-amber-500/10"
+                               onClick={() => { setQuickCostProduct(product); setQuickCostOpen(true); }}
+                               title="تحديث التكلفة السريع"
+                             >
+                               <Zap className="h-4 w-4" />
+                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
