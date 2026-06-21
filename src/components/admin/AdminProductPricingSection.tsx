@@ -602,6 +602,16 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                 <Plane className="h-4 w-4" />
                 <span className="text-sm font-medium">جوي</span>
               </label>
+              <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+                hasLand ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+              }`}>
+                <Checkbox
+                  checked={hasLand}
+                  onCheckedChange={(checked) => setHasLand(!!checked)}
+                />
+                <MapPin className="h-4 w-4" />
+                <span className="text-sm font-medium">بري</span>
+              </label>
             </div>
 
             {/* Sea: CBM dimensions */}
