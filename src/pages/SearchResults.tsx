@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Loader2, Search as SearchIcon, X } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useIslandSearch, pickName } from '@/island/useIslandSearch';
+import SEO from '@/components/SEO';
+import { breadcrumbLd } from '@/lib/seo/structured';
 
 const SearchResults = () => {
   const { t, language } = useLanguage();
