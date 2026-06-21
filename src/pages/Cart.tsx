@@ -285,20 +285,26 @@ const Cart = () => {
     let totalFee = 0;
     const handled = new Set<string>();
 
+    // دمج كل استثناءات __follow_gov__ في حاوية واحدة مشتركة لتجنب التكرار
+    const followGovExcs = methodCatExc.filter((e: any) => e.governorate === '__follow_gov__' && categoryQty[e.category_id]);
+    if (followGovExcs.length > 0) {
+      let combinedQty = 0;
+      let maxUnits = 1;
+      for (const exc of followGovExcs) {
+        combinedQty += categoryQty[exc.category_id];
+        maxUnits = Math.max(maxUnits, exc.units_per_delivery || 1);
+        handled.add(exc.category_id);
+      }
+      const matchingGov = (allGovExceptions as any[]).find((g: any) => g.delivery_method_key === methodKey && g.governorate === gov);
+      const govPrice = matchingGov ? Number(matchingGov.delivery_price) : basePrice;
+      const deliveryCount = Math.ceil(combinedQty / maxUnits);
+      totalFee += govPrice * deliveryCount;
+    }
+
     for (const exc of methodCatExc) {
       const catId = exc.category_id;
       if (handled.has(catId) || !categoryQty[catId]) continue;
-
-      if (exc.governorate === '__follow_gov__') {
-        handled.add(catId);
-        const qty = categoryQty[catId];
-        const unitsPerDelivery = exc.units_per_delivery || 1;
-        const deliveryCount = Math.ceil(qty / unitsPerDelivery);
-        const matchingGov = (allGovExceptions as any[]).find((g: any) => g.delivery_method_key === methodKey && g.governorate === gov);
-        const govPrice = matchingGov ? Number(matchingGov.delivery_price) : basePrice;
-        totalFee += govPrice * deliveryCount;
-        continue;
-      }
+      if (exc.governorate === '__follow_gov__') continue; // already merged above
 
       const matchesGov = !exc.governorate || exc.governorate === gov;
       if (!matchesGov) continue;
@@ -717,22 +723,31 @@ const Cart = () => {
     let totalCatFee = 0;
     const handledCategories = new Set<string>();
 
+    // Merge all __follow_gov__ exceptions into one shared bucket so that 2 different
+    // categories that both "follow gov" don't get charged the governorate fee twice —
+    // they share the same delivery slot. Extras beyond units_per_delivery still apply.
+    const followGovExcs = (catExceptions as any[]).filter(
+      (e: any) => e.governorate === '__follow_gov__' && categoryQty[e.category_id],
+    );
+    if (followGovExcs.length > 0) {
+      let combinedQty = 0;
+      let maxUnits = 1;
+      for (const exc of followGovExcs) {
+        combinedQty += categoryQty[exc.category_id];
+        maxUnits = Math.max(maxUnits, exc.units_per_delivery || 1);
+        handledCategories.add(exc.category_id);
+      }
+      const matchingGov = govExceptions.find((g: any) => g.governorate === governorate);
+      const govPrice = matchingGov ? Number(matchingGov.delivery_price) : basePrice;
+      const deliveryCount = Math.ceil(combinedQty / maxUnits);
+      totalCatFee += govPrice * deliveryCount;
+    }
+
     for (const exc of catExceptions as any[]) {
       const catId = exc.category_id;
       if (handledCategories.has(catId)) continue;
       if (!categoryQty[catId]) continue;
-
-      // __follow_gov__ means use governorate exception price for this category
-      if (exc.governorate === '__follow_gov__') {
-        handledCategories.add(catId);
-        const qty = categoryQty[catId];
-        const unitsPerDelivery = exc.units_per_delivery || 1;
-        const deliveryCount = Math.ceil(qty / unitsPerDelivery);
-        const matchingGov = govExceptions.find((g: any) => g.governorate === governorate);
-        const govPrice = matchingGov ? Number(matchingGov.delivery_price) : basePrice;
-        totalCatFee += govPrice * deliveryCount;
-        continue;
-      }
+      if (exc.governorate === '__follow_gov__') continue; // already merged above
 
       const matchesGov = !exc.governorate || exc.governorate === governorate;
       if (!matchesGov) continue;
