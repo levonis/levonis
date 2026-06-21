@@ -3309,17 +3309,17 @@ const Admin = () => {
                               <div className="space-y-3">
                                 {isAdminOrAssistant && (
                                   <div className="space-y-1">
-                                     <Label className="text-xs">سعر مستقل للخيار ($)</Label>
+                                     <Label className="text-xs">تكلفة مستقلة للخيار ($)</Label>
                                      <Input
                                        type="number"
                                        step="0.01"
                                        value={option.price_adjustment}
                                        onChange={(e) => updateProductOption(index, 'price_adjustment', Number(e.target.value))}
-                                       placeholder="اتركه فارغًا = السعر الأساسي"
+                                       placeholder="اتركه فارغًا = تكلفة المنتج الأساسية"
                                        className="h-9"
                                      />
                                      <p className="text-xs text-muted-foreground">
-                                       سعر بيع نهائي مستقل للخيار (بالدولار). إذا حُدِّد &gt; 0 يستبدل السعر الأساسي. اتركه فارغًا أو صفرًا لاستخدام السعر الأساسي. عند خيارَين كلاهما له سعر مستقل: تُجمع القيم معًا بدل الأساس.
+                                       تكلفة مستقلة للخيار (بالدولار). إذا حُدِّدت &gt; 0 تستبدل تكلفة المنتج الأساسية ويُعاد حساب سعر البيع منها عبر صيغة COD. اتركها فارغة لاستخدام التكلفة الأساسية. عند خيارَين كلاهما له تكلفة مستقلة: تُجمع التكاليف معًا.
                                      </p>
                                     <CnyConvertButton
                                       targetCurrency="USD"
