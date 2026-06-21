@@ -81,14 +81,29 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       });
 
       if (error) {
-        if (error.message.includes('already registered')) {
+        const raw = (error.message || '').toLowerCase();
+        if (raw.includes('already registered') || raw.includes('already been registered') || raw.includes('user already')) {
           toast.error(t('signup_email_already'));
           setCurrentStep(1);
+        } else if (
+          raw.includes('weak') ||
+          raw.includes('pwned') ||
+          raw.includes('compromised') ||
+          raw.includes('leaked') ||
+          raw.includes('password should') ||
+          raw.includes('password is too') ||
+          raw.includes('password must') ||
+          raw.includes('at least')
+        ) {
+          toast.error('كلمة المرور ضعيفة أو مسرّبة سابقاً. الرجاء اختيار كلمة مرور أقوى (8 أحرف على الأقل، تتضمن أحرفاً وأرقاماً ورموزاً).');
+          setCurrentStep(1);
         } else {
-          toast.error(error.message);
+          toast.error(`خطأ في إنشاء الحساب: ${error.message}`);
+          setCurrentStep(1);
         }
         return;
       }
+
 
       if (!data.user) {
         toast.error(t('signup_account_create_fail'));
