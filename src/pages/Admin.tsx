@@ -1888,6 +1888,8 @@ const Admin = () => {
               type: s.key,
               price_adjustment: s.price - basePreOrderPrice,
             }));
+          } else {
+            delete (values as any).pre_order_shipping_options;
           }
 
           // Round colors prices (IQD values)
