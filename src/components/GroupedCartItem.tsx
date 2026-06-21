@@ -54,13 +54,13 @@ const GroupedCartItem = ({
   const linkedProductId = product?.id;
   const needsLive = !!(product as any)?.link_direct_commission_to_cod && items.some((i: any) => i.sale_type === 'direct');
   useEffect(() => {
-    if (!needsLive || !productId) return;
+    if (!needsLive || !linkedProductId) return;
     let cancelled = false;
-    fetchLiveDirectSalePrices([productId]).then((map) => {
+    fetchLiveDirectSalePrices([linkedProductId!]).then((map) => {
       if (!cancelled) setLiveDirectMap(map);
     });
     return () => { cancelled = true; };
-  }, [needsLive, productId, usdToIqd, codDefaults?.value, codDefaults?.type]);
+  }, [needsLive, linkedProductId, usdToIqd, codDefaults?.value, codDefaults?.type]);
 
   if (!product) return null;
 
