@@ -1095,6 +1095,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         insertData.shipping_option_index = Math.trunc(shippingInfo.index);
         insertData.shipping_option_name_ar = shippingInfo.name_ar || null;
       }
+      if (shippingInfo?.type) {
+        insertData.shipping_type = shippingInfo.type;
+      }
 
       const { error } = await supabase.from('cart_items').insert([insertData]);
       if (error) throw error;
