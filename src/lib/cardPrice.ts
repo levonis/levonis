@@ -58,7 +58,11 @@ export function computeUnifiedCardPrice(
               typeof c.option_stocks === 'object' &&
               Object.keys(c.option_stocks).length > 0,
           );
-        if (eligible) candidates.push(directBase + getMinOptionAdjustmentIqd(product, 'direct', usdToIqd));
+        if (eligible) {
+          // Independent option price replaces the base when set; otherwise use base.
+          const minOverride = getMinOptionOverridePriceIqd(product, 'direct', usdToIqd);
+          candidates.push(minOverride != null ? Math.min(minOverride, directBase) : directBase);
+        }
       } else {
         candidates.push(directBase);
       }
