@@ -1,73 +1,90 @@
-## الأهداف
+## الهدف
+تحويل دلالة `product_options.price_adjustment` من **«مبلغ يُضاف على السعر الأساسي»** إلى **«سعر مستقل يستبدل السعر الأساسي»**، وتحديث القاعدة المحفوظة. السلوك عند خيارين أو أكثر = **جمع الأسعار المستقلة بدلًا من السعر الأساسي** (كما أكدتَ سابقًا: 12,000 + 6,250 = 18,250).
 
-1. سعر الخيار/اللون يصبح **سعر مستقل** (يستبدل السعر الأساسي عند تحديده، وإذا تُرك فارغًا يُستخدم سعر المنتج الأساسي).
-2. **سعر التكلفة للخيار = نفس سعر بيع الخيار** (حقل واحد فقط بدل اثنين منفصلين).
-3. إخفاء جميع المنتجات الحالية فورًا (`is_pricing_updated = false`) حتى يُحدّثها الإدمن.
-4. عرض **آخر تحديث سعر** للمنتج. إذا مرّ **60 يومًا** بدون تحديث، يختفي تلقائيًا عن المستخدمين ويظهر في قائمة "يتطلب تحديث سعر" للإدمن/المساعد.
-5. زر سريع ⚡ في جدول المنتجات يفتح نافذة منبثقة لتعديل **حقول التكلفة فقط** للمنتج + كل خيار/لون.
+## القاعدة الجديدة
 
----
+| الحالة | السلوك |
+|---|---|
+| لا يوجد خيار محدد | استخدم سعر المنتج الأساسي |
+| خيار واحد مع `price_adjustment > 0` | استخدم القيمة كـ **سعر نهائي** للوحدة |
+| خيار واحد بقيمة فارغة/صفر | استخدم سعر المنتج الأساسي |
+| عدة خيارات (لون + نوع) لكل منها سعر | **مجموع الأسعار المستقلة** يستبدل السعر الأساسي |
+| عدة خيارات بعضها فارغ | الأساس + مجموع الأسعار المستقلة فقط (الفارغ يُحسب أساسًا) ← يحتاج تأكيد، انظر السؤال أدناه |
 
-## التغييرات
+## التغييرات في الكود
 
-### 1) قاعدة البيانات (migration واحدة)
+### 1) `src/lib/priceGuard.ts`
+- استخراج helper `resolveOptionPriceIqd(item, productBaseIqd, usdToIqd, priceUsd)` يطبّق القاعدة الجديدة.
+- في `getGuardedCartItemPrice`: بعد حساب `price` الأساسي (خطوات 1–3 الحالية)، استبدال الخطوة 4 (`+= optAdj`):
+  - إذا للخيار قيمة > 0 → **استبدل** `price` بقيمة الخيار (مع التحويل من USD عند الحاجة).
+  - شحن ما قبل الطلب (`shipping_option_index` adjustment) يبقى كما هو.
 
-- `products`: إضافة عمود `last_price_update timestamptz` (يُحدَّث عبر trigger عند تغيّر أي حقل سعر/تكلفة، أو عند تغيّر `product_options` المرتبطة).
-- `products`: ضبط `is_pricing_updated = false` لكل الصفوف الحالية، وتعيين `last_price_update = NULL`.
-- `product_options`: استخدام `price_adjustment` كـ **سعر مستقل** (إعادة تفسير دلاليّ). القيمة `NULL` أو `0` = استخدم سعر المنتج الأساسي. حذف `cost_iqd` و`cost_usd` من واجهة الإدخال — التكلفة = نفس قيمة السعر (سيتم حسابها عند الحاجة من `price_adjustment`).
-- Trigger: عند `UPDATE` على `products` أو على `product_options` (insert/update/delete) → `last_price_update = now()` على المنتج. أيضًا عند `is_pricing_updated` ينتقل من `false` إلى `true` → ضبط `last_price_update = now()`.
-- Cron/RPC: دالة `auto_hide_stale_priced_products()` تشتغل يوميًا — إذا `now() - last_price_update > 60 days` تضع `is_pricing_updated = false`.
-- View/RPC للإدمن: قائمة المنتجات التي `is_pricing_updated = false` مرتبة بـ `last_price_update` تصاعديًا.
+### 2) `src/lib/priceGuard.ts` — `getMinOptionAdjustmentIqd`
+- إعادة تسمية دلاليّة إلى `getMinOptionOverridePriceIqd` تُعيد **سعر الخيار الأرخص** (وليس فرقًا).
+- تُستخدم في `cardPrice.ts` لاختيار أقل سعر بطاقة. منطق البطاقة:
+  - إذا توجد خيارات مع `price > 0` → السعر = **min(أسعار الخيارات المؤهلة)**.
+  - وإلا → السعر الأساسي للمنتج.
 
-### 2) منطق السعر (Frontend + Cart)
+### 3) `src/lib/cardPrice.ts`
+- استبدال `directBase + getMinOptionAdjustmentIqd(...)` بـ:
+  ```ts
+  const minOverride = getMinOptionOverridePriceIqd(product, 'direct', usdToIqd);
+  candidates.push(minOverride ?? directBase);
+  ```
+- نفس الشيء للـ pre-order.
 
-- `src/lib/cardPrice.ts`, `src/lib/priceGuard.ts`, `src/components/GroupedCartItem.tsx`, `src/pages/Cart.tsx`, `src/pages/ProductDetail*`, دوال السعر الموحّد:
-  - استبدال نمط **"base + price_adjustment"** بـ **"price_adjustment أو base عند فراغه"**.
-  - عند الجمع بين عدّة خيارات (لون + نوع) → استخدام **آخر خيار له سعر مستقل** أو حسب القاعدة: إذا أي خيار له سعر → يُجمع كاستبدال للأساس؟ **يلزم سؤال صغير** (انظر أسفل).
-- تحديث `direct_sale_price` server-side function لتعكس المنطق الجديد.
-- تحديث الاختبارات: `cartItemGuards`, `priceGuard.codSync`, `cardPrice.parity`.
+### 4) جمع عدة خيارات في السلة (لون + نوع)
+- بُنية `cart_items` تربط خيارًا واحدًا فقط (`product_option_id`). الخيار الثاني يأتي عبر `selected_color` من جدول `products.colors` (JSON). 
+- منطق اللون موجود أصلًا في خطوة 3 من `getGuardedCartItemPrice` (`colorData.price`/`direct_sale_price`).
+- التعديل: عند وجود **سعر لون مستقل** + **سعر خيار مستقل** → **جمعهما** بدلًا من الأساس:
+  ```ts
+  const colorPrice = (colorData?.price ?? colorData?.direct_sale_price) ? ensurePriceIqd(...) : null;
+  const optionPrice = optAdj ? ensureAdjustmentIqd(optAdj, ...) : null;
+  if (colorPrice != null && optionPrice != null) price = colorPrice + optionPrice;
+  else if (colorPrice != null) price = colorPrice;
+  else if (optionPrice != null) price = optionPrice;
+  // else: keep base
+  ```
 
-### 3) واجهة الإدمن
+### 5) واجهة الإدمن — نموذج إضافة خيار
+- تغيير تسمية الحقل من «إضافة على السعر» إلى **«سعر مستقل للخيار (اتركه فارغًا = السعر الأساسي)»**.
+- حذف حقول `cost_iqd` / `cost_usd` من نموذج الخيار (التكلفة = نفس السعر، تُحفظ تلقائيًا في DB).
+- مكوّن المعاينة `OptionPricePreview` (سطر 113 من Admin.tsx) يُحدَّث: يعرض **القيمة كسعر نهائي** بدلًا من «الأساس + الإضافة».
 
-- **AdminProductForm / Options Editor**: 
-  - تسمية الحقل تتحول من "إضافة على السعر" إلى **"سعر مستقل (اتركه فارغًا لاستخدام السعر الأساسي)"**.
-  - حذف حقول `cost_iqd` / `cost_usd` للخيارات من النموذج (التكلفة = السعر تلقائيًا).
-- **ProductsTable** (`src/components/admin/ProductsTable.tsx`):
-  - عمود جديد: **آخر تحديث سعر** (تاريخ + شارة "متأخر" إذا > 60 يوم).
-  - فلتر جديد: "يتطلب تحديث سعر".
-  - زر سريع ⚡ بجانب أزرار الإجراءات → يفتح `QuickCostEditDialog` يعرض:
-    - حقل تكلفة المنتج الأساسي.
-    - جدول بكل خيار/لون مع حقل تكلفة واحد (= السعر) لكل صفّ.
-    - زر حفظ → يُحدِّث القيم ويضع `is_pricing_updated = true` و `last_price_update = now()`.
+### 6) `direct_sale_price` على السيرفر
+- لا تغيير في حساب `direct_sale_price` نفسه (هو سعر المنتج الأساسي قبل الخيار).
+- منطق الاستبدال يحدث client-side في الكارت/البطاقة فقط.
 
-### 4) صفحة الإدمن "يتطلب تحديث سعر"
+### 7) الاختبارات
+- `src/lib/__tests__/priceGuard.codSync.test.ts` — تحديث متوقعات الاختبار للخيار المستقل.
+- `src/lib/__tests__/cardPrice.parity.test.ts` — اختبار جديد: خيار 18,250 → البطاقة تعرض 18,250 وليس base + 18,250.
+- `src/lib/__tests__/cartItemGuards.test.ts` — تحديث.
+- اختبار جديد: لون مستقل + خيار مستقل = مجموع.
 
-- تبويب/قائمة جديدة (أو إعادة استخدام فلتر `is_pricing_updated=false`) مرتّبة بالأقدم تحديثًا، مع زر سريع لفتح نفس `QuickCostEditDialog`.
+### 8) تحديث الذاكرة (`mem://index.md`)
+- استبدال السطر:
+  > **Option Prices**: `price_adjustment` is in IQD. NEVER multiply by USD exchange rate. Add directly to converted base.
 
----
+  بسطر جديد:
+  > **Option Prices**: `price_adjustment` is the option's **independent IQD price** (replaces base when > 0). Multiple option/color overrides **sum** to replace base. Empty/0 = use base.
+
+  وتحديث ملف الذاكرة التفصيلي `mem://constraints/pricing/product-option-currency`.
 
 ## ملف التغييرات
-
 ```text
-supabase/migrations/<new>.sql         (last_price_update, trigger, cron, bulk reset)
-src/components/admin/ProductsTable.tsx   (عمود + فلتر + زر ⚡)
-src/components/admin/QuickCostEditDialog.tsx  (جديد)
-src/components/admin/ProductForm/...     (تسمية الحقل + حذف cost منفصل للخيار)
-src/lib/cardPrice.ts                  (منطق السعر المستقل)
-src/lib/priceGuard.ts                 (نفس المنطق)
-src/components/GroupedCartItem.tsx    (تحديث)
-src/pages/Cart.tsx                    (تحديث)
-src/lib/__tests__/*                   (تحديث المتوقعات)
+src/lib/priceGuard.ts                       (المنطق الجوهري)
+src/lib/cardPrice.ts                        (استخدام الـ helper الجديد)
+src/pages/Admin.tsx                         (تسمية الحقل + OptionPricePreview)
+src/components/admin/QuickCostEditDialog.tsx (placeholder النص فقط)
+src/lib/__tests__/*                         (تحديث + إضافة)
+mem://index.md, mem://constraints/pricing/... (تحديث الذاكرة)
 ```
 
----
+## سؤال واحد قبل البدء
+عندما يحتوي المنتج على خيارَين والمستخدم اختار خيارًا له سعر مستقل (مثلًا «بني» = 12,000) **والخيار الثاني فارغ** («تعبئة افتراضية» بدون سعر مستقل):
 
-## سؤال يحتاج توضيح قبل التنفيذ
+- (1) السعر النهائي = **12,000** فقط (الفارغ = صفر، لا يضاف الأساس).
+- (2) السعر النهائي = **الأساس + 12,000** (الفارغ = أساس).
+- (3) السعر النهائي = **12,000** ويُتجاهل الأساس تمامًا (المنتقى يحدد كل شيء).
 
-عندما يحتوي المنتج على **خيارَين** كلاهما له سعر مستقل (مثلًا لون «بني» = 12,000 و تعبئة «بدون رولة» = 6,250)، كيف تريد الحساب؟
-
-- (أ) **آخر خيار له سعر يَفُوز** (استبدال كامل).
-- (ب) **جمع الأسعار المستقلة معًا** بدل السعر الأساسي (مثلًا 12,000 + 6,250 = 18,250). ← يطابق مثال 18,250 السابق.
-- (ج) خيار واحد فقط (اللون) يحدد السعر، الثاني (التعبئة) يبقى مضافًا/مخفّضًا بقيمة ثابتة.
-
-سأمضي بـ **(ب)** افتراضيًا (لأنه يطابق المثال 18,250 الذي ذكرتَه سابقًا) ما لم تخبرني بغير ذلك.
+الخيار **(1)** يطابق المثال (12,000 + 6,250 = 18,250) أكثر — سأمضي به افتراضيًا.
