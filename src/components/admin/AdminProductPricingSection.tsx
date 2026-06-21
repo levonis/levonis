@@ -683,6 +683,46 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
               </div>
             )}
 
+            {/* Land: actual weight only */}
+            {hasLand && (
+              <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <MapPin className="h-3 w-3" />
+                  <span>الشحن البري — يعتمد على الوزن الفعلي فقط</span>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight_kg_land">الوزن (كغ) *</Label>
+                  <Input
+                    id="weight_kg_land"
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    placeholder="مثال: 1.5"
+                  />
+                  {shippingSettings && (
+                    <p className="text-[10px] text-muted-foreground">
+                      السعر: {shippingSettings.land_price_per_kg_usd}$ لكل كغ — بدون وزن حجمي
+                    </p>
+                  )}
+                </div>
+                {isAdmin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="commission_land_iqd">العمولة - بري (د.ع)</Label>
+                    <Input
+                      id="commission_land_iqd"
+                      type="number"
+                      min="0"
+                      value={commissionLandIqd || ''}
+                      onChange={(e) => setCommissionLandIqd(Number(e.target.value))}
+                      placeholder="0"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         )}
 
