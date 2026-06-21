@@ -13849,6 +13849,7 @@ export type Database = {
           in_stock: boolean | null
           is_pricing_updated: boolean | null
           land_price: number | null
+          last_price_update: string | null
           length_cm: number | null
           link_direct_commission_to_cod: boolean | null
           name: string | null
