@@ -371,6 +371,20 @@ const CategoryDetail = () => {
         />
       )}
       <main className="container mx-auto px-4 py-8 relative z-10">
+        {slug === 'printers' && (
+          <div className="mb-6 flex justify-center">
+            <Button
+              onClick={() => setAdvisorOpen(true)}
+              size="lg"
+              className="gap-2 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground font-bold shadow-lg hover:scale-[1.02] transition"
+            >
+              <Sparkles className="h-5 w-5" />
+              اقترح لي طابعة بالذكاء الاصطناعي
+            </Button>
+          </div>
+        )}
+        <PrinterAdvisorDialog open={advisorOpen} onOpenChange={setAdvisorOpen} />
+
 
         {categoryLoading ? (
           <ProductGridSkeleton count={8} />
