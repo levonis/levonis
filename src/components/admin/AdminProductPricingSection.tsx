@@ -394,13 +394,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     if (hasPreOrder && hasLand) {
       const weightNum = parseFloat(weightKg) || 0;
       const calc = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionLandIqd + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + N(calc.shippingCost) + commLand + pdc + refEarn;
       results.push({
         label: 'حجز مسبق - بري',
         type: 'land',
         priceIqd,
-        shipping: calc.shippingCost,
-        commission: commissionLandIqd,
+        shipping: N(calc.shippingCost),
+        commission: commLand,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         breakdown: calc.breakdown,
