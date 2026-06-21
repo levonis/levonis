@@ -468,11 +468,12 @@ export function getGuardedCartItemPrice(
     }
   }
 
-  // 3+4. Independent-price overrides from color and/or option.
-  //  Semantics (new): price_adjustment is the option's INDEPENDENT IQD price.
-  //  When set (> 0), it REPLACES the base price. When both a color override
-  //  and an option override exist, their values SUM to replace the base.
-  //  When neither is set, the base price is used.
+  // 3+4. Independent overrides from color and/or option.
+  //  Semantics: the override is the OPTION/COLOR COST (replaces product cost).
+  //  When the product is linked to global COD %, the final sale price is
+  //  re-derived from this overridden cost via the same formula used for the
+  //  base product. Otherwise (or when the formula isn't computable on the
+  //  client), the override is used directly as the sale price.
   let colorOverride: number | null = null;
   const selColor = item.selected_color;
   if (selColor && product.colors) {
@@ -497,12 +498,23 @@ export function getGuardedCartItemPrice(
     optionOverride = ensureAdjustmentIqd(Number(optAdj), usdToIqd, priceUsd);
   }
 
-  if (colorOverride != null && optionOverride != null) {
-    price = colorOverride + optionOverride;
-  } else if (colorOverride != null) {
-    price = colorOverride;
-  } else if (optionOverride != null) {
-    price = optionOverride;
+  let overrideCostIqd: number | null = null;
+  if (colorOverride != null && optionOverride != null) overrideCostIqd = colorOverride + optionOverride;
+  else if (colorOverride != null) overrideCostIqd = colorOverride;
+  else if (optionOverride != null) overrideCostIqd = optionOverride;
+
+  if (overrideCostIqd != null) {
+    if (isDirect && product.link_direct_commission_to_cod && codDefaults) {
+      const derived = computeLinkedDirectSalePriceFromCostIqd(
+        product as any,
+        overrideCostIqd,
+        { usd_to_iqd_rate: usdToIqd } as any,
+        codDefaults as any,
+      );
+      price = derived != null ? derived : overrideCostIqd;
+    } else {
+      price = overrideCostIqd;
+    }
   }
   // else: keep computed base/sale-type price from steps 1–2.
 
