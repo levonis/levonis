@@ -118,3 +118,28 @@ export const faqLd = (qa: { q: string; a: string }[]) => ({
     acceptedAnswer: { '@type': 'Answer', text: it.a },
   })),
 });
+
+export interface CollectionPageInput {
+  name: string;
+  description?: string | null;
+  url: string;
+  items: { name: string; url: string }[];
+}
+
+export const collectionPageLd = (c: CollectionPageInput) => ({
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: c.name,
+  description: c.description || c.name,
+  url: c.url.startsWith('http') ? c.url : `${SITE}${c.url}`,
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: c.items.length,
+    itemListElement: c.items.slice(0, 50).map((it, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: it.name,
+      url: it.url.startsWith('http') ? it.url : `${SITE}${it.url}`,
+    })),
+  },
+});
