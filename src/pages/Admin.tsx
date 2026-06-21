@@ -3309,18 +3309,18 @@ const Admin = () => {
                               <div className="space-y-3">
                                 {isAdminOrAssistant && (
                                   <div className="space-y-1">
-                                    <Label className="text-xs">سعر البيع المضاف ($)</Label>
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      value={option.price_adjustment}
-                                      onChange={(e) => updateProductOption(index, 'price_adjustment', Number(e.target.value))}
-                                      placeholder="0"
-                                      className="h-9"
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                      سعر مستقل يُضاف إلى سعر المنتج عند اختيار هذا الخيار (بالدولار، يقبل القيم السالبة للخصم)
-                                    </p>
+                                     <Label className="text-xs">سعر مستقل للخيار ($)</Label>
+                                     <Input
+                                       type="number"
+                                       step="0.01"
+                                       value={option.price_adjustment}
+                                       onChange={(e) => updateProductOption(index, 'price_adjustment', Number(e.target.value))}
+                                       placeholder="اتركه فارغًا = السعر الأساسي"
+                                       className="h-9"
+                                     />
+                                     <p className="text-xs text-muted-foreground">
+                                       سعر بيع نهائي مستقل للخيار (بالدولار). إذا حُدِّد &gt; 0 يستبدل السعر الأساسي. اتركه فارغًا أو صفرًا لاستخدام السعر الأساسي. عند خيارَين كلاهما له سعر مستقل: تُجمع القيم معًا بدل الأساس.
+                                     </p>
                                     <CnyConvertButton
                                       targetCurrency="USD"
                                       onConvert={(v) => updateProductOption(index, 'price_adjustment', v)}
