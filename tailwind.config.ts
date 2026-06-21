@@ -186,12 +186,20 @@ export default {
           },
         },
         "glass-expand": {
-          "0%": { opacity: "0", transform: "scale(0.85)" },
+          "0%": { opacity: "0", transform: "scale(0.92)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
         "glass-collapse": {
           "0%": { opacity: "1", transform: "scale(1)" },
-          "100%": { opacity: "0", transform: "scale(0.92)" },
+          "100%": { opacity: "0", transform: "scale(0.96)" },
+        },
+        "dialog-in": {
+          "0%": { opacity: "0", transform: "translate(-50%, -50%) scale(0.94)" },
+          "100%": { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+        },
+        "dialog-out": {
+          "0%": { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+          "100%": { opacity: "0", transform: "translate(-50%, -50%) scale(0.97)" },
         },
         "glass-fade-up": {
           "0%": { opacity: "0", transform: "translateY(12px)" },
