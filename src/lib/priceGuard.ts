@@ -174,8 +174,10 @@ export function computeLinkedDirectSalePrice(
     referral_earnings_iqd?: number | null;
     commission_sea_iqd?: number | null;
     commission_air_iqd?: number | null;
+    commission_land_iqd?: number | null;
     sea_price?: number | null;
     air_price?: number | null;
+    land_price?: number | null;
     shipping_cost_iqd?: number | null;
     round_up_price?: boolean | null;
   },
@@ -208,21 +210,29 @@ export function computeLinkedDirectSalePrice(
   const referral = Number(product.referral_earnings_iqd || 0);
   const seaCommission = Number(product.commission_sea_iqd || 0);
   const airCommission = Number(product.commission_air_iqd || 0);
+  const landCommission = Number(product.commission_land_iqd || 0);
 
   const hasPreOrder = !!product.has_pre_order;
-  const st = product.shipping_type;
-  const hasSea = st === 'sea' || st === 'both';
-  const hasAir = st === 'air' || st === 'both';
+  const st: string = product.shipping_type || '';
+  const tokens = st === 'both' ? ['sea', 'air'] : st.split(',').map((t) => t.trim()).filter(Boolean);
+  const hasSea = tokens.includes('sea');
+  const hasAir = tokens.includes('air');
+  const hasLand = tokens.includes('land');
 
   // Use stored raw shipping cost (matches what admin form computed at save time)
   // rather than deriving from sea_price/air_price (which may be rounded up).
   const shippingCost = Number(product.shipping_cost_iqd || 0);
 
-  const seaCommissionAddon = hasPreOrder && hasSea ? seaCommission : 0;
-  const airCommissionAddon = hasPreOrder && hasAir && !hasSea ? airCommission : 0;
+  // Pre-order commission preference: sea > air > land
+  let preOrderCommissionAddon = 0;
+  if (hasPreOrder) {
+    if (hasSea) preOrderCommissionAddon = seaCommission;
+    else if (hasAir) preOrderCommissionAddon = airCommission;
+    else if (hasLand) preOrderCommissionAddon = landCommission;
+  }
 
   // Pre-order base for the COD percentage (raw, unrounded — matches admin form logic)
-  const preorderFinal = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + pdc + referral;
+  const preorderFinal = priceIqd + shippingCost + preOrderCommissionAddon + pdc + referral;
 
   // Pick the COD tier matching the pre-order amount; fall back to legacy default.
   let codType: 'percentage' | 'fixed' = codDefaults.type;
