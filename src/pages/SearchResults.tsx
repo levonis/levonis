@@ -60,9 +60,40 @@ const SearchResults = () => {
       ? `${n} ئەنجام`
       : `${n} نتيجة`;
 
+  const searchTitleBase = language === 'en' ? 'Search' : language === 'ku' ? 'گەڕان' : 'بحث';
+  const seoTitle = q ? `${q} — ${searchTitleBase}` : searchTitleBase;
+  const seoDesc = q
+    ? (language === 'en'
+        ? `Search results for "${q}" on LEVONIS — find 3D printers, electronics, filaments and accessories in Iraq.`
+        : language === 'ku'
+        ? `ئەنجامی گەڕان بۆ "${q}" لە LEVONIS — چاپکەری 3D، ئەلیکترۆنی و پێداویستی لە عێراق.`
+        : `نتائج البحث عن "${q}" في LEVONIS — اعثر على طابعات 3D، إلكترونيات، فلامنت وملحقات في العراق.`)
+    : (language === 'en'
+        ? 'Search products on LEVONIS — 3D printers, filaments, electronics and accessories in Iraq.'
+        : language === 'ku'
+        ? 'گەڕان بۆ بەرهەمەکانی LEVONIS — چاپکەری 3D، فلامێنت و ئەلیکترۆنی لە عێراق.'
+        : 'ابحث في منتجات LEVONIS — طابعات 3D، فلامنت، إلكترونيات وملحقات في العراق.');
+  const seoUrl = q
+    ? `https://levonisiq.com/search?q=${encodeURIComponent(q)}`
+    : 'https://levonisiq.com/search';
+
   return (
     <div className="min-h-screen relative overflow-hidden">
+      <SEO
+        title={seoTitle}
+        description={seoDesc}
+        url={seoUrl}
+        canonical="https://levonisiq.com/search"
+        noindex={!q}
+        jsonLd={[
+          breadcrumbLd([
+            { name: 'Home', url: '/' },
+            { name: searchTitleBase, url: '/search' },
+          ]),
+        ]}
+      />
       <main className="relative z-10 container mx-auto px-4 py-6 md:py-10">
+
         {/* Header */}
         <header className="mb-6">
           <div className="flex items-center gap-3 mb-2 text-foreground/60 text-sm">
