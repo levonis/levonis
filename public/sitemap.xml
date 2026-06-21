@@ -3,6 +3,7 @@
   <url><loc>https://levonisiq.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
   <url><loc>https://levonisiq.com/about</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://levonisiq.com/faq</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://levonisiq.com/guides/bambu-lab-vs-creality</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://levonisiq.com/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://levonisiq.com/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://levonisiq.com/search</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>

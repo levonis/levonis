@@ -174,6 +174,7 @@ const About = lazy(() => import("./pages/About"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Faq = lazy(() => import("./pages/Faq"));
+const BambuVsCreality = lazy(() => import("./pages/guides/BambuVsCreality"));
 
 import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
 import PageFade from "@/components/PageFade";
@@ -409,6 +410,7 @@ function AppContent() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/faq" element={<Faq />} />
+            <Route path="/guides/bambu-lab-vs-creality" element={<BambuVsCreality />} />
             <Route path="/search" element={<SearchResults />} />
             
             <Route path="/index" element={<Navigate to="/" replace />} />
