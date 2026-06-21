@@ -160,6 +160,25 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
       // Persisted "link direct commission to COD %" toggle
       setLinkDirectCommissionToCod(!!editingProduct.link_direct_commission_to_cod);
+    } else {
+      setPriceUsd(0);
+      setOriginalPriceIqd(0);
+      setLengthCm(0);
+      setWidthCm(0);
+      setHeightCm(0);
+      setWeightKg('');
+      setCommissionSeaIqd(0);
+      setCommissionAirIqd(0);
+      setCommissionDirectIqd(0);
+      setPersonalDeliveryCost(0);
+      setReferralEarningsIqd(0);
+      setHasPreOrder(false);
+      setHasDirectSale(false);
+      setHasSea(false);
+      setHasAir(false);
+      setCodEnabled(false);
+      setLinkDirectCommissionToCod(false);
+      setRoundUp(true);
     }
     // Only depend on editingProduct — must NOT re-run when shippingSettings load,
     // otherwise freshly-extracted dimensions/weight get wiped back to 0.
@@ -397,6 +416,12 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="referral_earnings_iqd" value={referralEarningsIqd} />
       <input type="hidden" name="cod_enabled" value={codEnabled ? 'true' : 'false'} />
       <input type="hidden" name="link_direct_commission_to_cod" value={linkDirectCommissionToCod ? 'true' : 'false'} />
+      <input type="hidden" name="price_usd" value={priceUsd || ''} />
+      <input type="hidden" name="original_price_iqd" value={originalPriceIqd || ''} />
+      <input type="hidden" name="length_cm" value={lengthCm || ''} />
+      <input type="hidden" name="width_cm" value={widthCm || ''} />
+      <input type="hidden" name="height_cm" value={heightCm || ''} />
+      <input type="hidden" name="weight_kg" value={weightKg || ''} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -462,7 +487,6 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
             )}
             <Input
               id="price_usd"
-              name="price_usd"
               type="number"
               step="0.01"
               min="0"
@@ -475,7 +499,6 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
             <Label htmlFor="original_price_iqd">السعر الأصلي (د.ع)</Label>
             <Input
               id="original_price_iqd"
-              name="original_price_iqd"
               type="number"
               step="250"
               min="0"
@@ -560,17 +583,17 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label htmlFor="length_cm" className="text-xs">الطول</Label>
-                    <Input id="length_cm" name="length_cm" type="number" step="0.1" min="0"
+                    <Input id="length_cm" type="number" step="0.1" min="0"
                       value={lengthCm || ''} onChange={(e) => setLengthCm(Number(e.target.value))} placeholder="سم" />
                   </div>
                   <div>
                     <Label htmlFor="width_cm" className="text-xs">العرض</Label>
-                    <Input id="width_cm" name="width_cm" type="number" step="0.1" min="0"
+                    <Input id="width_cm" type="number" step="0.1" min="0"
                       value={widthCm || ''} onChange={(e) => setWidthCm(Number(e.target.value))} placeholder="سم" />
                   </div>
                   <div>
                     <Label htmlFor="height_cm" className="text-xs">الارتفاع</Label>
-                    <Input id="height_cm" name="height_cm" type="number" step="0.1" min="0"
+                    <Input id="height_cm" type="number" step="0.1" min="0"
                       value={heightCm || ''} onChange={(e) => setHeightCm(Number(e.target.value))} placeholder="سم" />
                   </div>
                 </div>
@@ -593,7 +616,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="weight_kg">الوزن (كغ) *</Label>
-                  <Input id="weight_kg" name="weight_kg" type="number" step="any" min="0"
+                  <Input id="weight_kg" type="number" step="any" min="0"
                     value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="مثال: 0.5" />
                 </div>
                 {!hasSea && (
