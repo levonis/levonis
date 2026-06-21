@@ -1026,7 +1026,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const forceAddToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
+  const forceAddToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) return false;
     // Block force-add when a matching RF item is already locked in the cart
     const normalize = (v: any) => v ? v.toString().trim() : null;
