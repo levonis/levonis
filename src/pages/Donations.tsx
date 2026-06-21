@@ -97,33 +97,13 @@ export default function Donations() {
     },
   });
 
-  // Realtime: invalidate donors list + refresh stats on new donation
+  // Periodic refresh of donors list + stats (realtime disabled for privacy)
   useEffect(() => {
-    const ch = supabase
-      .channel("donations-live")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "donations_log" },
-        (payload) => {
-          const row = payload.new as DonationRow;
-          if (row?.source !== "wallet_direct") {
-            qc.invalidateQueries({ queryKey: ["donations-stats"] });
-            return;
-          }
-          qc.setQueryData<DonationRow[]>(["donations-feed", "wallet-only"], (prev) =>
-            prev ? [row, ...prev].slice(0, 50) : [row]
-          );
-          qc.invalidateQueries({ queryKey: ["donations-stats"] });
-          if (row?.id) {
-            setPulseId(row.id);
-            setTimeout(() => setPulseId(null), 1800);
-          }
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
+    const interval = setInterval(() => {
+      qc.invalidateQueries({ queryKey: ["donations-feed", "wallet-only"] });
+      qc.invalidateQueries({ queryKey: ["donations-stats"] });
+    }, 15000);
+    return () => clearInterval(interval);
   }, [qc]);
 
   const submitWalletDonation = async (val: number) => {
