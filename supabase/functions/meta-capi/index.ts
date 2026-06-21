@@ -34,6 +34,32 @@ interface IncomingEvent {
   test_event_code?: string;
 }
 
+const ALLOWED_EVENTS = new Set([
+  'PageView',
+  'ViewContent',
+  'AddToCart',
+  'InitiateCheckout',
+  'AddPaymentInfo',
+  'Purchase',
+  'Lead',
+  'CompleteRegistration',
+  'Search',
+  'Contact',
+]);
+const MAX_EVENT_VALUE = 10_000_000; // sanity cap
+
+function sanitizeCustomData(input: unknown): Record<string, unknown> {
+  if (!input || typeof input !== 'object') return {};
+  const out: Record<string, unknown> = { ...(input as Record<string, unknown>) };
+  const val = Number(out.value);
+  if (Number.isFinite(val)) {
+    out.value = Math.max(0, Math.min(val, MAX_EVENT_VALUE));
+  } else if ('value' in out) {
+    delete out.value;
+  }
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -49,8 +75,8 @@ Deno.serve(async (req) => {
     }
 
     const body = (await req.json()) as IncomingEvent;
-    if (!body?.event_name) {
-      return new Response(JSON.stringify({ error: 'event_name required' }), {
+    if (!body?.event_name || typeof body.event_name !== 'string' || !ALLOWED_EVENTS.has(body.event_name)) {
+      return new Response(JSON.stringify({ error: 'invalid_event_name' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -84,7 +110,7 @@ Deno.serve(async (req) => {
           event_source_url: body.event_source_url,
           action_source: 'website',
           user_data,
-          custom_data: body.custom_data || {},
+          custom_data: sanitizeCustomData(body.custom_data),
         },
       ],
     };
