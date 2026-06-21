@@ -336,9 +336,20 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
   const calculations = useMemo(() => {
     if (!shippingSettings || !priceUsd) return null;
-    const rate = shippingSettings.usd_to_iqd_rate;
-    const priceIqd = Math.round(priceUsd * rate);
-    const pdc = effectivePersonalDeliveryCost;
+    // Defensive: coerce every numeric input — Supabase numeric columns arrive as strings,
+    // and `+` would concatenate instead of add, producing absurd 20+ digit totals.
+    const N = (v: any) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const rate = N(shippingSettings.usd_to_iqd_rate);
+    const priceIqd = Math.round(N(priceUsd) * rate);
+    const pdc = N(effectivePersonalDeliveryCost);
+    const refEarn = N(referralEarningsIqd);
+    const commSea = N(commissionSeaIqd);
+    const commAir = N(commissionAirIqd);
+    const commLand = N(commissionLandIqd);
+    const commDirect = N(effectiveCommissionDirect);
     const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; finalRounded: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number; personalDelivery?: number }> = [];
 
     if (hasPreOrder && hasSea) {
