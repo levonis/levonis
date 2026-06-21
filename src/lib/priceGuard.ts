@@ -259,7 +259,7 @@ export function computeLinkedDirectSalePrice(
     directPortion = Math.ceil((preorderFinal * codValue) / 100);
   }
 
-  let total = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + directPortion + pdc + referral;
+  let total = priceIqd + shippingCost + preOrderCommissionAddon + directPortion + pdc + referral;
 
   if (product.round_up_price) {
     total = Math.ceil(total / 250) * 250;
