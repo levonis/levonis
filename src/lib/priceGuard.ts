@@ -452,22 +452,24 @@ export function getGuardedCartItemPrice(
 }
 
 /**
- * Computes the minimum price_adjustment (in IQD) across the available product_options
- * for a given sale type. Returns 0 if no options exist or none are eligible.
+ * Returns the minimum INDEPENDENT price (in IQD) among eligible product_options
+ * whose `price_adjustment` is set (> 0) — i.e. options that override the base.
  *
- * - Direct sale: option must have available_for_direct_sale !== false AND have stock
- *   (stock_quantity > 0 OR backed by colors[].option_stocks summing > 0).
- * - Pre-order: all options eligible (no stock requirement).
+ * Returns `null` when no eligible option carries an independent price; callers
+ * should then fall back to the product base. This replaces the old additive
+ * "min adjustment" helper.
  *
- * Negative adjustments are honored (cheaper option lowers card price).
+ * - Direct sale: option must be available_for_direct_sale AND have stock
+ *   (stock_quantity > 0 OR colors[].option_stocks summing > 0).
+ * - Pre-order: all options eligible.
  */
-export function getMinOptionAdjustmentIqd(
+export function getMinOptionOverridePriceIqd(
   product: any,
   saleType: 'direct' | 'preorder',
   usdToIqd: number,
-): number {
+): number | null {
   const options = Array.isArray(product?.product_options) ? product.product_options : [];
-  if (options.length === 0) return 0;
+  if (options.length === 0) return null;
   const priceUsd = product?.price_usd ?? null;
   const colors = Array.isArray(product?.colors) ? product.colors : [];
 
@@ -496,7 +498,7 @@ export function getMinOptionAdjustmentIqd(
     return total;
   };
 
-  const eligible: number[] = [];
+  const overrides: number[] = [];
   for (const opt of options) {
     if (saleType === 'direct') {
       if ((opt?.available_for_direct_sale ?? true) === false) continue;
@@ -506,8 +508,22 @@ export function getMinOptionAdjustmentIqd(
       if (!hasStock) continue;
     }
     const adj = Number(opt?.price_adjustment) || 0;
-    eligible.push(adj === 0 ? 0 : ensureAdjustmentIqd(adj, usdToIqd, priceUsd));
+    if (adj <= 0) continue; // empty/zero = use base, not an override
+    overrides.push(ensureAdjustmentIqd(adj, usdToIqd, priceUsd));
   }
-  if (eligible.length === 0) return 0;
-  return Math.min(...eligible);
+  if (overrides.length === 0) return null;
+  return Math.min(...overrides);
+}
+
+/**
+ * @deprecated Use {@link getMinOptionOverridePriceIqd}. Kept as a thin
+ * wrapper that returns 0 (no adjustment) under the new independent-price
+ * semantics — option prices are no longer additive.
+ */
+export function getMinOptionAdjustmentIqd(
+  _product: any,
+  _saleType: 'direct' | 'preorder',
+  _usdToIqd: number,
+): number {
+  return 0;
 }
