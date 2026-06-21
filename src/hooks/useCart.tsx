@@ -134,8 +134,8 @@ interface CartContextType {
   itemCount: number;
   total: number;
   pendingCartRequest: PendingCartRequest | null;
-  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
-  forceAddToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
+  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
+  forceAddToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
   addBundleToCart: (bundleId: string, saleType: 'direct' | 'preorder', quantity?: number) => Promise<boolean>;
   cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
