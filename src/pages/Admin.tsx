@@ -4724,10 +4724,16 @@ const Admin = () => {
               refetch={refetchRequests}
             />
           </TabsContent>
-        </Tabs>
-      </main>
-    </div>
-  );
+         </Tabs>
+       </main>
+       <QuickCostEditDialog
+         open={quickCostOpen}
+         onOpenChange={(o) => { setQuickCostOpen(o); if (!o) setQuickCostProduct(null); }}
+         product={quickCostProduct}
+         onSaved={() => { refetchProducts(); }}
+       />
+     </div>
+   );
 };
 
 export default Admin;
