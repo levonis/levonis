@@ -374,13 +374,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const weightNum = parseFloat(weightKg) || 0;
       const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + N(calc.shippingCost) + commAir + pdc + refEarn;
       results.push({
         label: 'حجز مسبق - جوي',
         type: 'air',
         priceIqd,
-        shipping: calc.shippingCost,
-        commission: commissionAirIqd,
+        shipping: N(calc.shippingCost),
+        commission: commAir,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         breakdown: calc.breakdown,
