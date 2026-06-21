@@ -675,9 +675,14 @@ export default function AdminShippingSettings() {
       const priceIqd = Math.round(priceUsd * rate);
       const commissionSeaIqd = p.commission_sea_iqd || 0;
       const commissionAirIqd = p.commission_air_iqd || 0;
+      const commissionLandIqd = (p as any).commission_land_iqd || 0;
       const commissionDirectIqd = p.commission_direct_iqd || 0;
       const otherCostsIqd = p.other_costs_iqd || 0;
-      const shippingType = p.shipping_type || 'sea';
+      const shippingType: string = p.shipping_type || 'sea';
+      const stTokens = shippingType === 'both' ? ['sea', 'air'] : shippingType.split(',').map((t: string) => t.trim());
+      const hasSea = stTokens.includes('sea');
+      const hasAir = stTokens.includes('air');
+      const hasLand = stTokens.includes('land');
       const hasPreOrder = p.has_pre_order ?? false;
       const hasInStock = p.has_in_stock ?? false;
       const shouldRoundUp = p.round_up_price ?? false;
@@ -689,16 +694,22 @@ export default function AdminShippingSettings() {
       const updates: Record<string, any> = {};
 
       if (hasPreOrder) {
-        if (shippingType === 'sea' || shippingType === 'both') {
+        if (hasSea) {
           const seaCalc = calculateShippingCost('china', 'sea', dims, null, shippingSettingsObj);
           updates.sea_price = priceIqd + seaCalc.shippingCost + commissionSeaIqd;
           updates.shipping_cost_iqd = seaCalc.shippingCost;
         }
-        if (shippingType === 'air' || shippingType === 'both') {
+        if (hasAir) {
           const weightKg = p.weight_kg || 0;
           const airCalc = calculateShippingCost('china', 'air', dims, weightKg > 0 ? weightKg : null, shippingSettingsObj);
           updates.air_price = priceIqd + airCalc.shippingCost + commissionAirIqd;
           if (!updates.shipping_cost_iqd) updates.shipping_cost_iqd = airCalc.shippingCost;
+        }
+        if (hasLand) {
+          const weightKg = p.weight_kg || 0;
+          const landCalc = calculateShippingCost('china', 'land', null, weightKg > 0 ? weightKg : null, shippingSettingsObj);
+          updates.land_price = priceIqd + landCalc.shippingCost + commissionLandIqd;
+          if (!updates.shipping_cost_iqd) updates.shipping_cost_iqd = landCalc.shippingCost;
         }
       }
 
