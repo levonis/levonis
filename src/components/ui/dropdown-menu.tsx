@@ -45,6 +45,7 @@ const DropdownMenuSubContent = React.forwardRef<
     ref={ref}
     className={cn(
       "z-[300] min-w-[8rem] overflow-hidden rounded-xl p-1.5 text-popover-foreground glass-floating",
+      "origin-[var(--radix-dropdown-menu-content-transform-origin)]",
       "data-[state=open]:animate-glass-expand data-[state=closed]:animate-glass-collapse",
       className,
     )}
