@@ -109,16 +109,18 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     setShowCnyInput(false);
   };
 
+  // Ref set when autofill event arrives, so we don't clobber freshly-extracted
+  // dimensions/weight if the editingProduct init effect re-runs.
+  const extractedRef = useRef<boolean>(false);
+
   useEffect(() => {
+    // Reset extraction flag whenever a different product is opened/closed.
+    extractedRef.current = false;
     if (editingProduct) {
       setPriceUsd(editingProduct.price_usd || 0);
       // Original price is now stored/edited directly in IQD.
-      // Backward compat: if old USD value is present and IQD is empty, convert it once.
-      const rate = shippingSettings?.usd_to_iqd_rate || 0;
       if (editingProduct.original_price && editingProduct.original_price > 0) {
         setOriginalPriceIqd(Number(editingProduct.original_price));
-      } else if (editingProduct.original_price_usd && editingProduct.original_price_usd > 0 && rate > 0) {
-        setOriginalPriceIqd(Math.round(Number(editingProduct.original_price_usd) * rate));
       } else {
         setOriginalPriceIqd(0);
       }
@@ -134,7 +136,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       // Determine sale types
       setHasPreOrder(editingProduct.has_pre_order ?? false);
       setHasDirectSale(editingProduct.has_in_stock ?? false);
-      
+
       // Determine shipping types
       const st = editingProduct.shipping_type;
       if (st === 'both') {
@@ -159,18 +161,33 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       // Persisted "link direct commission to COD %" toggle
       setLinkDirectCommissionToCod(!!editingProduct.link_direct_commission_to_cod);
     }
-  }, [editingProduct, shippingSettings?.usd_to_iqd_rate]);
+    // Only depend on editingProduct — must NOT re-run when shippingSettings load,
+    // otherwise freshly-extracted dimensions/weight get wiped back to 0.
+  }, [editingProduct]);
 
   // Keep a ref to the latest USD->IQD rate so the autofill listener (registered once) can read it.
   const usdRateRef = useRef<number>(0);
   useEffect(() => {
     usdRateRef.current = shippingSettings?.usd_to_iqd_rate || 0;
+    // Legacy backfill: convert old USD original price → IQD once the rate is known,
+    // but only when the IQD value isn't already set on the row.
+    if (
+      editingProduct &&
+      usdRateRef.current > 0 &&
+      (!editingProduct.original_price || editingProduct.original_price <= 0) &&
+      editingProduct.original_price_usd &&
+      editingProduct.original_price_usd > 0
+    ) {
+      setOriginalPriceIqd((curr) =>
+        curr > 0 ? curr : Math.round(Number(editingProduct.original_price_usd) * usdRateRef.current),
+      );
+    }
     // If we had a pending USD original price waiting for the rate, apply it now.
     if (usdRateRef.current > 0 && pendingOriginalPriceUsdRef.current && pendingOriginalPriceUsdRef.current > 0) {
       setOriginalPriceIqd(Math.round(pendingOriginalPriceUsdRef.current * usdRateRef.current));
       pendingOriginalPriceUsdRef.current = 0;
     }
-  }, [shippingSettings?.usd_to_iqd_rate]);
+  }, [shippingSettings?.usd_to_iqd_rate, editingProduct]);
 
   const pendingOriginalPriceUsdRef = useRef<number>(0);
 
