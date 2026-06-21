@@ -517,7 +517,12 @@ const Admin = () => {
       setProductUrl('');
       setFormKey(prev => prev + 1); // Reset form key when closing
     }
-  }, [productDialogOpen, editingProduct, defaultSettings]);
+    // Intentionally NOT depending on `defaultSettings`: it loads async from
+    // React Query and used to wipe freshly-extracted features/SEO/AI content
+    // when it resolved after `applyProductInfo`. Defaults are read from the
+    // closure at call time inside handleAddOption/handleAddColor, which is fine.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productDialogOpen, editingProduct]);
 
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ['admin-products-with-options', isAdminOrAssistant],
