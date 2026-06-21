@@ -13756,6 +13756,7 @@ export type Database = {
           commission_air_iqd: number | null
           commission_direct_iqd: number | null
           commission_iqd: number | null
+          commission_land_iqd: number | null
           commission_sea_iqd: number | null
           cost_price: number | null
           created_at: string | null
@@ -13778,6 +13779,7 @@ export type Database = {
           images: string[] | null
           in_stock: boolean | null
           is_pricing_updated: boolean | null
+          land_price: number | null
           length_cm: number | null
           link_direct_commission_to_cod: boolean | null
           name: string | null
