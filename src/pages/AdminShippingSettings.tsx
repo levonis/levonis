@@ -615,6 +615,7 @@ export default function AdminShippingSettings() {
     local_delivery_provinces: 5000,
     usd_to_iqd_rate: 1410,
     cny_to_usd_rate: 6.7,
+    land_price_per_kg_usd: 4,
   });
 
   useEffect(() => {
@@ -654,6 +655,7 @@ export default function AdminShippingSettings() {
       local_delivery_provinces: newSettings.local_delivery_provinces ?? 5000,
       usd_to_iqd_rate: newSettings.usd_to_iqd_rate ?? 1410,
       cny_to_usd_rate: newSettings.cny_to_usd_rate ?? 6.7,
+      land_price_per_kg_usd: newSettings.land_price_per_kg_usd ?? 4,
     };
     const rate = shippingSettingsObj.usd_to_iqd_rate;
     const roundUpTo250 = (v: number) => Math.ceil(v / 250) * 250;

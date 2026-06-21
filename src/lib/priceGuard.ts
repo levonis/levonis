@@ -119,6 +119,7 @@ export function guardProductPrices(
     direct_sale_price?: number | null;
     sea_price?: number | null;
     air_price?: number | null;
+    land_price?: number | null;
     original_price?: number | null;
     price_usd?: number | null;
     original_price_usd?: number | null;
@@ -129,6 +130,7 @@ export function guardProductPrices(
   direct_sale_price: number | null;
   sea_price: number | null;
   air_price: number | null;
+  land_price: number | null;
   original_price: number | null;
 } {
   const priceUsd = product.price_usd ?? null;
@@ -144,6 +146,9 @@ export function guardProductPrices(
       : null,
     air_price: product.air_price != null
       ? ensurePriceIqd(Number(product.air_price), priceUsd, usdToIqd)
+      : null,
+    land_price: product.land_price != null
+      ? ensurePriceIqd(Number(product.land_price), priceUsd, usdToIqd)
       : null,
     original_price: product.original_price != null
       ? ensurePriceIqd(Number(product.original_price), origUsd, usdToIqd)
@@ -321,15 +326,23 @@ export function getGuardedCartItemPrice(
     const shippingType = product.shipping_type || item.shipping_type;
     const seaPrice = product.sea_price;
     const airPrice = product.air_price;
-    if (shippingType === 'sea' && seaPrice != null) {
-      price = ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd);
-    } else if (shippingType === 'air' && airPrice != null) {
-      price = ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd);
-    } else if (shippingType === 'both' && seaPrice != null && airPrice != null) {
-      price = Math.min(
-        ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd),
-        ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd)
-      );
+    const landPrice = (product as any).land_price;
+    // Token list (supports legacy 'both' and new comma-separated)
+    const tokens: string[] = (shippingType === 'both' ? 'sea,air' : (shippingType || ''))
+      .split(',')
+      .map((t: string) => t.trim())
+      .filter(Boolean);
+    if (tokens.length === 1) {
+      const t = tokens[0];
+      if (t === 'sea' && seaPrice != null) price = ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd);
+      else if (t === 'air' && airPrice != null) price = ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd);
+      else if (t === 'land' && landPrice != null) price = ensurePriceIqd(Number(landPrice), priceUsd, usdToIqd);
+    } else if (tokens.length > 1) {
+      const candidates: number[] = [];
+      if (tokens.includes('sea') && seaPrice != null) candidates.push(ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd));
+      if (tokens.includes('air') && airPrice != null) candidates.push(ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd));
+      if (tokens.includes('land') && landPrice != null) candidates.push(ensurePriceIqd(Number(landPrice), priceUsd, usdToIqd));
+      if (candidates.length > 0) price = Math.min(...candidates);
     }
   }
 
