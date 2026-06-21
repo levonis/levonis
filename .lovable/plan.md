@@ -1,46 +1,55 @@
 ## السبب الجذري
 
-في `src/pages/Admin.tsx` السطر 444-520، الـ `useEffect` المسؤول عن تهيئة حقول المنتج (`productFeatures` / `productAIContent` / `productShortSummary` / `productSearchableAttrs` / `productColors` / `productCardDiscounts`) يعتمد على:
+عرض `products_admin` (والذي تستخدمه صفحة الإدارة لجلب المنتجات) يقوم بإخفاء حقول التكلفة/العمولة عندما يكون المستخدم **ليس أدمن**:
 
-```ts
-}, [productDialogOpen, editingProduct, defaultSettings]);
+```sql
+CASE WHEN has_role(auth.uid(), 'admin') THEN cost_price ELSE NULL END AS cost_price
 ```
 
-`defaultSettings` يأتي من React Query (السطر 411). عند الضغط على "استخراج":
+نفس الشيء لـ: `cost_price`, `commission_iqd`, `commission_sea_iqd`, `commission_air_iqd`, `commission_direct_iqd`, `shipping_cost_iqd`, `other_costs_iqd`, `personal_delivery_cost`, `referral_earnings_iqd`.
 
-1. `applyProductInfo` يستدعي `setProductFeatures([...])`, `setProductAIContent({...})`, `setProductShortSummary({...})`, `setProductSearchableAttrs([...])` ✓
-2. لاحقاً يصل `defaultSettings` من الخادم (أو يتغيّر بعد invalidation) → الـ effect يُعاد تنفيذه → يدخل فرع `productDialogOpen && !editingProduct` (السطر 501) → **يصفّر كل هذه الحقول** ✗
+**النتيجة للمساعد:**
+1. عند فتح المنتج → الحقل يصل كـ `NULL` فيظهر فارغاً.
+2. المساعد يدخل قيمة → الحفظ في جدول `products` ينجح فعلياً (RLS وGRANT يسمحان).
+3. بعد إعادة الجلب، العرض يعيد `NULL` مرة أخرى → يبدو وكأن القيمة لم تُحفظ/لم تظهر.
 
-نفس نمط مشكلة الأبعاد التي أصلحناها.
+(أما تكلفة الألوان `cost_usd` داخل JSON `colors` فالعرض يمررها مباشرة دون إخفاء، ومع ذلك تختفي حالياً لأن الصفحة تعيد بناء `colors` من نفس المنتج المجلوب من العرض — وحالياً يعمل بشكل صحيح؛ إذا كان المساعد يلاحظ ضياعها فالسبب نفسه: refetch لا يظهر السعر الأساسي فيُربك UI أحيانا، أو السبب أن RLS لـ UPDATE الكامل يعتمد على has_role assistant وهو موجود ويعمل).
 
-ملاحظة إضافية: `defaultSettings` غير مُستخدَم داخل جسم الـ effect نفسه — هو dep يتيم.
+## الإصلاح المقترح
 
-## الإصلاح
+تعديل عرض `products_admin` ليكشف حقول التكلفة/العمولة للأدمن **والمساعد** معاً، مع إبقائها مخفية عن باقي المستخدمين الموثّقين.
 
-### `src/pages/Admin.tsx` — السطر 520
+### تغيير الـ Migration
 
-تغيير deps الـ effect من:
-```ts
-}, [productDialogOpen, editingProduct, defaultSettings]);
+استبدال شرط الإخفاء في كل CASE من:
+```sql
+WHEN has_role(auth.uid(), 'admin')
 ```
 إلى:
-```ts
-}, [productDialogOpen, editingProduct]);
+```sql
+WHEN has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'assistant')
 ```
 
-هذا يمنع إعادة التنفيذ عند وصول/تغيّر `defaultSettings`، فلن تُمسح الحقول المُستخرَجة. التهيئة الأولى تحدث عند فتح الـ dialog وعند تغيّر المنتج فقط، وهو السلوك المطلوب.
+تطبق على الحقول:
+`cost_price`, `shipping_cost_iqd`, `commission_iqd`, `other_costs_iqd`, `commission_sea_iqd`, `commission_air_iqd`, `commission_direct_iqd`, `personal_delivery_cost`, `referral_earnings_iqd`.
 
-### لا تغييرات في:
-- مكان آخر في الكود (الـ defaults المستخدمة من `defaultSettings` في `handleAddOption`/`handleAddColor` تُقرأ مباشرة من الـ closure وقت الاستدعاء — لا تحتاج dep).
-- منطق `applyProductInfo` (يعمل بشكل صحيح).
-- edge function.
+سيتم بإعادة تعريف العرض بأكمله (CREATE OR REPLACE VIEW) مع `security_invoker=on` كما هو حالياً.
+
+### تحديث الذاكرة
+
+تحديث memory `mem://security/access-control/products-cost-fields-hidden` لتوضيح أن المساعدين أيضاً يرون حقول التكلفة (لأنهم يديرون المنتجات).
 
 ## التحقق
 
-1. فتح Admin → "إضافة منتج" → لصق رابط Bambu → استخراج.
-2. التأكد فور انتهاء الاستخراج وبعد ~3 ثوانٍ أن:
-   - "المميزات" تظهر بقائمتها
-   - "الملخص القصير (SEO)" بالعربي/الإنجليزي/الكردي ممتلئ
-   - "كلمات البحث" تحتوي tags
-   - "لماذا هذا المنتج" يحتوي محتوى AI
-3. اختبار تعديل منتج موجود مع استخراج جديد للتأكد من عدم وجود regression.
+1. تسجيل دخول بحساب مساعد، فتح منتج موجود، تأكيد ظهور قيمة التكلفة المحفوظة سابقاً.
+2. تعديل التكلفة، حفظ، إعادة فتح، تأكيد بقاء القيمة.
+3. إضافة منتج جديد بتكلفة من حساب مساعد، فتحه مرة أخرى، تأكيد بقاء التكلفة.
+4. تسجيل دخول بحساب عادي (غير مساعد/أدمن) والتأكد أن التكلفة لا تزال مخفية (لا تسرّب).
+
+## ملاحظة قبل التنفيذ
+
+هل تريد أيضاً تطبيق نفس المنطق على:
+- `product_offers_admin` (تكلفة العروض `cost_price`)
+- `orders_admin` / `order_items_admin` (حقول التكلفة والربح في الطلبات)
+
+أم نقتصر الآن فقط على المنتجات؟
