@@ -30,6 +30,8 @@ import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { fetchLiveDirectSalePrices } from '@/lib/priceGuard';
 import { computeUnifiedCardPrice, computeUnifiedCardOriginalPrice } from '@/lib/cardPrice';
+import { Sparkles } from 'lucide-react';
+import PrinterAdvisorDialog from '@/components/printer-advisor/PrinterAdvisorDialog';
 
 type SortKey =
   | 'default'
