@@ -314,7 +314,13 @@ export function getGuardedCartItemPrice(
       if (fromMap != null && fromMap > 0) {
         price = fromMap;
       } else {
-        const liveDirect = codDefaults
+        // Local fallback is only safe when the internal cost columns are
+        // readable (admin/test contexts). On the public client they're hidden
+        // by column-level RLS, so `shipping_cost_iqd` is `undefined`. In that
+        // case treat the stored `direct_sale_price` as authoritative — it is
+        // kept in sync by the same admin save flow that powers the RPC.
+        const costsReadable = (product as any).shipping_cost_iqd !== undefined;
+        const liveDirect = costsReadable && codDefaults
           ? computeLinkedDirectSalePrice(
               product as any,
               { usd_to_iqd_rate: usdToIqd } as any,
@@ -330,6 +336,7 @@ export function getGuardedCartItemPrice(
         }
       }
     } else if (product.direct_sale_price != null) {
+
       price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
     }
   } else if (!isDirect) {
