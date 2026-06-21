@@ -51,7 +51,7 @@ const GroupedCartItem = ({
   // Without it, getGuardedCartItemPrice falls back to the stored direct_sale_price
   // and undercharges vs the product card / detail page.
   const [liveDirectMap, setLiveDirectMap] = useState<Map<string, number> | null>(null);
-  const productId = product?.id;
+  const linkedProductId = product?.id;
   const needsLive = !!(product as any)?.link_direct_commission_to_cod && items.some((i: any) => i.sale_type === 'direct');
   useEffect(() => {
     if (!needsLive || !productId) return;
