@@ -39,7 +39,7 @@ import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
-import { ensurePriceIqd, ensureAdjustmentIqd, getGuardedCartItemPrice, computeLinkedDirectSalePrice } from '@/lib/priceGuard';
+import { ensurePriceIqd, ensureAdjustmentIqd, getGuardedCartItemPrice, computeLinkedDirectSalePrice, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
@@ -60,9 +60,31 @@ const Cart = () => {
   // Global COD defaults — shared hook with realtime sync.
   const { data: codDefaults } = useCodDefaults();
 
+  // Server-computed live direct-sale prices for COD-linked products.
+  // Internal cost columns are hidden from clients (column-level RLS), so without
+  // this map the cart would fall back to the stale stored `direct_sale_price`
+  // and undercharge vs. the product card / detail page.
+  const linkedDirectIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (items || [])
+            .filter((it: any) => it.sale_type === 'direct' && it.products?.link_direct_commission_to_cod && it.products?.id)
+            .map((it: any) => it.products!.id as string),
+        ),
+      ),
+    [items],
+  );
+  const { data: liveDirectPrices } = useQuery({
+    queryKey: ['cart-live-direct-prices', linkedDirectIds.join(','), usdToIqd, codDefaults?.value, codDefaults?.type],
+    enabled: linkedDirectIds.length > 0,
+    staleTime: 30_000,
+    queryFn: () => fetchLiveDirectSalePrices(linkedDirectIds),
+  });
+
   // Simple item price getter for protection discount calculation
   const getCartItemPrice = (item: CartItem): number => {
-    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
+    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null);
   };
 
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);

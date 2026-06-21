@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2, Package, Gift, ShieldCheck, Info } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
-import { getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { getGuardedCartItemPrice, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { useCartInsuranceAddons, useInsurancePlans } from '@/hooks/useCartInsurance';
@@ -46,12 +46,26 @@ const GroupedCartItem = ({
   const productCategoryId = (product as any)?.category_id || null;
   const { data: insurancePlans = [] } = useInsurancePlans(productCategoryId);
   const insuranceEligible = insurancePlans.length > 0;
-  
-  
+
+  // Server-computed live direct-sale price for COD-linked products.
+  // Without it, getGuardedCartItemPrice falls back to the stored direct_sale_price
+  // and undercharges vs the product card / detail page.
+  const [liveDirectMap, setLiveDirectMap] = useState<Map<string, number> | null>(null);
+  const linkedProductId = product?.id;
+  const needsLive = !!(product as any)?.link_direct_commission_to_cod && items.some((i: any) => i.sale_type === 'direct');
+  useEffect(() => {
+    if (!needsLive || !linkedProductId) return;
+    let cancelled = false;
+    fetchLiveDirectSalePrices([linkedProductId!]).then((map) => {
+      if (!cancelled) setLiveDirectMap(map);
+    });
+    return () => { cancelled = true; };
+  }, [needsLive, linkedProductId, usdToIqd, codDefaults?.value, codDefaults?.type]);
+
   if (!product) return null;
 
   const calculateItemPrice = (item: CartItem) => {
-    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults ?? null);
+    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults ?? null, liveDirectMap);
   };
 
   const groupTotal = items.reduce((sum, item) => sum + calculateItemPrice(item) * item.quantity, 0);
