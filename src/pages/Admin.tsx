@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
+import QuickCostEditDialog from '@/components/admin/QuickCostEditDialog';
 import AdminCustomRequests from './AdminCustomRequests';
 import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
