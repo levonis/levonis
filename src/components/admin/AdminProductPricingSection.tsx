@@ -426,13 +426,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
           directShipping = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings).shippingCost;
         }
       }
-      const finalPrice = priceIqd + directShipping + effectiveCommissionDirect + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + N(directShipping) + commDirect + pdc + refEarn;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
         priceIqd,
-        shipping: directShipping,
-        commission: effectiveCommissionDirect,
+        shipping: N(directShipping),
+        commission: commDirect,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         personalDelivery: pdc,
