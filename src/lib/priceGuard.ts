@@ -333,26 +333,61 @@ export function getGuardedCartItemPrice(
       price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
     }
   } else if (!isDirect) {
-    const shippingType = product.shipping_type || item.shipping_type;
+    const productShippingType = product.shipping_type || '';
     const seaPrice = product.sea_price;
     const airPrice = product.air_price;
     const landPrice = (product as any).land_price;
     // Token list (supports legacy 'both' and new comma-separated)
-    const tokens: string[] = (shippingType === 'both' ? 'sea,air' : (shippingType || ''))
+    const tokens: string[] = (productShippingType === 'both' ? 'sea,air' : productShippingType)
       .split(',')
       .map((t: string) => t.trim())
       .filter(Boolean);
+    const priceFor = (t: string): number | null => {
+      if (t === 'sea' && seaPrice != null) return ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd);
+      if (t === 'air' && airPrice != null) return ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd);
+      if (t === 'land' && landPrice != null) return ensurePriceIqd(Number(landPrice), priceUsd, usdToIqd);
+      return null;
+    };
+
+    // Prefer the user's explicit choice persisted on the cart item.
+    const itemShippingType = (item.shipping_type || '').trim();
+    const chosenToken = itemShippingType && ['sea', 'air', 'land'].includes(itemShippingType)
+      ? itemShippingType
+      : null;
+
     if (tokens.length === 1) {
-      const t = tokens[0];
-      if (t === 'sea' && seaPrice != null) price = ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd);
-      else if (t === 'air' && airPrice != null) price = ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd);
-      else if (t === 'land' && landPrice != null) price = ensurePriceIqd(Number(landPrice), priceUsd, usdToIqd);
+      const p = priceFor(tokens[0]);
+      if (p != null) price = p;
     } else if (tokens.length > 1) {
-      const candidates: number[] = [];
-      if (tokens.includes('sea') && seaPrice != null) candidates.push(ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd));
-      if (tokens.includes('air') && airPrice != null) candidates.push(ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd));
-      if (tokens.includes('land') && landPrice != null) candidates.push(ensurePriceIqd(Number(landPrice), priceUsd, usdToIqd));
-      if (candidates.length > 0) price = Math.min(...candidates);
+      if (chosenToken && tokens.includes(chosenToken)) {
+        const p = priceFor(chosenToken);
+        if (p != null) price = p;
+      } else if (
+        item.shipping_option_index != null &&
+        (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0)
+      ) {
+        // Legacy cart items (pre-fix) — reconstruct ProductDetail fallback order:
+        // sea → air → land, filtered by active tokens with a positive price.
+        const order: string[] = [];
+        if (tokens.includes('sea') && priceFor('sea') != null) order.push('sea');
+        if (tokens.includes('air') && priceFor('air') != null) order.push('air');
+        if (tokens.includes('land') && priceFor('land') != null) order.push('land');
+        const idx = Number(item.shipping_option_index);
+        const tok = order[idx];
+        const p = tok ? priceFor(tok) : null;
+        if (p != null) price = p;
+        else {
+          // Last resort: cheapest available
+          const candidates = order.map(priceFor).filter((n): n is number => n != null);
+          if (candidates.length > 0) price = Math.min(...candidates);
+        }
+      } else {
+        const candidates: number[] = [];
+        if (tokens.includes('sea')) { const p = priceFor('sea'); if (p != null) candidates.push(p); }
+        if (tokens.includes('air')) { const p = priceFor('air'); if (p != null) candidates.push(p); }
+        if (tokens.includes('land')) { const p = priceFor('land'); if (p != null) candidates.push(p); }
+        if (candidates.length > 0) price = Math.min(...candidates);
+      }
     }
   }
 
