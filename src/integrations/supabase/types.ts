@@ -8858,6 +8858,60 @@ export type Database = {
         }
         Relationships: []
       }
+      printer_advisor_budget_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          max_budget_iqd: number
+          message_ar: string | null
+          min_budget_iqd: number
+          priority: number
+          recommended_product_id: string | null
+          updated_at: string
+          upgrade_suggestion_product_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_budget_iqd: number
+          message_ar?: string | null
+          min_budget_iqd: number
+          priority?: number
+          recommended_product_id?: string | null
+          updated_at?: string
+          upgrade_suggestion_product_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_budget_iqd?: number
+          message_ar?: string | null
+          min_budget_iqd?: number
+          priority?: number
+          recommended_product_id?: string | null
+          updated_at?: string
+          upgrade_suggestion_product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printer_advisor_budget_rules_recommended_product_id_fkey"
+            columns: ["recommended_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printer_advisor_budget_rules_upgrade_suggestion_product_id_fkey"
+            columns: ["upgrade_suggestion_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       printer_protection_logs: {
         Row: {
           action: string
@@ -9451,6 +9505,9 @@ export type Database = {
       }
       products: {
         Row: {
+          advisor_notes: string | null
+          advisor_priority_boost: number
+          advisor_recommended: boolean
           ai_content: Json | null
           air_price: number | null
           availability_type: string
@@ -9526,6 +9583,9 @@ export type Database = {
           width_cm: number | null
         }
         Insert: {
+          advisor_notes?: string | null
+          advisor_priority_boost?: number
+          advisor_recommended?: boolean
           ai_content?: Json | null
           air_price?: number | null
           availability_type?: string
@@ -9601,6 +9661,9 @@ export type Database = {
           width_cm?: number | null
         }
         Update: {
+          advisor_notes?: string | null
+          advisor_priority_boost?: number
+          advisor_recommended?: boolean
           ai_content?: Json | null
           air_price?: number | null
           availability_type?: string
@@ -14037,6 +14100,9 @@ export type Database = {
       _admin_products_full: {
         Args: never
         Returns: {
+          advisor_notes: string | null
+          advisor_priority_boost: number
+          advisor_recommended: boolean
           ai_content: Json | null
           air_price: number | null
           availability_type: string
