@@ -75,6 +75,7 @@ const AdminDonations = lazy(() => import("./pages/AdminDonations"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
 const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 const AdminAppVersions = lazy(() => import("./pages/admin/AdminAppVersions"));
+const AdminPrinterAdvisor = lazy(() => import("./pages/AdminPrinterAdvisor"));
 
 const RewardsHub = lazy(() => import("./pages/RewardsHub"));
 const MyLevelPrizes = lazy(() => import("./pages/MyLevelPrizes"));
