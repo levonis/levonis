@@ -2014,14 +2014,16 @@ const Admin = () => {
           }
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        toast.error('حدث خطأ أثناء حفظ المنتج');
-        console.error(error);
+        const msg = error?.message || error?.details || error?.hint || error?.error_description || JSON.stringify(error);
+        toast.error(`فشل حفظ المنتج: ${msg}`, { duration: 10000 });
+        console.error('[handleProductSubmit] error:', error);
       }
     }
+
   };
 
   const handleCategorySubmit = (e: React.FormEvent<HTMLFormElement>) => {
