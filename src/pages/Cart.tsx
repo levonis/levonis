@@ -285,20 +285,26 @@ const Cart = () => {
     let totalFee = 0;
     const handled = new Set<string>();
 
+    // دمج كل استثناءات __follow_gov__ في حاوية واحدة مشتركة لتجنب التكرار
+    const followGovExcs = methodCatExc.filter((e: any) => e.governorate === '__follow_gov__' && categoryQty[e.category_id]);
+    if (followGovExcs.length > 0) {
+      let combinedQty = 0;
+      let maxUnits = 1;
+      for (const exc of followGovExcs) {
+        combinedQty += categoryQty[exc.category_id];
+        maxUnits = Math.max(maxUnits, exc.units_per_delivery || 1);
+        handled.add(exc.category_id);
+      }
+      const matchingGov = (allGovExceptions as any[]).find((g: any) => g.delivery_method_key === methodKey && g.governorate === gov);
+      const govPrice = matchingGov ? Number(matchingGov.delivery_price) : basePrice;
+      const deliveryCount = Math.ceil(combinedQty / maxUnits);
+      totalFee += govPrice * deliveryCount;
+    }
+
     for (const exc of methodCatExc) {
       const catId = exc.category_id;
       if (handled.has(catId) || !categoryQty[catId]) continue;
-
-      if (exc.governorate === '__follow_gov__') {
-        handled.add(catId);
-        const qty = categoryQty[catId];
-        const unitsPerDelivery = exc.units_per_delivery || 1;
-        const deliveryCount = Math.ceil(qty / unitsPerDelivery);
-        const matchingGov = (allGovExceptions as any[]).find((g: any) => g.delivery_method_key === methodKey && g.governorate === gov);
-        const govPrice = matchingGov ? Number(matchingGov.delivery_price) : basePrice;
-        totalFee += govPrice * deliveryCount;
-        continue;
-      }
+      if (exc.governorate === '__follow_gov__') continue; // already merged above
 
       const matchesGov = !exc.governorate || exc.governorate === gov;
       if (!matchesGov) continue;
