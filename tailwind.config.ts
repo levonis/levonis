@@ -221,6 +221,8 @@ export default {
         "card-discount-shine": "card-discount-shine 2.5s linear infinite",
         "glass-expand": "glass-expand 220ms cubic-bezier(0.16,1,0.3,1)",
         "glass-collapse": "glass-collapse 160ms cubic-bezier(0.4,0,0.84,0)",
+        "dialog-in": "dialog-in 240ms cubic-bezier(0.16,1,0.3,1)",
+        "dialog-out": "dialog-out 160ms cubic-bezier(0.4,0,0.84,0)",
         "glass-fade-up": "glass-fade-up 320ms cubic-bezier(0.16,1,0.3,1) both",
       },
     },
