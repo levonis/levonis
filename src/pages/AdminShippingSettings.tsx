@@ -989,6 +989,14 @@ export default function AdminShippingSettings() {
               ]}
             />
             <FormulaCard
+              icon={<Navigation className="h-3.5 w-3.5 text-amber-400" />}
+              title="بري"
+              color="bg-amber-500/15"
+              formula={[
+                `Cost = Actual Weight × ${settings.land_price_per_kg_usd}$ × ${settings.usd_to_iqd_rate.toLocaleString()}`,
+              ]}
+            />
+            <FormulaCard
               icon={<DollarSign className="h-3.5 w-3.5 text-green-400" />}
               title="تحويل العملة"
               color="bg-green-500/15"
