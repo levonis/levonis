@@ -6,7 +6,7 @@
  * (related products), and any future card surface MUST use these helpers
  * — never reimplement the logic locally.
  */
-import { computeLinkedDirectSalePrice, ensurePriceIqd, getMinOptionOverridePriceIqd } from './priceGuard';
+import { computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, ensurePriceIqd, getMinOptionOverridePriceIqd } from './priceGuard';
 import { isAllDirectStockDepleted } from './stockUtils';
 
 export function computeUnifiedCardPrice(
@@ -59,9 +59,25 @@ export function computeUnifiedCardPrice(
               Object.keys(c.option_stocks).length > 0,
           );
         if (eligible) {
-          // Independent option price replaces the base when set; otherwise use base.
+          // Independent option price replaces the COST. When linked to COD,
+          // re-derive the sale price from that overridden cost; otherwise
+          // use the override directly as the sale price.
           const minOverride = getMinOptionOverridePriceIqd(product, 'direct', usdToIqd);
-          candidates.push(minOverride != null ? Math.min(minOverride, directBase) : directBase);
+          if (minOverride != null) {
+            let finalFromOverride = minOverride;
+            if (product?.link_direct_commission_to_cod && codDefaults) {
+              const derived = computeLinkedDirectSalePriceFromCostIqd(
+                product,
+                minOverride,
+                { usd_to_iqd_rate: usdToIqd } as any,
+                codDefaults,
+              );
+              if (derived != null) finalFromOverride = derived;
+            }
+            candidates.push(Math.min(finalFromOverride, directBase));
+          } else {
+            candidates.push(directBase);
+          }
         }
       } else {
         candidates.push(directBase);

@@ -268,6 +268,76 @@ export function computeLinkedDirectSalePrice(
 }
 
 /**
+ * Variant of computeLinkedDirectSalePrice that uses an explicit
+ * `costIqdOverride` as the product cost (instead of deriving it from
+ * `price_usd * rate`). Used when a color/option override replaces the
+ * product COST — the rest of the COD-linked formula is applied on top
+ * to produce the final sale price.
+ *
+ * Returns null when the linked-COD flag is off, required inputs are
+ * missing, or internal cost columns are not readable on the client.
+ */
+export function computeLinkedDirectSalePriceFromCostIqd(
+  product: Parameters<typeof computeLinkedDirectSalePrice>[0],
+  costIqdOverride: number,
+  shippingSettings: { usd_to_iqd_rate: number } | null | undefined,
+  codDefaults: Parameters<typeof computeLinkedDirectSalePrice>[2],
+): number | null {
+  if (!product?.link_direct_commission_to_cod) return null;
+  if (!shippingSettings || !codDefaults) return null;
+  if (!costIqdOverride || costIqdOverride <= 0) return null;
+  if ((product as any).shipping_cost_iqd === undefined) return null;
+
+  const priceIqd = Math.round(costIqdOverride);
+  const pdc = Number(product.personal_delivery_cost || 0);
+  const referral = Number(product.referral_earnings_iqd || 0);
+  const seaCommission = Number(product.commission_sea_iqd || 0);
+  const airCommission = Number(product.commission_air_iqd || 0);
+  const landCommission = Number(product.commission_land_iqd || 0);
+
+  const hasPreOrder = !!product.has_pre_order;
+  const st: string = product.shipping_type || '';
+  const tokens = st === 'both' ? ['sea', 'air'] : st.split(',').map((t) => t.trim()).filter(Boolean);
+  const hasSea = tokens.includes('sea');
+  const hasAir = tokens.includes('air');
+  const hasLand = tokens.includes('land');
+
+  const shippingCost = Number(product.shipping_cost_iqd || 0);
+
+  let preOrderCommissionAddon = 0;
+  if (hasPreOrder) {
+    if (hasSea) preOrderCommissionAddon = seaCommission;
+    else if (hasAir) preOrderCommissionAddon = airCommission;
+    else if (hasLand) preOrderCommissionAddon = landCommission;
+  }
+
+  const preorderFinal = priceIqd + shippingCost + preOrderCommissionAddon + pdc + referral;
+
+  let codType: 'percentage' | 'fixed' = codDefaults.type;
+  let codValue: number = codDefaults.value;
+  if (Array.isArray(codDefaults.tiers) && codDefaults.tiers.length > 0) {
+    const tier = codDefaults.tiers.find(
+      (t) =>
+        preorderFinal >= Number(t.min_amount || 0) &&
+        preorderFinal <= Number(t.max_amount || 0),
+    );
+    if (tier && tier.cod_fee_value != null) {
+      codType = (tier.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed';
+      codValue = Number(tier.cod_fee_value) || 0;
+    }
+  }
+
+  if (!codValue || codValue <= 0) return null;
+
+  const directPortion =
+    codType === 'fixed' ? Math.ceil(codValue) : Math.ceil((preorderFinal * codValue) / 100);
+
+  let total = priceIqd + shippingCost + preOrderCommissionAddon + directPortion + pdc + referral;
+  if (product.round_up_price) total = Math.ceil(total / 250) * 250;
+  return total;
+}
+
+/**
  * Calculates the correct IQD price for a cart item, applying USD→IQD conversion
  * to ALL price sources (product base, color override, sea/air prices).
  * Option price_adjustment is already in IQD and added directly.
@@ -398,11 +468,12 @@ export function getGuardedCartItemPrice(
     }
   }
 
-  // 3+4. Independent-price overrides from color and/or option.
-  //  Semantics (new): price_adjustment is the option's INDEPENDENT IQD price.
-  //  When set (> 0), it REPLACES the base price. When both a color override
-  //  and an option override exist, their values SUM to replace the base.
-  //  When neither is set, the base price is used.
+  // 3+4. Independent overrides from color and/or option.
+  //  Semantics: the override is the OPTION/COLOR COST (replaces product cost).
+  //  When the product is linked to global COD %, the final sale price is
+  //  re-derived from this overridden cost via the same formula used for the
+  //  base product. Otherwise (or when the formula isn't computable on the
+  //  client), the override is used directly as the sale price.
   let colorOverride: number | null = null;
   const selColor = item.selected_color;
   if (selColor && product.colors) {
@@ -427,12 +498,23 @@ export function getGuardedCartItemPrice(
     optionOverride = ensureAdjustmentIqd(Number(optAdj), usdToIqd, priceUsd);
   }
 
-  if (colorOverride != null && optionOverride != null) {
-    price = colorOverride + optionOverride;
-  } else if (colorOverride != null) {
-    price = colorOverride;
-  } else if (optionOverride != null) {
-    price = optionOverride;
+  let overrideCostIqd: number | null = null;
+  if (colorOverride != null && optionOverride != null) overrideCostIqd = colorOverride + optionOverride;
+  else if (colorOverride != null) overrideCostIqd = colorOverride;
+  else if (optionOverride != null) overrideCostIqd = optionOverride;
+
+  if (overrideCostIqd != null) {
+    if (isDirect && product.link_direct_commission_to_cod && codDefaults) {
+      const derived = computeLinkedDirectSalePriceFromCostIqd(
+        product as any,
+        overrideCostIqd,
+        { usd_to_iqd_rate: usdToIqd } as any,
+        codDefaults as any,
+      );
+      price = derived != null ? derived : overrideCostIqd;
+    } else {
+      price = overrideCostIqd;
+    }
   }
   // else: keep computed base/sale-type price from steps 1–2.
 
