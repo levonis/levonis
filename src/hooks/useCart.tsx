@@ -794,6 +794,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         insertData.shipping_option_index = Math.trunc(safeShippingIndex);
         insertData.shipping_option_name_ar = safeShippingNameAr || null;
       }
+      // Persist the chosen shipping type (sea/air/land) so cart pricing
+      // can use the exact selected price instead of Math.min over all modes.
+      if (shippingInfo?.type) {
+        insertData.shipping_type = shippingInfo.type;
+      }
       // Don't set shipping_option_index at all if null — let DB default handle it
 
       const { data: insertedData, error } = await supabase
