@@ -46,12 +46,26 @@ const GroupedCartItem = ({
   const productCategoryId = (product as any)?.category_id || null;
   const { data: insurancePlans = [] } = useInsurancePlans(productCategoryId);
   const insuranceEligible = insurancePlans.length > 0;
-  
-  
+
+
   if (!product) return null;
 
+  // Server-computed live direct-sale price for COD-linked products.
+  // Without it, getGuardedCartItemPrice falls back to the stored direct_sale_price
+  // and undercharges vs the product card / detail page.
+  const [liveDirectMap, setLiveDirectMap] = useState<Map<string, number> | null>(null);
+  const needsLive = (product as any)?.link_direct_commission_to_cod && items.some((i: any) => i.sale_type === 'direct');
+  useEffect(() => {
+    if (!needsLive || !product?.id) return;
+    let cancelled = false;
+    fetchLiveDirectSalePrices([product.id]).then((map) => {
+      if (!cancelled) setLiveDirectMap(map);
+    });
+    return () => { cancelled = true; };
+  }, [needsLive, product?.id, usdToIqd, codDefaults?.value, codDefaults?.type]);
+
   const calculateItemPrice = (item: CartItem) => {
-    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults ?? null);
+    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults ?? null, liveDirectMap);
   };
 
   const groupTotal = items.reduce((sum, item) => sum + calculateItemPrice(item) * item.quantity, 0);
