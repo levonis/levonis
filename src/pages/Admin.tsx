@@ -122,7 +122,7 @@ function OptionPricePreview({ adjustment, editingProduct }: { adjustment: number
     return (
       <div className="flex flex-wrap gap-1.5 mt-1">
         <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5 font-medium">
-          👁 سعر نهائي للخيار: {adjIqd.toLocaleString()} د.ع
+          👁 تكلفة الخيار: {adjIqd.toLocaleString()} د.ع (يُعاد حساب سعر البيع منها)
         </span>
       </div>
     );
