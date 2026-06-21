@@ -86,10 +86,10 @@ describe("COD% live sync — direct sale price", () => {
     expect(fixed5000! - fixed500!).toBe(5000 - 500);
   });
 
-  it("بدون codDefaults مع تفعيل الربط: يُرجع 0 (حماية من القيم الناقصة) ولا يستخدم السعر المخزّن", () => {
+  it("بدون codDefaults أو سعر حي مع تفعيل الربط: يستخدم السعر المخزّن كاحتياط", () => {
     const cartItem = { sale_type: "direct", products: baseProduct };
     const guarded = getGuardedCartItemPrice(cartItem, 1500, null);
-    expect(guarded).toBe(0);
+    expect(guarded).toBe(99999);
   });
 
   it("عندما الربط معطّل: يُستخدم direct_sale_price المخزّن كالمعتاد", () => {
