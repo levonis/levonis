@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers, Warehouse, Truck, User, ChevronDown, ChevronUp, Gift } from "lucide-react";
+import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers, Warehouse, Truck, User, ChevronDown, ChevronUp, Gift, Navigation } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { calculateShippingCost, type ShippingSettings } from "@/hooks/useShippingCalculator";
 import AdminLayout, { AdminLoading } from "@/components/admin/AdminLayout";
@@ -663,7 +663,7 @@ export default function AdminShippingSettings() {
     // Fetch all products that have price_usd
     const { data: products, error } = await (supabase as any)
       .from('products_admin')
-      .select('id, price_usd, original_price_usd, length_cm, width_cm, height_cm, weight_kg, shipping_type, has_pre_order, has_in_stock, commission_sea_iqd, commission_air_iqd, commission_direct_iqd, other_costs_iqd, round_up_price, colors')
+      .select('id, price_usd, original_price_usd, length_cm, width_cm, height_cm, weight_kg, shipping_type, has_pre_order, has_in_stock, commission_sea_iqd, commission_air_iqd, commission_land_iqd, commission_direct_iqd, other_costs_iqd, round_up_price, colors')
       .not('price_usd', 'is', null)
       .gt('price_usd', 0);
     
@@ -896,6 +896,31 @@ export default function AdminShippingSettings() {
           <div className="mx-5 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <p className="text-[10px] text-amber-200/80">
               <strong>ملاحظة:</strong> يُستخدم الوزن الأكبر (حجمي أو فعلي) ثم يُضاف الاحتياط
+            </p>
+          </div>
+        </GlassCard>
+
+        {/* ═══ Row 2.5: Land Shipping ═══ */}
+        <GlassCard gradient="linear-gradient(145deg, hsl(35 70% 50% / 0.08), hsl(20 60% 45% / 0.04), transparent)">
+          <GlassCardHeader
+            icon={<Navigation className="h-5 w-5 text-white" />}
+            iconBg="bg-gradient-to-br from-amber-600 to-orange-700"
+            title="الشحن البري"
+            subtitle="بالوزن الفعلي فقط — بدون وزن حجمي"
+          />
+          <div className="px-5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SettingField
+              label="السعر لكل كيلوغرام"
+              icon={<DollarSign className="h-3 w-3" />}
+              value={settings.land_price_per_kg_usd}
+              onChange={(v) => updateSetting("land_price_per_kg_usd", v)}
+              hint={`${settings.land_price_per_kg_usd}$ × ${settings.usd_to_iqd_rate.toLocaleString()} = ${Math.round(settings.land_price_per_kg_usd * settings.usd_to_iqd_rate).toLocaleString()} د.ع/كغ`}
+              suffix="$"
+            />
+          </div>
+          <div className="mx-5 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <p className="text-[10px] text-amber-200/80">
+              <strong>ملاحظة:</strong> يُحسب الشحن البري على الوزن الفعلي فقط (بدون وزن حجمي ولا هامش تغليف).
             </p>
           </div>
         </GlassCard>
