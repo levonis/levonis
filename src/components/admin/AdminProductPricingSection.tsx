@@ -356,13 +356,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + N(calc.shippingCost) + commSea + pdc + refEarn;
       results.push({
         label: 'حجز مسبق - بحري',
         type: 'sea',
         priceIqd,
-        shipping: calc.shippingCost,
-        commission: commissionSeaIqd,
+        shipping: N(calc.shippingCost),
+        commission: commSea,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         personalDelivery: pdc,
