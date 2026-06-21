@@ -82,7 +82,8 @@ export function computeUnifiedCardPrice(
     if (tokens.includes('land') && land) opts.push(land);
     const preBase = opts.length > 0 ? Math.min(...opts) : null;
     if (preBase != null) {
-      candidates.push(preBase + getMinOptionAdjustmentIqd(product, 'preorder', usdToIqd));
+      const minOverride = getMinOptionOverridePriceIqd(product, 'preorder', usdToIqd);
+      candidates.push(minOverride != null ? Math.min(minOverride, preBase) : preBase);
     }
   }
 
