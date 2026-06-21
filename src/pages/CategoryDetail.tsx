@@ -55,6 +55,7 @@ const CategoryDetail = () => {
 
   // Sort & filter state
   const [sortBy, setSortBy] = useState<SortKey>('default');
+  const [advisorOpen, setAdvisorOpen] = useState(false);
   const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'out-of-stock'>('all');
   const [directOnly, setDirectOnly] = useState(false);
   const [minPrice, setMinPrice] = useState<string>('');
