@@ -113,7 +113,7 @@ export default function PrinterAdvisorDialog({ open, onOpenChange }: Props) {
           <DialogHeader className="p-5 pb-3 border-b">
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Sparkles className="h-5 w-5 text-primary" />
-              اقتراح طابعة بالذكاء الاصطناعي
+              اقتراح طابعة من ليفو
             </DialogTitle>
             <DialogDescription>
               أخبرنا بميزانيتك والغرض من الطابعة وسنقترح لك الأنسب من متجرنا.
