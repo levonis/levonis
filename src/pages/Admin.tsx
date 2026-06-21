@@ -110,25 +110,33 @@ function adjustmentUsdToIqd(adjustmentUsd: number, usdToIqd: number): number {
   return Math.round(Number(adjustmentUsd) * usdToIqd);
 }
 
-/** Inline price preview for product options */
+/** Inline price preview for product options (independent price semantics) */
 function OptionPricePreview({ adjustment, editingProduct }: { adjustment: number; editingProduct: any }) {
   const { data: ss } = useShippingSettings();
   if (!ss || !editingProduct) return null;
   const rate = ss.usd_to_iqd_rate || 1410;
   const adjIqd = adjustmentUsdToIqd(adjustment || 0, rate);
-  const prices: { label: string; value: number }[] = [];
-  if (editingProduct.direct_sale_price) prices.push({ label: 'مباشر', value: editingProduct.direct_sale_price + adjIqd });
-  if (editingProduct.sea_price) prices.push({ label: 'بحري', value: editingProduct.sea_price + adjIqd });
-  if (editingProduct.air_price) prices.push({ label: 'جوي', value: editingProduct.air_price + adjIqd });
-  if (prices.length === 0 && editingProduct.price_usd) {
-    prices.push({ label: 'تقريبي', value: Math.round(editingProduct.price_usd * rate) + adjIqd });
+  // New semantics: when adj > 0 → that value IS the final unit price (replaces base).
+  // When adj is 0/empty → fall back to base.
+  if (adjIqd > 0) {
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1">
+        <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5 font-medium">
+          👁 سعر نهائي للخيار: {adjIqd.toLocaleString()} د.ع
+        </span>
+      </div>
+    );
   }
-  if (prices.length === 0) return null;
+  const fallbacks: { label: string; value: number }[] = [];
+  if (editingProduct.direct_sale_price) fallbacks.push({ label: 'مباشر (افتراضي)', value: editingProduct.direct_sale_price });
+  if (editingProduct.sea_price) fallbacks.push({ label: 'بحري (افتراضي)', value: editingProduct.sea_price });
+  if (editingProduct.air_price) fallbacks.push({ label: 'جوي (افتراضي)', value: editingProduct.air_price });
+  if (fallbacks.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5 mt-1">
-      {prices.map(p => (
-        <span key={p.label} className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5 font-medium">
-          {'👁'} {p.label}: {p.value.toLocaleString()} د.ع
+      {fallbacks.map(p => (
+        <span key={p.label} className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground rounded px-1.5 py-0.5 font-medium">
+          👁 {p.label}: {p.value.toLocaleString()} د.ع
         </span>
       ))}
     </div>
