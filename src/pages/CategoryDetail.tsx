@@ -22,6 +22,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
+import SEO from '@/components/SEO';
+import { breadcrumbLd, collectionPageLd } from '@/lib/seo/structured';
 import { usePageTitle } from '@/island/usePageTitle';
 import { usePageSearchSection, usePageLiveQuery, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
