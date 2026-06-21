@@ -165,28 +165,25 @@ export const calculateShippingCost = (
     notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
   } else if (shippingType === 'air') {
     if (sourceCountry === 'china') {
-      // Air shipping from China - use the GREATER of volumetric weight or actual weight
+      const useVolumetric = (settings.air_use_volumetric_weight ?? 1) >= 1;
       const padding = settings.sea_padding_cm;
-      
-      // Calculate volumetric weight if dimensions provided
-      if (dimensions && dimensions.length > 0) {
+
+      // Volumetric weight only if toggle is enabled
+      if (useVolumetric && dimensions && dimensions.length > 0) {
         const length = dimensions.length + padding;
         const width = dimensions.width + padding;
         const height = dimensions.height + padding;
         volumetricWeight = (length * width * height) / settings.air_china_volumetric_divider;
       }
-      
-      // Actual weight
+
       if (weight && weight > 0) {
         actualWeight = weight;
       }
-      
-      // Use the greater weight
+
       const volWeight = volumetricWeight || 0;
       const actWeight = actualWeight || 0;
-      
-      if (volWeight > 0 || actWeight > 0) {
-        usedWeight = Math.max(volWeight, actWeight);
+      usedWeight = useVolumetric ? Math.max(volWeight, actWeight) : actWeight;
+
         
         // Add safety margin
         const safetyMargin = settings.air_china_weight_safety_margin / 100;
