@@ -75,6 +75,7 @@ const AdminDonations = lazy(() => import("./pages/AdminDonations"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
 const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 const AdminAppVersions = lazy(() => import("./pages/admin/AdminAppVersions"));
+const AdminPrinterAdvisor = lazy(() => import("./pages/AdminPrinterAdvisor"));
 
 const RewardsHub = lazy(() => import("./pages/RewardsHub"));
 const MyLevelPrizes = lazy(() => import("./pages/MyLevelPrizes"));
@@ -437,6 +438,8 @@ function AppContent() {
             <Route path="/download-app" element={<DownloadApp />} />
             <Route path="/download" element={<DownloadApp />} />
             <Route path={`${ADMIN_BASE_PATH}/app-versions`} element={<AdminRoute><AdminAppVersions /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/printer-advisor`} element={<AdminRoute><AdminPrinterAdvisor /></AdminRoute>} />
+
             
             {/* Secure Admin Routes - Using obfuscated path */}
             <Route path={ADMIN_BASE_PATH} element={<AdminRoute><Admin /></AdminRoute>} />

@@ -30,6 +30,8 @@ import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { fetchLiveDirectSalePrices } from '@/lib/priceGuard';
 import { computeUnifiedCardPrice, computeUnifiedCardOriginalPrice } from '@/lib/cardPrice';
+import { Sparkles } from 'lucide-react';
+import PrinterAdvisorDialog from '@/components/printer-advisor/PrinterAdvisorDialog';
 
 type SortKey =
   | 'default'
@@ -53,6 +55,7 @@ const CategoryDetail = () => {
 
   // Sort & filter state
   const [sortBy, setSortBy] = useState<SortKey>('default');
+  const [advisorOpen, setAdvisorOpen] = useState(false);
   const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'out-of-stock'>('all');
   const [directOnly, setDirectOnly] = useState(false);
   const [minPrice, setMinPrice] = useState<string>('');
@@ -369,6 +372,20 @@ const CategoryDetail = () => {
         />
       )}
       <main className="container mx-auto px-4 py-8 relative z-10">
+        {slug === 'printers' && (
+          <div className="mb-6 flex justify-center">
+            <Button
+              onClick={() => setAdvisorOpen(true)}
+              size="lg"
+              className="gap-2 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground font-bold shadow-lg hover:scale-[1.02] transition"
+            >
+              <Sparkles className="h-5 w-5" />
+              اقترح لي طابعة بالذكاء الاصطناعي
+            </Button>
+          </div>
+        )}
+        <PrinterAdvisorDialog open={advisorOpen} onOpenChange={setAdvisorOpen} />
+
 
         {categoryLoading ? (
           <ProductGridSkeleton count={8} />
