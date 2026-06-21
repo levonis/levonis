@@ -1,62 +1,73 @@
-## ميزة اقتراح طابعة (Printer Advisor)
+## الأهداف
 
-نضيف زر "اقترح لي طابعة" في صفحة قسم الطابعات يفتح Dialog بسيط فيه:
-- حقل الميزانية (بصيغة IQD مع فاصلة آلاف تلقائية، ويضرب × 1000 إذا كتب المستخدم رقم صغير مثل "500" → "500,000").
-- حقل الغرض (Textarea) + شرائح اختيار سريعة (هواية، تعليمي، احترافي، أعمال صغيرة، نماذج معدنية، طباعة كبيرة...).
-- مستوى الخبرة (مبتدئ / متوسط / محترف).
-- زر "اقترح لي الأنسب".
+1. سعر الخيار/اللون يصبح **سعر مستقل** (يستبدل السعر الأساسي عند تحديده، وإذا تُرك فارغًا يُستخدم سعر المنتج الأساسي).
+2. **سعر التكلفة للخيار = نفس سعر بيع الخيار** (حقل واحد فقط بدل اثنين منفصلين).
+3. إخفاء جميع المنتجات الحالية فورًا (`is_pricing_updated = false`) حتى يُحدّثها الإدمن.
+4. عرض **آخر تحديث سعر** للمنتج. إذا مرّ **60 يومًا** بدون تحديث، يختفي تلقائيًا عن المستخدمين ويظهر في قائمة "يتطلب تحديث سعر" للإدمن/المساعد.
+5. زر سريع ⚡ في جدول المنتجات يفتح نافذة منبثقة لتعديل **حقول التكلفة فقط** للمنتج + كل خيار/لون.
 
-النتيجة: بطاقة الطابعة المقترحة + شرح "لماذا هي الأنسب" بالعربي + 3-5 مميزات + رابط للذهاب لصفحة المنتج. وإذا كانت ميزانيته قريبة من طابعة أعلى يقترحها الـ AI بصيغة "ننصح بتزويد X د.ع للحصول على...".
+---
 
-### 1) قاعدة البيانات
-- إضافة عمودين على `products`:
-  - `advisor_priority_boost` integer DEFAULT 0 (يستخدمه الأدمن لرفع/خفض ترتيب الطابعة في الاقتراحات).
-  - `advisor_recommended` boolean DEFAULT false (علم "موصى به").
-  - `advisor_notes` text (ملاحظة من الأدمن للـ AI: "هذه الأفضل للمبتدئين"، تُمرر للنموذج).
-- جدول جديد `printer_advisor_budget_rules`:
-  - `id`, `min_budget_iqd`, `max_budget_iqd`, `recommended_product_id` (FK → products), `upgrade_suggestion_product_id` (FK اختياري), `message_ar`, `priority`, `is_active`, timestamps.
-  - RLS: قراءة عامة، كتابة admin فقط، GRANTs للأدوار المطلوبة.
+## التغييرات
 
-### 2) Edge Function: `suggest-printer`
-- يأخذ: budget_iqd, purpose, experience_level.
-- يجلب من قاعدة البيانات قائمة الطابعات (تصنيف الطابعات فقط) بأسعارها بعد تحويل العملة الموحد المستخدم في الموقع، مع `advisor_priority_boost`, `advisor_recommended`, `advisor_notes`.
-- يطبق `printer_advisor_budget_rules` أولاً (قاعدة صريحة تطغى).
-- يرسل للـ AI (Lovable AI Gateway → `google/gemini-2.5-pro`) مع system prompt عربي يحتوي قائمة الطابعات المتاحة + الميزانية + الغرض ويطلب structured output:
-  ```
-  { recommended_product_id, reasoning, key_features[], upgrade_suggestion?: { product_id, additional_budget_iqd, message } }
-  ```
-- يرجّع الـ JSON مع بيانات المنتج الكاملة (اسم، صورة، سعر، رابط).
+### 1) قاعدة البيانات (migration واحدة)
 
-### 3) الواجهة - Dialog
-- ملف جديد `src/components/printer-advisor/PrinterAdvisorDialog.tsx`:
-  - Glassmorphism حسب معايير المشروع.
-  - Input للميزانية يستخدم `FormattedNumberInput` (موجود) مع منطق إضافي onBlur: إذا الرقم < 10000 يضربه × 1000 ويعرض toast صغير "تم تحويل المبلغ تلقائياً إلى X د.ع".
-  - شرائح اختيار الغرض (chips قابلة للاختيار المتعدد).
-  - حالات: idle / loading (skeleton) / result / error.
-  - عرض النتيجة: بطاقة منتج + سبب + مميزات + CTA "اذهب للمنتج" + (إن وجد) كرت ترقية الميزانية.
-- زر إطلاق الـ Dialog: نضيفه في `src/pages/ProductShop.tsx` (صفحة الطابعات) أعلى الصفحة، بشكل بارز.
+- `products`: إضافة عمود `last_price_update timestamptz` (يُحدَّث عبر trigger عند تغيّر أي حقل سعر/تكلفة، أو عند تغيّر `product_options` المرتبطة).
+- `products`: ضبط `is_pricing_updated = false` لكل الصفوف الحالية، وتعيين `last_price_update = NULL`.
+- `product_options`: استخدام `price_adjustment` كـ **سعر مستقل** (إعادة تفسير دلاليّ). القيمة `NULL` أو `0` = استخدم سعر المنتج الأساسي. حذف `cost_iqd` و`cost_usd` من واجهة الإدخال — التكلفة = نفس قيمة السعر (سيتم حسابها عند الحاجة من `price_adjustment`).
+- Trigger: عند `UPDATE` على `products` أو على `product_options` (insert/update/delete) → `last_price_update = now()` على المنتج. أيضًا عند `is_pricing_updated` ينتقل من `false` إلى `true` → ضبط `last_price_update = now()`.
+- Cron/RPC: دالة `auto_hide_stale_priced_products()` تشتغل يوميًا — إذا `now() - last_price_update > 60 days` تضع `is_pricing_updated = false`.
+- View/RPC للإدمن: قائمة المنتجات التي `is_pricing_updated = false` مرتبة بـ `last_price_update` تصاعديًا.
 
-### 4) لوحة الأدمن
-- في `AdminProductPricingSection.tsx` (قسم منتج الأدمن): إضافة 3 حقول جديدة في تبويب فرعي "مستشار الطابعات":
-  - Switch "موصى به في المستشار".
-  - Input رقمي "أولوية الترتيب" (-100 إلى +100).
-  - Textarea "ملاحظة للمستشار" (تُمرر للـ AI كسياق).
-- صفحة جديدة `src/pages/AdminPrinterAdvisorRules.tsx` (مسار `/admin/printer-advisor-rules`):
-  - جدول CRUD لقواعد الميزانية: نطاق المبلغ، الطابعة الموصى بها، طابعة الترقية، رسالة مخصصة.
-  - إضافة رابط في قائمة الأدمن.
+### 2) منطق السعر (Frontend + Cart)
 
-### تفاصيل تقنية
-- مفتاح `LOVABLE_API_KEY` موجود (Lovable AI Gateway). لا حاجة لمفتاح خارجي.
-- نموذج: `google/gemini-2.5-pro` مع Structured Output (Zod schema).
-- جلب الأسعار: نستخدم نفس منطق `computeUnifiedCardPrice` لضمان التطابق مع بطاقات المنتج.
-- تحويل "500" → "500,000": يحدث فقط للأرقام < 10000 على blur (لمنع تعديل أرقام صحيحة كبيرة).
-- i18n: نصوص ar/en/ku عبر ملفات اللغة الموجودة، بدون hardcoded text.
+- `src/lib/cardPrice.ts`, `src/lib/priceGuard.ts`, `src/components/GroupedCartItem.tsx`, `src/pages/Cart.tsx`, `src/pages/ProductDetail*`, دوال السعر الموحّد:
+  - استبدال نمط **"base + price_adjustment"** بـ **"price_adjustment أو base عند فراغه"**.
+  - عند الجمع بين عدّة خيارات (لون + نوع) → استخدام **آخر خيار له سعر مستقل** أو حسب القاعدة: إذا أي خيار له سعر → يُجمع كاستبدال للأساس؟ **يلزم سؤال صغير** (انظر أسفل).
+- تحديث `direct_sale_price` server-side function لتعكس المنطق الجديد.
+- تحديث الاختبارات: `cartItemGuards`, `priceGuard.codSync`, `cardPrice.parity`.
 
-### الملفات المعدّلة/المضافة
-- migration جديدة (أعمدة + جدول + RLS + GRANTs).
-- `supabase/functions/suggest-printer/index.ts` (جديد).
-- `src/components/printer-advisor/PrinterAdvisorDialog.tsx` (جديد).
-- `src/pages/ProductShop.tsx` (إضافة زر).
-- `src/components/admin/AdminProductPricingSection.tsx` (3 حقول جديدة).
-- `src/pages/AdminPrinterAdvisorRules.tsx` (جديد) + إضافة Route + رابط في قائمة الأدمن.
-- ملفات اللغة `src/lib/i18n/*` (إضافة مفاتيح).
+### 3) واجهة الإدمن
+
+- **AdminProductForm / Options Editor**: 
+  - تسمية الحقل تتحول من "إضافة على السعر" إلى **"سعر مستقل (اتركه فارغًا لاستخدام السعر الأساسي)"**.
+  - حذف حقول `cost_iqd` / `cost_usd` للخيارات من النموذج (التكلفة = السعر تلقائيًا).
+- **ProductsTable** (`src/components/admin/ProductsTable.tsx`):
+  - عمود جديد: **آخر تحديث سعر** (تاريخ + شارة "متأخر" إذا > 60 يوم).
+  - فلتر جديد: "يتطلب تحديث سعر".
+  - زر سريع ⚡ بجانب أزرار الإجراءات → يفتح `QuickCostEditDialog` يعرض:
+    - حقل تكلفة المنتج الأساسي.
+    - جدول بكل خيار/لون مع حقل تكلفة واحد (= السعر) لكل صفّ.
+    - زر حفظ → يُحدِّث القيم ويضع `is_pricing_updated = true` و `last_price_update = now()`.
+
+### 4) صفحة الإدمن "يتطلب تحديث سعر"
+
+- تبويب/قائمة جديدة (أو إعادة استخدام فلتر `is_pricing_updated=false`) مرتّبة بالأقدم تحديثًا، مع زر سريع لفتح نفس `QuickCostEditDialog`.
+
+---
+
+## ملف التغييرات
+
+```text
+supabase/migrations/<new>.sql         (last_price_update, trigger, cron, bulk reset)
+src/components/admin/ProductsTable.tsx   (عمود + فلتر + زر ⚡)
+src/components/admin/QuickCostEditDialog.tsx  (جديد)
+src/components/admin/ProductForm/...     (تسمية الحقل + حذف cost منفصل للخيار)
+src/lib/cardPrice.ts                  (منطق السعر المستقل)
+src/lib/priceGuard.ts                 (نفس المنطق)
+src/components/GroupedCartItem.tsx    (تحديث)
+src/pages/Cart.tsx                    (تحديث)
+src/lib/__tests__/*                   (تحديث المتوقعات)
+```
+
+---
+
+## سؤال يحتاج توضيح قبل التنفيذ
+
+عندما يحتوي المنتج على **خيارَين** كلاهما له سعر مستقل (مثلًا لون «بني» = 12,000 و تعبئة «بدون رولة» = 6,250)، كيف تريد الحساب؟
+
+- (أ) **آخر خيار له سعر يَفُوز** (استبدال كامل).
+- (ب) **جمع الأسعار المستقلة معًا** بدل السعر الأساسي (مثلًا 12,000 + 6,250 = 18,250). ← يطابق مثال 18,250 السابق.
+- (ج) خيار واحد فقط (اللون) يحدد السعر، الثاني (التعبئة) يبقى مضافًا/مخفّضًا بقيمة ثابتة.
+
+سأمضي بـ **(ب)** افتراضيًا (لأنه يطابق المثال 18,250 الذي ذكرتَه سابقًا) ما لم تخبرني بغير ذلك.

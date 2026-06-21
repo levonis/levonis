@@ -9545,6 +9545,7 @@ export type Database = {
           in_stock: boolean | null
           is_pricing_updated: boolean | null
           land_price: number | null
+          last_price_update: string | null
           length_cm: number | null
           link_direct_commission_to_cod: boolean
           name: string
@@ -9623,6 +9624,7 @@ export type Database = {
           in_stock?: boolean | null
           is_pricing_updated?: boolean | null
           land_price?: number | null
+          last_price_update?: string | null
           length_cm?: number | null
           link_direct_commission_to_cod?: boolean
           name: string
@@ -9701,6 +9703,7 @@ export type Database = {
           in_stock?: boolean | null
           is_pricing_updated?: boolean | null
           land_price?: number | null
+          last_price_update?: string | null
           length_cm?: number | null
           link_direct_commission_to_cod?: boolean
           name?: string
@@ -14140,6 +14143,7 @@ export type Database = {
           in_stock: boolean | null
           is_pricing_updated: boolean | null
           land_price: number | null
+          last_price_update: string | null
           length_cm: number | null
           link_direct_commission_to_cod: boolean
           name: string
@@ -14449,6 +14453,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_quick_update_costs: {
+        Args: { _options: Json; _product_cost: number; _product_id: string }
+        Returns: undefined
+      }
       admin_remove_assistant: { Args: { _user_id: string }; Returns: undefined }
       admin_update_level_prize_claim: {
         Args: { p_claim_id: string; p_new_status: string; p_notes?: string }
@@ -14489,6 +14497,7 @@ export type Database = {
       }
       auto_award_expired_seasons: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
+      auto_hide_stale_priced_products: { Args: never; Returns: number }
       ban_user_for_unreceived_random_filament: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: Json
