@@ -4291,7 +4291,10 @@ const Admin = () => {
                       </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setEditingProduct(product); setProductFeatured(!!product.featured); setProductDialogOpen(true); }} title="تعديل">
                         <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                       </Button>
+                       <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-amber-600 border-amber-500/40" onClick={() => { setQuickCostProduct(product); setQuickCostOpen(true); }} title="تحديث التكلفة السريع">
+                         <Zap className="h-3.5 w-3.5" />
+                       </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleDuplicateProduct(product)} title="تكرار">
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
