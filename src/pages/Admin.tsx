@@ -1688,6 +1688,7 @@ const Admin = () => {
       const commissionIqdVal = formData.get('commission_iqd') ? Number(formData.get('commission_iqd')) : 0;
       const commissionSeaIqdVal = formData.get('commission_sea_iqd') ? Number(formData.get('commission_sea_iqd')) : 0;
       const commissionAirIqdVal = formData.get('commission_air_iqd') ? Number(formData.get('commission_air_iqd')) : 0;
+      const commissionLandIqdVal = formData.get('commission_land_iqd') ? Number(formData.get('commission_land_iqd')) : 0;
       const commissionDirectIqdVal = formData.get('commission_direct_iqd') ? Number(formData.get('commission_direct_iqd')) : 0;
       const otherCostsIqdVal = formData.get('other_costs_iqd') ? Number(formData.get('other_costs_iqd')) : 0;
       const personalDeliveryCostRaw = formData.get('personal_delivery_cost') ? Number(formData.get('personal_delivery_cost')) : 0;
@@ -1710,6 +1711,7 @@ const Admin = () => {
       values.commission_iqd = commissionIqdVal;
       values.commission_sea_iqd = commissionSeaIqdVal;
       values.commission_air_iqd = commissionAirIqdVal;
+      values.commission_land_iqd = commissionLandIqdVal;
       values.commission_direct_iqd = commissionDirectIqdVal;
       values.other_costs_iqd = otherCostsIqdVal;
       values.personal_delivery_cost = personalDeliveryCostVal;
@@ -1729,13 +1731,19 @@ const Admin = () => {
           air_china_weight_safety_margin: 20,
           local_delivery_baghdad: 6000, local_delivery_provinces: 5000,
           usd_to_iqd_rate: 1410,
+          land_price_per_kg_usd: 4,
         };
         settingsData?.forEach((item: any) => {
           if (item.setting_key in settings) settings[item.setting_key] = Number(item.setting_value);
         });
 
         const priceIqd = Math.round(priceUsdVal * settings.usd_to_iqd_rate);
-        const shippingType = values.shipping_type;
+        const shippingType: string = values.shipping_type || '';
+        // Parse comma-separated tokens with legacy 'both' support
+        const stTokens = shippingType === 'both' ? ['sea', 'air'] : shippingType.split(',').map((t: string) => t.trim());
+        const hasSea = stTokens.includes('sea');
+        const hasAir = stTokens.includes('air');
+        const hasLand = stTokens.includes('land');
         
         // Calculate prices for each active mode and use the lowest for the main price
         const prices: number[] = [];
@@ -1745,28 +1753,42 @@ const Admin = () => {
             ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 }
             : null;
 
-          if (shippingType === 'sea' || shippingType === 'both') {
+          if (hasSea) {
             const seaCalc = calculateShippingCost('china', 'sea', dims, null, settings);
             const seaFinalPrice = priceIqd + seaCalc.shippingCost + commissionSeaIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
             prices.push(seaFinalPrice);
             values.sea_price = seaFinalPrice;
             values.shipping_cost_iqd = seaCalc.shippingCost;
           }
-          if (shippingType === 'air' || shippingType === 'both') {
+          if (hasAir) {
             const airCalc = calculateShippingCost('china', 'air', dims, values.weight_kg > 0 ? values.weight_kg : null, settings);
             const airFinalPrice = priceIqd + airCalc.shippingCost + commissionAirIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
             prices.push(airFinalPrice);
             values.air_price = airFinalPrice;
             if (!values.shipping_cost_iqd) values.shipping_cost_iqd = airCalc.shippingCost;
           }
+          if (hasLand) {
+            const landCalc = calculateShippingCost('china', 'land', null, values.weight_kg > 0 ? values.weight_kg : null, settings);
+            const landFinalPrice = priceIqd + landCalc.shippingCost + commissionLandIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
+            prices.push(landFinalPrice);
+            values.land_price = landFinalPrice;
+            if (!values.shipping_cost_iqd) values.shipping_cost_iqd = landCalc.shippingCost;
+          }
 
-          // Auto-populate pre_order_shipping_options when both sea & air exist
-          if (shippingType === 'both' && values.sea_price && values.air_price) {
-            const basePreOrderPrice = Math.min(values.sea_price, values.air_price);
-            values.pre_order_shipping_options = [
-              { name_ar: 'شحن بحري', price_adjustment: values.sea_price - basePreOrderPrice },
-              { name_ar: 'شحن جوي', price_adjustment: values.air_price - basePreOrderPrice },
-            ];
+          // Auto-populate pre_order_shipping_options when multiple shipping modes are active
+          const activeShippingPrices: Array<{ key: string; name_ar: string; price: number }> = [];
+          if (hasSea && values.sea_price) activeShippingPrices.push({ key: 'sea', name_ar: 'شحن بحري', price: values.sea_price });
+          if (hasAir && values.air_price) activeShippingPrices.push({ key: 'air', name_ar: 'شحن جوي', price: values.air_price });
+          if (hasLand && values.land_price) activeShippingPrices.push({ key: 'land', name_ar: 'شحن بري', price: values.land_price });
+          if (activeShippingPrices.length >= 2) {
+            const basePreOrderPrice = Math.min(...activeShippingPrices.map((s) => s.price));
+            values.pre_order_shipping_options = activeShippingPrices.map((s) => ({
+              name_ar: s.name_ar,
+              type: s.key,
+              price_adjustment: s.price - basePreOrderPrice,
+            }));
+          } else {
+            values.pre_order_shipping_options = null;
           }
         }
 
@@ -1779,12 +1801,15 @@ const Admin = () => {
           let directShipping = 0;
           let preOrderCommissionAddon = 0;
           if (hasPreOrder) {
-            if (shippingType === 'sea' || shippingType === 'both') {
+            if (hasSea) {
               directShipping = calculateShippingCost('china', 'sea', dims, null, settings).shippingCost;
               preOrderCommissionAddon = commissionSeaIqdVal;
-            } else if (shippingType === 'air') {
+            } else if (hasAir) {
               directShipping = calculateShippingCost('china', 'air', dims, values.weight_kg > 0 ? values.weight_kg : null, settings).shippingCost;
               preOrderCommissionAddon = commissionAirIqdVal;
+            } else if (hasLand) {
+              directShipping = calculateShippingCost('china', 'land', null, values.weight_kg > 0 ? values.weight_kg : null, settings).shippingCost;
+              preOrderCommissionAddon = commissionLandIqdVal;
             }
           }
 
@@ -1838,22 +1863,29 @@ const Admin = () => {
         if (shouldRoundUp) {
           if (values.sea_price) values.sea_price = roundUpTo250(values.sea_price);
           if (values.air_price) values.air_price = roundUpTo250(values.air_price);
+          if (values.land_price) values.land_price = roundUpTo250(values.land_price);
           if (values.direct_sale_price) values.direct_sale_price = roundUpTo250(values.direct_sale_price);
           // Recalculate prices array with rounded values
           const roundedPrices: number[] = [];
           if (values.sea_price) roundedPrices.push(values.sea_price);
           if (values.air_price) roundedPrices.push(values.air_price);
+          if (values.land_price) roundedPrices.push(values.land_price);
           if (values.direct_sale_price) roundedPrices.push(values.direct_sale_price);
           prices.length = 0;
           roundedPrices.forEach(p => prices.push(p));
 
-          // Recalculate shipping options with rounded prices
-          if (values.shipping_type === 'both' && values.sea_price && values.air_price) {
-            const basePreOrderPrice = Math.min(values.sea_price, values.air_price);
-            values.pre_order_shipping_options = [
-              { name_ar: 'شحن بحري', price_adjustment: values.sea_price - basePreOrderPrice },
-              { name_ar: 'شحن جوي', price_adjustment: values.air_price - basePreOrderPrice },
-            ];
+          // Recalculate shipping options with rounded prices (for multi-mode pre-order)
+          const activeShipping: Array<{ key: string; name_ar: string; price: number }> = [];
+          if (hasSea && values.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن بحري', price: values.sea_price });
+          if (hasAir && values.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن جوي', price: values.air_price });
+          if (hasLand && values.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن بري', price: values.land_price });
+          if (activeShipping.length >= 2) {
+            const basePreOrderPrice = Math.min(...activeShipping.map((s) => s.price));
+            values.pre_order_shipping_options = activeShipping.map((s) => ({
+              name_ar: s.name_ar,
+              type: s.key,
+              price_adjustment: s.price - basePreOrderPrice,
+            }));
           }
 
           // Round colors prices (IQD values)

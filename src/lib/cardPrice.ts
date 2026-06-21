@@ -67,17 +67,16 @@ export function computeUnifiedCardPrice(
 
   // --- Pre-order candidate ---
   if (hasPreOrder) {
-    const st = product?.shipping_type;
+    const st: string = product?.shipping_type || '';
+    const tokens = st === 'both' ? ['sea', 'air'] : st.split(',').map((t: string) => t.trim()).filter(Boolean);
     const sea = product?.sea_price ? ensurePriceIqd(Number(product.sea_price), product?.price_usd, usdToIqd) : null;
     const air = product?.air_price ? ensurePriceIqd(Number(product.air_price), product?.price_usd, usdToIqd) : null;
-    let preBase: number | null = null;
-    if (st === 'sea' && sea) preBase = sea;
-    else if (st === 'air' && air) preBase = air;
-    else if (st === 'both') {
-      if (sea && air) preBase = Math.min(sea, air);
-      else if (sea) preBase = sea;
-      else if (air) preBase = air;
-    }
+    const land = product?.land_price ? ensurePriceIqd(Number(product.land_price), product?.price_usd, usdToIqd) : null;
+    const opts: number[] = [];
+    if (tokens.includes('sea') && sea) opts.push(sea);
+    if (tokens.includes('air') && air) opts.push(air);
+    if (tokens.includes('land') && land) opts.push(land);
+    const preBase = opts.length > 0 ? Math.min(...opts) : null;
     if (preBase != null) {
       candidates.push(preBase + getMinOptionAdjustmentIqd(product, 'preorder', usdToIqd));
     }

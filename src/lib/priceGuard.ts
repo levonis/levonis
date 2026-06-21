@@ -119,6 +119,7 @@ export function guardProductPrices(
     direct_sale_price?: number | null;
     sea_price?: number | null;
     air_price?: number | null;
+    land_price?: number | null;
     original_price?: number | null;
     price_usd?: number | null;
     original_price_usd?: number | null;
@@ -129,6 +130,7 @@ export function guardProductPrices(
   direct_sale_price: number | null;
   sea_price: number | null;
   air_price: number | null;
+  land_price: number | null;
   original_price: number | null;
 } {
   const priceUsd = product.price_usd ?? null;
@@ -144,6 +146,9 @@ export function guardProductPrices(
       : null,
     air_price: product.air_price != null
       ? ensurePriceIqd(Number(product.air_price), priceUsd, usdToIqd)
+      : null,
+    land_price: product.land_price != null
+      ? ensurePriceIqd(Number(product.land_price), priceUsd, usdToIqd)
       : null,
     original_price: product.original_price != null
       ? ensurePriceIqd(Number(product.original_price), origUsd, usdToIqd)
@@ -169,8 +174,10 @@ export function computeLinkedDirectSalePrice(
     referral_earnings_iqd?: number | null;
     commission_sea_iqd?: number | null;
     commission_air_iqd?: number | null;
+    commission_land_iqd?: number | null;
     sea_price?: number | null;
     air_price?: number | null;
+    land_price?: number | null;
     shipping_cost_iqd?: number | null;
     round_up_price?: boolean | null;
   },
@@ -203,21 +210,29 @@ export function computeLinkedDirectSalePrice(
   const referral = Number(product.referral_earnings_iqd || 0);
   const seaCommission = Number(product.commission_sea_iqd || 0);
   const airCommission = Number(product.commission_air_iqd || 0);
+  const landCommission = Number(product.commission_land_iqd || 0);
 
   const hasPreOrder = !!product.has_pre_order;
-  const st = product.shipping_type;
-  const hasSea = st === 'sea' || st === 'both';
-  const hasAir = st === 'air' || st === 'both';
+  const st: string = product.shipping_type || '';
+  const tokens = st === 'both' ? ['sea', 'air'] : st.split(',').map((t) => t.trim()).filter(Boolean);
+  const hasSea = tokens.includes('sea');
+  const hasAir = tokens.includes('air');
+  const hasLand = tokens.includes('land');
 
   // Use stored raw shipping cost (matches what admin form computed at save time)
   // rather than deriving from sea_price/air_price (which may be rounded up).
   const shippingCost = Number(product.shipping_cost_iqd || 0);
 
-  const seaCommissionAddon = hasPreOrder && hasSea ? seaCommission : 0;
-  const airCommissionAddon = hasPreOrder && hasAir && !hasSea ? airCommission : 0;
+  // Pre-order commission preference: sea > air > land
+  let preOrderCommissionAddon = 0;
+  if (hasPreOrder) {
+    if (hasSea) preOrderCommissionAddon = seaCommission;
+    else if (hasAir) preOrderCommissionAddon = airCommission;
+    else if (hasLand) preOrderCommissionAddon = landCommission;
+  }
 
   // Pre-order base for the COD percentage (raw, unrounded — matches admin form logic)
-  const preorderFinal = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + pdc + referral;
+  const preorderFinal = priceIqd + shippingCost + preOrderCommissionAddon + pdc + referral;
 
   // Pick the COD tier matching the pre-order amount; fall back to legacy default.
   let codType: 'percentage' | 'fixed' = codDefaults.type;
@@ -244,7 +259,7 @@ export function computeLinkedDirectSalePrice(
     directPortion = Math.ceil((preorderFinal * codValue) / 100);
   }
 
-  let total = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + directPortion + pdc + referral;
+  let total = priceIqd + shippingCost + preOrderCommissionAddon + directPortion + pdc + referral;
 
   if (product.round_up_price) {
     total = Math.ceil(total / 250) * 250;
@@ -321,15 +336,23 @@ export function getGuardedCartItemPrice(
     const shippingType = product.shipping_type || item.shipping_type;
     const seaPrice = product.sea_price;
     const airPrice = product.air_price;
-    if (shippingType === 'sea' && seaPrice != null) {
-      price = ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd);
-    } else if (shippingType === 'air' && airPrice != null) {
-      price = ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd);
-    } else if (shippingType === 'both' && seaPrice != null && airPrice != null) {
-      price = Math.min(
-        ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd),
-        ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd)
-      );
+    const landPrice = (product as any).land_price;
+    // Token list (supports legacy 'both' and new comma-separated)
+    const tokens: string[] = (shippingType === 'both' ? 'sea,air' : (shippingType || ''))
+      .split(',')
+      .map((t: string) => t.trim())
+      .filter(Boolean);
+    if (tokens.length === 1) {
+      const t = tokens[0];
+      if (t === 'sea' && seaPrice != null) price = ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd);
+      else if (t === 'air' && airPrice != null) price = ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd);
+      else if (t === 'land' && landPrice != null) price = ensurePriceIqd(Number(landPrice), priceUsd, usdToIqd);
+    } else if (tokens.length > 1) {
+      const candidates: number[] = [];
+      if (tokens.includes('sea') && seaPrice != null) candidates.push(ensurePriceIqd(Number(seaPrice), priceUsd, usdToIqd));
+      if (tokens.includes('air') && airPrice != null) candidates.push(ensurePriceIqd(Number(airPrice), priceUsd, usdToIqd));
+      if (tokens.includes('land') && landPrice != null) candidates.push(ensurePriceIqd(Number(landPrice), priceUsd, usdToIqd));
+      if (candidates.length > 0) price = Math.min(...candidates);
     }
   }
 

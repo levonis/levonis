@@ -1054,6 +1054,7 @@ export const ar: TranslationKeys = {
   pd_color_unavailable_switched: 'اللون المحدد غير متوفر للبيع المباشر، تم التحويل إلى الحجز المسبق',
   pd_shipping_sea: '🚢 شحن بحري',
   pd_shipping_air: '✈️ شحن جوي',
+  pd_shipping_land: '🚚 شحن بري',
   pd_cart_cleared_added: 'تم تفريغ السلة وإضافة المنتج بنجاح 🛒',
   pd_login_required: 'يرجى تسجيل الدخول أولاً',
   pd_notify_cancelled: 'تم إلغاء الإشعار عند التوفر',

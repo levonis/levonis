@@ -43,7 +43,7 @@ interface ShippingCalculation {
 }
 
 type SourceCountry = 'china' | 'usa';
-type ShippingType = 'sea' | 'air';
+type ShippingType = 'sea' | 'air' | 'land';
 
 interface ShippingSettings {
   sea_cbm_price: number;
@@ -55,6 +55,8 @@ interface ShippingSettings {
   local_delivery_provinces: number;
   usd_to_iqd_rate: number;
   cny_to_usd_rate: number;
+  /** USD per kg for land shipping (uses actual weight only). */
+  land_price_per_kg_usd: number;
 }
 
 export const useShippingSettings = () => {
@@ -101,6 +103,7 @@ export const useShippingSettings = () => {
         local_delivery_provinces: 5000,
         usd_to_iqd_rate: 1410,
         cny_to_usd_rate: 6.7,
+        land_price_per_kg_usd: 4,
       };
 
       data?.forEach((item) => {
@@ -195,6 +198,20 @@ export const calculateShippingCost = (
       
       notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
     }
+  } else if (shippingType === 'land') {
+    // Land shipping: actual weight only × USD/kg × USD->IQD rate.
+    if (weight && weight > 0) {
+      actualWeight = weight;
+      usedWeight = weight;
+      const usd = weight * settings.land_price_per_kg_usd;
+      shippingCost = usd * settings.usd_to_iqd_rate;
+      breakdown.push({ label: 'الوزن الفعلي', value: `${weight.toFixed(2)} كغ` });
+      breakdown.push({ label: 'السعر/كغ', value: `${settings.land_price_per_kg_usd}$ × ${settings.usd_to_iqd_rate.toLocaleString()}` });
+      breakdown.push({ label: 'تكلفة الشحن البري', value: Math.round(shippingCost) });
+    } else {
+      notes.push('الشحن البري يحتاج الوزن الفعلي للقطعة');
+    }
+    notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
   }
 
   const commission = 0;

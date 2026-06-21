@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers, Warehouse, Truck, User, ChevronDown, ChevronUp, Gift } from "lucide-react";
+import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers, Warehouse, Truck, User, ChevronDown, ChevronUp, Gift, Navigation } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { calculateShippingCost, type ShippingSettings } from "@/hooks/useShippingCalculator";
 import AdminLayout, { AdminLoading } from "@/components/admin/AdminLayout";
@@ -615,6 +615,7 @@ export default function AdminShippingSettings() {
     local_delivery_provinces: 5000,
     usd_to_iqd_rate: 1410,
     cny_to_usd_rate: 6.7,
+    land_price_per_kg_usd: 4,
   });
 
   useEffect(() => {
@@ -654,6 +655,7 @@ export default function AdminShippingSettings() {
       local_delivery_provinces: newSettings.local_delivery_provinces ?? 5000,
       usd_to_iqd_rate: newSettings.usd_to_iqd_rate ?? 1410,
       cny_to_usd_rate: newSettings.cny_to_usd_rate ?? 6.7,
+      land_price_per_kg_usd: newSettings.land_price_per_kg_usd ?? 4,
     };
     const rate = shippingSettingsObj.usd_to_iqd_rate;
     const roundUpTo250 = (v: number) => Math.ceil(v / 250) * 250;
@@ -661,7 +663,7 @@ export default function AdminShippingSettings() {
     // Fetch all products that have price_usd
     const { data: products, error } = await (supabase as any)
       .from('products_admin')
-      .select('id, price_usd, original_price_usd, length_cm, width_cm, height_cm, weight_kg, shipping_type, has_pre_order, has_in_stock, commission_sea_iqd, commission_air_iqd, commission_direct_iqd, other_costs_iqd, round_up_price, colors')
+      .select('id, price_usd, original_price_usd, length_cm, width_cm, height_cm, weight_kg, shipping_type, has_pre_order, has_in_stock, commission_sea_iqd, commission_air_iqd, commission_land_iqd, commission_direct_iqd, other_costs_iqd, round_up_price, colors')
       .not('price_usd', 'is', null)
       .gt('price_usd', 0);
     
@@ -673,9 +675,14 @@ export default function AdminShippingSettings() {
       const priceIqd = Math.round(priceUsd * rate);
       const commissionSeaIqd = p.commission_sea_iqd || 0;
       const commissionAirIqd = p.commission_air_iqd || 0;
+      const commissionLandIqd = (p as any).commission_land_iqd || 0;
       const commissionDirectIqd = p.commission_direct_iqd || 0;
       const otherCostsIqd = p.other_costs_iqd || 0;
-      const shippingType = p.shipping_type || 'sea';
+      const shippingType: string = p.shipping_type || 'sea';
+      const stTokens = shippingType === 'both' ? ['sea', 'air'] : shippingType.split(',').map((t: string) => t.trim());
+      const hasSea = stTokens.includes('sea');
+      const hasAir = stTokens.includes('air');
+      const hasLand = stTokens.includes('land');
       const hasPreOrder = p.has_pre_order ?? false;
       const hasInStock = p.has_in_stock ?? false;
       const shouldRoundUp = p.round_up_price ?? false;
@@ -687,16 +694,22 @@ export default function AdminShippingSettings() {
       const updates: Record<string, any> = {};
 
       if (hasPreOrder) {
-        if (shippingType === 'sea' || shippingType === 'both') {
+        if (hasSea) {
           const seaCalc = calculateShippingCost('china', 'sea', dims, null, shippingSettingsObj);
           updates.sea_price = priceIqd + seaCalc.shippingCost + commissionSeaIqd;
           updates.shipping_cost_iqd = seaCalc.shippingCost;
         }
-        if (shippingType === 'air' || shippingType === 'both') {
+        if (hasAir) {
           const weightKg = p.weight_kg || 0;
           const airCalc = calculateShippingCost('china', 'air', dims, weightKg > 0 ? weightKg : null, shippingSettingsObj);
           updates.air_price = priceIqd + airCalc.shippingCost + commissionAirIqd;
           if (!updates.shipping_cost_iqd) updates.shipping_cost_iqd = airCalc.shippingCost;
+        }
+        if (hasLand) {
+          const weightKg = p.weight_kg || 0;
+          const landCalc = calculateShippingCost('china', 'land', null, weightKg > 0 ? weightKg : null, shippingSettingsObj);
+          updates.land_price = priceIqd + landCalc.shippingCost + commissionLandIqd;
+          if (!updates.shipping_cost_iqd) updates.shipping_cost_iqd = landCalc.shippingCost;
         }
       }
 
@@ -707,25 +720,32 @@ export default function AdminShippingSettings() {
       if (shouldRoundUp) {
         if (updates.sea_price) updates.sea_price = roundUpTo250(updates.sea_price);
         if (updates.air_price) updates.air_price = roundUpTo250(updates.air_price);
+        if (updates.land_price) updates.land_price = roundUpTo250(updates.land_price);
         if (updates.direct_sale_price) updates.direct_sale_price = roundUpTo250(updates.direct_sale_price);
       }
 
       // Collect prices
       if (updates.sea_price) prices.push(updates.sea_price);
       if (updates.air_price) prices.push(updates.air_price);
+      if (updates.land_price) prices.push(updates.land_price);
       if (updates.direct_sale_price) prices.push(updates.direct_sale_price);
 
       if (prices.length > 0) {
         updates.price = Math.min(...prices);
       }
 
-      // Pre-order shipping options
-      if (shippingType === 'both' && updates.sea_price && updates.air_price) {
-        const basePreOrderPrice = Math.min(updates.sea_price, updates.air_price);
-        updates.pre_order_shipping_options = [
-          { name_ar: 'شحن بحري', price_adjustment: updates.sea_price - basePreOrderPrice },
-          { name_ar: 'شحن جوي', price_adjustment: updates.air_price - basePreOrderPrice },
-        ];
+      // Pre-order shipping options (multi-mode)
+      const activeShipping: Array<{ key: string; name_ar: string; price: number }> = [];
+      if (hasSea && updates.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن بحري', price: updates.sea_price });
+      if (hasAir && updates.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن جوي', price: updates.air_price });
+      if (hasLand && updates.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن بري', price: updates.land_price });
+      if (activeShipping.length >= 2) {
+        const basePreOrderPrice = Math.min(...activeShipping.map((s) => s.price));
+        updates.pre_order_shipping_options = activeShipping.map((s) => ({
+          name_ar: s.name_ar,
+          type: s.key,
+          price_adjustment: s.price - basePreOrderPrice,
+        }));
       }
 
       // Recalculate original_price
@@ -734,12 +754,15 @@ export default function AdminShippingSettings() {
         const origPriceIqd = Math.round(origUsd * rate);
         if (hasInStock) {
           updates.original_price = origPriceIqd + otherCostsIqd + commissionDirectIqd;
-        } else if (hasPreOrder && (shippingType === 'sea' || shippingType === 'both')) {
+        } else if (hasPreOrder && hasSea) {
           const seaCalc2 = calculateShippingCost('china', 'sea', dims, null, shippingSettingsObj);
           updates.original_price = origPriceIqd + seaCalc2.shippingCost + commissionSeaIqd;
-        } else if (hasPreOrder && shippingType === 'air') {
+        } else if (hasPreOrder && hasAir) {
           const airCalc2 = calculateShippingCost('china', 'air', dims, (p.weight_kg || 0) > 0 ? p.weight_kg : null, shippingSettingsObj);
           updates.original_price = origPriceIqd + airCalc2.shippingCost + commissionAirIqd;
+        } else if (hasPreOrder && hasLand) {
+          const landCalc2 = calculateShippingCost('china', 'land', null, (p.weight_kg || 0) > 0 ? p.weight_kg : null, shippingSettingsObj);
+          updates.original_price = origPriceIqd + landCalc2.shippingCost + commissionLandIqd;
         }
         if (shouldRoundUp && updates.original_price) {
           updates.original_price = roundUpTo250(updates.original_price);
@@ -877,6 +900,31 @@ export default function AdminShippingSettings() {
           </div>
         </GlassCard>
 
+        {/* ═══ Row 2.5: Land Shipping ═══ */}
+        <GlassCard gradient="linear-gradient(145deg, hsl(35 70% 50% / 0.08), hsl(20 60% 45% / 0.04), transparent)">
+          <GlassCardHeader
+            icon={<Navigation className="h-5 w-5 text-white" />}
+            iconBg="bg-gradient-to-br from-amber-600 to-orange-700"
+            title="الشحن البري"
+            subtitle="بالوزن الفعلي فقط — بدون وزن حجمي"
+          />
+          <div className="px-5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SettingField
+              label="السعر لكل كيلوغرام"
+              icon={<DollarSign className="h-3 w-3" />}
+              value={settings.land_price_per_kg_usd}
+              onChange={(v) => updateSetting("land_price_per_kg_usd", v)}
+              hint={`${settings.land_price_per_kg_usd}$ × ${settings.usd_to_iqd_rate.toLocaleString()} = ${Math.round(settings.land_price_per_kg_usd * settings.usd_to_iqd_rate).toLocaleString()} د.ع/كغ`}
+              suffix="$"
+            />
+          </div>
+          <div className="mx-5 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <p className="text-[10px] text-amber-200/80">
+              <strong>ملاحظة:</strong> يُحسب الشحن البري على الوزن الفعلي فقط (بدون وزن حجمي ولا هامش تغليف).
+            </p>
+          </div>
+        </GlassCard>
+
         {/* ═══ Row 3: Currency + General ═══ */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Currency */}
@@ -938,6 +986,14 @@ export default function AdminShippingSettings() {
                 `Vol = (L+${settings.sea_padding_cm})(W+${settings.sea_padding_cm})(H+${settings.sea_padding_cm}) ÷ ${settings.air_china_volumetric_divider}`,
                 `Used = max(Vol, Actual) × (1 + ${settings.air_china_weight_safety_margin}%)`,
                 `Cost = Used × ${settings.air_china_volumetric_price.toLocaleString()}`,
+              ]}
+            />
+            <FormulaCard
+              icon={<Navigation className="h-3.5 w-3.5 text-amber-400" />}
+              title="بري"
+              color="bg-amber-500/15"
+              formula={[
+                `Cost = Actual Weight × ${settings.land_price_per_kg_usd}$ × ${settings.usd_to_iqd_rate.toLocaleString()}`,
               ]}
             />
             <FormulaCard

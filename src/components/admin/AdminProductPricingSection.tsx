@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck, Lock } from 'lucide-react';
+import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck, Lock, MapPin } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -69,6 +69,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Shipping types (multi-select for pre-order)
   const [hasSea, setHasSea] = useState(false);
   const [hasAir, setHasAir] = useState(false);
+  const [hasLand, setHasLand] = useState(false);
 
   // Common fields
   const [priceUsd, setPriceUsd] = useState<number>(0);
@@ -83,6 +84,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Commissions per type
   const [commissionSeaIqd, setCommissionSeaIqd] = useState<number>(0);
   const [commissionAirIqd, setCommissionAirIqd] = useState<number>(0);
+  const [commissionLandIqd, setCommissionLandIqd] = useState<number>(0);
   const [commissionDirectIqd, setCommissionDirectIqd] = useState<number>(0);
 
   // Direct sale
@@ -137,22 +139,21 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setHasPreOrder(editingProduct.has_pre_order ?? false);
       setHasDirectSale(editingProduct.has_in_stock ?? false);
 
-      // Determine shipping types
-      const st = editingProduct.shipping_type;
-      if (st === 'both') {
+      // Determine shipping types (supports legacy 'sea'/'air'/'both' and new comma list)
+      const st: string = editingProduct.shipping_type || '';
+      const tokens = st === 'both' ? ['sea', 'air'] : st.split(',').map((x: string) => x.trim());
+      setHasSea(tokens.includes('sea'));
+      setHasAir(tokens.includes('air'));
+      setHasLand(tokens.includes('land'));
+      // Backward compat: if a legacy product had no shipping_type but does have pre-order, default to sea
+      if (!st && editingProduct.has_pre_order) {
         setHasSea(true);
-        setHasAir(true);
-      } else if (st === 'air') {
-        setHasAir(true);
-        setHasSea(false);
-      } else {
-        setHasSea(st === 'sea' || editingProduct.has_pre_order);
-        setHasAir(false);
       }
 
       // Commissions - support per-type or single legacy
       setCommissionSeaIqd(editingProduct.commission_sea_iqd || editingProduct.commission_iqd || 0);
       setCommissionAirIqd(editingProduct.commission_air_iqd || editingProduct.commission_iqd || 0);
+      setCommissionLandIqd(editingProduct.commission_land_iqd || 0);
       setCommissionDirectIqd(editingProduct.commission_direct_iqd || editingProduct.commission_iqd || 0);
 
       // COD settings (toggle only)
@@ -169,6 +170,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setWeightKg('');
       setCommissionSeaIqd(0);
       setCommissionAirIqd(0);
+      setCommissionLandIqd(0);
       setCommissionDirectIqd(0);
       setPersonalDeliveryCost(0);
       setReferralEarningsIqd(0);
@@ -176,6 +178,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setHasDirectSale(false);
       setHasSea(false);
       setHasAir(false);
+      setHasLand(false);
       setCodEnabled(false);
       setLinkDirectCommissionToCod(false);
       setRoundUp(true);
@@ -258,13 +261,14 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   }, []);
 
 
-  // Derive shipping_type value for hidden input
+  // Derive shipping_type value for hidden input (comma-separated tokens)
   const shippingTypeValue = useMemo(() => {
-    if (hasSea && hasAir) return 'both';
-    if (hasAir) return 'air';
-    if (hasSea) return 'sea';
-    return '';
-  }, [hasSea, hasAir]);
+    const t: string[] = [];
+    if (hasSea) t.push('sea');
+    if (hasAir) t.push('air');
+    if (hasLand) t.push('land');
+    return t.join(',');
+  }, [hasSea, hasAir, hasLand]);
 
   // Calculations
   const roundUpToNearest = (value: number, nearest: number) => Math.ceil(value / nearest) * nearest;
@@ -292,6 +296,10 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         const weightNum = parseFloat(weightKg) || 0;
         const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
         preorderFinal = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
+      } else if (hasPreOrder && hasLand) {
+        const weightNum = parseFloat(weightKg) || 0;
+        const calc = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings);
+        preorderFinal = priceIqd + calc.shippingCost + commissionLandIqd + pdc + referralEarningsIqd;
       }
 
       // Pick matching tier; fall back to legacy default
@@ -314,7 +322,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       return Math.ceil(preorderFinal * codValue / 100);
     }
     return commissionDirectIqd;
-  }, [linkDirectCommissionToCod, codDefaults, commissionDirectIqd, shippingSettings, priceUsd, hasPreOrder, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectivePersonalDeliveryCost, referralEarningsIqd]);
+  }, [linkDirectCommissionToCod, codDefaults, commissionDirectIqd, shippingSettings, priceUsd, hasPreOrder, hasSea, hasAir, hasLand, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionLandIqd, effectivePersonalDeliveryCost, referralEarningsIqd]);
 
   // Effective commission for direct sale display/calc = pre-order sea commission + direct portion
   const effectiveCommissionDirect = useMemo(
@@ -370,8 +378,27 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       });
     }
 
+    if (hasPreOrder && hasLand) {
+      const weightNum = parseFloat(weightKg) || 0;
+      const calc = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings);
+      const finalPrice = priceIqd + calc.shippingCost + commissionLandIqd + pdc + referralEarningsIqd;
+      results.push({
+        label: 'حجز مسبق - بري',
+        type: 'land',
+        priceIqd,
+        shipping: calc.shippingCost,
+        commission: commissionLandIqd,
+        final: finalPrice,
+        finalRounded: roundUpToNearest(finalPrice, 250),
+        breakdown: calc.breakdown,
+        actualWeight: calc.actualWeight,
+        usedWeight: calc.usedWeight,
+        personalDelivery: pdc,
+      });
+    }
+
     if (hasDirectSale) {
-      // Use the same shipping cost as pre-order (sea preferred, else air)
+      // Use the same shipping cost as pre-order (sea preferred, else air, else land)
       let directShipping = 0;
       if (hasPreOrder) {
         const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
@@ -381,6 +408,9 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         } else if (hasAir) {
           const weightNum = parseFloat(weightKg) || 0;
           directShipping = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings).shippingCost;
+        } else if (hasLand) {
+          const weightNum = parseFloat(weightKg) || 0;
+          directShipping = calculateShippingCost('china', 'land', null, weightNum > 0 ? weightNum : null, shippingSettings).shippingCost;
         }
       }
       const finalPrice = priceIqd + directShipping + effectiveCommissionDirect + pdc + referralEarningsIqd;
@@ -397,7 +427,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     return { rate, priceIqd, results };
-  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
+  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, hasLand, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionLandIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
 
 
   return (
@@ -408,6 +438,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="shipping_type" value={shippingTypeValue} />
       <input type="hidden" name="commission_sea_iqd" value={commissionSeaIqd} />
       <input type="hidden" name="commission_air_iqd" value={commissionAirIqd} />
+      <input type="hidden" name="commission_land_iqd" value={commissionLandIqd} />
       <input type="hidden" name="commission_direct_iqd" value={directCommissionPortion} />
       <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, directCommissionPortion)} />
       <input type="hidden" name="other_costs_iqd" value={0} />
@@ -571,6 +602,16 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                 <Plane className="h-4 w-4" />
                 <span className="text-sm font-medium">جوي</span>
               </label>
+              <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+                hasLand ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+              }`}>
+                <Checkbox
+                  checked={hasLand}
+                  onCheckedChange={(checked) => setHasLand(!!checked)}
+                />
+                <MapPin className="h-4 w-4" />
+                <span className="text-sm font-medium">بري</span>
+              </label>
             </div>
 
             {/* Sea: CBM dimensions */}
@@ -637,6 +678,46 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                     <Label htmlFor="commission_air_iqd">العمولة - جوي (د.ع)</Label>
                     <Input id="commission_air_iqd" type="number" min="0"
                       value={commissionAirIqd || ''} onChange={(e) => setCommissionAirIqd(Number(e.target.value))} placeholder="0" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Land: actual weight only */}
+            {hasLand && (
+              <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <MapPin className="h-3 w-3" />
+                  <span>الشحن البري — يعتمد على الوزن الفعلي فقط</span>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight_kg_land">الوزن (كغ) *</Label>
+                  <Input
+                    id="weight_kg_land"
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    placeholder="مثال: 1.5"
+                  />
+                  {shippingSettings && (
+                    <p className="text-[10px] text-muted-foreground">
+                      السعر: {shippingSettings.land_price_per_kg_usd}$ لكل كغ — بدون وزن حجمي
+                    </p>
+                  )}
+                </div>
+                {isAdmin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="commission_land_iqd">العمولة - بري (د.ع)</Label>
+                    <Input
+                      id="commission_land_iqd"
+                      type="number"
+                      min="0"
+                      value={commissionLandIqd || ''}
+                      onChange={(e) => setCommissionLandIqd(Number(e.target.value))}
+                      placeholder="0"
+                    />
                   </div>
                 )}
               </div>
