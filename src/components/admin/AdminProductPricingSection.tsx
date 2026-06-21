@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck, Lock } from 'lucide-react';
+import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck, Lock, MapPin } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -69,6 +69,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Shipping types (multi-select for pre-order)
   const [hasSea, setHasSea] = useState(false);
   const [hasAir, setHasAir] = useState(false);
+  const [hasLand, setHasLand] = useState(false);
 
   // Common fields
   const [priceUsd, setPriceUsd] = useState<number>(0);
@@ -83,6 +84,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Commissions per type
   const [commissionSeaIqd, setCommissionSeaIqd] = useState<number>(0);
   const [commissionAirIqd, setCommissionAirIqd] = useState<number>(0);
+  const [commissionLandIqd, setCommissionLandIqd] = useState<number>(0);
   const [commissionDirectIqd, setCommissionDirectIqd] = useState<number>(0);
 
   // Direct sale
@@ -137,22 +139,21 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setHasPreOrder(editingProduct.has_pre_order ?? false);
       setHasDirectSale(editingProduct.has_in_stock ?? false);
 
-      // Determine shipping types
-      const st = editingProduct.shipping_type;
-      if (st === 'both') {
+      // Determine shipping types (supports legacy 'sea'/'air'/'both' and new comma list)
+      const st: string = editingProduct.shipping_type || '';
+      const tokens = st === 'both' ? ['sea', 'air'] : st.split(',').map((x: string) => x.trim());
+      setHasSea(tokens.includes('sea'));
+      setHasAir(tokens.includes('air'));
+      setHasLand(tokens.includes('land'));
+      // Backward compat: if a legacy product had no shipping_type but does have pre-order, default to sea
+      if (!st && editingProduct.has_pre_order) {
         setHasSea(true);
-        setHasAir(true);
-      } else if (st === 'air') {
-        setHasAir(true);
-        setHasSea(false);
-      } else {
-        setHasSea(st === 'sea' || editingProduct.has_pre_order);
-        setHasAir(false);
       }
 
       // Commissions - support per-type or single legacy
       setCommissionSeaIqd(editingProduct.commission_sea_iqd || editingProduct.commission_iqd || 0);
       setCommissionAirIqd(editingProduct.commission_air_iqd || editingProduct.commission_iqd || 0);
+      setCommissionLandIqd(editingProduct.commission_land_iqd || 0);
       setCommissionDirectIqd(editingProduct.commission_direct_iqd || editingProduct.commission_iqd || 0);
 
       // COD settings (toggle only)
@@ -169,6 +170,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setWeightKg('');
       setCommissionSeaIqd(0);
       setCommissionAirIqd(0);
+      setCommissionLandIqd(0);
       setCommissionDirectIqd(0);
       setPersonalDeliveryCost(0);
       setReferralEarningsIqd(0);
@@ -176,6 +178,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setHasDirectSale(false);
       setHasSea(false);
       setHasAir(false);
+      setHasLand(false);
       setCodEnabled(false);
       setLinkDirectCommissionToCod(false);
       setRoundUp(true);
@@ -258,13 +261,14 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   }, []);
 
 
-  // Derive shipping_type value for hidden input
+  // Derive shipping_type value for hidden input (comma-separated tokens)
   const shippingTypeValue = useMemo(() => {
-    if (hasSea && hasAir) return 'both';
-    if (hasAir) return 'air';
-    if (hasSea) return 'sea';
-    return '';
-  }, [hasSea, hasAir]);
+    const t: string[] = [];
+    if (hasSea) t.push('sea');
+    if (hasAir) t.push('air');
+    if (hasLand) t.push('land');
+    return t.join(',');
+  }, [hasSea, hasAir, hasLand]);
 
   // Calculations
   const roundUpToNearest = (value: number, nearest: number) => Math.ceil(value / nearest) * nearest;
