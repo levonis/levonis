@@ -338,9 +338,38 @@ const CategoryDetail = () => {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [products]);
 
+  const categoryName = category ? pickName(category.name as any, category.name_ar as any) : '';
+  const categoryDesc = category
+    ? (pickDesc((category as any).description_en as any, (category as any).description_ar as any) || `${categoryName} — تسوّق ${categoryName} في LEVONIS بأفضل الأسعار في العراق مع توصيل سريع.`)
+    : '';
+  const categoryUrl = slug ? `https://levonisiq.com/category/${slug}` : 'https://levonisiq.com/';
+
   return (
     <div className="min-h-screen">
+      {category && (
+        <SEO
+          title={categoryName}
+          description={categoryDesc.slice(0, 160)}
+          url={categoryUrl}
+          jsonLd={[
+            breadcrumbLd([
+              { name: 'Home', url: '/' },
+              { name: categoryName, url: `/category/${slug}` },
+            ]),
+            collectionPageLd({
+              name: categoryName,
+              description: categoryDesc,
+              url: categoryUrl,
+              items: (products || []).map((p: any) => ({
+                name: pickName(p.name_en as any, p.name_ar as any) || p.name || '',
+                url: `/product/${p.slug}`,
+              })),
+            }),
+          ]}
+        />
+      )}
       <main className="container mx-auto px-4 py-8 relative z-10">
+
         {categoryLoading ? (
           <ProductGridSkeleton count={8} />
         ) : category ? (
