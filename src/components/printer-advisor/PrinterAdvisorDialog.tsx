@@ -8,7 +8,7 @@ import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowLeft, Loader2, Lightbulb, CheckCircle2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { suggestPrinterLocal } from "@/lib/printerAdvisor";
 
 interface AdvisorResult {
   recommended: {
