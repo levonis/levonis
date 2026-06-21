@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
           event_source_url: body.event_source_url,
           action_source: 'website',
           user_data,
-          custom_data: body.custom_data || {},
+          custom_data: sanitizeCustomData(body.custom_data),
         },
       ],
     };
