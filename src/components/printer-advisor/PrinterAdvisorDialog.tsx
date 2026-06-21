@@ -8,7 +8,7 @@ import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowLeft, Loader2, Lightbulb, CheckCircle2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { suggestPrinterLocal } from "@/lib/printerAdvisor";
 
 interface AdvisorResult {
   recommended: {
@@ -82,16 +82,12 @@ export default function PrinterAdvisorDialog({ open, onOpenChange }: Props) {
     setLoading(true);
     setResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke("suggest-printer", {
-        body: {
-          budget_iqd: budget,
-          purposes,
-          experience_level: experience,
-          notes,
-        },
+      const data = await suggestPrinterLocal({
+        budget_iqd: budget,
+        purposes,
+        experience_level: experience,
+        notes,
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
       setResult(data as AdvisorResult);
     } catch (e: any) {
       toast.error(e?.message || "حدث خطأ، حاول مجدداً");
