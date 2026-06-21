@@ -673,7 +673,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user?.id, fetchCart, queryClient]);
 
-  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
+  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return false;
