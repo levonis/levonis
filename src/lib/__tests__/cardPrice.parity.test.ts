@@ -19,7 +19,7 @@ describe('computeUnifiedCardPrice', () => {
     expect(computeUnifiedCardPrice(p, USD, null)).toBe(150000);
   });
 
-  it('adds the cheapest direct option adjustment', () => {
+  it('uses the cheapest option override price (replaces base, not additive)', () => {
     const p = {
       direct_sale_price: 100000,
       has_in_stock: true,
@@ -29,7 +29,8 @@ describe('computeUnifiedCardPrice', () => {
         { name_ar: 'C', price_adjustment: 80000, stock_quantity: 2, available_for_direct_sale: true },
       ],
     };
-    expect(computeUnifiedCardPrice(p, USD, null)).toBe(110000);
+    // New semantics: cheapest override (10,000) wins, not base + adjustment.
+    expect(computeUnifiedCardPrice(p, USD, null)).toBe(10000);
   });
 
   it('skips out-of-stock options', () => {
@@ -41,19 +42,19 @@ describe('computeUnifiedCardPrice', () => {
         { name_ar: 'B', price_adjustment: 20000, stock_quantity: 4, available_for_direct_sale: true },
       ],
     };
-    expect(computeUnifiedCardPrice(p, USD, null)).toBe(120000);
+    expect(computeUnifiedCardPrice(p, USD, null)).toBe(20000);
   });
 
-  it('honors negative adjustments (cheaper option lowers price)', () => {
+  it('falls back to base when all option overrides are 0/empty', () => {
     const p = {
       direct_sale_price: 100000,
       has_in_stock: true,
       product_options: [
-        { name_ar: 'A', price_adjustment: -5000, stock_quantity: 2, available_for_direct_sale: true },
+        { name_ar: 'A', price_adjustment: 0, stock_quantity: 2, available_for_direct_sale: true },
         { name_ar: 'B', price_adjustment: 0, stock_quantity: 2, available_for_direct_sale: true },
       ],
     };
-    expect(computeUnifiedCardPrice(p, USD, null)).toBe(95000);
+    expect(computeUnifiedCardPrice(p, USD, null)).toBe(100000);
   });
 
   it('uses live RPC price when product is linked to COD', () => {

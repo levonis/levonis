@@ -6,7 +6,7 @@
  * (related products), and any future card surface MUST use these helpers
  * — never reimplement the logic locally.
  */
-import { computeLinkedDirectSalePrice, ensurePriceIqd, getMinOptionAdjustmentIqd } from './priceGuard';
+import { computeLinkedDirectSalePrice, ensurePriceIqd, getMinOptionOverridePriceIqd } from './priceGuard';
 import { isAllDirectStockDepleted } from './stockUtils';
 
 export function computeUnifiedCardPrice(
@@ -58,7 +58,11 @@ export function computeUnifiedCardPrice(
               typeof c.option_stocks === 'object' &&
               Object.keys(c.option_stocks).length > 0,
           );
-        if (eligible) candidates.push(directBase + getMinOptionAdjustmentIqd(product, 'direct', usdToIqd));
+        if (eligible) {
+          // Independent option price replaces the base when set; otherwise use base.
+          const minOverride = getMinOptionOverridePriceIqd(product, 'direct', usdToIqd);
+          candidates.push(minOverride != null ? Math.min(minOverride, directBase) : directBase);
+        }
       } else {
         candidates.push(directBase);
       }
@@ -78,7 +82,8 @@ export function computeUnifiedCardPrice(
     if (tokens.includes('land') && land) opts.push(land);
     const preBase = opts.length > 0 ? Math.min(...opts) : null;
     if (preBase != null) {
-      candidates.push(preBase + getMinOptionAdjustmentIqd(product, 'preorder', usdToIqd));
+      const minOverride = getMinOptionOverridePriceIqd(product, 'preorder', usdToIqd);
+      candidates.push(minOverride != null ? Math.min(minOverride, preBase) : preBase);
     }
   }
 
