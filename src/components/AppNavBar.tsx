@@ -113,9 +113,10 @@ const AppNavBar = memo(() => {
         <button
           onClick={cyclePosition}
           title="تغيير موقع الشريط"
+          aria-label="تغيير موقع شريط التنقل"
           className="flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-[hsl(var(--foreground)/0.06)] transition-all duration-300"
         >
-          {isHorizontal ? <ArrowLeftRight className="h-3.5 w-3.5" /> : <ArrowUpDown className="h-3.5 w-3.5" />}
+          {isHorizontal ? <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />}
         </button>
 
         {NAV_ITEMS.map((item) => {
