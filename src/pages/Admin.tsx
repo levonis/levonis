@@ -1863,22 +1863,29 @@ const Admin = () => {
         if (shouldRoundUp) {
           if (values.sea_price) values.sea_price = roundUpTo250(values.sea_price);
           if (values.air_price) values.air_price = roundUpTo250(values.air_price);
+          if (values.land_price) values.land_price = roundUpTo250(values.land_price);
           if (values.direct_sale_price) values.direct_sale_price = roundUpTo250(values.direct_sale_price);
           // Recalculate prices array with rounded values
           const roundedPrices: number[] = [];
           if (values.sea_price) roundedPrices.push(values.sea_price);
           if (values.air_price) roundedPrices.push(values.air_price);
+          if (values.land_price) roundedPrices.push(values.land_price);
           if (values.direct_sale_price) roundedPrices.push(values.direct_sale_price);
           prices.length = 0;
           roundedPrices.forEach(p => prices.push(p));
 
-          // Recalculate shipping options with rounded prices
-          if (values.shipping_type === 'both' && values.sea_price && values.air_price) {
-            const basePreOrderPrice = Math.min(values.sea_price, values.air_price);
-            values.pre_order_shipping_options = [
-              { name_ar: 'شحن بحري', price_adjustment: values.sea_price - basePreOrderPrice },
-              { name_ar: 'شحن جوي', price_adjustment: values.air_price - basePreOrderPrice },
-            ];
+          // Recalculate shipping options with rounded prices (for multi-mode pre-order)
+          const activeShipping: Array<{ key: string; name_ar: string; price: number }> = [];
+          if (hasSea && values.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن بحري', price: values.sea_price });
+          if (hasAir && values.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن جوي', price: values.air_price });
+          if (hasLand && values.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن بري', price: values.land_price });
+          if (activeShipping.length >= 2) {
+            const basePreOrderPrice = Math.min(...activeShipping.map((s) => s.price));
+            values.pre_order_shipping_options = activeShipping.map((s) => ({
+              name_ar: s.name_ar,
+              type: s.key,
+              price_adjustment: s.price - basePreOrderPrice,
+            }));
           }
 
           // Round colors prices (IQD values)
