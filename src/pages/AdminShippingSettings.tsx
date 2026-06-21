@@ -870,8 +870,25 @@ export default function AdminShippingSettings() {
             icon={<Plane className="h-5 w-5 text-white" />}
             iconBg="bg-gradient-to-br from-orange-500 to-amber-500"
             title="الجوي - الصين"
-            subtitle="بالوزن الحجمي أو الفعلي (الأكبر)"
+            subtitle={settings.air_use_volumetric_weight >= 1 ? "بالوزن الحجمي أو الفعلي (الأكبر)" : "بالوزن الفعلي فقط"}
           />
+
+          {/* Volumetric toggle */}
+          <div className="mx-5 mb-3 p-3 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between gap-3">
+            <div className="flex-1">
+              <Label className="text-xs font-bold">اعتماد الوزن الحجمي</Label>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {settings.air_use_volumetric_weight >= 1
+                  ? "يُستخدم الأكبر بين الوزن الحجمي والفعلي"
+                  : "يُحسب على الوزن الفعلي فقط (تجاهل الأبعاد)"}
+              </p>
+            </div>
+            <Switch
+              checked={settings.air_use_volumetric_weight >= 1}
+              onCheckedChange={(checked) => updateSetting("air_use_volumetric_weight", checked ? 1 : 0)}
+            />
+          </div>
+
           <div className="px-5 pb-4 grid grid-cols-3 gap-4">
             <SettingField
               label="سعر الكيلو"
@@ -897,10 +914,14 @@ export default function AdminShippingSettings() {
           </div>
           <div className="mx-5 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <p className="text-[10px] text-amber-200/80">
-              <strong>ملاحظة:</strong> يُستخدم الوزن الأكبر (حجمي أو فعلي) ثم يُضاف الاحتياط
+              <strong>ملاحظة:</strong>{" "}
+              {settings.air_use_volumetric_weight >= 1
+                ? "يُستخدم الوزن الأكبر (حجمي أو فعلي) ثم يُضاف الاحتياط"
+                : "يُستخدم الوزن الفعلي للمنتج مباشرةً ثم يُضاف الاحتياط — يتم تجاهل الأبعاد"}
             </p>
           </div>
         </GlassCard>
+
 
         {/* ═══ Row 2.5: Land Shipping ═══ */}
         <GlassCard gradient="linear-gradient(145deg, hsl(35 70% 50% / 0.08), hsl(20 60% 45% / 0.04), transparent)">
