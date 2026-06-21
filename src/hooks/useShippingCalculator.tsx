@@ -57,6 +57,8 @@ interface ShippingSettings {
   cny_to_usd_rate: number;
   /** USD per kg for land shipping (uses actual weight only). */
   land_price_per_kg_usd: number;
+  /** 1 = use max(volumetric, actual) for air; 0 = use actual weight only. */
+  air_use_volumetric_weight: number;
 }
 
 export const useShippingSettings = () => {
