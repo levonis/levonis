@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2, Package, Gift, ShieldCheck, Info } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
-import { getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { getGuardedCartItemPrice, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { useCartInsuranceAddons, useInsurancePlans } from '@/hooks/useCartInsurance';
