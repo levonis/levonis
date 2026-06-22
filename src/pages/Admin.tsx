@@ -1320,9 +1320,19 @@ const Admin = () => {
 
     // Auto-fill "Why this product" AI content — ALWAYS replace
     {
-      const ai = (productInfo.ai_content && typeof productInfo.ai_content === 'object')
+      let ai = (productInfo.ai_content && typeof productInfo.ai_content === 'object')
         ? productInfo.ai_content
         : {};
+      const isEmptyAI =
+        !ai.problem_solved &&
+        !ai.target_audience &&
+        (!Array.isArray(ai.benefits) || ai.benefits.length === 0) &&
+        (!Array.isArray(ai.usage) || ai.usage.length === 0) &&
+        (!Array.isArray(ai.specifications) || ai.specifications.length === 0);
+      if (isEmptyAI) {
+        ai = buildAdminFallbackAIContent(baselineNameAr, baselineNameEn, productInfo.dimensions, productInfo.weight_kg);
+        console.warn('[AI Extract] ai_content empty — applied client-side full fallback');
+      }
       setProductAIContent({ ...ai });
       if (Object.keys(ai).length > 0) markFieldFilled('ai_content');
     }
