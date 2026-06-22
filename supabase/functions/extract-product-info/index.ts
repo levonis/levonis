@@ -2245,12 +2245,9 @@ Return ONLY JSON:
 
               const colorAiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
                 method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${lovableApiKey}`,
-                  'Content-Type': 'application/json',
-                },
+                headers: buildLovableAiHeaders(lovableApiKey),
                 body: JSON.stringify({
-                  model: 'google/gemini-2.5-flash',
+                  model: LOVABLE_AI_MODEL,
                   messages: [
                     { role: 'system', content: 'You are a product color extraction expert. Extract ALL color variants completely.' },
                     { role: 'user', content: colorRetryPrompt }
