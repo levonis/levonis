@@ -1908,11 +1908,11 @@ Return JSON ONLY:
       }
     }
 
-    // ===== STEP: Fallback AI call for SEO + AI Content if missing =====
-    const ssEmpty = !hasTriLangValue(productInfo.short_summary);
-    const tagsEmpty = !Array.isArray(productInfo.searchable_tags) || productInfo.searchable_tags.length === 0;
+    // ===== STEP: Fallback AI call for SEO + AI Content if missing (or forced) =====
+    const ssEmpty = forceSeoRegenerate || !hasTriLangValue(productInfo.short_summary);
+    const tagsEmpty = forceSeoRegenerate || !Array.isArray(productInfo.searchable_tags) || productInfo.searchable_tags.length === 0;
     const aiC = productInfo.ai_content || {};
-    const aiEmpty = !aiC || (
+    const aiEmpty = forceSeoRegenerate || !aiC || (
       (!aiC.problem_solved || (!aiC.problem_solved.ar && !aiC.problem_solved.en && !aiC.problem_solved.ku)) &&
       (!aiC.target_audience || (!aiC.target_audience.ar && !aiC.target_audience.en && !aiC.target_audience.ku)) &&
       (!Array.isArray(aiC.benefits) || aiC.benefits.length === 0) &&
@@ -1921,14 +1921,19 @@ Return JSON ONLY:
     );
 
     if (ssEmpty || tagsEmpty || aiEmpty) {
-      console.log('SEO/AI content missing, generating via dedicated fallback call:', { ssEmpty, tagsEmpty, aiEmpty });
+      console.log('SEO/AI content generation:', { ssEmpty, tagsEmpty, aiEmpty, forced: forceSeoRegenerate });
       try {
+        // Use existing product info as authoritative reference when re-extracting
+        const refName = existingName || productInfo.name || '';
+        const refNameAr = existingNameAr || productInfo.name_ar || '';
+        const refDesc = existingDescription || productInfo.description || '';
+        const refDescAr = existingDescriptionAr || productInfo.description_ar || '';
         const seoPrompt = `أنت كاتب SEO ومسوق منتجات محترف. لديك المنتج التالي:
 
-الاسم (EN): ${productInfo.name || ''}
-الاسم (AR): ${productInfo.name_ar || ''}
-الوصف (EN): ${(productInfo.description || '').slice(0, 500)}
-الوصف (AR): ${(productInfo.description_ar || '').slice(0, 500)}
+الاسم (EN): ${refName}
+الاسم (AR): ${refNameAr}
+الوصف (EN): ${refDesc.slice(0, 500)}
+الوصف (AR): ${refDescAr.slice(0, 500)}
 المواصفات المعروفة: ${productInfo.dimensions ? `أبعاد ${productInfo.dimensions.length_cm}×${productInfo.dimensions.width_cm}×${productInfo.dimensions.height_cm} سم` : ''} ${productInfo.weight_kg ? `وزن ${productInfo.weight_kg} كغ` : ''}
 
 مهمتك: أنتج JSON كامل بالحقول التالية. كل الحقول إلزامية - لا تترك أياً منها فارغاً. استخدم معرفتك العامة بالمنتج لاستنتاج كل شيء.
