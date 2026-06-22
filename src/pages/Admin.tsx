@@ -1268,8 +1268,7 @@ const Admin = () => {
 
     // Set price (current price after discount)
     if (productInfo.price && productInfo.price > 0) {
-      const priceInput = form.querySelector('#price') as HTMLInputElement;
-      if (priceInput) priceInput.value = String(productInfo.price);
+      setFormValue('#price, input[name="price"]', productInfo.price, 'price');
       markFieldFilled('price');
     }
 
@@ -1278,17 +1277,14 @@ const Admin = () => {
     if (productInfo.original_price_usd && productInfo.original_price_usd > 0) {
       const originalPriceUsdInput = form.querySelector('#original_price_usd') as HTMLInputElement;
       if (originalPriceUsdInput) {
-        originalPriceUsdInput.value = String(productInfo.original_price_usd);
-        originalPriceUsdInput.dispatchEvent(new Event('input', { bubbles: true }));
-        originalPriceUsdInput.dispatchEvent(new Event('change', { bubbles: true }));
+        setFormValue('#original_price_usd', productInfo.original_price_usd, 'original_price_usd');
       }
       window.dispatchEvent(new CustomEvent('admin-product-pricing-autofill', {
         detail: { originalPriceUsd: productInfo.original_price_usd }
       }));
       markFieldFilled('original_price');
     } else if (productInfo.original_price && productInfo.original_price > 0) {
-      const originalPriceInput = form.querySelector('input[name="original_price"]') as HTMLInputElement;
-      if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
+      setFormValue('input[name="original_price"]', productInfo.original_price, 'original_price');
       markFieldFilled('original_price');
     }
 
@@ -1365,9 +1361,7 @@ const Admin = () => {
     if (productInfo.brand && typeof productInfo.brand === 'string') {
       const brandInput = form.querySelector('#brand') as HTMLInputElement | null;
       if (brandInput && !brandInput.value.trim()) {
-        brandInput.value = productInfo.brand;
-        brandInput.dispatchEvent(new Event('input', { bubbles: true }));
-        brandInput.dispatchEvent(new Event('change', { bubbles: true }));
+        setFormValue('#brand', productInfo.brand, 'brand');
         markFieldFilled('brand');
       }
     }
