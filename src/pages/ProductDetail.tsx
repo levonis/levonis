@@ -366,6 +366,18 @@ const ProductDetail = () => {
   const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
   const selectedOptionName = selectedOptionData?.name_ar;
 
+  const selectedVariantCostIqd = useMemo(() => {
+    if (!product) return null;
+    return getCartItemVariantOverrideCostIqd({ products: product, sale_type: activeSaleType, selected_color: selectedColor, product_options: selectedOptionData }, usdToIqd);
+  }, [product, selectedColor, selectedOptionData, activeSaleType, usdToIqd]);
+
+  const { data: liveVariantDirectMap } = useQuery({
+    queryKey: ['product-variant-live-direct-price', product?.id, selectedVariantCostIqd, product?.link_direct_commission_to_cod],
+    staleTime: 30 * 1000,
+    queryFn: () => fetchVariantDirectSalePrices([{ productId: product!.id, costIqd: selectedVariantCostIqd! }]),
+    enabled: !!product?.id && !!(product as any).link_direct_commission_to_cod && activeSaleType === 'direct' && !!selectedVariantCostIqd,
+  });
+
   const isNotifySubscribed = useMemo(() => {
     if (!notifySubscriptions || notifySubscriptions.length === 0) return false;
     return notifySubscriptions.some((s: any) => 
