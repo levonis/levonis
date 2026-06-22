@@ -1093,6 +1093,13 @@ const Admin = () => {
       return;
     }
 
+    const form = formNodeRef.current;
+    const currentFormData = form ? new FormData(form) : null;
+    const currentNameEn = ((currentFormData?.get('name_en') as string) || editingProduct?.name_en || editingProduct?.name || '').trim();
+    const currentNameAr = ((currentFormData?.get('name_ar') as string) || editingProduct?.name_ar || '').trim();
+    const currentDescription = ((currentFormData?.get('description') as string) || editingProduct?.description || '').trim();
+    const currentDescriptionAr = ((currentFormData?.get('description_ar') as string) || editingProduct?.description_ar || '').trim();
+
     setExtractingInfo(true);
     initExtractionSteps();
     advanceExtractionStep('fetch', 'active');
@@ -1110,11 +1117,11 @@ const Admin = () => {
       const response = await supabase.functions.invoke('extract-product-info', {
         body: {
           url: productUrl,
-          forceSeoRegenerate: opts?.forceSeoRegenerate === true,
-          existingName: editingProduct?.name_en || editingProduct?.name || '',
-          existingNameAr: editingProduct?.name_ar || '',
-          existingDescription: editingProduct?.description || '',
-          existingDescriptionAr: editingProduct?.description_ar || '',
+          forceSeoRegenerate: opts?.forceSeoRegenerate === true || !!editingProduct,
+          existingName: currentNameEn,
+          existingNameAr: currentNameAr,
+          existingDescription: currentDescription,
+          existingDescriptionAr: currentDescriptionAr,
         }
       });
 
