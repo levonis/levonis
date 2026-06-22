@@ -27,7 +27,7 @@ import { useLanguage } from '@/lib/i18n';
 import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getDirectVariantPriceMapKey } from '@/lib/priceGuard';
+import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd, getDirectVariantPriceMapKey } from '@/lib/priceGuard';
 import { computeUnifiedCardPrice, computeUnifiedCardOriginalPrice, assertCardDetailParity } from '@/lib/cardPrice';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import LiveDirectPriceWarning from '@/components/LiveDirectPriceWarning';
@@ -126,23 +126,8 @@ const ProductDetail = () => {
 
   const selectedVariantCostIqd = useMemo(() => {
     if (!product) return null;
-    const priceUsd = (product as any).price_usd;
-    const colorData = Array.isArray((product as any).colors)
-      ? ((product as any).colors as any[]).find((c: any) => c.name_ar === selectedColor || c.name === selectedColor || c.hex_code === selectedColor)
-      : null;
-    const colorCost = colorData
-      ? (activeSaleType === 'direct' && colorData.direct_sale_price != null
-          ? ensurePriceIqd(Number(colorData.direct_sale_price), priceUsd, usdToIqd)
-          : colorData.price != null
-            ? ensurePriceIqd(Number(colorData.price), priceUsd, usdToIqd)
-            : null)
-      : null;
     const optionData = productOptions?.find((opt: any) => opt.id === selectedOption);
-    const optionCost = optionData && Number(optionData.price_adjustment) > 0
-      ? ensureAdjustmentIqd(Number(optionData.price_adjustment), usdToIqd, priceUsd)
-      : null;
-    if (colorCost != null && optionCost != null) return colorCost + optionCost;
-    return colorCost ?? optionCost;
+    return getCartItemVariantOverrideCostIqd({ products: product, sale_type: activeSaleType, selected_color: selectedColor, product_options: optionData }, usdToIqd);
   }, [product, productOptions, selectedColor, selectedOption, activeSaleType, usdToIqd]);
 
   const { data: liveVariantDirectMap } = useQuery({
