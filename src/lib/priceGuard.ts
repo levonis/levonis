@@ -371,6 +371,19 @@ export function computeLinkedDirectSalePriceFromCostIqd(
   return total;
 }
 
+/**
+ * Returns the product's raw BASE COST in IQD (excluding shipping/commission/
+ * pdc/referral/COD). For products with `price_usd` we re-derive from the
+ * live exchange rate. For products without USD tracking we fall back to
+ * `product.price` — note this may already include addons, but there is no
+ * better signal available client-side.
+ */
+export function getProductBaseCostIqd(product: any, usdToIqd: number): number {
+  const priceUsd = Number(product?.price_usd || 0);
+  if (priceUsd > 0 && usdToIqd > 0) return Math.round(priceUsd * usdToIqd);
+  return ensurePriceIqd(Number(product?.price || 0), null, usdToIqd);
+}
+
 export function getCartItemVariantOverrideCostIqd(item: {
   products?: any;
   sale_type?: string;
