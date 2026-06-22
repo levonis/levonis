@@ -1744,9 +1744,8 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
         const text = aiData.choices[0]?.message?.content || '';
         console.log('AI response length:', text.length);
         
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const ai = JSON.parse(jsonMatch[0]);
+        {
+          const ai = parseAiJsonObject(text);
           
           const aiName = cleanExtractedText(ai.name);
           productInfo.name = isUsefulProductName(aiName) ? aiName : (directProductName || productInfo.name);
