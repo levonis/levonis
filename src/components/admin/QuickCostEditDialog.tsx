@@ -40,7 +40,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
           .eq("id", product.id)
           .single();
         if (productError) throw productError;
-        setProductCost(productRow?.cost_price != null ? String(productRow.cost_price) : "");
+        setProductCost(productRow?.cost_price != null && Number(productRow.cost_price) > 0 ? String(productRow.cost_price) : "");
         const { data, error } = await (supabase as any)
           .from("product_options")
           .select("id, name_ar, name, price_adjustment, cost_iqd")
