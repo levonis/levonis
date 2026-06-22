@@ -301,6 +301,26 @@ function normalizeSeoText(value: unknown): string {
   return s;
 }
 
+function parseAiJsonObject(text: string): any {
+  let cleaned = String(text || '')
+    .replace(/```json\s*/gi, '')
+    .replace(/```/g, '')
+    .trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) throw new Error('No JSON object found in AI response');
+  cleaned = cleaned.slice(start, end + 1);
+  try {
+    return JSON.parse(cleaned);
+  } catch (_) {
+    const repaired = cleaned
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']')
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    return JSON.parse(repaired);
+  }
+}
+
 function hasTriLangValue(value: any): boolean {
   return Boolean(normalizeSeoText(value?.ar) && normalizeSeoText(value?.en) && normalizeSeoText(value?.ku));
 }
