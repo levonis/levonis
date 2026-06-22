@@ -9,6 +9,7 @@ import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
 import { trackMetaEvent } from '@/lib/metaPixel';
 import { deriveCartSaleType, detectSaleTypeConflict, type SaleType } from '@/lib/cartSaleType';
+import { useRealtimePriceSync } from './useRealtimePriceSync';
 
 // Default IQD rate fallback used across the cart when shipping settings haven't
 // loaded yet. Kept in sync with the production exchange rate so prices computed
