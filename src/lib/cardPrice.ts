@@ -6,7 +6,7 @@
  * (related products), and any future card surface MUST use these helpers
  * — never reimplement the logic locally.
  */
-import { computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, ensurePriceIqd, getMinOptionOverridePriceIqd } from './priceGuard';
+import { computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, ensurePriceIqd, getDirectVariantPriceMapKey, getMinOptionOverridePriceIqd } from './priceGuard';
 import { isAllDirectStockDepleted } from './stockUtils';
 
 export function computeUnifiedCardPrice(
@@ -14,6 +14,7 @@ export function computeUnifiedCardPrice(
   usdToIqd: number,
   codDefaults: any,
   liveDirectMap?: Map<string, number> | null,
+  liveVariantDirectMap?: Map<string, number> | null,
 ): number {
   const shouldRoundUp = product?.round_up_price === true;
   const roundIfNeeded = (n: number) => (shouldRoundUp ? Math.ceil(n / 250) * 250 : n);
@@ -66,7 +67,10 @@ export function computeUnifiedCardPrice(
           if (minOverride != null) {
             let finalFromOverride = minOverride;
             if (product?.link_direct_commission_to_cod && codDefaults) {
-              const derived = computeLinkedDirectSalePriceFromCostIqd(
+              const fromVariantMap = product?.id
+                ? liveVariantDirectMap?.get(getDirectVariantPriceMapKey(product.id, minOverride))
+                : null;
+              const derived = fromVariantMap && fromVariantMap > 0 ? fromVariantMap : computeLinkedDirectSalePriceFromCostIqd(
                 product,
                 minOverride,
                 { usd_to_iqd_rate: usdToIqd } as any,
@@ -119,13 +123,14 @@ export function computeUnifiedCardOriginalPrice(
   usdToIqd: number,
   codDefaults?: any,
   liveDirectMap?: Map<string, number> | null,
+  liveVariantDirectMap?: Map<string, number> | null,
 ): number | null {
   const orig = product?.original_price;
   if (orig == null || Number(orig) <= 0) return null;
   const shouldRoundUp = product?.round_up_price === true;
   const value = ensurePriceIqd(Number(orig), product?.price_usd, usdToIqd);
   const rounded = shouldRoundUp ? Math.ceil(value / 250) * 250 : value;
-  const finalPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
+  const finalPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap, liveVariantDirectMap);
   return rounded > finalPrice ? rounded : null;
 }
 

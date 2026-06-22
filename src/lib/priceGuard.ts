@@ -38,6 +38,40 @@ export async function fetchLiveDirectSalePrices(
   return out;
 }
 
+export function getDirectVariantPriceMapKey(productId: string, overrideCostIqd: number): string {
+  return `${productId}:cost:${Math.round(Number(overrideCostIqd) || 0)}`;
+}
+
+export async function fetchVariantDirectSalePrices(
+  requests: Array<{ productId: string; costIqd: number }>
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const items = requests
+    .map((r) => ({ product_id: r.productId, cost_iqd: Math.round(Number(r.costIqd) || 0) }))
+    .filter((r) => r.product_id && r.cost_iqd > 0);
+  if (items.length === 0) return out;
+  const unique = Array.from(
+    new Map(items.map((item) => [`${item.product_id}:${item.cost_iqd}`, item])).values(),
+  );
+  try {
+    const { data, error } = await (supabase as any).rpc(
+      'compute_product_variant_direct_sale_prices',
+      { p_items: unique }
+    );
+    if (error || !Array.isArray(data)) return out;
+    for (const row of data as Array<{ product_id: string; cost_iqd: number | null; direct_sale_price: number | null }>) {
+      const cost = Number(row?.cost_iqd || 0);
+      const price = Number(row?.direct_sale_price || 0);
+      if (row?.product_id && cost > 0 && price > 0) {
+        out.set(getDirectVariantPriceMapKey(row.product_id, cost), price);
+      }
+    }
+  } catch {
+    // Non-fatal — caller falls back to local/guarded price computation.
+  }
+  return out;
+}
+
 
 /**
  * Detects if a numeric value looks like it's in USD rather than IQD.
@@ -337,10 +371,44 @@ export function computeLinkedDirectSalePriceFromCostIqd(
   return total;
 }
 
+export function getCartItemVariantOverrideCostIqd(item: {
+  products?: any;
+  sale_type?: string;
+  selected_color?: string | null;
+  product_options?: any;
+}, usdToIqd: number): number | null {
+  const product = item.products;
+  if (!product) return null;
+  const priceUsd = product.price_usd ?? null;
+  let colorOverride: number | null = null;
+  const selColor = item.selected_color;
+  if (selColor && Array.isArray(product.colors)) {
+    const colorData = (product.colors as any[]).find(
+      (c: any) => c.name === selColor || c.name_ar === selColor || c.hex_code === selColor,
+    );
+    const rawColor = colorData
+      ? (item.sale_type === 'direct' && colorData.direct_sale_price != null
+          ? Number(colorData.direct_sale_price)
+          : colorData.price != null
+            ? Number(colorData.price)
+            : null)
+      : null;
+    if (rawColor != null && rawColor > 0) colorOverride = ensurePriceIqd(rawColor, priceUsd, usdToIqd);
+  }
+
+  const optAdj = item.product_options?.price_adjustment;
+  const optionOverride = optAdj != null && Number(optAdj) > 0
+    ? ensureAdjustmentIqd(Number(optAdj), usdToIqd, priceUsd)
+    : null;
+
+  if (colorOverride != null && optionOverride != null) return colorOverride + optionOverride;
+  return colorOverride ?? optionOverride;
+}
+
 /**
  * Calculates the correct IQD price for a cart item, applying USD→IQD conversion
  * to ALL price sources (product base, color override, sea/air prices).
- * Option price_adjustment is already in IQD and added directly.
+ * Option/color override values are treated as replacement COSTS, not additive sale prices.
  */
 export function getGuardedCartItemPrice(
   item: {
@@ -355,7 +423,8 @@ export function getGuardedCartItemPrice(
   },
   usdToIqd: number,
   codDefaults?: { type: 'percentage' | 'fixed'; value: number } | null,
-  livePriceMap?: Map<string, number> | null
+  livePriceMap?: Map<string, number> | null,
+  variantLivePriceMap?: Map<string, number> | null,
 ): number {
   const product = item.products;
   if (!product) {
@@ -474,46 +543,24 @@ export function getGuardedCartItemPrice(
   //  re-derived from this overridden cost via the same formula used for the
   //  base product. Otherwise (or when the formula isn't computable on the
   //  client), the override is used directly as the sale price.
-  let colorOverride: number | null = null;
-  const selColor = item.selected_color;
-  if (selColor && product.colors) {
-    const colorData = (product.colors as any[]).find(
-      (c: any) => c.name === selColor || c.name_ar === selColor || c.hex_code === selColor
-    );
-    if (colorData) {
-      const rawColor = isDirect && colorData.direct_sale_price != null
-        ? Number(colorData.direct_sale_price)
-        : colorData.price != null
-          ? Number(colorData.price)
-          : null;
-      if (rawColor != null && rawColor > 0) {
-        colorOverride = ensurePriceIqd(rawColor, priceUsd, usdToIqd);
-      }
-    }
-  }
-
-  let optionOverride: number | null = null;
-  const optAdj = item.product_options?.price_adjustment;
-  if (optAdj != null && Number(optAdj) > 0) {
-    optionOverride = ensureAdjustmentIqd(Number(optAdj), usdToIqd, priceUsd);
-  }
-
-  let overrideCostIqd: number | null = null;
-  if (colorOverride != null && optionOverride != null) overrideCostIqd = colorOverride + optionOverride;
-  else if (colorOverride != null) overrideCostIqd = colorOverride;
-  else if (optionOverride != null) overrideCostIqd = optionOverride;
+  const overrideCostIqd = getCartItemVariantOverrideCostIqd(item, usdToIqd);
 
   if (overrideCostIqd != null) {
+    const baseCostIqd = ensurePriceIqd(Number(product.price || 0), priceUsd, usdToIqd);
+    const saleTypeAddons = price - baseCostIqd;
     if (isDirect && product.link_direct_commission_to_cod && codDefaults) {
-      const derived = computeLinkedDirectSalePriceFromCostIqd(
+      const fromVariantMap = product.id
+        ? variantLivePriceMap?.get(getDirectVariantPriceMapKey(product.id, overrideCostIqd))
+        : null;
+      const derived = fromVariantMap && fromVariantMap > 0 ? fromVariantMap : computeLinkedDirectSalePriceFromCostIqd(
         product as any,
         overrideCostIqd,
         { usd_to_iqd_rate: usdToIqd } as any,
         codDefaults as any,
       );
-      price = derived != null ? derived : overrideCostIqd;
+      price = derived != null ? derived : overrideCostIqd + saleTypeAddons;
     } else {
-      price = overrideCostIqd;
+      price = overrideCostIqd + saleTypeAddons;
     }
   }
   // else: keep computed base/sale-type price from steps 1–2.
