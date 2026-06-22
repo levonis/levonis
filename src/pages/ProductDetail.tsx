@@ -572,6 +572,8 @@ const ProductDetail = () => {
   if (activeSaleType === 'preorder' && selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
     shippingAdjustment = Number((product.pre_order_shipping_options[selectedShippingOption] as any).price_adjustment || 0);
   }
+  const baseCostIqd = ensurePriceIqd(Number((product as any).price || 0), (product as any).price_usd, usdToIqd);
+  const saleTypeAddons = basePrice - baseCostIqd;
   let variantPrice = basePrice;
   if (selectedVariantCostIqd != null) {
     if (activeSaleType === 'direct' && (product as any).link_direct_commission_to_cod && codDefaults) {
@@ -582,9 +584,9 @@ const ProductDetail = () => {
         { usd_to_iqd_rate: usdToIqd } as any,
         codDefaults as any,
       );
-      variantPrice = serverVariant && serverVariant > 0 ? serverVariant : (localVariant ?? selectedVariantCostIqd);
+      variantPrice = serverVariant && serverVariant > 0 ? serverVariant : (localVariant ?? selectedVariantCostIqd + saleTypeAddons);
     } else {
-      variantPrice = selectedVariantCostIqd;
+      variantPrice = selectedVariantCostIqd + saleTypeAddons;
     }
   }
   const rawFinalPrice = variantPrice + shippingAdjustment;
