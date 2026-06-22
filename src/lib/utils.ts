@@ -60,3 +60,25 @@ export function formatNumberInput(value: string): string {
   
   return formattedInteger;
 }
+
+/**
+ * Extract full error text from a Supabase / PostgREST / RPC error.
+ * Concatenates message, details, hint and code so nothing is hidden from the user.
+ */
+export function formatSupabaseError(error: any): string {
+  if (!error) return 'حدث خطأ غير معروف';
+  if (typeof error === 'string') return error;
+  const parts: string[] = [];
+  if (error.message) parts.push(String(error.message));
+  if (error.details) parts.push(`Details: ${String(error.details)}`);
+  if (error.hint) parts.push(`Hint: ${String(error.hint)}`);
+  if (error.code) parts.push(`Code: ${String(error.code)}`);
+  if (parts.length === 0) {
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+  return parts.join(' | ');
+}

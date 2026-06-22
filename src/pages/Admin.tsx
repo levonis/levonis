@@ -20,7 +20,7 @@ import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
 import QuickCostEditDialog from '@/components/admin/QuickCostEditDialog';
 import AdminCustomRequests from './AdminCustomRequests';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, formatSupabaseError } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { extractUrlFromText, ExtractedUrlInfo } from '@/lib/extractTaobaoUrl';
 import AdminProductPricingSection from '@/components/admin/AdminProductPricingSection';
@@ -802,8 +802,7 @@ const Admin = () => {
       clearProductDraft();
     },
     onError: (error: any) => {
-      const msg = error?.message || error?.details || error?.hint || 'حدث خطأ أثناء إضافة المنتج';
-      toast.error(msg, { duration: 8000 });
+      // Toast shown in handleProductSubmit so the full error text is displayed once.
       console.error('[addProduct] error:', error);
     }
   });
@@ -833,8 +832,7 @@ const Admin = () => {
       clearProductDraft();
     },
     onError: (error: any) => {
-      const msg = error?.message || error?.details || error?.hint || 'حدث خطأ أثناء تحديث المنتج';
-      toast.error(msg, { duration: 8000 });
+      // Toast shown in handleProductSubmit so the full error text is displayed once.
       console.error('[updateProduct] error:', error);
     }
   });
@@ -2201,8 +2199,8 @@ const Admin = () => {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        const msg = error?.message || error?.details || error?.hint || error?.error_description || JSON.stringify(error);
-        toast.error(`فشل حفظ المنتج: ${msg}`, { duration: 10000 });
+        const fullMsg = formatSupabaseError(error);
+        toast.error(`فشل حفظ المنتج: ${fullMsg}`, { duration: 10000 });
         console.error('[handleProductSubmit] error:', error);
       }
     }
