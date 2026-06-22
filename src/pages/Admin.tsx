@@ -1222,42 +1222,47 @@ const Admin = () => {
 
   // Apply product info to form (shared between auto and manual extraction)
   const applyProductInfo = (productInfo: any) => {
-    const form = document.querySelector('form') as HTMLFormElement;
+    const form = formNodeRef.current || (document.querySelector('form') as HTMLFormElement);
     if (!form) return;
+    const updateSnapshot = (name: string, value: string) => {
+      latestFormValuesRef.current = { ...latestFormValuesRef.current, [name]: value };
+    };
+    const setFormValue = (selector: string, value: any, fieldName?: string) => {
+      const el = form.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+      if (!el) return;
+      const textValue = String(value ?? '');
+      el.value = textValue;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      const name = fieldName || el.getAttribute('name') || '';
+      if (name) updateSnapshot(name, textValue);
+    };
 
     // Fill text inputs
     if (productInfo.name_ar) {
-      const input = form.querySelector('#name_ar') as HTMLInputElement;
-      if (input) input.value = productInfo.name_ar;
+      setFormValue('#name_ar', productInfo.name_ar, 'name_ar');
       markFieldFilled('name_ar');
     }
     const extractedNameEn = String(productInfo.name_en || productInfo.name || '').trim();
     if (extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
       const nameEnInput = form.querySelector('#name_en') as HTMLInputElement | null;
       const legacyNameInput = form.querySelector('input[name="name"]') as HTMLInputElement | null;
-      if (nameEnInput) {
-        nameEnInput.value = extractedNameEn;
-        nameEnInput.dispatchEvent(new Event('input', { bubbles: true }));
-        nameEnInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      if (legacyNameInput) legacyNameInput.value = extractedNameEn;
+      setFormValue('#name_en', extractedNameEn, 'name_en');
+      if (legacyNameInput) setFormValue('input[name="name"]', extractedNameEn, 'name');
       markFieldFilled('name_en');
       markFieldFilled('name');
     }
     if (productInfo.name_ar && extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
       const slug = extractedNameEn.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const input = form.querySelector('#slug') as HTMLInputElement;
-      if (input) input.value = slug;
+      setFormValue('#slug', slug, 'slug');
       markFieldFilled('slug');
     }
     if (productInfo.description_ar) {
-      const textarea = form.querySelector('#description_ar') as HTMLTextAreaElement;
-      if (textarea) textarea.value = productInfo.description_ar;
+      setFormValue('#description_ar', productInfo.description_ar, 'description_ar');
       markFieldFilled('description_ar');
     }
     if (productInfo.description) {
-      const textarea = form.querySelector('#description') as HTMLTextAreaElement;
-      if (textarea) textarea.value = productInfo.description;
+      setFormValue('textarea#description, input[name="description"]', productInfo.description, 'description');
       markFieldFilled('description');
     }
 
