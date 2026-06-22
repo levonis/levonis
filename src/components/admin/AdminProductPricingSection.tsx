@@ -112,24 +112,35 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   };
 
   // Ref set when autofill event arrives, so we don't clobber freshly-extracted
-  // dimensions/weight if the editingProduct init effect re-runs.
+  // dimensions/weight if the editingProduct init effect re-runs (e.g. after a
+  // products-list refetch returns a new object reference for the same product).
   const extractedRef = useRef<boolean>(false);
+  const lastProductIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Reset extraction flag whenever a different product is opened/closed.
-    extractedRef.current = false;
+    // Reset extraction flag ONLY when a different product is opened/closed —
+    // not when editingProduct's reference changes for the same row.
+    const currentId = editingProduct?.id ?? null;
+    const isDifferentProduct = currentId !== lastProductIdRef.current;
+    if (isDifferentProduct) {
+      extractedRef.current = false;
+      lastProductIdRef.current = currentId;
+    }
     if (editingProduct) {
       setPriceUsd(Number(editingProduct.price_usd) || 0);
       // Original price is now stored/edited directly in IQD.
       if (editingProduct.original_price && Number(editingProduct.original_price) > 0) {
         setOriginalPriceIqd(Number(editingProduct.original_price));
-      } else {
+      } else if (!extractedRef.current) {
         setOriginalPriceIqd(0);
       }
-      setLengthCm(Number(editingProduct.length_cm) || 0);
-      setWidthCm(Number(editingProduct.width_cm) || 0);
-      setHeightCm(Number(editingProduct.height_cm) || 0);
-      setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
+      // Don't clobber freshly-extracted dimensions/weight on a re-run.
+      if (!extractedRef.current) {
+        setLengthCm(Number(editingProduct.length_cm) || 0);
+        setWidthCm(Number(editingProduct.width_cm) || 0);
+        setHeightCm(Number(editingProduct.height_cm) || 0);
+        setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
+      }
       // other_costs_iqd is deprecated for direct sale — kept at 0
       setPersonalDeliveryCost(Number(editingProduct.personal_delivery_cost) || 0);
       setReferralEarningsIqd(Number(editingProduct.referral_earnings_iqd) || 0);
@@ -142,11 +153,14 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       // Determine shipping types (supports legacy 'sea'/'air'/'both' and new comma list)
       const st: string = editingProduct.shipping_type || '';
       const tokens = st === 'both' ? ['sea', 'air'] : st.split(',').map((x: string) => x.trim());
-      setHasSea(tokens.includes('sea'));
-      setHasAir(tokens.includes('air'));
+      // Don't clobber sea/air toggles that were auto-enabled by extraction.
+      if (!extractedRef.current) {
+        setHasSea(tokens.includes('sea'));
+        setHasAir(tokens.includes('air'));
+      }
       setHasLand(tokens.includes('land'));
       // Backward compat: if a legacy product had no shipping_type but does have pre-order, default to sea
-      if (!st && editingProduct.has_pre_order) {
+      if (!st && editingProduct.has_pre_order && !extractedRef.current) {
         setHasSea(true);
       }
 
