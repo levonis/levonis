@@ -404,9 +404,14 @@ const Admin = () => {
         }
         latestFormValuesRef.current = seed;
       }
-      setEditingProduct(draft.editingProduct ?? null);
-      initializedProductIdRef.current = draft.editingProduct
-        ? String(draft.editingProduct.id || draft.editingProduct.slug || 'editing-product')
+      // Only treat as "editing an existing product" when the draft truly has a real id.
+      // Otherwise treat as a brand-new product so we don't accidentally trigger UPDATE without an id.
+      const draftEditing = draft.editingProduct && typeof draft.editingProduct === 'object' && draft.editingProduct.id
+        ? draft.editingProduct
+        : null;
+      setEditingProduct(draftEditing);
+      initializedProductIdRef.current = draftEditing
+        ? String(draftEditing.id || draftEditing.slug || 'editing-product')
         : null;
       setUploadedImages(Array.isArray(draft.uploadedImages) ? draft.uploadedImages : []);
       setProductOptions(Array.isArray(draft.productOptions) ? draft.productOptions : []);
@@ -442,10 +447,16 @@ const Admin = () => {
           ? latestFormValuesRef.current
           : formValues;
         latestFormValuesRef.current = effectiveValues;
-        const mergedEditing = { ...(editingProduct || {}), ...effectiveValues };
+        // Only persist editingProduct in the draft when it has a real id (we're truly editing).
+        // For brand-new products keep `editingProduct: null` and rely on `formValues` alone —
+        // otherwise restoring the draft would set editingProduct to a no-id object and the
+        // submit path would mistakenly call UPDATE without an id.
+        const draftEditingProduct = editingProduct && editingProduct.id
+          ? { ...editingProduct, ...effectiveValues }
+          : null;
         const draft = {
           open: true,
-          editingProduct: mergedEditing,
+          editingProduct: draftEditingProduct,
           formValues: effectiveValues,
           uploadedImages,
           productOptions,
@@ -2075,7 +2086,11 @@ const Admin = () => {
 
       let productId = editingProduct?.id;
 
-      if (editingProduct) {
+      // Safety net: if editingProduct exists but lacks a real id (stale draft, etc.),
+      // treat as create instead of throwing "productId is required".
+      const isRealEdit = !!(editingProduct && editingProduct.id);
+
+      if (isRealEdit) {
         await updateProduct.mutateAsync({ id: editingProduct.id, values });
       } else {
         productId = await adminCreateProduct(values as any);
