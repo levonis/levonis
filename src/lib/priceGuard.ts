@@ -371,6 +371,19 @@ export function computeLinkedDirectSalePriceFromCostIqd(
   return total;
 }
 
+/**
+ * Returns the product's raw BASE COST in IQD (excluding shipping/commission/
+ * pdc/referral/COD). For products with `price_usd` we re-derive from the
+ * live exchange rate. For products without USD tracking we fall back to
+ * `product.price` — note this may already include addons, but there is no
+ * better signal available client-side.
+ */
+export function getProductBaseCostIqd(product: any, usdToIqd: number): number {
+  const priceUsd = Number(product?.price_usd || 0);
+  if (priceUsd > 0 && usdToIqd > 0) return Math.round(priceUsd * usdToIqd);
+  return ensurePriceIqd(Number(product?.price || 0), null, usdToIqd);
+}
+
 export function getCartItemVariantOverrideCostIqd(item: {
   products?: any;
   sale_type?: string;
@@ -546,8 +559,11 @@ export function getGuardedCartItemPrice(
   const overrideCostIqd = getCartItemVariantOverrideCostIqd(item, usdToIqd);
 
   if (overrideCostIqd != null) {
-    const baseCostIqd = ensurePriceIqd(Number(product.price || 0), priceUsd, usdToIqd);
-    const saleTypeAddons = price - baseCostIqd;
+    // Use price_usd*rate as the TRUE raw cost — `product.price` may already
+    // include shipping/commission/pdc/referral baked in (and so would zero out
+    // saleTypeAddons, making the override look like the final price).
+    const baseCostIqd = getProductBaseCostIqd(product, usdToIqd);
+    const saleTypeAddons = Math.max(0, price - baseCostIqd);
     if (isDirect && product.link_direct_commission_to_cod && codDefaults) {
       const fromVariantMap = product.id
         ? variantLivePriceMap?.get(getDirectVariantPriceMapKey(product.id, overrideCostIqd))

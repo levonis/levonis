@@ -1,90 +1,51 @@
-## الهدف
-تحويل دلالة `product_options.price_adjustment` من **«مبلغ يُضاف على السعر الأساسي»** إلى **«سعر مستقل يستبدل السعر الأساسي»**، وتحديث القاعدة المحفوظة. السلوك عند خيارين أو أكثر = **جمع الأسعار المستقلة بدلًا من السعر الأساسي** (كما أكدتَ سابقًا: 12,000 + 6,250 = 18,250).
+## الخطة
 
-## القاعدة الجديدة
+سأصلح منطق التسعير بحيث يكون سعر الخيار/اللون المستقل **تكلفة بديلة للمنتج الأساسي** وليس سعراً نهائياً، ثم يتم احتساب باقي الإضافات فوقه: تكلفة الشحن، تكلفة التوصيل، العمولة، الإحالة، وCOD.
 
-| الحالة | السلوك |
-|---|---|
-| لا يوجد خيار محدد | استخدم سعر المنتج الأساسي |
-| خيار واحد مع `price_adjustment > 0` | استخدم القيمة كـ **سعر نهائي** للوحدة |
-| خيار واحد بقيمة فارغة/صفر | استخدم سعر المنتج الأساسي |
-| عدة خيارات (لون + نوع) لكل منها سعر | **مجموع الأسعار المستقلة** يستبدل السعر الأساسي |
-| عدة خيارات بعضها فارغ | الأساس + مجموع الأسعار المستقلة فقط (الفارغ يُحسب أساسًا) ← يحتاج تأكيد، انظر السؤال أدناه |
+## التشخيص
 
-## التغييرات في الكود
+المشكلة الأساسية أن واجهات عامة لا تستلم أعمدة التكلفة الداخلية مثل `shipping_cost_iqd` وعمولات الشحن لأنها مخفية، لذلك دالة الواجهة الأمامية `computeLinkedDirectSalePriceFromCostIqd` ترجع `null`، وبعدها الكود يسقط إلى fallback يجعل سعر الخيار هو السعر النهائي أو يضيف فرقاً غير صحيح.
 
-### 1) `src/lib/priceGuard.ts`
-- استخراج helper `resolveOptionPriceIqd(item, productBaseIqd, usdToIqd, priceUsd)` يطبّق القاعدة الجديدة.
-- في `getGuardedCartItemPrice`: بعد حساب `price` الأساسي (خطوات 1–3 الحالية)، استبدال الخطوة 4 (`+= optAdj`):
-  - إذا للخيار قيمة > 0 → **استبدل** `price` بقيمة الخيار (مع التحويل من USD عند الحاجة).
-  - شحن ما قبل الطلب (`shipping_option_index` adjustment) يبقى كما هو.
+أيضاً بعض استعلامات المنتجات لا تجلب الحقول اللازمة لحساب سعر البطاقات المرتبط بـ COD، فيظهر السعر في القوائم/التفاصيل/السلة/الإدارة بشكل غير موحّد.
 
-### 2) `src/lib/priceGuard.ts` — `getMinOptionAdjustmentIqd`
-- إعادة تسمية دلاليّة إلى `getMinOptionOverridePriceIqd` تُعيد **سعر الخيار الأرخص** (وليس فرقًا).
-- تُستخدم في `cardPrice.ts` لاختيار أقل سعر بطاقة. منطق البطاقة:
-  - إذا توجد خيارات مع `price > 0` → السعر = **min(أسعار الخيارات المؤهلة)**.
-  - وإلا → السعر الأساسي للمنتج.
+## ما سيتم تعديله
 
-### 3) `src/lib/cardPrice.ts`
-- استبدال `directBase + getMinOptionAdjustmentIqd(...)` بـ:
-  ```ts
-  const minOverride = getMinOptionOverridePriceIqd(product, 'direct', usdToIqd);
-  candidates.push(minOverride ?? directBase);
-  ```
-- نفس الشيء للـ pre-order.
+1. **قاعدة بيانات / RPC**
+   - مراجعة/تحديث دالة `compute_product_variant_direct_sale_price(s)` لتأخذ تكلفة الخيار/اللون كـ `cost_iqd`.
+   - تجعل المعادلة:
+     ```text
+     final = variant_cost_iqd + shipping_cost_iqd + selected_commission + personal_delivery_cost + referral + COD_fee
+     ```
+   - إذا كان اللون والخيار كلاهما له تكلفة مستقلة: تجمع التكلفتان كتكلفة بديلة واحدة حسب القاعدة الحالية في الذاكرة.
 
-### 4) جمع عدة خيارات في السلة (لون + نوع)
-- بُنية `cart_items` تربط خيارًا واحدًا فقط (`product_option_id`). الخيار الثاني يأتي عبر `selected_color` من جدول `products.colors` (JSON). 
-- منطق اللون موجود أصلًا في خطوة 3 من `getGuardedCartItemPrice` (`colorData.price`/`direct_sale_price`).
-- التعديل: عند وجود **سعر لون مستقل** + **سعر خيار مستقل** → **جمعهما** بدلًا من الأساس:
-  ```ts
-  const colorPrice = (colorData?.price ?? colorData?.direct_sale_price) ? ensurePriceIqd(...) : null;
-  const optionPrice = optAdj ? ensureAdjustmentIqd(optAdj, ...) : null;
-  if (colorPrice != null && optionPrice != null) price = colorPrice + optionPrice;
-  else if (colorPrice != null) price = colorPrice;
-  else if (optionPrice != null) price = optionPrice;
-  // else: keep base
-  ```
+2. **`src/lib/priceGuard.ts`**
+   - منع fallback الذي يستخدم `overrideCostIqd` كسعر نهائي عند المنتج مربوط بـ `link_direct_commission_to_cod`.
+   - جعل الحساب يعتمد على RPC إن لم تكن أعمدة التكلفة متاحة للواجهة.
+   - إضافة helper واضح لمعنى: `variant cost -> final direct sale price`.
 
-### 5) واجهة الإدمن — نموذج إضافة خيار
-- تغيير تسمية الحقل من «إضافة على السعر» إلى **«سعر مستقل للخيار (اتركه فارغًا = السعر الأساسي)»**.
-- حذف حقول `cost_iqd` / `cost_usd` من نموذج الخيار (التكلفة = نفس السعر، تُحفظ تلقائيًا في DB).
-- مكوّن المعاينة `OptionPricePreview` (سطر 113 من Admin.tsx) يُحدَّث: يعرض **القيمة كسعر نهائي** بدلًا من «الأساس + الإضافة».
+3. **`src/pages/ProductDetail.tsx`**
+   - عند اختيار اللون/الخيار، إن كان المنتج مربوطاً بـ COD يتم انتظار/استخدام سعر الـ RPC للـ variant.
+   - لا يتم عرض تكلفة الخيار وحدها كسعر نهائي.
+   - تصحيح نص العرض بجانب الخيارات حتى لا يظهر كـ `+` إذا كان السعر تكلفة بديلة وليس إضافة.
 
-### 6) `direct_sale_price` على السيرفر
-- لا تغيير في حساب `direct_sale_price` نفسه (هو سعر المنتج الأساسي قبل الخيار).
-- منطق الاستبدال يحدث client-side في الكارت/البطاقة فقط.
+4. **بطاقات المنتجات / القوائم**
+   - تحديث `computeUnifiedCardPrice` ليستخدم أسعار variant المحسوبة من RPC عند وجود override.
+   - ضمان أن بطاقة المنتج لا تعرض تكلفة الخيار فقط ولا تجمعها مع السعر النهائي القديم بشكل خاطئ.
 
-### 7) الاختبارات
-- `src/lib/__tests__/priceGuard.codSync.test.ts` — تحديث متوقعات الاختبار للخيار المستقل.
-- `src/lib/__tests__/cardPrice.parity.test.ts` — اختبار جديد: خيار 18,250 → البطاقة تعرض 18,250 وليس base + 18,250.
-- `src/lib/__tests__/cartItemGuards.test.ts` — تحديث.
-- اختبار جديد: لون مستقل + خيار مستقل = مجموع.
+5. **السلة**
+   - تحديث `useCart` و/أو `GroupedCartItem` بحيث تحسب سعر عنصر السلة من خريطة `liveVariantDirectPrices`، وتمنع fallback الخاطئ عند فشل/تأخر RPC.
 
-### 8) تحديث الذاكرة (`mem://index.md`)
-- استبدال السطر:
-  > **Option Prices**: `price_adjustment` is in IQD. NEVER multiply by USD exchange rate. Add directly to converted base.
+6. **الإدارة**
+   - تصحيح معاينة السعر في Admin/QuickCostEditDialog إن كانت تستخدم السعر المستقل كسعر نهائي.
+   - توضيح النصوص: هذا الحقل يمثل تكلفة مستقلة، والسعر النهائي يعاد حسابه بإضافة الشحن/التوصيل/العمولات/COD.
 
-  بسطر جديد:
-  > **Option Prices**: `price_adjustment` is the option's **independent IQD price** (replaces base when > 0). Multiple option/color overrides **sum** to replace base. Empty/0 = use base.
+7. **اختبارات**
+   - إضافة/تعديل اختبار للمنتج `bambu-lab-a1-mini-3d-printer` أو نموذج مماثل:
+     - تكلفة أصلية 218$.
+     - تكلفة variant مثل 340$.
+     - الناتج النهائي يجب أن يكون أكبر من تكلفة variant بعد إضافة الشحن/التوصيل/العمولة/COD.
+     - ممنوع أن يساوي السعر النهائي تكلفة الخيار فقط.
 
-  وتحديث ملف الذاكرة التفصيلي `mem://constraints/pricing/product-option-currency`.
+## النتيجة المتوقعة
 
-## ملف التغييرات
-```text
-src/lib/priceGuard.ts                       (المنطق الجوهري)
-src/lib/cardPrice.ts                        (استخدام الـ helper الجديد)
-src/pages/Admin.tsx                         (تسمية الحقل + OptionPricePreview)
-src/components/admin/QuickCostEditDialog.tsx (placeholder النص فقط)
-src/lib/__tests__/*                         (تحديث + إضافة)
-mem://index.md, mem://constraints/pricing/... (تحديث الذاكرة)
-```
-
-## سؤال واحد قبل البدء
-عندما يحتوي المنتج على خيارَين والمستخدم اختار خيارًا له سعر مستقل (مثلًا «بني» = 12,000) **والخيار الثاني فارغ** («تعبئة افتراضية» بدون سعر مستقل):
-
-- (1) السعر النهائي = **12,000** فقط (الفارغ = صفر، لا يضاف الأساس).
-- (2) السعر النهائي = **الأساس + 12,000** (الفارغ = أساس).
-- (3) السعر النهائي = **12,000** ويُتجاهل الأساس تمامًا (المنتقى يحدد كل شيء).
-
-الخيار **(1)** يطابق المثال (12,000 + 6,250 = 18,250) أكثر — سأمضي به افتراضيًا.
+عند وضع تكلفة مستقلة للخيار/اللون، سيصبح السعر النهائي في بطاقة المنتج، التفاصيل، السلة، والإدارة مبنياً على تكلفة الـvariant مع إضافة كل التكاليف الأخرى، وليس مساوياً لتكلفة الخيار فقط ولا مضافاً فوق السعر النهائي القديم.
