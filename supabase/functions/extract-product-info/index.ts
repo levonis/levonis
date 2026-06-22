@@ -287,6 +287,16 @@ function cleanExtractedText(value: unknown): string {
   return s;
 }
 
+function normalizeSeoText(value: unknown): string {
+  const s = cleanExtractedText(value).slice(0, 200);
+  if (!s || /^\.{2,}$/.test(s) || /^(placeholder|null|undefined|n\/a)$/i.test(s)) return '';
+  return s;
+}
+
+function hasTriLangValue(value: any): boolean {
+  return Boolean(normalizeSeoText(value?.ar) && normalizeSeoText(value?.en) && normalizeSeoText(value?.ku));
+}
+
 function isUsefulProductName(value: string): boolean {
   const s = cleanExtractedText(value);
   if (s.length < 3 || s.length > 220) return false;
@@ -1644,9 +1654,9 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
           // SEO short summary (tri-lang) + searchable tags + AI content (why this product)
           if (ai.short_summary && typeof ai.short_summary === 'object') {
             productInfo.short_summary = {
-              ar: typeof ai.short_summary.ar === 'string' ? ai.short_summary.ar.slice(0, 200) : '',
-              en: typeof ai.short_summary.en === 'string' ? ai.short_summary.en.slice(0, 200) : '',
-              ku: typeof ai.short_summary.ku === 'string' ? ai.short_summary.ku.slice(0, 200) : '',
+              ar: normalizeSeoText(ai.short_summary.ar),
+              en: normalizeSeoText(ai.short_summary.en),
+              ku: normalizeSeoText(ai.short_summary.ku),
             };
           }
           if (Array.isArray(ai.searchable_tags)) {
@@ -1893,7 +1903,7 @@ Return JSON ONLY:
     }
 
     // ===== STEP: Fallback AI call for SEO + AI Content if missing =====
-    const ssEmpty = !productInfo.short_summary || (!productInfo.short_summary.ar && !productInfo.short_summary.en && !productInfo.short_summary.ku);
+    const ssEmpty = !hasTriLangValue(productInfo.short_summary);
     const tagsEmpty = !Array.isArray(productInfo.searchable_tags) || productInfo.searchable_tags.length === 0;
     const aiC = productInfo.ai_content || {};
     const aiEmpty = !aiC || (
@@ -1975,9 +1985,9 @@ Return JSON ONLY:
             const seo = JSON.parse(seoMatch[0]);
             if (ssEmpty && seo.short_summary && typeof seo.short_summary === 'object') {
               productInfo.short_summary = {
-                ar: typeof seo.short_summary.ar === 'string' ? seo.short_summary.ar.slice(0, 200) : '',
-                en: typeof seo.short_summary.en === 'string' ? seo.short_summary.en.slice(0, 200) : '',
-                ku: typeof seo.short_summary.ku === 'string' ? seo.short_summary.ku.slice(0, 200) : '',
+                ar: normalizeSeoText(seo.short_summary.ar),
+                en: normalizeSeoText(seo.short_summary.en),
+                ku: normalizeSeoText(seo.short_summary.ku),
               };
               console.log('Filled short_summary via fallback');
             }
@@ -1999,6 +2009,16 @@ Return JSON ONLY:
       } catch (seoErr) {
         console.error('SEO fallback error:', seoErr);
       }
+    }
+
+    if (!hasTriLangValue(productInfo.short_summary)) {
+      const displayName = cleanExtractedText(productInfo.name_ar) || cleanExtractedText(productInfo.name) || 'المنتج';
+      productInfo.short_summary = {
+        ar: normalizeSeoText(productInfo.short_summary?.ar) || `${displayName} بجودة عالية وخيارات عملية تناسب الاستخدام اليومي وتمنح تجربة موثوقة للمستخدمين.`.slice(0, 200),
+        en: normalizeSeoText(productInfo.short_summary?.en) || `${cleanExtractedText(productInfo.name) || displayName} with reliable quality, practical features, and a smooth everyday user experience.`.slice(0, 200),
+        ku: normalizeSeoText(productInfo.short_summary?.ku) || `${displayName} بە کوالێتی باش و تایبەتمەندییە کردارییەکان بۆ بەکارهێنانی ڕۆژانە.`.slice(0, 200),
+      };
+      console.log('Filled short_summary via deterministic fallback');
     }
 
     // ===== STEP: Calculate air shipping cost =====
