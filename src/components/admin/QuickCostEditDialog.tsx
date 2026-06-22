@@ -40,7 +40,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
           .eq("id", product.id)
           .single();
         if (productError) throw productError;
-        setProductCost(productRow?.cost_price != null ? String(productRow.cost_price) : "");
+        setProductCost(productRow?.cost_price != null && Number(productRow.cost_price) > 0 ? String(productRow.cost_price) : "");
         const { data, error } = await (supabase as any)
           .from("product_options")
           .select("id, name_ar, name, price_adjustment, cost_iqd")
@@ -126,7 +126,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
                         type="number"
                         inputMode="numeric"
                         className="w-32 h-8 text-xs"
-                        value={opt.price_adjustment === null || opt.price_adjustment === undefined ? "" : String(opt.price_adjustment)}
+                        value={opt.price_adjustment === null || opt.price_adjustment === undefined || Number(opt.price_adjustment) === 0 ? "" : String(opt.price_adjustment)}
                         placeholder="اتركه فارغًا = السعر الأساسي"
                         onChange={(e) => {
                           const v = e.target.value;
