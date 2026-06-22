@@ -9,6 +9,7 @@ import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
 import { trackMetaEvent } from '@/lib/metaPixel';
 import { deriveCartSaleType, detectSaleTypeConflict, type SaleType } from '@/lib/cartSaleType';
+import { useRealtimePriceSync } from './useRealtimePriceSync';
 
 // Default IQD rate fallback used across the cart when shipping settings haven't
 // loaded yet. Kept in sync with the production exchange rate so prices computed
@@ -166,6 +167,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // products linked to `link_direct_commission_to_cod` recompute live whenever
   // the admin changes the COD %.
   const { data: codDefaults = null } = useCodDefaults();
+
+  // Realtime price sync — invalidates all product queries the moment admin/assistant
+  // updates products / product_options / product_offers prices. Cart items in the
+  // user's cart show a small silent toast when their price changes.
+  const cartProductNames = React.useMemo(() => {
+    const map = new Map<string, string>();
+    items.forEach((it: any) => {
+      const pid = it.products?.id ?? it.product_id;
+      if (pid) map.set(pid, it.products?.name_ar || it.products?.name || '');
+    });
+    return map;
+  }, [items]);
+  useRealtimePriceSync(cartProductNames);
+
   // Server-computed live direct-sale prices (RPC) — internal cost columns are
   // hidden from clients, so we ask the DB to return the final IQD value.
   const [liveDirectPrices, setLiveDirectPrices] = useState<Map<string, number>>(new Map());
