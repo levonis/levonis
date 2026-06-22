@@ -1132,7 +1132,7 @@ const Admin = () => {
   // Handle extracting URL from pasted messy text
   // Re-run AI extraction: behaves exactly like full extract — refreshes all product info and images
   const handleRerunAIExtraction = async () => {
-    await handleExtractProductInfo();
+    await handleExtractProductInfo({ forceSeoRegenerate: true });
   };
 
   // Handle extracting URL from pasted messy text
