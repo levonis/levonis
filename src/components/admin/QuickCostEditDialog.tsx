@@ -177,13 +177,24 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
         id: o.id,
         cost: o.input === "" ? null : toIqd(parseFloat(o.input) || 0, currency),
       }));
-      const { error } = await (supabase as any).rpc("admin_quick_update_costs", {
+      const { data: savedRows, error } = await (supabase as any).rpc("admin_quick_update_costs", {
         _product_id: product.id,
         _product_cost: productCostIqdToSave,
         _options: payloadOptions,
         _original_price_usd: productUsdToSave,
       });
       if (error) throw error;
+
+      const savedProduct = Array.isArray(savedRows) ? savedRows[0] : savedRows;
+      if (!savedProduct) throw new Error("لم يتم تحديث تكلفة المنتج");
+
+      const savedCost = savedProduct.cost_price == null ? null : Math.round(Number(savedProduct.cost_price));
+      const savedUsd = savedProduct.original_price_usd == null ? null : Number(savedProduct.original_price_usd);
+      const expectedUsd = productUsdToSave == null ? null : Math.round(productUsdToSave * 100) / 100;
+      if (savedCost !== productCostIqdToSave || (savedUsd == null ? null : Math.round(savedUsd * 100) / 100) !== expectedUsd) {
+        throw new Error("لم تتطابق القيم المحفوظة مع المدخلة");
+      }
+      setProductCostIqd(savedCost);
 
 
       // Update colors JSON in-place (preserves all other fields per color)
