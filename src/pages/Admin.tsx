@@ -2064,8 +2064,27 @@ const Admin = () => {
         values.price = prices.length > 0 ? Math.min(...prices) : priceIqd;
         values.is_pricing_updated = true;
         // When an admin edits a pending product (filling costs/commission), auto-publish it.
-        if (isAdmin && editingProduct?.pending_admin_review) {
-          (values as any).pending_admin_review = false;
+        // Assistants may also publish (clear pending_admin_review) — but only if the
+        // admin already set both the commission and the cost/profit on the product.
+        if (editingProduct?.pending_admin_review) {
+          if (isAdmin) {
+            (values as any).pending_admin_review = false;
+          } else if (isAssistant) {
+            const existingCommission =
+              Number((editingProduct as any).commission_iqd) ||
+              Number((editingProduct as any).commission_sea_iqd) ||
+              Number((editingProduct as any).commission_air_iqd) ||
+              Number((editingProduct as any).commission_land_iqd) ||
+              Number((editingProduct as any).commission_direct_iqd) ||
+              0;
+            const existingCost =
+              Number((editingProduct as any).cost_price) ||
+              Number((editingProduct as any).cost_iqd) ||
+              0;
+            if (existingCommission > 0 && existingCost > 0) {
+              (values as any).pending_admin_review = false;
+            }
+          }
         }
 
         // Original price is entered directly in IQD by the admin (no USD conversion).
