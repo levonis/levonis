@@ -47,48 +47,59 @@ const BannerImage = memo(({
 }) => {
   const [loaded, setLoaded] = useState(false);
 
-  // Use Supabase image transform to serve a right-sized version.
-  // Mobile devices (the common LCP critical path) only need ~800px;
-  // 1200 was over-fetching ~50% extra bytes for the banner above the fold.
-  const optimizedSrc = useMemo(
-    () => resizeSupabaseImage(src, isFirst ? 800 : 900, 70) || src,
-    [src, isFirst]
+  // Right-size + serve next-gen formats. Mobile (LCP critical path) only needs ~800px.
+  // AVIF saves ~30-50% over WebP at the same visual quality; WebP stays as fallback
+  // for the ~5% of browsers without AVIF support.
+  const width = isFirst ? 800 : 900;
+  const quality = isFirst ? 62 : 68; // a touch lower on the LCP image for faster paint
+  const avifSrc = useMemo(
+    () => resizeSupabaseImage(src, width, quality, 'avif') || src,
+    [src, width, quality]
+  );
+  const webpSrc = useMemo(
+    () => resizeSupabaseImage(src, width, quality, 'webp') || src,
+    [src, width, quality]
   );
 
-  // Preload first image immediately via link tag
+  // Preload the AVIF variant of the first banner (browser falls back to WebP if unsupported).
   useEffect(() => {
     if (isFirst && typeof window !== 'undefined') {
-      const existingPreload = document.querySelector(`link[href="${optimizedSrc}"]`);
+      const existingPreload = document.querySelector(`link[href="${avifSrc}"]`);
       if (!existingPreload) {
         const link = document.createElement('link');
         link.rel = 'preload';
         link.as = 'image';
-        link.href = optimizedSrc;
+        link.href = avifSrc;
+        link.type = 'image/avif';
         link.fetchPriority = 'high';
         document.head.appendChild(link);
       }
     }
-  }, [optimizedSrc, isFirst]);
+  }, [avifSrc, isFirst]);
 
   return (
-    <img
-      src={optimizedSrc}
-      alt={alt}
-      className={cn(
-        "w-full h-full object-cover object-center",
-        // Skip opacity transition for the LCP image so paint isn't delayed
-        isFirst ? "" : "transition-opacity duration-300",
-        isFirst || loaded ? "opacity-100" : "opacity-0"
-      )}
-      loading={isFirst ? 'eager' : 'lazy'}
-      decoding={isFirst ? 'sync' : 'async'}
-      // @ts-expect-error - fetchPriority is valid HTML but not yet in React types in some versions
-      fetchpriority={isFirst ? 'high' : 'auto'}
-      onLoad={() => setLoaded(true)}
-      // Add intrinsic size hints to prevent layout shift
-      width={1200}
-      height={400}
-    />
+    <picture>
+      <source srcSet={avifSrc} type="image/avif" />
+      <source srcSet={webpSrc} type="image/webp" />
+      <img
+        src={webpSrc}
+        alt={alt}
+        className={cn(
+          "w-full h-full object-cover object-center",
+          // Skip opacity transition for the LCP image so paint isn't delayed
+          isFirst ? "" : "transition-opacity duration-300",
+          isFirst || loaded ? "opacity-100" : "opacity-0"
+        )}
+        loading={isFirst ? 'eager' : 'lazy'}
+        decoding={isFirst ? 'sync' : 'async'}
+        // @ts-expect-error - fetchPriority is valid HTML but not yet in React types in some versions
+        fetchpriority={isFirst ? 'high' : 'auto'}
+        onLoad={() => setLoaded(true)}
+        // Intrinsic size hints to prevent layout shift
+        width={1200}
+        height={400}
+      />
+    </picture>
   );
 });
 BannerImage.displayName = 'BannerImage';
