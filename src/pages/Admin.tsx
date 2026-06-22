@@ -3490,7 +3490,7 @@ const Admin = () => {
                                     <Label className="text-xs">التكلفة (د.ع)</Label>
                                     <Input
                                       type="number"
-                                      step="250"
+                                      step="1"
                                       min="0"
                                       value={option.cost_iqd ?? ''}
                                       onChange={(e) => updateProductOption(index, 'cost_iqd', Number(e.target.value) || 0)}
@@ -3779,7 +3779,7 @@ const Admin = () => {
                                     <Label className="text-xs">التكلفة (د.ع)</Label>
                                     <Input
                                       type="number"
-                                      step="250"
+                                      step="1"
                                       min="0"
                                       value={color.cost_iqd ?? ''}
                                       onChange={(e) => updateProductColor(index, 'cost_iqd', Number(e.target.value) || 0)}
