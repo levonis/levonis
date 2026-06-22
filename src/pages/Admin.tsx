@@ -1113,7 +1113,11 @@ const Admin = () => {
       console.log('[AI Extract] Product info received:', {
         dimensions: productInfo.dimensions,
         weight_kg: productInfo.weight_kg,
-        name: productInfo.name
+        name: productInfo.name,
+        has_short_summary: !!(productInfo.short_summary && (productInfo.short_summary.ar || productInfo.short_summary.en || productInfo.short_summary.ku)),
+        short_summary: productInfo.short_summary,
+        searchable_tags_count: Array.isArray(productInfo.searchable_tags) ? productInfo.searchable_tags.length : 0,
+        ai_content_keys: productInfo.ai_content ? Object.keys(productInfo.ai_content) : [],
       });
       applyProductInfo(productInfo);
       advanceExtractionStep('apply', 'done');
