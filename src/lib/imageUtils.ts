@@ -31,11 +31,12 @@ function cacheSet<T>(map: Map<string, T>, key: string, value: T): T {
 export function resizeSupabaseImage(
   url: string | undefined,
   width: number,
-  quality: number = 75
+  quality: number = 75,
+  format: 'webp' | 'avif' | 'origin' = 'webp'
 ): string | undefined {
   if (!url) return url;
 
-  const cacheKey = `${url}|${width}|${quality}`;
+  const cacheKey = `${url}|${width}|${quality}|${format}`;
   const cached = cacheGet(RESIZE_CACHE, cacheKey);
   if (cached !== undefined) return cached;
 
@@ -58,7 +59,7 @@ export function resizeSupabaseImage(
   params.set('width', String(width));
   params.set('quality', String(Math.max(1, Math.min(100, Math.round(quality)))));
   params.set('resize', 'contain');
-  params.set('format', 'webp');
+  if (format !== 'origin') params.set('format', format);
   return cacheSet(RESIZE_CACHE, cacheKey, `${path}?${params.toString()}`);
 }
 
