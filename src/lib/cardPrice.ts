@@ -6,7 +6,7 @@
  * (related products), and any future card surface MUST use these helpers
  * — never reimplement the logic locally.
  */
-import { computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, ensurePriceIqd, getDirectVariantPriceMapKey, getMinOptionOverridePriceIqd } from './priceGuard';
+import { computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, ensurePriceIqd, getDirectVariantPriceMapKey, getMinOptionOverridePriceIqd, getProductBaseCostIqd } from './priceGuard';
 import { isAllDirectStockDepleted } from './stockUtils';
 
 export function computeUnifiedCardPrice(
