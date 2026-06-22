@@ -62,12 +62,12 @@ export function computeUnifiedCardPrice(
         if (eligible) {
           // Independent option price replaces the COST. When linked to COD,
           // re-derive the sale price from that overridden cost; otherwise
-          // use the override directly as the sale price.
+          // add the addons (shipping/commission/pdc/referral) on top.
           const minOverride = getMinOptionOverridePriceIqd(product, 'direct', usdToIqd);
           if (minOverride != null) {
-            const baseCostIqd = ensurePriceIqd(Number(product?.price || 0), product?.price_usd, usdToIqd);
-            const saleTypeAddons = directBase - baseCostIqd;
-            let finalFromOverride = minOverride;
+            const baseCostIqd = getProductBaseCostIqd(product, usdToIqd);
+            const saleTypeAddons = Math.max(0, directBase - baseCostIqd);
+            let finalFromOverride = minOverride + saleTypeAddons;
             if (product?.link_direct_commission_to_cod && codDefaults) {
               const fromVariantMap = product?.id
                 ? liveVariantDirectMap?.get(getDirectVariantPriceMapKey(product.id, minOverride))
@@ -79,10 +79,8 @@ export function computeUnifiedCardPrice(
                 codDefaults,
               );
               if (derived != null) finalFromOverride = derived;
-            } else {
-              finalFromOverride = minOverride + saleTypeAddons;
             }
-            candidates.push(Math.min(finalFromOverride, directBase));
+            candidates.push(finalFromOverride);
           } else {
             candidates.push(directBase);
           }
@@ -107,7 +105,14 @@ export function computeUnifiedCardPrice(
     const preBase = opts.length > 0 ? Math.min(...opts) : null;
     if (preBase != null) {
       const minOverride = getMinOptionOverridePriceIqd(product, 'preorder', usdToIqd);
-      candidates.push(minOverride != null ? Math.min(minOverride, preBase) : preBase);
+      if (minOverride != null) {
+        // Override is the variant COST — add the pre-order addons on top.
+        const baseCostIqd = getProductBaseCostIqd(product, usdToIqd);
+        const saleTypeAddons = Math.max(0, preBase - baseCostIqd);
+        candidates.push(minOverride + saleTypeAddons);
+      } else {
+        candidates.push(preBase);
+      }
     }
   }
 
