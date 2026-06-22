@@ -447,10 +447,16 @@ const Admin = () => {
           ? latestFormValuesRef.current
           : formValues;
         latestFormValuesRef.current = effectiveValues;
-        const mergedEditing = { ...(editingProduct || {}), ...effectiveValues };
+        // Only persist editingProduct in the draft when it has a real id (we're truly editing).
+        // For brand-new products keep `editingProduct: null` and rely on `formValues` alone —
+        // otherwise restoring the draft would set editingProduct to a no-id object and the
+        // submit path would mistakenly call UPDATE without an id.
+        const draftEditingProduct = editingProduct && editingProduct.id
+          ? { ...editingProduct, ...effectiveValues }
+          : null;
         const draft = {
           open: true,
-          editingProduct: mergedEditing,
+          editingProduct: draftEditingProduct,
           formValues: effectiveValues,
           uploadedImages,
           productOptions,
