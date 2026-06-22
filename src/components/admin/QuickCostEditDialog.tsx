@@ -31,8 +31,8 @@ interface OptionRow {
   id: string;
   name_ar: string;
   name?: string | null;
-  /** canonical IQD value (cost_iqd → fallback price_adjustment) */
-  cost_iqd: number | null;
+  /** canonical USD value from product_options.price_adjustment */
+  cost_usd: number | null;
   /** input in the currently selected currency */
   input: string;
 }
@@ -42,7 +42,8 @@ interface ColorRow {
   idx: number;
   name_ar?: string | null;
   name?: string | null;
-  cost_iqd: number | null;
+  /** canonical USD from colors[].cost_usd */
+  cost_usd: number | null;
   input: string;
 }
 
@@ -61,21 +62,24 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currency, setCurrency] = useState<Currency>("USD");
-  const [productCostIqd, setProductCostIqd] = useState<number | null>(null);
+  const [productCostUsd, setProductCostUsd] = useState<number | null>(null);
   const [productInput, setProductInput] = useState<string>("");
   const [options, setOptions] = useState<OptionRow[]>([]);
   const [colors, setColors] = useState<ColorRow[]>([]);
   const [rawColors, setRawColors] = useState<any[]>([]);
 
-  const toIqd = (val: number, cur: Currency): number => {
-    if (cur === "IQD") return Math.round(val);
-    if (cur === "USD") return Math.round(val * usdToIqd);
-    return Math.round((val / cnyToUsd) * usdToIqd);
+  // Convert input value (in `cur`) → canonical USD
+  const toUsd = (val: number, cur: Currency): number => {
+    if (cur === "USD") return Math.round(val * 100) / 100;
+    if (cur === "IQD") return Math.round((val / usdToIqd) * 100) / 100;
+    // CNY → USD
+    return Math.round((val / cnyToUsd) * 100) / 100;
   };
-  const fromIqd = (iqd: number, cur: Currency): number => {
-    if (cur === "IQD") return Math.round(iqd);
-    if (cur === "USD") return Math.round((iqd / usdToIqd) * 100) / 100;
-    return Math.round((iqd / usdToIqd) * cnyToUsd * 100) / 100;
+  // Convert canonical USD → display value in `cur`
+  const fromUsd = (usd: number, cur: Currency): number => {
+    if (cur === "USD") return Math.round(usd * 100) / 100;
+    if (cur === "IQD") return Math.round(usd * usdToIqd);
+    return Math.round(usd * cnyToUsd * 100) / 100;
   };
 
   useEffect(() => {
@@ -86,37 +90,26 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
       try {
         const { data: productRow, error: productError } = await (supabase as any)
           .from("products_admin")
-          .select("cost_price, original_price_usd, colors")
+          .select("original_price_usd, colors")
           .eq("id", product.id)
           .single();
         if (productError) throw productError;
 
-        const cp = Number(productRow?.cost_price);
         const opu = Number(productRow?.original_price_usd);
-        let baseIqd: number | null = null;
-        if (Number.isFinite(cp) && cp > 0) {
-          baseIqd = Math.round(cp);
-        } else if (Number.isFinite(opu) && opu > 0) {
-          baseIqd = Math.round(opu * usdToIqd);
-        }
-        if (!cancel) setProductCostIqd(baseIqd);
-
+        const baseUsd: number | null = Number.isFinite(opu) && opu > 0 ? Math.round(opu * 100) / 100 : null;
+        if (!cancel) setProductCostUsd(baseUsd);
 
         const rawCols = Array.isArray(productRow?.colors) ? productRow.colors : [];
         if (!cancel) {
           setRawColors(rawCols);
           setColors(
             rawCols.map((c: any, idx: number) => {
-              const iqd = Number(c?.cost_iqd);
               const usd = Number(c?.cost_usd);
-              const canonical = Number.isFinite(iqd) && iqd > 0
-                ? Math.round(iqd)
-                : (Number.isFinite(usd) && usd > 0 ? Math.round(usd * usdToIqd) : null);
               return {
                 idx,
                 name_ar: c?.name_ar,
                 name: c?.name,
-                cost_iqd: canonical,
+                cost_usd: Number.isFinite(usd) && usd > 0 ? Math.round(usd * 100) / 100 : null,
                 input: "",
               };
             }),
@@ -125,23 +118,19 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
 
         const { data, error } = await (supabase as any)
           .from("product_options")
-          .select("id, name_ar, name, price_adjustment, cost_iqd")
+          .select("id, name_ar, name, price_adjustment")
           .eq("product_id", product.id)
           .order("name_ar");
         if (error) throw error;
         if (!cancel) {
           setOptions(
             (data || []).map((o: any) => {
-              const ci = Number(o.cost_iqd);
               const pa = Number(o.price_adjustment);
-              const canonical = Number.isFinite(ci) && ci > 0
-                ? Math.round(ci)
-                : (Number.isFinite(pa) && pa > 0 ? Math.round(pa) : null);
               return {
                 id: o.id,
                 name_ar: o.name_ar,
                 name: o.name,
-                cost_iqd: canonical,
+                cost_usd: Number.isFinite(pa) && pa > 0 ? Math.round(pa * 100) / 100 : null,
                 input: "",
               };
             }),
@@ -156,27 +145,29 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
     return () => { cancel = true; };
   }, [open, product?.id]);
 
-  // Re-derive input strings when currency or canonical IQD values change
+  // Re-derive input strings when currency or canonical USD values change
   useEffect(() => {
-    setProductInput(productCostIqd != null && productCostIqd > 0 ? String(fromIqd(productCostIqd, currency)) : "");
+    setProductInput(productCostUsd != null && productCostUsd > 0 ? String(fromUsd(productCostUsd, currency)) : "");
     setOptions((prev) =>
       prev.map((o) => ({
         ...o,
-        input: o.cost_iqd != null && o.cost_iqd > 0 ? String(fromIqd(o.cost_iqd, currency)) : "",
+        input: o.cost_usd != null && o.cost_usd > 0 ? String(fromUsd(o.cost_usd, currency)) : "",
       })),
     );
     setColors((prev) =>
       prev.map((c) => ({
         ...c,
-        input: c.cost_iqd != null && c.cost_iqd > 0 ? String(fromIqd(c.cost_iqd, currency)) : "",
+        input: c.cost_usd != null && c.cost_usd > 0 ? String(fromUsd(c.cost_usd, currency)) : "",
       })),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currency, productCostIqd, usdToIqd, cnyToUsd]);
+  }, [currency, productCostUsd, usdToIqd, cnyToUsd]);
 
   const previewIqd = useMemo(() => {
     const v = parseNumberInput(productInput);
-    return v != null ? toIqd(v, currency) : null;
+    if (v == null) return null;
+    const usd = toUsd(v, currency);
+    return Math.round(usd * usdToIqd);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productInput, currency, usdToIqd, cnyToUsd]);
 
@@ -185,22 +176,14 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
     setSaving(true);
     try {
       const parsedProductCost = parseNumberInput(productInput);
-      const productCostIqdToSave = parsedProductCost == null ? null : toIqd(parsedProductCost, currency);
-      const productUsdToSave =
-        productCostIqdToSave == null
-          ? null
-          : Math.round((productCostIqdToSave / usdToIqd) * 100) / 100;
-      const payloadOptions = options.map((o) => ({
-        id: o.id,
-        cost: (() => {
-          const parsed = parseNumberInput(o.input);
-          return parsed == null ? null : toIqd(parsed, currency);
-        })(),
-      }));
+      const productUsdToSave = parsedProductCost == null ? null : toUsd(parsedProductCost, currency);
+      const productCostIqdToSave = productUsdToSave == null ? null : Math.round(productUsdToSave * usdToIqd);
+
+      // Save product cost via RPC (writes original_price_usd + cost_price IQD)
       const { data: savedRows, error } = await (supabase as any).rpc("admin_quick_update_costs", {
         _product_id: product.id,
         _product_cost: productCostIqdToSave,
-        _options: payloadOptions,
+        _options: [], // options handled below via direct update on price_adjustment
         _original_price_usd: productUsdToSave,
       });
       if (error) throw error;
@@ -208,16 +191,25 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
       const savedProduct = Array.isArray(savedRows) ? savedRows[0] : savedRows;
       if (!savedProduct) throw new Error("لم يتم تحديث تكلفة المنتج");
 
-      const savedCost = savedProduct.cost_price == null ? null : Math.round(Number(savedProduct.cost_price));
-      const savedUsd = savedProduct.original_price_usd == null ? null : Number(savedProduct.original_price_usd);
+      const savedUsd = savedProduct.original_price_usd == null ? null : Math.round(Number(savedProduct.original_price_usd) * 100) / 100;
       const expectedUsd = productUsdToSave == null ? null : Math.round(productUsdToSave * 100) / 100;
-      if (savedCost !== productCostIqdToSave || (savedUsd == null ? null : Math.round(savedUsd * 100) / 100) !== expectedUsd) {
-        throw new Error("لم تتطابق القيم المحفوظة مع المدخلة");
+      if (savedUsd !== expectedUsd) {
+        throw new Error("لم تتطابق قيمة سعر تكلفة المنتج ($) المحفوظة مع المدخلة");
       }
-      setProductCostIqd(savedCost);
+      setProductCostUsd(savedUsd);
 
+      // Update each option's price_adjustment (USD) — matches the product edit form's "تكلفة مستقلة للخيار ($)"
+      for (const opt of options) {
+        const parsed = parseNumberInput(opt.input);
+        const usd = parsed == null ? 0 : toUsd(parsed, currency);
+        const { error: optErr } = await (supabase as any)
+          .from("product_options")
+          .update({ price_adjustment: usd })
+          .eq("id", opt.id);
+        if (optErr) throw optErr;
+      }
 
-      // Update colors JSON in-place (preserves all other fields per color)
+      // Update colors JSON in-place — write cost_usd as canonical + sync cost_iqd
       if (colors.length > 0 && rawColors.length > 0) {
         const updated = rawColors.map((c: any, idx: number) => {
           const row = colors.find((cc) => cc.idx === idx);
@@ -226,9 +218,9 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
             return { ...c, cost_iqd: null, cost_usd: null };
           }
           const parsed = parseNumberInput(row.input);
-          const iqd = parsed == null ? null : toIqd(parsed, currency);
-          if (iqd == null) return { ...c, cost_iqd: null, cost_usd: null };
-          const usd = Math.round((iqd / usdToIqd) * 100) / 100;
+          if (parsed == null) return { ...c, cost_iqd: null, cost_usd: null };
+          const usd = toUsd(parsed, currency);
+          const iqd = Math.round(usd * usdToIqd);
           return { ...c, cost_iqd: iqd, cost_usd: usd };
         });
         const { error: colorErr } = await (supabase as any)
@@ -259,7 +251,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
             تحديث التكلفة السريع
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {product?.name_ar} — أدخل بأي عملة وسيُحفظ بالدينار تلقائياً.
+            {product?.name_ar} — نفس حقول USD في تعديل المنتج. يمكن الإدخال بأي عملة ويُحفظ كـ USD.
           </DialogDescription>
         </DialogHeader>
 
@@ -289,7 +281,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">تكلفة المنتج الأساسي ({currencyLabel})</label>
+              <label className="text-xs font-medium">سعر تكلفة المنتج ({currencyLabel})</label>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -299,7 +291,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
                 placeholder="اتركه فارغاً"
               />
               <div className="flex justify-between text-[11px] text-muted-foreground">
-                {previewIqd != null ? <span>≈ {formatPrice(previewIqd)} د.ع</span> : <span />}
+                {previewIqd != null && currency !== "IQD" ? <span>≈ {formatPrice(previewIqd)} د.ع</span> : <span />}
                 {product?.price != null && (
                   <span>سعر البيع: {formatPrice(Number(product.price))} د.ع</span>
                 )}
@@ -308,11 +300,12 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
 
             {options.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-xs font-semibold">تكلفة الخيارات ({currencyLabel})</h4>
+                <h4 className="text-xs font-semibold">تكلفة مستقلة للخيار ({currencyLabel})</h4>
                 <div className="max-h-[28vh] overflow-y-auto space-y-1.5 pr-1">
                   {options.map((opt, idx) => {
                     const parsed = parseNumberInput(opt.input);
-                    const iqdPreview = parsed != null ? toIqd(parsed, currency) : null;
+                    const usd = parsed != null ? toUsd(parsed, currency) : null;
+                    const iqdPreview = usd != null ? Math.round(usd * usdToIqd) : null;
                     return (
                       <div key={opt.id} className="flex items-center gap-2">
                         <span className="text-xs flex-1 truncate">{opt.name_ar || opt.name}</span>
@@ -346,11 +339,12 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
 
             {colors.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-xs font-semibold">تكلفة الألوان ({currencyLabel})</h4>
+                <h4 className="text-xs font-semibold">تكلفة اللون ({currencyLabel})</h4>
                 <div className="max-h-[28vh] overflow-y-auto space-y-1.5 pr-1">
                   {colors.map((col, idx) => {
                     const parsed = parseNumberInput(col.input);
-                    const iqdPreview = parsed != null ? toIqd(parsed, currency) : null;
+                    const usd = parsed != null ? toUsd(parsed, currency) : null;
+                    const iqdPreview = usd != null ? Math.round(usd * usdToIqd) : null;
                     return (
                       <div key={col.idx} className="flex items-center gap-2">
                         <span className="text-xs flex-1 truncate">{col.name_ar || col.name || `لون ${col.idx + 1}`}</span>
