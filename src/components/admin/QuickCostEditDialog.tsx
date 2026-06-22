@@ -69,14 +69,21 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
       try {
         const { data: productRow, error: productError } = await (supabase as any)
           .from("products_admin")
-          .select("cost_price, colors")
+          .select("cost_price, original_price_usd, colors")
           .eq("id", product.id)
           .single();
         if (productError) throw productError;
 
         const cp = Number(productRow?.cost_price);
-        const baseIqd = Number.isFinite(cp) && cp > 0 ? Math.round(cp) : null;
+        const opu = Number(productRow?.original_price_usd);
+        let baseIqd: number | null = null;
+        if (Number.isFinite(cp) && cp > 0) {
+          baseIqd = Math.round(cp);
+        } else if (Number.isFinite(opu) && opu > 0) {
+          baseIqd = Math.round(opu * usdToIqd);
+        }
         if (!cancel) setProductCostIqd(baseIqd);
+
 
         const rawCols = Array.isArray(productRow?.colors) ? productRow.colors : [];
         if (!cancel) {
@@ -162,6 +169,10 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
     try {
       const productCostIqdToSave =
         productInput === "" ? null : toIqd(parseFloat(productInput) || 0, currency);
+      const productUsdToSave =
+        productCostIqdToSave == null
+          ? null
+          : Math.round((productCostIqdToSave / usdToIqd) * 100) / 100;
       const payloadOptions = options.map((o) => ({
         id: o.id,
         cost: o.input === "" ? null : toIqd(parseFloat(o.input) || 0, currency),
@@ -170,8 +181,10 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
         _product_id: product.id,
         _product_cost: productCostIqdToSave,
         _options: payloadOptions,
+        _original_price_usd: productUsdToSave,
       });
       if (error) throw error;
+
 
       // Update colors JSON in-place (preserves all other fields per color)
       if (colors.length > 0 && rawColors.length > 0) {
