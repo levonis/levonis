@@ -1649,17 +1649,11 @@ const Admin = () => {
         slug: formData.get('slug') as string,
         description_ar: descArVal || null,
         description: descEnVal,
-        price: formData.get('price') && formData.get('price') !== '' ? Number(formData.get('price')) : 0,
-        original_price: formData.get('original_price_iqd') && formData.get('original_price_iqd') !== ''
-          ? Number(formData.get('original_price_iqd'))
-          : (formData.get('original_price') && formData.get('original_price') !== ''
-              ? Number(formData.get('original_price'))
-              : null),
-        // Original price is now entered directly in IQD; clear the legacy USD column.
+        price: parseFormNumber(formData.get('price')) ?? 0,
+        original_price: parseFormNumber(formData.get('original_price_iqd'))
+          ?? parseFormNumber(formData.get('original_price')),
         original_price_usd: null as number | null,
-        cost_price: formData.get('cost_price') && formData.get('cost_price') !== '' 
-          ? Number(formData.get('cost_price')) 
-          : null,
+        cost_price: null as number | null,
         direct_sale_price: null as number | null,
         sea_price: null as number | null,
         air_price: null as number | null,
@@ -1694,9 +1688,7 @@ const Admin = () => {
         // Multiple card discounts as JSON array
         card_discounts: productCardDiscounts.filter(d => d.card_id && d.discount_amount > 0),
         // New USD pricing fields
-        price_usd: formData.get('price_usd') && formData.get('price_usd') !== '' 
-          ? Number(formData.get('price_usd')) 
-          : null,
+        price_usd: parseFormNumber(formData.get('price_usd')),
         shipping_type: (formData.get('shipping_type') as string) || null,
         weight_kg: formData.get('weight_kg') && formData.get('weight_kg') !== '' 
           ? Number(formData.get('weight_kg')) 
