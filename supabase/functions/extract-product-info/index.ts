@@ -1654,9 +1654,9 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
           // SEO short summary (tri-lang) + searchable tags + AI content (why this product)
           if (ai.short_summary && typeof ai.short_summary === 'object') {
             productInfo.short_summary = {
-              ar: typeof ai.short_summary.ar === 'string' ? ai.short_summary.ar.slice(0, 200) : '',
-              en: typeof ai.short_summary.en === 'string' ? ai.short_summary.en.slice(0, 200) : '',
-              ku: typeof ai.short_summary.ku === 'string' ? ai.short_summary.ku.slice(0, 200) : '',
+              ar: normalizeSeoText(ai.short_summary.ar),
+              en: normalizeSeoText(ai.short_summary.en),
+              ku: normalizeSeoText(ai.short_summary.ku),
             };
           }
           if (Array.isArray(ai.searchable_tags)) {
@@ -1903,7 +1903,7 @@ Return JSON ONLY:
     }
 
     // ===== STEP: Fallback AI call for SEO + AI Content if missing =====
-    const ssEmpty = !productInfo.short_summary || (!productInfo.short_summary.ar && !productInfo.short_summary.en && !productInfo.short_summary.ku);
+    const ssEmpty = !hasTriLangValue(productInfo.short_summary);
     const tagsEmpty = !Array.isArray(productInfo.searchable_tags) || productInfo.searchable_tags.length === 0;
     const aiC = productInfo.ai_content || {};
     const aiEmpty = !aiC || (
