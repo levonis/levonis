@@ -27,7 +27,7 @@ import { useLanguage } from '@/lib/i18n';
 import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd, getDirectVariantPriceMapKey } from '@/lib/priceGuard';
+import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd, getDirectVariantPriceMapKey, getProductBaseCostIqd } from '@/lib/priceGuard';
 import { computeUnifiedCardPrice, computeUnifiedCardOriginalPrice, assertCardDetailParity } from '@/lib/cardPrice';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import LiveDirectPriceWarning from '@/components/LiveDirectPriceWarning';
