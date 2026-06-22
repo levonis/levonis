@@ -1030,7 +1030,7 @@ const Admin = () => {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
   };
 
-  const handleExtractProductInfo = async () => {
+  const handleExtractProductInfo = async (opts?: { forceSeoRegenerate?: boolean }) => {
     if (!productUrl.trim()) {
       toast.error('يرجى إدخال رابط المنتج');
       return;
@@ -1051,7 +1051,14 @@ const Admin = () => {
 
     try {
       const response = await supabase.functions.invoke('extract-product-info', {
-        body: { url: productUrl }
+        body: {
+          url: productUrl,
+          forceSeoRegenerate: opts?.forceSeoRegenerate === true,
+          existingName: editingProduct?.name_en || editingProduct?.name || '',
+          existingNameAr: editingProduct?.name_ar || '',
+          existingDescription: editingProduct?.description || '',
+          existingDescriptionAr: editingProduct?.description_ar || '',
+        }
       });
 
       phaseTimers.forEach(clearTimeout);
@@ -1125,7 +1132,7 @@ const Admin = () => {
   // Handle extracting URL from pasted messy text
   // Re-run AI extraction: behaves exactly like full extract — refreshes all product info and images
   const handleRerunAIExtraction = async () => {
-    await handleExtractProductInfo();
+    await handleExtractProductInfo({ forceSeoRegenerate: true });
   };
 
   // Handle extracting URL from pasted messy text
@@ -2728,7 +2735,7 @@ const Admin = () => {
                         />
                         <Button
                           type="button"
-                          onClick={handleExtractProductInfo}
+                          onClick={() => handleExtractProductInfo()}
                           disabled={extractingInfo || !productUrl.trim()}
                           className="gap-2"
                         >
