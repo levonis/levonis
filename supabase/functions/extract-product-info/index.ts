@@ -121,6 +121,150 @@ function buildCanonicalUrl(itemId: string, platform: string): string {
   }
 }
 
+// ===== Shopify products.json structured extraction =====
+// Detects which option axis represents colors (by name or by value content)
+// and maps the other axes to "options". Variant images are matched per value.
+const COLOR_KEYWORDS = [
+  'black','white','red','blue','green','yellow','pink','purple','orange','gray','grey',
+  'brown','gold','silver','navy','beige','cyan','magenta','maroon','olive','teal','lime',
+  'coral','salmon','turquoise','ivory','khaki','lavender','charcoal','cream','rose',
+  'mint','peach','sand','burgundy','champagne','graphite','midnight','transparent','clear',
+  'glacier','frost','frostbite','aqua','violet','indigo','crimson','scarlet','amber'
+];
+
+function looksLikeColorValue(v: string): boolean {
+  const s = String(v || '').toLowerCase();
+  if (!s) return false;
+  for (const k of COLOR_KEYWORDS) {
+    const re = new RegExp(`(^|[^a-z])${k}([^a-z]|$)`, 'i');
+    if (re.test(s)) return true;
+  }
+  // Chinese color words
+  for (const cn of Object.keys({ '黑色':1,'白色':1,'红色':1,'蓝色':1,'绿色':1,'黄色':1,'粉色':1,'紫色':1,'橙色':1,'灰色':1,'棕色':1,'金色':1,'银色':1 })) {
+    if (s.includes(cn)) return true;
+  }
+  return false;
+}
+
+function looksLikeColorOptionName(name: string): boolean {
+  const s = String(name || '').toLowerCase().trim();
+  return s === 'color' || s === 'colour' || s.includes('颜色') || s.includes('لون');
+}
+
+function pickColorForValue(value: string): { hex: string; ar: string } {
+  const v = String(value || '').toLowerCase();
+  for (const [en, info] of Object.entries(COLOR_MAP)) {
+    const re = new RegExp(`(^|[^a-z])${en}([^a-z]|$)`, 'i');
+    if (re.test(v)) return { hex: info.hex, ar: info.ar };
+  }
+  for (const [cn, info] of Object.entries(CHINESE_COLOR_MAP)) {
+    if (v.includes(cn)) return { hex: info.hex, ar: info.ar };
+  }
+  return { hex: '#808080', ar: value };
+}
+
+async function fetchShopifyProduct(productUrl: string): Promise<any | null> {
+  try {
+    const u = new URL(productUrl);
+    const pathMatch = u.pathname.match(/\/products\/([^/?#]+)/);
+    if (!pathMatch) return null;
+    const handle = pathMatch[1];
+    const jsonUrl = `${u.origin}/products/${handle}.json`;
+    console.log('Trying Shopify products.json:', jsonUrl);
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000);
+    const resp = await fetch(jsonUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: ctrl.signal,
+    }).finally(() => clearTimeout(t));
+    if (!resp.ok) {
+      console.log('Shopify .json status:', resp.status);
+      return null;
+    }
+    const data = await resp.json();
+    return data?.product || null;
+  } catch (e) {
+    console.log('Shopify .json fetch failed:', (e as Error).message);
+    return null;
+  }
+}
+
+interface ShopifyExtracted {
+  colors: Array<{ name: string; name_ar: string; hex_code: string; image_url: string | null }>;
+  options: Array<{ name: string; name_ar: string; image_url: string | null; price_adjustment: number }>;
+  images: string[];
+}
+
+function extractShopifyVariants(product: any): ShopifyExtracted | null {
+  if (!product || !Array.isArray(product.options) || !Array.isArray(product.variants)) return null;
+  const options: any[] = product.options;
+  const variants: any[] = product.variants;
+  const images: any[] = Array.isArray(product.images) ? product.images : [];
+  const imageById = new Map<number, string>();
+  for (const img of images) {
+    if (img?.id && img?.src) imageById.set(img.id, img.src);
+  }
+
+  // Decide which axis is "colors": prefer name match, otherwise the axis whose
+  // values most often look like color names.
+  let colorAxisIdx = -1;
+  for (let i = 0; i < options.length; i++) {
+    if (looksLikeColorOptionName(options[i]?.name)) { colorAxisIdx = i; break; }
+  }
+  if (colorAxisIdx === -1) {
+    let bestScore = 0;
+    for (let i = 0; i < options.length; i++) {
+      const vals = options[i]?.values || [];
+      const score = vals.filter((v: string) => looksLikeColorValue(v)).length;
+      if (score > bestScore && score >= Math.ceil(vals.length / 2)) {
+        bestScore = score;
+        colorAxisIdx = i;
+      }
+    }
+  }
+
+  const findVariantImage = (axisIdx: number, value: string): string | null => {
+    const key = `option${axisIdx + 1}`;
+    const v = variants.find((x) => x?.[key] === value && x?.image_id);
+    if (v && imageById.has(v.image_id)) return imageById.get(v.image_id)!;
+    return null;
+  };
+
+  const result: ShopifyExtracted = { colors: [], options: [], images: images.map((i) => i?.src).filter(Boolean) };
+
+  for (let i = 0; i < options.length; i++) {
+    const opt = options[i];
+    const values: string[] = Array.isArray(opt?.values) ? opt.values : [];
+    if (i === colorAxisIdx) {
+      for (const val of values) {
+        const meta = pickColorForValue(val);
+        result.colors.push({
+          name: val,
+          name_ar: meta.ar,
+          hex_code: meta.hex,
+          image_url: findVariantImage(i, val),
+        });
+      }
+    } else {
+      for (const val of values) {
+        // Prefix with option name when there are multiple non-color axes for clarity
+        const label = options.length > 2 ? `${opt?.name}: ${val}` : String(val);
+        result.options.push({
+          name: label,
+          name_ar: label,
+          image_url: findVariantImage(i, val),
+          price_adjustment: 0,
+        });
+      }
+    }
+  }
+  return result;
+}
+
+
 // Color mapping with more colors
 const COLOR_MAP: Record<string, { ar: string; hex: string }> = {
   'black': { ar: 'أسود', hex: '#000000' },
@@ -1508,6 +1652,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ===== Strategy 1b: Shopify products.json (structured options/variants) =====
+    let shopifyData: any = null;
+    let shopifyExtracted: ShopifyExtracted | null = null;
+    if (platform === 'shopify') {
+      shopifyData = await fetchShopifyProduct(url);
+      if (shopifyData) {
+        shopifyExtracted = extractShopifyVariants(shopifyData);
+        console.log('Shopify structured extraction:',
+          'colors=', shopifyExtracted?.colors.length,
+          'options=', shopifyExtracted?.options.length,
+          'images=', shopifyExtracted?.images.length);
+      }
+    }
+
+
     // Fetch page
     let pageContent = '';
     let fetchSuccess = false;
@@ -2425,6 +2584,26 @@ Return ONLY JSON:
         }));
       }
     }
+
+    // ===== Shopify override: replace AI-merged colors/options with structured axes =====
+    if (shopifyExtracted && (shopifyExtracted.colors.length > 0 || shopifyExtracted.options.length > 0)) {
+      console.log('Shopify structured override — replacing AI colors/options',
+        'colors:', productInfo.colors.length, '→', shopifyExtracted.colors.length,
+        'options:', productInfo.options.length, '→', shopifyExtracted.options.length);
+      productInfo.colors = shopifyExtracted.colors.map(c => ({ ...c }));
+      productInfo.options = shopifyExtracted.options.map(o => ({ ...o }));
+      for (const c of shopifyExtracted.colors) {
+        if (c.image_url) variantImageUrls.add(getImageBaseUrl(c.image_url));
+      }
+      for (const o of shopifyExtracted.options) {
+        if (o.image_url) variantImageUrls.add(getImageBaseUrl(o.image_url));
+      }
+      if (productInfo.images.length === 0 && shopifyExtracted.images.length > 0) {
+        productInfo.images = shopifyExtracted.images.slice(0, 10);
+      }
+    }
+
+
 
 
     // Note: For direct images, we DON'T exclude variant images because they might be the only product images available
