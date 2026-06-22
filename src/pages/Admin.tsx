@@ -1712,6 +1712,13 @@ const Admin = () => {
       } as any;
 
       const priceUsdVal = values.price_usd;
+      const exchangeRateForCost = shippingSettings?.usd_to_iqd_rate || 1410;
+      values.cost_price = priceUsdVal && priceUsdVal > 0
+        ? Math.round(priceUsdVal * exchangeRateForCost)
+        : null;
+      values.original_price_usd = priceUsdVal && priceUsdVal > 0
+        ? Math.round(priceUsdVal * 100) / 100
+        : null;
       const commissionIqdVal = formData.get('commission_iqd') ? Number(formData.get('commission_iqd')) : 0;
       const commissionSeaIqdVal = formData.get('commission_sea_iqd') ? Number(formData.get('commission_sea_iqd')) : 0;
       const commissionAirIqdVal = formData.get('commission_air_iqd') ? Number(formData.get('commission_air_iqd')) : 0;
