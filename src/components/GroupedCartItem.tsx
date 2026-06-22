@@ -5,7 +5,7 @@ import { Minus, Plus, Trash2, Package, Gift, ShieldCheck, Info } from 'lucide-re
 import { CartItem } from '@/hooks/useCart';
 import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
-import { getGuardedCartItemPrice, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
+import { getGuardedCartItemPrice, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd } from '@/lib/priceGuard';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { useCartInsuranceAddons, useInsurancePlans } from '@/hooks/useCartInsurance';
@@ -51,6 +51,7 @@ const GroupedCartItem = ({
   // Without it, getGuardedCartItemPrice falls back to the stored direct_sale_price
   // and undercharges vs the product card / detail page.
   const [liveDirectMap, setLiveDirectMap] = useState<Map<string, number> | null>(null);
+  const [liveVariantDirectMap, setLiveVariantDirectMap] = useState<Map<string, number> | null>(null);
   const linkedProductId = product?.id;
   const needsLive = !!(product as any)?.link_direct_commission_to_cod && items.some((i: any) => i.sale_type === 'direct');
   useEffect(() => {
@@ -62,10 +63,25 @@ const GroupedCartItem = ({
     return () => { cancelled = true; };
   }, [needsLive, linkedProductId, usdToIqd, codDefaults?.value, codDefaults?.type]);
 
+  useEffect(() => {
+    if (!needsLive || !linkedProductId) return;
+    const requests = items.flatMap((item: any) => {
+      if (item.sale_type !== 'direct') return [];
+      const costIqd = getCartItemVariantOverrideCostIqd(item, usdToIqd);
+      return costIqd ? [{ productId: linkedProductId, costIqd }] : [];
+    });
+    if (requests.length === 0) { setLiveVariantDirectMap(null); return; }
+    let cancelled = false;
+    fetchVariantDirectSalePrices(requests).then((map) => {
+      if (!cancelled) setLiveVariantDirectMap(map);
+    });
+    return () => { cancelled = true; };
+  }, [needsLive, linkedProductId, items, usdToIqd, codDefaults?.value, codDefaults?.type]);
+
   if (!product) return null;
 
   const calculateItemPrice = (item: CartItem) => {
-    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults ?? null, liveDirectMap);
+    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults ?? null, liveDirectMap, liveVariantDirectMap);
   };
 
   const groupTotal = items.reduce((sum, item) => sum + calculateItemPrice(item) * item.quantity, 0);
