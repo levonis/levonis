@@ -71,6 +71,23 @@ const productSchema = z.object({
   brand: z.string().nullable().optional(),
 });
 
+const normalizeNumberInput = (value: FormDataEntryValue | null): string => {
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+  return String(value ?? '')
+    .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)))
+    .replace(/[٬,\s]/g, '')
+    .replace(/٫/g, '.');
+};
+
+const parseFormNumber = (value: FormDataEntryValue | null): number | null => {
+  const cleaned = normalizeNumberInput(value);
+  if (!cleaned) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 const categorySchema = z.object({
   name_ar: z.string().min(1, 'الاسم بالعربي مطلوب'),
   name: z.string().min(1, 'الاسم بالإنجليزي مطلوب'),
@@ -1632,17 +1649,11 @@ const Admin = () => {
         slug: formData.get('slug') as string,
         description_ar: descArVal || null,
         description: descEnVal,
-        price: formData.get('price') && formData.get('price') !== '' ? Number(formData.get('price')) : 0,
-        original_price: formData.get('original_price_iqd') && formData.get('original_price_iqd') !== ''
-          ? Number(formData.get('original_price_iqd'))
-          : (formData.get('original_price') && formData.get('original_price') !== ''
-              ? Number(formData.get('original_price'))
-              : null),
-        // Original price is now entered directly in IQD; clear the legacy USD column.
+        price: parseFormNumber(formData.get('price')) ?? 0,
+        original_price: parseFormNumber(formData.get('original_price_iqd'))
+          ?? parseFormNumber(formData.get('original_price')),
         original_price_usd: null as number | null,
-        cost_price: formData.get('cost_price') && formData.get('cost_price') !== '' 
-          ? Number(formData.get('cost_price')) 
-          : null,
+        cost_price: null as number | null,
         direct_sale_price: null as number | null,
         sea_price: null as number | null,
         air_price: null as number | null,
@@ -1677,9 +1688,7 @@ const Admin = () => {
         // Multiple card discounts as JSON array
         card_discounts: productCardDiscounts.filter(d => d.card_id && d.discount_amount > 0),
         // New USD pricing fields
-        price_usd: formData.get('price_usd') && formData.get('price_usd') !== '' 
-          ? Number(formData.get('price_usd')) 
-          : null,
+        price_usd: parseFormNumber(formData.get('price_usd')),
         shipping_type: (formData.get('shipping_type') as string) || null,
         weight_kg: formData.get('weight_kg') && formData.get('weight_kg') !== '' 
           ? Number(formData.get('weight_kg')) 
@@ -1703,6 +1712,13 @@ const Admin = () => {
       } as any;
 
       const priceUsdVal = values.price_usd;
+      const exchangeRateForCost = shippingSettings?.usd_to_iqd_rate || 1410;
+      values.cost_price = priceUsdVal && priceUsdVal > 0
+        ? Math.round(priceUsdVal * exchangeRateForCost)
+        : null;
+      values.original_price_usd = priceUsdVal && priceUsdVal > 0
+        ? Math.round(priceUsdVal * 100) / 100
+        : null;
       const commissionIqdVal = formData.get('commission_iqd') ? Number(formData.get('commission_iqd')) : 0;
       const commissionSeaIqdVal = formData.get('commission_sea_iqd') ? Number(formData.get('commission_sea_iqd')) : 0;
       const commissionAirIqdVal = formData.get('commission_air_iqd') ? Number(formData.get('commission_air_iqd')) : 0;
@@ -1756,6 +1772,8 @@ const Admin = () => {
         });
 
         const priceIqd = Math.round(priceUsdVal * settings.usd_to_iqd_rate);
+        values.cost_price = priceIqd;
+        values.original_price_usd = Math.round(priceUsdVal * 100) / 100;
         const shippingType: string = values.shipping_type || '';
         // Parse comma-separated tokens with legacy 'both' support
         const stTokens = shippingType === 'both' ? ['sea', 'air'] : shippingType.split(',').map((t: string) => t.trim());
