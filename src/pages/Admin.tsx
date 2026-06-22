@@ -1223,27 +1223,52 @@ const Admin = () => {
       markFieldFilled('original_price');
     }
 
+    // Derive a baseline display name from extracted or existing values for fallbacks
+    const baselineNameAr = (productInfo.name_ar || editingProduct?.name_ar || '').trim();
+    const baselineNameEn = String(productInfo.name_en || productInfo.name || editingProduct?.name_en || editingProduct?.name || '').trim();
+    const baselineDisplay = baselineNameAr || baselineNameEn || 'المنتج';
+
     // Auto-fill SEO short summary (tri-lang) — ALWAYS replace on extract/re-extract
     {
       const ss = (productInfo.short_summary && typeof productInfo.short_summary === 'object')
         ? productInfo.short_summary
         : {};
-      setProductShortSummary({
-        ar: typeof ss.ar === 'string' ? ss.ar : '',
-        en: typeof ss.en === 'string' ? ss.en : '',
-        ku: typeof ss.ku === 'string' ? ss.ku : '',
-      });
-      if (ss.ar || ss.en || ss.ku) markFieldFilled('short_summary');
+      let ar = typeof ss.ar === 'string' ? ss.ar.trim() : '';
+      let en = typeof ss.en === 'string' ? ss.en.trim() : '';
+      let ku = typeof ss.ku === 'string' ? ss.ku.trim() : '';
+      // Deterministic client-side fallback so the field is never empty after extraction
+      if (!ar && !en && !ku) {
+        ar = `${baselineDisplay} بجودة عالية وميزات عملية تمنح تجربة استخدام موثوقة وسلسة.`.slice(0, 200);
+        en = `${baselineNameEn || baselineDisplay} with reliable quality and practical features for a smooth everyday experience.`.slice(0, 200);
+        ku = `${baselineDisplay} بە کوالێتی باش و تایبەتمەندییە کردارییەکان بۆ بەکارهێنانێکی ئاسوودە.`.slice(0, 200);
+        console.warn('[AI Extract] short_summary was empty — applied client-side fallback');
+      }
+      setProductShortSummary({ ar, en, ku });
+      markFieldFilled('short_summary');
     }
 
     // Auto-fill searchable tags (keywords) — ALWAYS replace
     {
-      const tags = Array.isArray(productInfo.searchable_tags) ? productInfo.searchable_tags : [];
+      const tags = Array.isArray(productInfo.searchable_tags)
+        ? productInfo.searchable_tags
+        : (Array.isArray(productInfo.searchable_attributes) ? productInfo.searchable_attributes : []);
       const cleaned = tags
         .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
         .filter((t: string) => t.length > 0);
-      setProductSearchableAttrs(Array.from(new Set(cleaned)));
-      if (cleaned.length > 0) markFieldFilled('searchable_tags');
+      let finalTags = Array.from(new Set(cleaned));
+      // Fallback: build tags from the product name tokens
+      if (finalTags.length === 0) {
+        const tokens = `${baselineNameEn} ${baselineNameAr}`
+          .split(/[\s,،\-_/]+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length >= 2);
+        finalTags = Array.from(new Set(tokens)).slice(0, 8);
+        if (finalTags.length > 0) {
+          console.warn('[AI Extract] searchable_tags empty — applied client-side token fallback');
+        }
+      }
+      setProductSearchableAttrs(finalTags);
+      if (finalTags.length > 0) markFieldFilled('searchable_tags');
     }
 
     // Auto-fill "Why this product" AI content — ALWAYS replace
