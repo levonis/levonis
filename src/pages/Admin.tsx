@@ -351,6 +351,7 @@ const Admin = () => {
   const latestFormValuesRef = useRef<Record<string, string>>({});
   const restoredDraftRef = useRef(false);
   const draftRestoredOnceRef = useRef(false);
+  const initializedProductIdRef = useRef<string | null>(null);
 
   // Hydrate form inputs from the latest snapshot (used on form remount, e.g. after tab switch)
   const hydrateFormFromSnapshot = useCallback((node: HTMLFormElement) => {
@@ -523,6 +524,11 @@ const Admin = () => {
       return;
     }
     if (productDialogOpen && editingProduct) {
+      const productInitKey = String(editingProduct.id || editingProduct.slug || 'editing-product');
+      if (initializedProductIdRef.current === productInitKey) {
+        return;
+      }
+      initializedProductIdRef.current = productInitKey;
       // Initialize from the current product - include stock_quantity from colors
       const colorsWithStock = Array.isArray(editingProduct.colors) 
         ? editingProduct.colors.map((c: any) => ({ ...c, stock_quantity: c.stock_quantity ?? undefined }))
@@ -538,6 +544,8 @@ const Admin = () => {
       setProductSearchableAttrs(
         Array.isArray(editingProduct.searchable_attributes) ? editingProduct.searchable_attributes : []
       );
+      setSearchableAttrInput('');
+      setProductUrl(editingProduct.taobao_url || editingProduct.source_url || '');
       // preOrderShippingOptions removed
       
       // Load card discounts from product
@@ -574,6 +582,7 @@ const Admin = () => {
           });
       }
     } else if (productDialogOpen && !editingProduct) {
+      initializedProductIdRef.current = null;
       // New product: use default settings from database
       setProductOptions([]);
       setProductColors([]);
@@ -588,6 +597,7 @@ const Admin = () => {
       
       // preOrderShippingOptions removed - handled by pricing section
     } else if (!productDialogOpen) {
+      initializedProductIdRef.current = null;
       // Clear URL when closing dialog
       setProductUrl('');
       setFormKey(prev => prev + 1); // Reset form key when closing
