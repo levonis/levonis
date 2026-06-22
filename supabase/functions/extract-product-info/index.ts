@@ -2096,14 +2096,51 @@ Return JSON ONLY:
       }
     }
 
+    const displayName = cleanExtractedText(productInfo.name_ar) || cleanExtractedText(productInfo.name) || 'المنتج';
     if (!hasTriLangValue(productInfo.short_summary)) {
-      const displayName = cleanExtractedText(productInfo.name_ar) || cleanExtractedText(productInfo.name) || 'المنتج';
       productInfo.short_summary = {
         ar: normalizeSeoText(productInfo.short_summary?.ar) || `${displayName} بجودة عالية وخيارات عملية تناسب الاستخدام اليومي وتمنح تجربة موثوقة للمستخدمين.`.slice(0, 200),
         en: normalizeSeoText(productInfo.short_summary?.en) || `${cleanExtractedText(productInfo.name) || displayName} with reliable quality, practical features, and a smooth everyday user experience.`.slice(0, 200),
         ku: normalizeSeoText(productInfo.short_summary?.ku) || `${displayName} بە کوالێتی باش و تایبەتمەندییە کردارییەکان بۆ بەکارهێنانی ڕۆژانە.`.slice(0, 200),
       };
       console.log('Filled short_summary via deterministic fallback');
+    }
+
+    if (!Array.isArray(productInfo.searchable_tags) || productInfo.searchable_tags.length === 0) {
+      productInfo.searchable_tags = buildFallbackSearchableTags(
+        productInfo.name_ar,
+        productInfo.name,
+        productInfo.description_ar,
+        productInfo.description,
+        existingNameAr,
+        existingName,
+        existingDescriptionAr,
+        existingDescription,
+      );
+      if (productInfo.searchable_tags.length === 0) {
+        productInfo.searchable_tags = [displayName, cleanExtractedText(productInfo.name) || 'product'].filter(Boolean);
+      }
+      console.log('Filled searchable_tags via deterministic fallback:', productInfo.searchable_tags.length);
+    }
+
+    const finalAi = productInfo.ai_content || {};
+    const needsAiFallback = !finalAi || (
+      (!finalAi.problem_solved || (!finalAi.problem_solved.ar && !finalAi.problem_solved.en && !finalAi.problem_solved.ku)) &&
+      (!finalAi.target_audience || (!finalAi.target_audience.ar && !finalAi.target_audience.en && !finalAi.target_audience.ku)) &&
+      (!Array.isArray(finalAi.benefits) || finalAi.benefits.length === 0) &&
+      (!Array.isArray(finalAi.usage) || finalAi.usage.length === 0) &&
+      (!Array.isArray(finalAi.specifications) || finalAi.specifications.length === 0)
+    );
+    if (needsAiFallback) {
+      productInfo.ai_content = buildFallbackAIContent({
+        nameAr: productInfo.name_ar || existingNameAr,
+        nameEn: productInfo.name || existingName,
+        descriptionAr: productInfo.description_ar || existingDescriptionAr,
+        descriptionEn: productInfo.description || existingDescription,
+        dimensions: productInfo.dimensions,
+        weightKg: productInfo.weight_kg,
+      });
+      console.log('Filled ai_content via deterministic fallback');
     }
 
     // ===== STEP: Calculate air shipping cost =====
