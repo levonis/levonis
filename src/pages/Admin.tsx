@@ -71,6 +71,23 @@ const productSchema = z.object({
   brand: z.string().nullable().optional(),
 });
 
+const normalizeNumberInput = (value: FormDataEntryValue | null): string => {
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+  return String(value ?? '')
+    .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)))
+    .replace(/[٬,\s]/g, '')
+    .replace(/٫/g, '.');
+};
+
+const parseFormNumber = (value: FormDataEntryValue | null): number | null => {
+  const cleaned = normalizeNumberInput(value);
+  if (!cleaned) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 const categorySchema = z.object({
   name_ar: z.string().min(1, 'الاسم بالعربي مطلوب'),
   name: z.string().min(1, 'الاسم بالإنجليزي مطلوب'),
