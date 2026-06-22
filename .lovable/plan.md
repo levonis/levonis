@@ -1,44 +1,56 @@
 ## الهدف
+عند تعديل الأدمن أو المساعد لأي سعر (المنتج الأساسي، خيارات/ألوان، عروض)، يظهر السعر الجديد لحظياً لكل المستخدمين دون الحاجة لإعادة تحميل الصفحة.
 
-جعل نافذة "تحديث التكلفة السريع" تقرأ وتكتب نفس حقول USD الموجودة داخل صفحة تعديل/إضافة المنتج بالضبط، بدل المصدر الحالي القائم على IQD.
+## الوضع الحالي (ما تم فحصه)
+- `products` فقط مُفعّل في `supabase_realtime`.
+- `product_options` و `product_offers` و `cart_items` **غير مفعلة** للـ Realtime.
+- `useCart.tsx` يستمع لتغييرات `products` للعناصر الموجودة فعلياً في السلة فقط (يُحدّث المخزون لا الأسعار صراحة).
+- صفحات `ProductDetail` و `ProductCard` وقوائم المنتجات (Shop, Offers, Categories) لا تشترك في أي قناة Realtime — السعر يبقى ثابتاً حتى تحديث الصفحة.
 
-## التطابق المطلوب (نفس الحقل بالضبط)
+## خطة التنفيذ
 
-| موقع | الحقل في تعديل المنتج | الحقل في القاعدة |
-|---|---|---|
-| المنتج | "سعر تكلفة المنتج ($)" | `products.original_price_usd` |
-| الخيار | "تكلفة مستقلة للخيار ($)" | `product_options.price_adjustment` |
-| اللون | حقل تكلفة اللون ($) | `products.colors[].cost_usd` |
+### 1) قاعدة البيانات — تفعيل Realtime
+Migration واحدة تضيف الجداول الناقصة للنشر:
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.product_options;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.product_offers;
+ALTER TABLE public.product_options REPLICA IDENTITY FULL;
+ALTER TABLE public.product_offers  REPLICA IDENTITY FULL;
+ALTER TABLE public.products        REPLICA IDENTITY FULL;
+```
+(REPLICA FULL يضمن وصول الصفوف القديمة/الجديدة كاملة في حدث UPDATE.)
 
-## التغييرات
+### 2) Hook موحد جديد `useRealtimePriceSync`
+ملف جديد `src/hooks/useRealtimePriceSync.ts`:
+- يفتح قناة Supabase واحدة عند تشغيل التطبيق (داخل `App.tsx` أو `CartProvider`).
+- يستمع لـ UPDATE على `products` (الأعمدة: `price`, `original_price`, `link_direct_commission_to_cod`)، وعلى `product_options` (`price_adjustment`) وعلى `product_offers` (`offer_price`, `is_active`).
+- عند أي حدث: يستدعي `queryClient.invalidateQueries` لـ keys: `['products']`, `['product']`, `['product-offers']`, `['product-options']`, `['cart']`, `['cart-stock-check']`, `['merchant-products']`.
+- Debounce بسيط 200ms لتجميع التحديثات المتتابعة.
 
-### 1) `src/components/admin/QuickCostEditDialog.tsx`
-- جعل **USD** هو المصدر الأساسي (canonical) للقراءة والكتابة:
-  - المنتج: قراءة من `original_price_usd` مباشرة (بدون fallback إلى `cost_price` IQD).
-  - الخيارات: قراءة من `product_options.price_adjustment` مباشرة (بدون fallback إلى `cost_iqd`).
-  - الألوان: قراءة من `colors[].cost_usd` مباشرة.
-- إبقاء مبدّل العملة USD / CNY / IQD للإدخال السريع كما هو، لكن **القيمة المحفوظة دائماً USD** (مع تحويل من العملة المختارة عند الحفظ).
-- عرض معاينة IQD أسفل الحقل (محسوبة من USD × `usd_to_iqd_rate`) كما هي حالياً.
-- تسميات الحقول تتطابق نصياً مع تعديل المنتج:
-  - "سعر تكلفة المنتج ($)"
-  - "تكلفة مستقلة للخيار ($)"
-  - "تكلفة اللون ($)"
+### 3) تحديث السلة (`useCart.tsx`)
+- توسعة المستمع الحالي ليشمل `product_options` و `product_offers` للمنتجات الموجودة في السلة.
+- عند رصد فرق في السعر بين `payload.old` و `payload.new` لمنتج موجود في السلة → إظهار **toast صامت صغير عبر `sonner`**:
+  > "تم تحديث سعر [اسم المنتج]"
+  (مرة واحدة لكل منتج خلال 3 ثوان لتفادي الإزعاج.)
 
-### 2) منطق الحفظ
-- **المنتج**: استدعاء `admin_quick_update_costs` بـ:
-  - `_original_price_usd` = القيمة المُدخلة بالـ USD
-  - `_product_cost` = `round(usd × usd_to_iqd_rate)` (لتزامن `cost_price` IQD مع نفس صيغة تعديل المنتج).
-- **الخيارات**: تحديث `product_options.price_adjustment` بالـ USD مباشرة (بدل `cost_iqd` IQD). إن كان مصفوفة فارغة → `null`. هذا يطابق سلوك تعديل المنتج تماماً.
-  - بما أن `admin_quick_update_costs` يستقبل `cost` بالـ IQD حالياً، سنحدّث الخيارات عبر `update` مباشر على `product_options` بـ `price_adjustment` (بدلاً من تعديل الـ RPC).
-- **الألوان**: تحديث `colors[].cost_usd` كقيمة canonical + إعادة حساب `cost_iqd = round(usd × rate)` للحفاظ على التوافق مع باقي النظام (نفس ما تفعله صفحة تعديل المنتج).
-- **التحقق بعد الحفظ**: إعادة قراءة `original_price_usd` من `products_admin` ومقارنتها بما أُرسل (Verify-and-Rollback نمطنا المعتمد).
+### 4) صفحات العرض
+- `ProductDetail.tsx`: الاعتماد على invalidation عبر Hook الموحد — لا حاجة لتعديل مباشر، فقط التأكد أن `queryKey` يبدأ بـ `['product', id]`.
+- `ProductCard` وقوائم: الـ invalidation العام سيُجبر React Query على إعادة الجلب لحظياً.
 
-### 3) ملاحظات
-- لا تغيير على RPC قاعدة البيانات.
-- لا تغيير على واجهة تعديل المنتج نفسها — فقط نافذة التحديث السريع.
-- يبقى الترتيب الافتراضي والميزات الأخرى دون تغيير.
+### 5) ضبط الـ Query Keys (تدقيق سريع)
+مراجعة أن:
+- صفحة المنتج تستخدم `['product', productId]`.
+- العروض تستخدم `['product-offers', ...]`.
+- إذا وجدت keys مختلفة في صفحات معينة، تتم إضافتها لقائمة الـ invalidations في Hook الموحد.
 
-## التحقق
-- فتح تحديث سريع لمنتج موجود → القيم تظهر = نفس قيمة "سعر تكلفة المنتج ($)" داخل تعديل المنتج تماماً.
-- تعديل القيمة بالـ USD وحفظ → فتح تعديل المنتج يُظهر نفس القيمة الجديدة بالضبط.
-- نفس الاختبار للخيار (مقارنة مع "تكلفة مستقلة للخيار ($)") ولكل لون.
+## التفاصيل التقنية
+- لا تغييرات في منطق التسعير نفسه (`computeUnifiedCardPrice` يبقى كما هو).
+- لا تغيير في RLS — القراءة العامة للأسعار مسموح بها أصلاً.
+- التكلفة: قناة Realtime واحدة عامة لكل عميل + قناة سلة الحالية. خفيف.
+- التوافق: عمل تلقائي على الموبايل والديسكتوب، وبدون أي مدخل من المستخدم.
+
+## الملفات المتأثرة
+- جديد: `supabase/migrations/<timestamp>_realtime_prices.sql`
+- جديد: `src/hooks/useRealtimePriceSync.ts`
+- تعديل: `src/App.tsx` (تشغيل الـ Hook مرة واحدة)
+- تعديل: `src/hooks/useCart.tsx` (إضافة الاستماع لـ product_options/offers + toast السلة)
