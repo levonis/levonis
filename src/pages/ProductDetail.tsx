@@ -572,8 +572,8 @@ const ProductDetail = () => {
   if (activeSaleType === 'preorder' && selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
     shippingAdjustment = Number((product.pre_order_shipping_options[selectedShippingOption] as any).price_adjustment || 0);
   }
-  const baseCostIqd = ensurePriceIqd(Number((product as any).price || 0), (product as any).price_usd, usdToIqd);
-  const saleTypeAddons = basePrice - baseCostIqd;
+  const baseCostIqd = getProductBaseCostIqd(product as any, usdToIqd);
+  const saleTypeAddons = Math.max(0, basePrice - baseCostIqd);
   let variantPrice = basePrice;
   if (selectedVariantCostIqd != null) {
     if (activeSaleType === 'direct' && (product as any).link_direct_commission_to_cod && codDefaults) {
