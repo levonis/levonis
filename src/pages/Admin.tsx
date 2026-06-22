@@ -1459,9 +1459,10 @@ const Admin = () => {
           uniqueImages.push(img);
         }
       }
-      // When extracting new product info, clear editing product images and use only new ones
+      // When extracting new product info, clear editing product images and use only new ones.
+      // Keep extracted SEO state from being reset by the editor initialization effect.
       if (editingProduct) {
-        setEditingProduct({ ...editingProduct, images: [] });
+        setEditingProduct((prev: any) => prev ? { ...prev, images: [], image_url: uniqueImages[0] || null } : prev);
       }
       setUploadedImages(uniqueImages);
     }
