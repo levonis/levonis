@@ -34,7 +34,13 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
     (async () => {
       setLoading(true);
       try {
-        setProductCost(product.cost_price != null ? String(product.cost_price) : "");
+        const { data: productRow, error: productError } = await (supabase as any)
+          .from("products_admin")
+          .select("cost_price")
+          .eq("id", product.id)
+          .single();
+        if (productError) throw productError;
+        setProductCost(productRow?.cost_price != null ? String(productRow.cost_price) : "");
         const { data, error } = await (supabase as any)
           .from("product_options")
           .select("id, name_ar, name, price_adjustment, cost_iqd")
@@ -58,7 +64,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
       const payloadOptions = options.map((o) => ({
         id: o.id,
         cost: o.price_adjustment === null || o.price_adjustment === undefined || (o.price_adjustment as any) === ""
-          ? 0
+          ? null
           : Number(o.price_adjustment),
       }));
       const productCostNum = productCost === "" ? null : Number(productCost);
