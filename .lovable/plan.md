@@ -1,56 +1,38 @@
-## الهدف
-عند تعديل الأدمن أو المساعد لأي سعر (المنتج الأساسي، خيارات/ألوان، عروض)، يظهر السعر الجديد لحظياً لكل المستخدمين دون الحاجة لإعادة تحميل الصفحة.
+## المشكلة
+عند الضغط على "حفظ" في نموذج تعديل المنتج (Admin أو Assistant)، تفشل عملية الحفظ بالخطأ:
+`admin_update_product: product id is required for single-arg overload`.
 
-## الوضع الحالي (ما تم فحصه)
-- `products` فقط مُفعّل في `supabase_realtime`.
-- `product_options` و `product_offers` و `cart_items` **غير مفعلة** للـ Realtime.
-- `useCart.tsx` يستمع لتغييرات `products` للعناصر الموجودة فعلياً في السلة فقط (يُحدّث المخزون لا الأسعار صراحة).
-- صفحات `ProductDetail` و `ProductCard` وقوائم المنتجات (Shop, Offers, Categories) لا تشترك في أي قناة Realtime — السعر يبقى ثابتاً حتى تحديث الصفحة.
-
-## خطة التنفيذ
-
-### 1) قاعدة البيانات — تفعيل Realtime
-Migration واحدة تضيف الجداول الناقصة للنشر:
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.product_options;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.product_offers;
-ALTER TABLE public.product_options REPLICA IDENTITY FULL;
-ALTER TABLE public.product_offers  REPLICA IDENTITY FULL;
-ALTER TABLE public.products        REPLICA IDENTITY FULL;
+السبب: في `src/lib/adminMutations.ts` نُرسل
+```ts
+_updates: { id: productId, ...updates }
 ```
-(REPLICA FULL يضمن وصول الصفوف القديمة/الجديدة كاملة في حدث UPDATE.)
+الـ spread يأتي **بعد** `id`، فإذا كان `updates` يحوي مفتاح `id` بقيمة `undefined` (وهذا يحدث لأن النموذج يحتفظ بحقل id غير مُعرَّف)، يُلغى الـ id من JSON ويصل للقاعدة بدون معرّف.
 
-### 2) Hook موحد جديد `useRealtimePriceSync`
-ملف جديد `src/hooks/useRealtimePriceSync.ts`:
-- يفتح قناة Supabase واحدة عند تشغيل التطبيق (داخل `App.tsx` أو `CartProvider`).
-- يستمع لـ UPDATE على `products` (الأعمدة: `price`, `original_price`, `link_direct_commission_to_cod`)، وعلى `product_options` (`price_adjustment`) وعلى `product_offers` (`offer_price`, `is_active`).
-- عند أي حدث: يستدعي `queryClient.invalidateQueries` لـ keys: `['products']`, `['product']`, `['product-offers']`, `['product-options']`, `['cart']`, `['cart-stock-check']`, `['merchant-products']`.
-- Debounce بسيط 200ms لتجميع التحديثات المتتابعة.
+## الإصلاح
 
-### 3) تحديث السلة (`useCart.tsx`)
-- توسعة المستمع الحالي ليشمل `product_options` و `product_offers` للمنتجات الموجودة في السلة.
-- عند رصد فرق في السعر بين `payload.old` و `payload.new` لمنتج موجود في السلة → إظهار **toast صامت صغير عبر `sonner`**:
-  > "تم تحديث سعر [اسم المنتج]"
-  (مرة واحدة لكل منتج خلال 3 ثوان لتفادي الإزعاج.)
+### 1) `src/lib/adminMutations.ts`
+- تبسيط `adminUpdateProduct`: إرسال نداء واحد فقط عبر التوقيع ذي المعامل الواحد `_updates` لإزالة لبس PostgREST مع الـ overloads، مع وضع `id` و `product_id` **بعد** الـ spread حتى لا يُلغيهما الحقل الفارغ من النموذج، والتحقق المسبق من `productId`.
+```ts
+export const adminUpdateProduct = async (productId: string, updates: Record<string, any>) => {
+  if (!productId) throw new Error('adminUpdateProduct: productId is required');
+  const payload = { ...updates, id: productId, product_id: productId };
+  const { error } = await (supabase as any).rpc('admin_update_product', { _updates: payload });
+  if (error) throw error;
+};
+```
 
-### 4) صفحات العرض
-- `ProductDetail.tsx`: الاعتماد على invalidation عبر Hook الموحد — لا حاجة لتعديل مباشر، فقط التأكد أن `queryKey` يبدأ بـ `['product', id]`.
-- `ProductCard` وقوائم: الـ invalidation العام سيُجبر React Query على إعادة الجلب لحظياً.
+### 2) رسالة خطأ أوضح في القاعدة (هجرة صغيرة)
+تحسين رسالة `RAISE` لتشمل ملخص المفاتيح المُستلمة (للمساعدة في التشخيص المستقبلي فقط)، وقبول مفتاح `id` حتى لو وصل كسلسلة فارغة → ترميه كرسالة "id is invalid" بدلاً من "is required".
 
-### 5) ضبط الـ Query Keys (تدقيق سريع)
-مراجعة أن:
-- صفحة المنتج تستخدم `['product', productId]`.
-- العروض تستخدم `['product-offers', ...]`.
-- إذا وجدت keys مختلفة في صفحات معينة، تتم إضافتها لقائمة الـ invalidations في Hook الموحد.
+### 3) لا تغييرات أخرى
+- لا تغيير في `Admin.tsx` ولا في توقيع `admin_update_product` ذو المعاملين (يبقى للاستخدام الداخلي عبر `PERFORM`).
+- لا تغيير في صلاحيات/RLS — المساعد له صلاحية فعلاً.
 
-## التفاصيل التقنية
-- لا تغييرات في منطق التسعير نفسه (`computeUnifiedCardPrice` يبقى كما هو).
-- لا تغيير في RLS — القراءة العامة للأسعار مسموح بها أصلاً.
-- التكلفة: قناة Realtime واحدة عامة لكل عميل + قناة سلة الحالية. خفيف.
-- التوافق: عمل تلقائي على الموبايل والديسكتوب، وبدون أي مدخل من المستخدم.
+## ملفات تتأثر
+- تعديل: `src/lib/adminMutations.ts`
+- هجرة قاعدة بيانات: تحسين رسائل الـ overload ذي المعامل الواحد فقط.
 
-## الملفات المتأثرة
-- جديد: `supabase/migrations/<timestamp>_realtime_prices.sql`
-- جديد: `src/hooks/useRealtimePriceSync.ts`
-- تعديل: `src/App.tsx` (تشغيل الـ Hook مرة واحدة)
-- تعديل: `src/hooks/useCart.tsx` (إضافة الاستماع لـ product_options/offers + toast السلة)
+## التحقق بعد التطبيق
+- حفظ منتج موجود كـ Admin → نجاح.
+- حفظ منتج موجود كـ Assistant → نجاح.
+- تبديلات سريعة من جدول المنتجات (إظهار/مميز/تحديث السعر) → تستمر بالعمل لأنها تمرّ بنفس `adminUpdateProduct`.
