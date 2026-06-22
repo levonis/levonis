@@ -2050,18 +2050,15 @@ Return JSON ONLY:
 
         const seoResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${lovableApiKey}`,
-            'Content-Type': 'application/json',
-          },
+          headers: buildLovableAiHeaders(lovableApiKey),
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: LOVABLE_AI_MODEL,
             messages: [
               { role: 'system', content: 'أنت كاتب SEO ومسوق منتجات محترف. أنتج محتوى تسويقي عالي الجودة بـ 3 لغات. أرجع JSON صحيح فقط.' },
               { role: 'user', content: seoPrompt }
             ],
             temperature: 0.4,
-            max_tokens: 4000,
+            max_tokens: 12000,
           }),
         });
 
@@ -2092,7 +2089,7 @@ Return JSON ONLY:
             }
           }
         } else {
-          console.error('SEO fallback AI call failed:', seoResponse.status);
+          console.error('SEO fallback AI call failed:', seoResponse.status, await seoResponse.text());
         }
       } catch (seoErr) {
         console.error('SEO fallback error:', seoErr);
