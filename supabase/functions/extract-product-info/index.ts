@@ -2084,9 +2084,8 @@ Return JSON ONLY:
         if (seoResponse.ok) {
           const seoData = await seoResponse.json();
           const seoText = seoData.choices[0]?.message?.content || '';
-          const seoMatch = seoText.match(/\{[\s\S]*\}/);
-          if (seoMatch) {
-            const seo = JSON.parse(seoMatch[0]);
+          try {
+            const seo = parseAiJsonObject(seoText);
             if (ssEmpty && seo.short_summary && typeof seo.short_summary === 'object') {
               productInfo.short_summary = {
                 ar: normalizeSeoText(seo.short_summary.ar),
@@ -2106,6 +2105,8 @@ Return JSON ONLY:
               productInfo.ai_content = seo.ai_content;
               console.log('Filled ai_content via fallback');
             }
+          } catch (seoParseErr) {
+            console.error('SEO fallback JSON parse error:', seoParseErr);
           }
         } else {
           console.error('SEO fallback AI call failed:', seoResponse.status, await seoResponse.text());
