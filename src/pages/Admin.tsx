@@ -404,9 +404,14 @@ const Admin = () => {
         }
         latestFormValuesRef.current = seed;
       }
-      setEditingProduct(draft.editingProduct ?? null);
-      initializedProductIdRef.current = draft.editingProduct
-        ? String(draft.editingProduct.id || draft.editingProduct.slug || 'editing-product')
+      // Only treat as "editing an existing product" when the draft truly has a real id.
+      // Otherwise treat as a brand-new product so we don't accidentally trigger UPDATE without an id.
+      const draftEditing = draft.editingProduct && typeof draft.editingProduct === 'object' && draft.editingProduct.id
+        ? draft.editingProduct
+        : null;
+      setEditingProduct(draftEditing);
+      initializedProductIdRef.current = draftEditing
+        ? String(draftEditing.id || draftEditing.slug || 'editing-product')
         : null;
       setUploadedImages(Array.isArray(draft.uploadedImages) ? draft.uploadedImages : []);
       setProductOptions(Array.isArray(draft.productOptions) ? draft.productOptions : []);
