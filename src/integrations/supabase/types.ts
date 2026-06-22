@@ -14454,20 +14454,15 @@ export type Database = {
           user_id: string
         }[]
       }
-      admin_quick_update_costs:
-        | {
-            Args: { _options: Json; _product_cost: number; _product_id: string }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              _options: Json
-              _original_price_usd?: number
-              _product_cost: number
-              _product_id: string
-            }
-            Returns: undefined
-          }
+      admin_quick_update_costs: {
+        Args: {
+          _options: Json
+          _original_price_usd?: number
+          _product_cost: number
+          _product_id: string
+        }
+        Returns: undefined
+      }
       admin_remove_assistant: { Args: { _user_id: string }; Returns: undefined }
       admin_update_level_prize_claim: {
         Args: { p_claim_id: string; p_new_status: string; p_notes?: string }
