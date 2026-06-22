@@ -2086,7 +2086,11 @@ const Admin = () => {
 
       let productId = editingProduct?.id;
 
-      if (editingProduct) {
+      // Safety net: if editingProduct exists but lacks a real id (stale draft, etc.),
+      // treat as create instead of throwing "productId is required".
+      const isRealEdit = !!(editingProduct && editingProduct.id);
+
+      if (isRealEdit) {
         await updateProduct.mutateAsync({ id: editingProduct.id, values });
       } else {
         productId = await adminCreateProduct(values as any);
