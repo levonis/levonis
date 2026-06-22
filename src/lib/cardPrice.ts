@@ -65,6 +65,8 @@ export function computeUnifiedCardPrice(
           // use the override directly as the sale price.
           const minOverride = getMinOptionOverridePriceIqd(product, 'direct', usdToIqd);
           if (minOverride != null) {
+            const baseCostIqd = ensurePriceIqd(Number(product?.price || 0), product?.price_usd, usdToIqd);
+            const saleTypeAddons = directBase - baseCostIqd;
             let finalFromOverride = minOverride;
             if (product?.link_direct_commission_to_cod && codDefaults) {
               const fromVariantMap = product?.id
@@ -77,6 +79,8 @@ export function computeUnifiedCardPrice(
                 codDefaults,
               );
               if (derived != null) finalFromOverride = derived;
+            } else {
+              finalFromOverride = minOverride + saleTypeAddons;
             }
             candidates.push(Math.min(finalFromOverride, directBase));
           } else {
