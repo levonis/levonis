@@ -124,19 +124,6 @@ const ProductDetail = () => {
     enabled: !!product?.id && !!(product as any).link_direct_commission_to_cod,
   });
 
-  const selectedVariantCostIqd = useMemo(() => {
-    if (!product) return null;
-    const optionData = productOptions?.find((opt: any) => opt.id === selectedOption);
-    return getCartItemVariantOverrideCostIqd({ products: product, sale_type: activeSaleType, selected_color: selectedColor, product_options: optionData }, usdToIqd);
-  }, [product, productOptions, selectedColor, selectedOption, activeSaleType, usdToIqd]);
-
-  const { data: liveVariantDirectMap } = useQuery({
-    queryKey: ['product-variant-live-direct-price', product?.id, selectedVariantCostIqd, product?.link_direct_commission_to_cod],
-    staleTime: 30 * 1000,
-    queryFn: () => fetchVariantDirectSalePrices([{ productId: product!.id, costIqd: selectedVariantCostIqd! }]),
-    enabled: !!product?.id && !!(product as any).link_direct_commission_to_cod && activeSaleType === 'direct' && !!selectedVariantCostIqd,
-  });
-
   const { name: localizedName, description: localizedDescription } = useLocalizedProduct(product);
   const { discount: protectionDiscount } = useProtectionDiscount(product?.category_id);
 
