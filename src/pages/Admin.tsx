@@ -1145,7 +1145,7 @@ const Admin = () => {
         throw new Error(response.error.message || 'فشل في استخراج المعلومات');
       }
 
-      const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message } = response.data;
+      const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message, canonical_url } = response.data;
       
       // If requires manual input, show the manual input form
       if (requiresManualInput) {
@@ -1184,6 +1184,7 @@ const Admin = () => {
         ai_content_keys: productInfo.ai_content ? Object.keys(productInfo.ai_content) : [],
       });
       applyProductInfo(productInfo);
+      if (canonical_url && typeof canonical_url === 'string') setProductUrl(canonical_url);
       advanceExtractionStep('apply', 'done');
       toast.success('تم الاستخراج والتعبئة بنجاح');
       
@@ -1245,7 +1246,6 @@ const Admin = () => {
     }
     const extractedNameEn = String(productInfo.name_en || productInfo.name || '').trim();
     if (extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
-      const nameEnInput = form.querySelector('#name_en') as HTMLInputElement | null;
       const legacyNameInput = form.querySelector('input[name="name"]') as HTMLInputElement | null;
       setFormValue('#name_en', extractedNameEn, 'name_en');
       if (legacyNameInput) setFormValue('input[name="name"]', extractedNameEn, 'name');
