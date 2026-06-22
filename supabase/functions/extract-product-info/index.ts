@@ -2585,6 +2585,26 @@ Return ONLY JSON:
       }
     }
 
+    // ===== Shopify override: replace AI-merged colors/options with structured axes =====
+    if (shopifyExtracted && (shopifyExtracted.colors.length > 0 || shopifyExtracted.options.length > 0)) {
+      console.log('Shopify structured override — replacing AI colors/options',
+        'colors:', productInfo.colors.length, '→', shopifyExtracted.colors.length,
+        'options:', productInfo.options.length, '→', shopifyExtracted.options.length);
+      productInfo.colors = shopifyExtracted.colors.map(c => ({ ...c }));
+      productInfo.options = shopifyExtracted.options.map(o => ({ ...o }));
+      for (const c of shopifyExtracted.colors) {
+        if (c.image_url) variantImageUrls.add(getImageBaseUrl(c.image_url));
+      }
+      for (const o of shopifyExtracted.options) {
+        if (o.image_url) variantImageUrls.add(getImageBaseUrl(o.image_url));
+      }
+      if (productInfo.images.length === 0 && shopifyExtracted.images.length > 0) {
+        productInfo.images = shopifyExtracted.images.slice(0, 10);
+      }
+    }
+
+
+
 
     // Note: For direct images, we DON'T exclude variant images because they might be the only product images available
     if (productInfo.images.length === 0 && directImages.length > 0) {
