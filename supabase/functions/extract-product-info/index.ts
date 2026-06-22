@@ -2486,6 +2486,9 @@ Return ONLY JSON:
     console.log('Features:', productInfo.features.length);
     console.log('Dimensions:', JSON.stringify(productInfo.dimensions));
     console.log('Weight (kg):', productInfo.weight_kg);
+    console.log('SEO short summary complete:', hasTriLangValue(productInfo.short_summary));
+    console.log('SEO searchable tags:', Array.isArray(productInfo.searchable_tags) ? productInfo.searchable_tags.length : 0);
+    console.log('AI content keys:', productInfo.ai_content && typeof productInfo.ai_content === 'object' ? Object.keys(productInfo.ai_content).join(',') : 'none');
     console.log('Estimated air shipping cost:', estimatedAirShippingCost);
 
     return new Response(
