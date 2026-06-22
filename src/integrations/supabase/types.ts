@@ -14461,7 +14461,10 @@ export type Database = {
           _product_cost: number
           _product_id: string
         }
-        Returns: undefined
+        Returns: {
+          cost_price: number
+          original_price_usd: number
+        }[]
       }
       admin_remove_assistant: { Args: { _user_id: string }; Returns: undefined }
       admin_update_level_prize_claim: {
