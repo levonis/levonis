@@ -39,7 +39,7 @@ import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
-import { ensurePriceIqd, ensureAdjustmentIqd, getGuardedCartItemPrice, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices } from '@/lib/priceGuard';
+import { getGuardedCartItemPrice, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
@@ -86,21 +86,7 @@ const Cart = () => {
     return (items || []).flatMap((item: any) => {
       const product = item.products;
       if (item.sale_type !== 'direct' || !product?.id || !product.link_direct_commission_to_cod) return [];
-      const priceUsd = product.price_usd;
-      const colorData = item.selected_color && Array.isArray(product.colors)
-        ? (product.colors as any[]).find((c: any) => c.name === item.selected_color || c.name_ar === item.selected_color || c.hex_code === item.selected_color)
-        : null;
-      const colorCost = colorData
-        ? (colorData.direct_sale_price != null
-            ? ensurePriceIqd(Number(colorData.direct_sale_price), priceUsd, usdToIqd)
-            : colorData.price != null
-              ? ensurePriceIqd(Number(colorData.price), priceUsd, usdToIqd)
-              : null)
-        : null;
-      const optionCost = item.product_options?.price_adjustment && Number(item.product_options.price_adjustment) > 0
-        ? ensureAdjustmentIqd(Number(item.product_options.price_adjustment), usdToIqd, priceUsd)
-        : null;
-      const costIqd = colorCost != null && optionCost != null ? colorCost + optionCost : (colorCost ?? optionCost);
+      const costIqd = getCartItemVariantOverrideCostIqd(item, usdToIqd);
       return costIqd ? [{ productId: product.id, costIqd }] : [];
     });
   }, [items, usdToIqd]);
