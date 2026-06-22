@@ -2199,8 +2199,8 @@ const Admin = () => {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        const msg = error?.message || error?.details || error?.hint || error?.error_description || JSON.stringify(error);
-        toast.error(`فشل حفظ المنتج: ${msg}`, { duration: 10000 });
+        const fullMsg = formatSupabaseError(error);
+        toast.error(`فشل حفظ المنتج: ${fullMsg}`, { duration: 10000 });
         console.error('[handleProductSubmit] error:', error);
       }
     }
