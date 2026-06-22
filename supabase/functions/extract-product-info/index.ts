@@ -3,6 +3,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const LOVABLE_AI_MODEL = 'google/gemini-3.1-pro-preview';
+
+const buildLovableAiHeaders = (lovableApiKey: string) => ({
+  'Lovable-API-Key': lovableApiKey,
+  'X-Lovable-AIG-SDK': 'manual-edge-function',
+  'Content-Type': 'application/json',
+});
+
 // Short URL patterns that need to be followed to get the real URL
 const SHORT_URL_PATTERNS = [
   /https?:\/\/e\.tb\.cn\/[^\s]+/i,
@@ -295,6 +303,81 @@ function normalizeSeoText(value: unknown): string {
 
 function hasTriLangValue(value: any): boolean {
   return Boolean(normalizeSeoText(value?.ar) && normalizeSeoText(value?.en) && normalizeSeoText(value?.ku));
+}
+
+function buildFallbackSearchableTags(...values: unknown[]): string[] {
+  const stop = new Set(['the', 'and', 'with', 'for', 'من', 'في', 'على', 'الى', 'إلى', 'هذا', 'هذه', 'المنتج']);
+  const tokens = values
+    .map(cleanExtractedText)
+    .join(' ')
+    .split(/[\s,،/|_+()\[\]{}:;]+/)
+    .map((token) => token.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').trim())
+    .filter((token) => token.length >= 2 && !stop.has(token.toLowerCase()));
+  return Array.from(new Set(tokens)).slice(0, 12);
+}
+
+function buildFallbackAIContent(input: {
+  nameAr?: unknown;
+  nameEn?: unknown;
+  descriptionAr?: unknown;
+  descriptionEn?: unknown;
+  dimensions?: any;
+  weightKg?: unknown;
+}) {
+  const nameAr = cleanExtractedText(input.nameAr) || cleanExtractedText(input.nameEn) || 'المنتج';
+  const nameEn = cleanExtractedText(input.nameEn) || cleanExtractedText(input.nameAr) || 'Product';
+  const dimensionsText = input.dimensions?.length_cm && input.dimensions?.width_cm && input.dimensions?.height_cm
+    ? `${input.dimensions.length_cm}×${input.dimensions.width_cm}×${input.dimensions.height_cm} cm`
+    : '';
+  const weightText = input.weightKg ? `${input.weightKg} kg` : '';
+
+  return {
+    problem_solved: {
+      ar: `${nameAr} يساعد المستخدم على الحصول على أداء عملي ونتيجة موثوقة بدون تعقيد.`,
+      en: `${nameEn} helps users get practical performance and reliable results without unnecessary complexity.`,
+      ku: `${nameAr} یارمەتی بەکارهێنەر دەدات ئەنجامی پشتپێبەستراو و بەکارهێنانی ئاسان بەدەست بهێنێت.`,
+    },
+    target_audience: {
+      ar: `مناسب للمستخدمين الذين يبحثون عن ${nameAr} بجودة جيدة وتجربة استخدام واضحة.`,
+      en: `Suitable for users looking for ${nameEn} with dependable quality and a clear everyday experience.`,
+      ku: `گونجاوە بۆ ئەو بەکارهێنەرانەی بەدوای ${nameAr} بە کوالێتی باش و ئەزموونی ڕووندا دەگەڕێن.`,
+    },
+    benefits: [
+      {
+        ar: 'يوفر تجربة استخدام مستقرة وسهلة للمستخدم اليومي.',
+        en: 'Provides a stable and easy experience for everyday use.',
+        ku: 'ئەزموونێکی جێگیر و ئاسان بۆ بەکارهێنانی ڕۆژانە دابین دەکات.',
+      },
+      {
+        ar: 'يساعد على إنجاز المهام بسرعة وبنتائج أكثر موثوقية.',
+        en: 'Helps complete tasks faster with more dependable results.',
+        ku: 'یارمەتی تەواوکردنی کارەکان بە خێرایی و ئەنجامی پشتپێبەستراوتر دەدات.',
+      },
+      {
+        ar: 'اختيار عملي لمن يريد منتجاً واضح المواصفات وسهل الاعتماد عليه.',
+        en: 'A practical choice for anyone who needs clear specs and dependable use.',
+        ku: 'هەڵبژاردنێکی کردارییە بۆ کەسێک کە پێویستی بە تایبەتمەندی ڕوون و بەکارهێنانی پشتپێبەستراوە.',
+      },
+    ],
+    usage: [
+      {
+        ar: 'راجع المواصفات والصور للتأكد من ملاءمة المنتج لاحتياجك.',
+        en: 'Review the specifications and images to confirm it fits your needs.',
+        ku: 'تایبەتمەندی و وێنەکان بپشکنە بۆ دڵنیابوون لە گونجاوی بۆ پێویستیت.',
+      },
+      {
+        ar: 'اختر اللون أو الخيار المناسب ثم أضفه إلى السلة.',
+        en: 'Choose the suitable color or option, then add it to your cart.',
+        ku: 'ڕەنگ یان هەڵبژاردەی گونجاو دیاری بکە و زیاد بکە بۆ سەبەتەکەت.',
+      },
+    ],
+    specifications: [
+      { key: { ar: 'اسم المنتج', en: 'Product name', ku: 'ناوی بەرهەم' }, value: { ar: nameAr, en: nameEn, ku: nameAr } },
+      { key: { ar: 'الاستخدام', en: 'Use case', ku: 'بەکارهێنان' }, value: { ar: 'استخدام يومي وعملي', en: 'Practical everyday use', ku: 'بەکارهێنانی ڕۆژانە و کرداری' } },
+      ...(dimensionsText ? [{ key: { ar: 'الأبعاد التقريبية', en: 'Approx. dimensions', ku: 'قەبارەی نزیکەیی' }, value: { ar: dimensionsText, en: dimensionsText, ku: dimensionsText } }] : []),
+      ...(weightText ? [{ key: { ar: 'الوزن التقريبي', en: 'Approx. weight', ku: 'کێشی نزیکەیی' }, value: { ar: weightText, en: weightText, ku: weightText } }] : []),
+    ].slice(0, 6),
+  };
 }
 
 function isUsefulProductName(value: string): boolean {
