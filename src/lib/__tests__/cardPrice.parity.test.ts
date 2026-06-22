@@ -19,8 +19,9 @@ describe('computeUnifiedCardPrice', () => {
     expect(computeUnifiedCardPrice(p, USD, null)).toBe(150000);
   });
 
-  it('uses the cheapest option override price (replaces base, not additive)', () => {
+  it('uses the cheapest option override as replacement cost, preserving direct-sale addons', () => {
     const p = {
+      price: 80000,
       direct_sale_price: 100000,
       has_in_stock: true,
       product_options: [
@@ -29,12 +30,14 @@ describe('computeUnifiedCardPrice', () => {
         { name_ar: 'C', price_adjustment: 80000, stock_quantity: 2, available_for_direct_sale: true },
       ],
     };
-    // New semantics: cheapest override (10,000) wins, not base + adjustment.
-    expect(computeUnifiedCardPrice(p, USD, null)).toBe(10000);
+    // New semantics: cheapest override (10,000) replaces cost (80,000),
+    // while preserving direct-sale addons (20,000): final = 30,000.
+    expect(computeUnifiedCardPrice(p, USD, null)).toBe(30000);
   });
 
   it('skips out-of-stock options', () => {
     const p = {
+      price: 80000,
       direct_sale_price: 100000,
       has_in_stock: true,
       product_options: [
@@ -42,7 +45,7 @@ describe('computeUnifiedCardPrice', () => {
         { name_ar: 'B', price_adjustment: 20000, stock_quantity: 4, available_for_direct_sale: true },
       ],
     };
-    expect(computeUnifiedCardPrice(p, USD, null)).toBe(20000);
+    expect(computeUnifiedCardPrice(p, USD, null)).toBe(40000);
   });
 
   it('falls back to base when all option overrides are 0/empty', () => {
