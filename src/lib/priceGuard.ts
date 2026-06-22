@@ -559,8 +559,11 @@ export function getGuardedCartItemPrice(
   const overrideCostIqd = getCartItemVariantOverrideCostIqd(item, usdToIqd);
 
   if (overrideCostIqd != null) {
-    const baseCostIqd = ensurePriceIqd(Number(product.price || 0), priceUsd, usdToIqd);
-    const saleTypeAddons = price - baseCostIqd;
+    // Use price_usd*rate as the TRUE raw cost — `product.price` may already
+    // include shipping/commission/pdc/referral baked in (and so would zero out
+    // saleTypeAddons, making the override look like the final price).
+    const baseCostIqd = getProductBaseCostIqd(product, usdToIqd);
+    const saleTypeAddons = Math.max(0, price - baseCostIqd);
     if (isDirect && product.link_direct_commission_to_cod && codDefaults) {
       const fromVariantMap = product.id
         ? variantLivePriceMap?.get(getDirectVariantPriceMapKey(product.id, overrideCostIqd))
