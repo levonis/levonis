@@ -1652,6 +1652,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ===== Strategy 1b: Shopify products.json (structured options/variants) =====
+    let shopifyData: any = null;
+    let shopifyExtracted: ShopifyExtracted | null = null;
+    if (platform === 'shopify') {
+      shopifyData = await fetchShopifyProduct(url);
+      if (shopifyData) {
+        shopifyExtracted = extractShopifyVariants(shopifyData);
+        console.log('Shopify structured extraction:',
+          'colors=', shopifyExtracted?.colors.length,
+          'options=', shopifyExtracted?.options.length,
+          'images=', shopifyExtracted?.images.length);
+      }
+    }
+
+
     // Fetch page
     let pageContent = '';
     let fetchSuccess = false;
