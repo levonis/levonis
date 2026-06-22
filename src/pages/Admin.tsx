@@ -1772,6 +1772,8 @@ const Admin = () => {
         });
 
         const priceIqd = Math.round(priceUsdVal * settings.usd_to_iqd_rate);
+        values.cost_price = priceIqd;
+        values.original_price_usd = Math.round(priceUsdVal * 100) / 100;
         const shippingType: string = values.shipping_type || '';
         // Parse comma-separated tokens with legacy 'both' support
         const stTokens = shippingType === 'both' ? ['sea', 'air'] : shippingType.split(',').map((t: string) => t.trim());
