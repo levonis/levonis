@@ -1255,7 +1255,13 @@ Deno.serve(async (req) => {
     // Load live exchange rates so original_price reflects (source price × current rate) only.
     await loadExchangeRatesFromDb();
 
-    let { url } = await req.json();
+    const reqBody = await req.json();
+    let { url } = reqBody;
+    const forceSeoRegenerate = reqBody?.forceSeoRegenerate === true;
+    const existingName = typeof reqBody?.existingName === 'string' ? reqBody.existingName : '';
+    const existingNameAr = typeof reqBody?.existingNameAr === 'string' ? reqBody.existingNameAr : '';
+    const existingDescription = typeof reqBody?.existingDescription === 'string' ? reqBody.existingDescription : '';
+    const existingDescriptionAr = typeof reqBody?.existingDescriptionAr === 'string' ? reqBody.existingDescriptionAr : '';
     
     if (!url) {
       return new Response(
