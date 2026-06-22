@@ -1985,9 +1985,9 @@ Return JSON ONLY:
             const seo = JSON.parse(seoMatch[0]);
             if (ssEmpty && seo.short_summary && typeof seo.short_summary === 'object') {
               productInfo.short_summary = {
-                ar: typeof seo.short_summary.ar === 'string' ? seo.short_summary.ar.slice(0, 200) : '',
-                en: typeof seo.short_summary.en === 'string' ? seo.short_summary.en.slice(0, 200) : '',
-                ku: typeof seo.short_summary.ku === 'string' ? seo.short_summary.ku.slice(0, 200) : '',
+                ar: normalizeSeoText(seo.short_summary.ar),
+                en: normalizeSeoText(seo.short_summary.en),
+                ku: normalizeSeoText(seo.short_summary.ku),
               };
               console.log('Filled short_summary via fallback');
             }
@@ -2009,6 +2009,16 @@ Return JSON ONLY:
       } catch (seoErr) {
         console.error('SEO fallback error:', seoErr);
       }
+    }
+
+    if (!hasTriLangValue(productInfo.short_summary)) {
+      const displayName = cleanExtractedText(productInfo.name_ar) || cleanExtractedText(productInfo.name) || 'المنتج';
+      productInfo.short_summary = {
+        ar: normalizeSeoText(productInfo.short_summary?.ar) || `${displayName} بجودة عالية وخيارات عملية تناسب الاستخدام اليومي وتمنح تجربة موثوقة للمستخدمين.`.slice(0, 200),
+        en: normalizeSeoText(productInfo.short_summary?.en) || `${cleanExtractedText(productInfo.name) || displayName} with reliable quality, practical features, and a smooth everyday user experience.`.slice(0, 200),
+        ku: normalizeSeoText(productInfo.short_summary?.ku) || `${displayName} بە کوالێتی باش و تایبەتمەندییە کردارییەکان بۆ بەکارهێنانی ڕۆژانە.`.slice(0, 200),
+      };
+      console.log('Filled short_summary via deterministic fallback');
     }
 
     // ===== STEP: Calculate air shipping cost =====
