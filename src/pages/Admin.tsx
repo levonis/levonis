@@ -405,6 +405,9 @@ const Admin = () => {
         latestFormValuesRef.current = seed;
       }
       setEditingProduct(draft.editingProduct ?? null);
+      initializedProductIdRef.current = draft.editingProduct
+        ? String(draft.editingProduct.id || draft.editingProduct.slug || 'editing-product')
+        : null;
       setUploadedImages(Array.isArray(draft.uploadedImages) ? draft.uploadedImages : []);
       setProductOptions(Array.isArray(draft.productOptions) ? draft.productOptions : []);
       setProductColors(Array.isArray(draft.productColors) ? draft.productColors : []);
