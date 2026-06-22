@@ -1195,29 +1195,36 @@ const Admin = () => {
       markFieldFilled('original_price');
     }
 
-    // Auto-fill SEO short summary (tri-lang)
-    if (productInfo.short_summary && typeof productInfo.short_summary === 'object') {
+    // Auto-fill SEO short summary (tri-lang) — ALWAYS replace on extract/re-extract
+    {
+      const ss = (productInfo.short_summary && typeof productInfo.short_summary === 'object')
+        ? productInfo.short_summary
+        : {};
       setProductShortSummary({
-        ar: productInfo.short_summary.ar || '',
-        en: productInfo.short_summary.en || '',
-        ku: productInfo.short_summary.ku || '',
+        ar: typeof ss.ar === 'string' ? ss.ar : '',
+        en: typeof ss.en === 'string' ? ss.en : '',
+        ku: typeof ss.ku === 'string' ? ss.ku : '',
       });
-      markFieldFilled('short_summary');
+      if (ss.ar || ss.en || ss.ku) markFieldFilled('short_summary');
     }
 
-    // Auto-fill searchable tags (keywords)
-    if (Array.isArray(productInfo.searchable_tags) && productInfo.searchable_tags.length > 0) {
-      const cleaned = productInfo.searchable_tags
+    // Auto-fill searchable tags (keywords) — ALWAYS replace
+    {
+      const tags = Array.isArray(productInfo.searchable_tags) ? productInfo.searchable_tags : [];
+      const cleaned = tags
         .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
         .filter((t: string) => t.length > 0);
       setProductSearchableAttrs(Array.from(new Set(cleaned)));
-      markFieldFilled('searchable_tags');
+      if (cleaned.length > 0) markFieldFilled('searchable_tags');
     }
 
-    // Auto-fill "Why this product" AI content
-    if (productInfo.ai_content && typeof productInfo.ai_content === 'object') {
-      setProductAIContent(productInfo.ai_content);
-      markFieldFilled('ai_content');
+    // Auto-fill "Why this product" AI content — ALWAYS replace
+    {
+      const ai = (productInfo.ai_content && typeof productInfo.ai_content === 'object')
+        ? productInfo.ai_content
+        : {};
+      setProductAIContent({ ...ai });
+      if (Object.keys(ai).length > 0) markFieldFilled('ai_content');
     }
 
     // Auto-fill brand (only when empty, to preserve admin edits)
