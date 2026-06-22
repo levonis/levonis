@@ -2735,7 +2735,7 @@ const Admin = () => {
                         />
                         <Button
                           type="button"
-                          onClick={handleExtractProductInfo}
+                          onClick={() => handleExtractProductInfo()}
                           disabled={extractingInfo || !productUrl.trim()}
                           className="gap-2"
                         >
