@@ -1232,7 +1232,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return sum + (rfPrice * item.quantity);
     }
     if (item.products) {
-      const itemPrice = getGuardedCartItemPrice(item, usdToIqd, codDefaults, liveDirectPrices);
+      const itemPrice = getGuardedCartItemPrice(item, usdToIqd, codDefaults, liveDirectPrices, liveVariantDirectPrices);
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
