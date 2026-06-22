@@ -69,14 +69,21 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
       try {
         const { data: productRow, error: productError } = await (supabase as any)
           .from("products_admin")
-          .select("cost_price, colors")
+          .select("cost_price, original_price_usd, colors")
           .eq("id", product.id)
           .single();
         if (productError) throw productError;
 
         const cp = Number(productRow?.cost_price);
-        const baseIqd = Number.isFinite(cp) && cp > 0 ? Math.round(cp) : null;
+        const opu = Number(productRow?.original_price_usd);
+        let baseIqd: number | null = null;
+        if (Number.isFinite(cp) && cp > 0) {
+          baseIqd = Math.round(cp);
+        } else if (Number.isFinite(opu) && opu > 0) {
+          baseIqd = Math.round(opu * usdToIqd);
+        }
         if (!cancel) setProductCostIqd(baseIqd);
+
 
         const rawCols = Array.isArray(productRow?.colors) ? productRow.colors : [];
         if (!cancel) {
