@@ -14,9 +14,18 @@ interface OptionRow {
   id: string;
   name_ar: string;
   name?: string | null;
-  /** stored value in IQD (or null = use base) */
-  price_adjustment_iqd: number | null;
-  /** what the user is currently typing, in the selected currency */
+  /** canonical IQD value (cost_iqd → fallback price_adjustment) */
+  cost_iqd: number | null;
+  /** input in the currently selected currency */
+  input: string;
+}
+
+interface ColorRow {
+  /** index inside products.colors JSON */
+  idx: number;
+  name_ar?: string | null;
+  name?: string | null;
+  cost_iqd: number | null;
   input: string;
 }
 
@@ -35,17 +44,15 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currency, setCurrency] = useState<Currency>("USD");
-  /** product cost stored as IQD (canonical) */
   const [productCostIqd, setProductCostIqd] = useState<number | null>(null);
-  /** user input string in current currency */
   const [productInput, setProductInput] = useState<string>("");
   const [options, setOptions] = useState<OptionRow[]>([]);
+  const [colors, setColors] = useState<ColorRow[]>([]);
+  const [rawColors, setRawColors] = useState<any[]>([]);
 
-  // Conversion helpers
   const toIqd = (val: number, cur: Currency): number => {
     if (cur === "IQD") return Math.round(val);
     if (cur === "USD") return Math.round(val * usdToIqd);
-    // CNY -> USD -> IQD
     return Math.round((val / cnyToUsd) * usdToIqd);
   };
   const fromIqd = (iqd: number, cur: Currency): number => {
@@ -62,42 +69,62 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
       try {
         const { data: productRow, error: productError } = await (supabase as any)
           .from("products_admin")
-          .select("cost_price, original_price_usd")
+          .select("cost_price, colors")
           .eq("id", product.id)
           .single();
         if (productError) throw productError;
 
-        // Prefer original_price_usd × rate; fall back to cost_price
-        let baseIqd: number | null = null;
-        const opu = Number(productRow?.original_price_usd);
-        if (opu > 0) baseIqd = Math.round(opu * usdToIqd);
-        else if (productRow?.cost_price != null && Number(productRow.cost_price) > 0) {
-          baseIqd = Math.round(Number(productRow.cost_price));
-        }
+        const cp = Number(productRow?.cost_price);
+        const baseIqd = Number.isFinite(cp) && cp > 0 ? Math.round(cp) : null;
         if (!cancel) setProductCostIqd(baseIqd);
+
+        const rawCols = Array.isArray(productRow?.colors) ? productRow.colors : [];
+        if (!cancel) {
+          setRawColors(rawCols);
+          setColors(
+            rawCols.map((c: any, idx: number) => {
+              const iqd = Number(c?.cost_iqd);
+              const usd = Number(c?.cost_usd);
+              const canonical = Number.isFinite(iqd) && iqd > 0
+                ? Math.round(iqd)
+                : (Number.isFinite(usd) && usd > 0 ? Math.round(usd * usdToIqd) : null);
+              return {
+                idx,
+                name_ar: c?.name_ar,
+                name: c?.name,
+                cost_iqd: canonical,
+                input: "",
+              };
+            }),
+          );
+        }
 
         const { data, error } = await (supabase as any)
           .from("product_options")
-          .select("id, name_ar, name, price_adjustment")
+          .select("id, name_ar, name, price_adjustment, cost_iqd")
           .eq("product_id", product.id)
           .order("name_ar");
         if (error) throw error;
         if (!cancel) {
           setOptions(
-            (data || []).map((o: any) => ({
-              id: o.id,
-              name_ar: o.name_ar,
-              name: o.name,
-              price_adjustment_iqd:
-                o.price_adjustment != null && Number(o.price_adjustment) > 0
-                  ? Number(o.price_adjustment)
-                  : null,
-              input: "",
-            })),
+            (data || []).map((o: any) => {
+              const ci = Number(o.cost_iqd);
+              const pa = Number(o.price_adjustment);
+              const canonical = Number.isFinite(ci) && ci > 0
+                ? Math.round(ci)
+                : (Number.isFinite(pa) && pa > 0 ? Math.round(pa) : null);
+              return {
+                id: o.id,
+                name_ar: o.name_ar,
+                name: o.name,
+                cost_iqd: canonical,
+                input: "",
+              };
+            }),
           );
         }
       } catch (e: any) {
-        toast({ title: "خطأ", description: e.message ?? "تعذر تحميل الخيارات", variant: "destructive" });
+        toast({ title: "خطأ", description: e.message ?? "تعذر تحميل البيانات", variant: "destructive" });
       } finally {
         if (!cancel) setLoading(false);
       }
@@ -111,9 +138,13 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
     setOptions((prev) =>
       prev.map((o) => ({
         ...o,
-        input: o.price_adjustment_iqd != null && o.price_adjustment_iqd > 0
-          ? String(fromIqd(o.price_adjustment_iqd, currency))
-          : "",
+        input: o.cost_iqd != null && o.cost_iqd > 0 ? String(fromIqd(o.cost_iqd, currency)) : "",
+      })),
+    );
+    setColors((prev) =>
+      prev.map((c) => ({
+        ...c,
+        input: c.cost_iqd != null && c.cost_iqd > 0 ? String(fromIqd(c.cost_iqd, currency)) : "",
       })),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,16 +173,26 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
       });
       if (error) throw error;
 
-      // Also persist original_price_usd so it matches the new cost source
-      if (productCostIqdToSave != null) {
-        const usdVal = Math.round((productCostIqdToSave / usdToIqd) * 100) / 100;
-        await (supabase as any)
+      // Update colors JSON in-place (preserves all other fields per color)
+      if (colors.length > 0 && rawColors.length > 0) {
+        const updated = rawColors.map((c: any, idx: number) => {
+          const row = colors.find((cc) => cc.idx === idx);
+          if (!row) return c;
+          if (row.input === "") {
+            return { ...c, cost_iqd: null, cost_usd: null };
+          }
+          const iqd = toIqd(parseFloat(row.input) || 0, currency);
+          const usd = Math.round((iqd / usdToIqd) * 100) / 100;
+          return { ...c, cost_iqd: iqd, cost_usd: usd };
+        });
+        const { error: colorErr } = await (supabase as any)
           .from("products")
-          .update({ original_price_usd: usdVal })
+          .update({ colors: updated })
           .eq("id", product.id);
+        if (colorErr) throw colorErr;
       }
 
-      toast({ title: "تم الحفظ", description: "تم تحديث تكلفة المنتج والخيارات" });
+      toast({ title: "تم الحفظ", description: "تم تحديث التكاليف" });
       onSaved?.();
       onOpenChange(false);
     } catch (e: any) {
@@ -180,8 +221,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
           <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin" /></div>
         ) : (
           <div className="space-y-4">
-            {/* Currency selector */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-medium">العملة:</span>
               <div className="flex gap-1">
                 {(["USD", "CNY", "IQD"] as Currency[]).map((c) => (
@@ -210,12 +250,10 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
                 step="any"
                 value={productInput}
                 onChange={(e) => setProductInput(e.target.value)}
-                placeholder={currency === "IQD" ? "0" : "0.00"}
+                placeholder="اتركه فارغاً"
               />
               <div className="flex justify-between text-[11px] text-muted-foreground">
-                {previewIqd != null ? (
-                  <span>≈ {formatPrice(previewIqd)} د.ع</span>
-                ) : <span />}
+                {previewIqd != null ? <span>≈ {formatPrice(previewIqd)} د.ع</span> : <span />}
                 {product?.price != null && (
                   <span>سعر البيع: {formatPrice(Number(product.price))} د.ع</span>
                 )}
@@ -224,13 +262,11 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
 
             {options.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-xs font-semibold">الخيارات / الألوان ({currencyLabel})</h4>
-                <div className="max-h-[40vh] overflow-y-auto space-y-1.5 pr-1">
+                <h4 className="text-xs font-semibold">تكلفة الخيارات ({currencyLabel})</h4>
+                <div className="max-h-[28vh] overflow-y-auto space-y-1.5 pr-1">
                   {options.map((opt, idx) => {
-                    const iqdPreview =
-                      opt.input !== "" && Number.isFinite(parseFloat(opt.input)) && parseFloat(opt.input) > 0
-                        ? toIqd(parseFloat(opt.input), currency)
-                        : null;
+                    const iqdPreview = opt.input !== "" && Number.isFinite(parseFloat(opt.input)) && parseFloat(opt.input) > 0
+                      ? toIqd(parseFloat(opt.input), currency) : null;
                     return (
                       <div key={opt.id} className="flex items-center gap-2">
                         <span className="text-xs flex-1 truncate">{opt.name_ar || opt.name}</span>
@@ -241,10 +277,48 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
                             step="any"
                             className="w-28 h-8 text-xs"
                             value={opt.input}
-                            placeholder="اتركه فارغًا"
+                            placeholder="فارغ"
                             onChange={(e) => {
                               const v = e.target.value;
                               setOptions((prev) => {
+                                const next = [...prev];
+                                next[idx] = { ...next[idx], input: v };
+                                return next;
+                              });
+                            }}
+                          />
+                          {iqdPreview != null && currency !== "IQD" && (
+                            <span className="text-[10px] text-muted-foreground">≈ {formatPrice(iqdPreview)} د.ع</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {colors.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold">تكلفة الألوان ({currencyLabel})</h4>
+                <div className="max-h-[28vh] overflow-y-auto space-y-1.5 pr-1">
+                  {colors.map((col, idx) => {
+                    const iqdPreview = col.input !== "" && Number.isFinite(parseFloat(col.input)) && parseFloat(col.input) > 0
+                      ? toIqd(parseFloat(col.input), currency) : null;
+                    return (
+                      <div key={col.idx} className="flex items-center gap-2">
+                        <span className="text-xs flex-1 truncate">{col.name_ar || col.name || `لون ${col.idx + 1}`}</span>
+                        <div className="flex flex-col items-end">
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            step="any"
+                            className="w-28 h-8 text-xs"
+                            value={col.input}
+                            placeholder="فارغ"
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setColors((prev) => {
                                 const next = [...prev];
                                 next[idx] = { ...next[idx], input: v };
                                 return next;
@@ -266,7 +340,7 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>إلغاء</Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
                 {saving && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                حفظ وتحديث السعر
+                حفظ
               </Button>
             </div>
           </div>
