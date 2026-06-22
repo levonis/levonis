@@ -169,6 +169,10 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
     try {
       const productCostIqdToSave =
         productInput === "" ? null : toIqd(parseFloat(productInput) || 0, currency);
+      const productUsdToSave =
+        productCostIqdToSave == null
+          ? null
+          : Math.round((productCostIqdToSave / usdToIqd) * 100) / 100;
       const payloadOptions = options.map((o) => ({
         id: o.id,
         cost: o.input === "" ? null : toIqd(parseFloat(o.input) || 0, currency),
@@ -177,8 +181,10 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
         _product_id: product.id,
         _product_cost: productCostIqdToSave,
         _options: payloadOptions,
+        _original_price_usd: productUsdToSave,
       });
       if (error) throw error;
+
 
       // Update colors JSON in-place (preserves all other fields per color)
       if (colors.length > 0 && rawColors.length > 0) {
