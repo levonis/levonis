@@ -287,6 +287,16 @@ function cleanExtractedText(value: unknown): string {
   return s;
 }
 
+function normalizeSeoText(value: unknown): string {
+  const s = cleanExtractedText(value).slice(0, 200);
+  if (!s || /^\.{2,}$/.test(s) || /^(placeholder|null|undefined|n\/a)$/i.test(s)) return '';
+  return s;
+}
+
+function hasTriLangValue(value: any): boolean {
+  return Boolean(normalizeSeoText(value?.ar) && normalizeSeoText(value?.en) && normalizeSeoText(value?.ku));
+}
+
 function isUsefulProductName(value: string): boolean {
   const s = cleanExtractedText(value);
   if (s.length < 3 || s.length > 220) return false;
