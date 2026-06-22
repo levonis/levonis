@@ -1305,15 +1305,17 @@ const Admin = () => {
       let finalTags: string[] = Array.from(new Set(cleaned)) as string[];
       // Fallback: build tags from the product name tokens
       if (finalTags.length === 0) {
-        const tokens = `${baselineNameEn} ${baselineNameAr}`
-          .split(/[\s,،\-_/]+/)
-          .map((s) => s.trim())
-          .filter((s) => s.length >= 2);
-        finalTags = Array.from(new Set(tokens)).slice(0, 8);
+        finalTags = buildSeoFallbackTags(
+          baselineNameEn,
+          baselineNameAr,
+          productInfo.description || '',
+          productInfo.description_ar || '',
+        );
         if (finalTags.length > 0) {
           console.warn('[AI Extract] searchable_tags empty — applied client-side token fallback');
         }
       }
+      if (finalTags.length === 0) finalTags = [baselineDisplay].filter(Boolean);
       setProductSearchableAttrs(finalTags);
       if (finalTags.length > 0) markFieldFilled('searchable_tags');
     }
