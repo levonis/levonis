@@ -2299,7 +2299,7 @@ const Cart = () => {
             (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
           
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = item.is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null));
+          const itemPrice = item.is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getCartItemPrice(item as any));
 
           const productName = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
@@ -2868,7 +2868,7 @@ const Cart = () => {
                       ? 0
                       : isRandomFilamentItem
                         ? (Number((item as any).random_filament_price_iqd) || 0)
-                        : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null);
+                        : getCartItemPrice(item as any);
                     
                     const isRemoving = removingItemIds.has(item.id);
                     
