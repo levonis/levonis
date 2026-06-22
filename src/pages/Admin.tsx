@@ -41,6 +41,53 @@ const EXTRACTION_STEP_DEFS: { key: string; label: string }[] = [
   { key: 'apply', label: 'تعبئة الحقول تلقائياً' },
 ];
 
+const buildSeoFallbackTags = (...values: string[]) => {
+  const tags = values
+    .join(' ')
+    .split(/[\s,،\-_/|()]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2 && !['المنتج', 'product', 'with', 'and', 'for'].includes(token.toLowerCase()));
+  return Array.from(new Set(tags)).slice(0, 10);
+};
+
+const buildAdminFallbackAIContent = (nameAr: string, nameEn: string, dimensions?: any, weightKg?: any) => {
+  const arName = nameAr || nameEn || 'المنتج';
+  const enName = nameEn || nameAr || 'Product';
+  const specs: any[] = [
+    { key: { ar: 'اسم المنتج', en: 'Product name', ku: 'ناوی بەرهەم' }, value: { ar: arName, en: enName, ku: arName } },
+    { key: { ar: 'الاستخدام', en: 'Use case', ku: 'بەکارهێنان' }, value: { ar: 'استخدام يومي وعملي', en: 'Practical everyday use', ku: 'بەکارهێنانی ڕۆژانە و کرداری' } },
+  ];
+  if (dimensions?.length_cm && dimensions?.width_cm && dimensions?.height_cm) {
+    const dims = `${dimensions.length_cm}×${dimensions.width_cm}×${dimensions.height_cm} سم`;
+    specs.push({ key: { ar: 'الأبعاد', en: 'Dimensions', ku: 'قەبارە' }, value: { ar: dims, en: dims, ku: dims } });
+  }
+  if (weightKg) {
+    specs.push({ key: { ar: 'الوزن', en: 'Weight', ku: 'کێش' }, value: { ar: `${weightKg} كغ`, en: `${weightKg} kg`, ku: `${weightKg} کگم` } });
+  }
+  return {
+    problem_solved: {
+      ar: `${arName} يساعد على تلبية الحاجة الأساسية للمنتج بطريقة عملية وسهلة الاعتماد عليها.`,
+      en: `${enName} helps meet the product need in a practical and dependable way.`,
+      ku: `${arName} یارمەتی پڕکردنەوەی پێویستی بەرهەم بە شێوەیەکی کرداری و پشتپێبەستراو دەدات.`,
+    },
+    target_audience: {
+      ar: `مناسب لمن يبحث عن ${arName} بجودة موثوقة وتجربة استخدام واضحة.`,
+      en: `Suitable for users looking for ${enName} with reliable quality and a clear experience.`,
+      ku: `گونجاوە بۆ ئەوانەی بەدوای ${arName} بە کوالێتی پشتپێبەستراو دەگەڕێن.`,
+    },
+    benefits: [
+      { ar: 'سهولة اختيار المنتج ومقارنة مواصفاته بسرعة.', en: 'Easy to choose and compare specifications quickly.', ku: 'ئاسانە بۆ هەڵبژاردن و بەراوردکردنی تایبەتمەندییەکان.' },
+      { ar: 'يوفر تجربة استخدام عملية وموثوقة.', en: 'Offers a practical and dependable user experience.', ku: 'ئەزموونێکی بەکارهێنانی کرداری و پشتپێبەستراو دابین دەکات.' },
+      { ar: 'مناسب للاستخدام اليومي حسب احتياج المستخدم.', en: 'Suitable for everyday use based on user needs.', ku: 'گونجاوە بۆ بەکارهێنانی ڕۆژانە بە پێی پێویستی بەکارهێنەر.' },
+    ],
+    usage: [
+      { ar: 'راجع الصور والمواصفات قبل الاختيار.', en: 'Review images and specifications before choosing.', ku: 'پێش هەڵبژاردن وێنە و تایبەتمەندییەکان بپشکنە.' },
+      { ar: 'اختر الخيار المناسب ثم أضفه إلى السلة.', en: 'Select the suitable option, then add it to the cart.', ku: 'هەڵبژاردەی گونجاو دیاری بکە و زیاد بکە بۆ سەبەتە.' },
+    ],
+    specifications: specs,
+  };
+};
+
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
   name: z.string().min(1, 'الاسم بالإنجليزية مطلوب'),
@@ -1258,24 +1305,36 @@ const Admin = () => {
       let finalTags: string[] = Array.from(new Set(cleaned)) as string[];
       // Fallback: build tags from the product name tokens
       if (finalTags.length === 0) {
-        const tokens = `${baselineNameEn} ${baselineNameAr}`
-          .split(/[\s,،\-_/]+/)
-          .map((s) => s.trim())
-          .filter((s) => s.length >= 2);
-        finalTags = Array.from(new Set(tokens)).slice(0, 8);
+        finalTags = buildSeoFallbackTags(
+          baselineNameEn,
+          baselineNameAr,
+          productInfo.description || '',
+          productInfo.description_ar || '',
+        );
         if (finalTags.length > 0) {
           console.warn('[AI Extract] searchable_tags empty — applied client-side token fallback');
         }
       }
+      if (finalTags.length === 0) finalTags = [baselineDisplay].filter(Boolean);
       setProductSearchableAttrs(finalTags);
       if (finalTags.length > 0) markFieldFilled('searchable_tags');
     }
 
     // Auto-fill "Why this product" AI content — ALWAYS replace
     {
-      const ai = (productInfo.ai_content && typeof productInfo.ai_content === 'object')
+      let ai = (productInfo.ai_content && typeof productInfo.ai_content === 'object')
         ? productInfo.ai_content
         : {};
+      const isEmptyAI =
+        !ai.problem_solved &&
+        !ai.target_audience &&
+        (!Array.isArray(ai.benefits) || ai.benefits.length === 0) &&
+        (!Array.isArray(ai.usage) || ai.usage.length === 0) &&
+        (!Array.isArray(ai.specifications) || ai.specifications.length === 0);
+      if (isEmptyAI) {
+        ai = buildAdminFallbackAIContent(baselineNameAr, baselineNameEn, productInfo.dimensions, productInfo.weight_kg);
+        console.warn('[AI Extract] ai_content empty — applied client-side full fallback');
+      }
       setProductAIContent({ ...ai });
       if (Object.keys(ai).length > 0) markFieldFilled('ai_content');
     }
