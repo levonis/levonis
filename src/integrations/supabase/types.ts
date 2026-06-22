@@ -14605,6 +14605,18 @@ export type Database = {
         Args: { p_product_id: string }
         Returns: number
       }
+      compute_product_variant_direct_sale_price: {
+        Args: { p_cost_iqd: number; p_product_id: string }
+        Returns: number
+      }
+      compute_product_variant_direct_sale_prices: {
+        Args: { p_items: Json }
+        Returns: {
+          cost_iqd: number
+          direct_sale_price: number
+          product_id: string
+        }[]
+      }
       compute_products_live_direct_sale_prices: {
         Args: { p_ids: string[] }
         Returns: {

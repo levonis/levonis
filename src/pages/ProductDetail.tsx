@@ -27,7 +27,7 @@ import { useLanguage } from '@/lib/i18n';
 import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, fetchLiveDirectSalePrices, getMinOptionAdjustmentIqd } from '@/lib/priceGuard';
+import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, computeLinkedDirectSalePriceFromCostIqd, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd, getDirectVariantPriceMapKey } from '@/lib/priceGuard';
 import { computeUnifiedCardPrice, computeUnifiedCardOriginalPrice, assertCardDetailParity } from '@/lib/cardPrice';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import LiveDirectPriceWarning from '@/components/LiveDirectPriceWarning';
@@ -366,6 +366,18 @@ const ProductDetail = () => {
   const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
   const selectedOptionName = selectedOptionData?.name_ar;
 
+  const selectedVariantCostIqd = useMemo(() => {
+    if (!product) return null;
+    return getCartItemVariantOverrideCostIqd({ products: product, sale_type: activeSaleType, selected_color: selectedColor, product_options: selectedOptionData }, usdToIqd);
+  }, [product, selectedColor, selectedOptionData, activeSaleType, usdToIqd]);
+
+  const { data: liveVariantDirectMap } = useQuery({
+    queryKey: ['product-variant-live-direct-price', product?.id, selectedVariantCostIqd, product?.link_direct_commission_to_cod],
+    staleTime: 30 * 1000,
+    queryFn: () => fetchVariantDirectSalePrices([{ productId: product!.id, costIqd: selectedVariantCostIqd! }]),
+    enabled: !!product?.id && !!(product as any).link_direct_commission_to_cod && activeSaleType === 'direct' && !!selectedVariantCostIqd,
+  });
+
   const isNotifySubscribed = useMemo(() => {
     if (!notifySubscriptions || notifySubscriptions.length === 0) return false;
     return notifySubscriptions.some((s: any) => 
@@ -530,14 +542,9 @@ const ProductDetail = () => {
     guardedPrices.direct_sale_price = liveDirectSalePrice;
   }
 
-  const getPrice = () => {
+  const getSaleTypeBasePrice = () => {
     if (activeSaleType === 'direct') {
-      // For direct sale: use color's direct_sale_price, then product's direct_sale_price, then fall back to regular price
-      if (selectedColorData?.direct_sale_price) {
-        return ensurePriceIqd(Number(selectedColorData.direct_sale_price), (product as any).price_usd, usdToIqd);
-      }
       if (guardedPrices.direct_sale_price != null) return guardedPrices.direct_sale_price;
-      // Fall through to regular price logic
     }
     if (activeSaleType === 'preorder') {
       const shippingType: string = (product as any).shipping_type || '';
@@ -557,29 +564,39 @@ const ProductDetail = () => {
         if (opts.length > 0) return Math.min(...opts);
       }
     }
-    const base = selectedColorData?.price != null
-      ? ensurePriceIqd(Number(selectedColorData.price), (product as any).price_usd, usdToIqd)
-      : guardedPrices.price;
-    return base;
+    return guardedPrices.price;
   };
 
-  const basePrice = getPrice();
-  const optionAdjustment = selectedOptionData ? ensureAdjustmentIqd(Number(selectedOptionData.price_adjustment) || 0, usdToIqd, (product as any).price_usd) : 0;
+  const basePrice = getSaleTypeBasePrice();
   let shippingAdjustment = 0;
   if (activeSaleType === 'preorder' && selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
     shippingAdjustment = Number((product.pre_order_shipping_options[selectedShippingOption] as any).price_adjustment || 0);
   }
-  const rawFinalPrice = basePrice + optionAdjustment + shippingAdjustment;
+  const baseCostIqd = ensurePriceIqd(Number((product as any).price || 0), (product as any).price_usd, usdToIqd);
+  const saleTypeAddons = basePrice - baseCostIqd;
+  let variantPrice = basePrice;
+  if (selectedVariantCostIqd != null) {
+    if (activeSaleType === 'direct' && (product as any).link_direct_commission_to_cod && codDefaults) {
+      const serverVariant = liveVariantDirectMap?.get(getDirectVariantPriceMapKey((product as any).id, selectedVariantCostIqd));
+      const localVariant = computeLinkedDirectSalePriceFromCostIqd(
+        product as any,
+        selectedVariantCostIqd,
+        { usd_to_iqd_rate: usdToIqd } as any,
+        codDefaults as any,
+      );
+      variantPrice = serverVariant && serverVariant > 0 ? serverVariant : (localVariant ?? selectedVariantCostIqd + saleTypeAddons);
+    } else {
+      variantPrice = selectedVariantCostIqd + saleTypeAddons;
+    }
+  }
+  const rawFinalPrice = variantPrice + shippingAdjustment;
   const shouldRoundUp = (product as any).round_up_price === true;
   const finalPrice = shouldRoundUp ? Math.ceil(rawFinalPrice / 250) * 250 : rawFinalPrice;
 
   let finalOriginalPrice: number | null = null;
   if (guardedPrices.original_price != null) {
     const productOriginal = guardedPrices.original_price;
-    const colorDelta = selectedColorData?.price != null
-      ? (ensurePriceIqd(Number(selectedColorData.price), (product as any).price_usd, usdToIqd) - guardedPrices.price)
-      : 0;
-    const rawOriginal = productOriginal + colorDelta + optionAdjustment;
+    const rawOriginal = selectedVariantCostIqd != null ? rawFinalPrice : productOriginal;
     finalOriginalPrice = shouldRoundUp ? Math.ceil(rawOriginal / 250) * 250 : rawOriginal;
   }
   const hasSale = finalOriginalPrice != null && finalOriginalPrice > finalPrice;
@@ -1195,8 +1212,8 @@ const ProductDetail = () => {
                               </div>
                               <div className="flex items-center gap-1 shrink-0">
                                 {option.price_adjustment !== 0 && (
-                                  <span className={cn("text-[10px] font-black", option.price_adjustment > 0 ? 'text-primary' : 'text-emerald-600')}>
-                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(ensureAdjustmentIqd(option.price_adjustment, usdToIqd, (product as any).price_usd))} د.ع
+                                  <span className="text-[10px] font-black text-primary">
+                                    {formatPrice(ensureAdjustmentIqd(option.price_adjustment, usdToIqd, (product as any).price_usd))} د.ع
                                   </span>
                                 )}
                                 {!option.isAvailable && (
@@ -1341,7 +1358,7 @@ const ProductDetail = () => {
                               return stock != null && stock > 0 ? <span className="text-[8px] text-muted-foreground">{t('pd_remaining_short', { count: stock })}</span> : null;
                             })()}
                             {activeSaleType === 'direct' && color.direct_sale_price && (
-                              <span className="text-[9px] font-black text-primary">{formatPrice(color.direct_sale_price)}</span>
+                              <span className="text-[9px] font-black text-primary">{formatPrice(ensurePriceIqd(Number(color.direct_sale_price), (product as any).price_usd, usdToIqd))}</span>
                             )}
                             {!color.isAvailable && (
                               <div className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-xl">

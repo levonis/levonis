@@ -39,7 +39,7 @@ import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
-import { ensurePriceIqd, ensureAdjustmentIqd, getGuardedCartItemPrice, computeLinkedDirectSalePrice, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
+import { getGuardedCartItemPrice, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
@@ -82,9 +82,25 @@ const Cart = () => {
     queryFn: () => fetchLiveDirectSalePrices(linkedDirectIds),
   });
 
+  const linkedVariantCostRequests = useMemo(() => {
+    return (items || []).flatMap((item: any) => {
+      const product = item.products;
+      if (item.sale_type !== 'direct' || !product?.id || !product.link_direct_commission_to_cod) return [];
+      const costIqd = getCartItemVariantOverrideCostIqd(item, usdToIqd);
+      return costIqd ? [{ productId: product.id, costIqd }] : [];
+    });
+  }, [items, usdToIqd]);
+
+  const { data: liveVariantDirectPrices } = useQuery({
+    queryKey: ['cart-variant-live-direct-prices', JSON.stringify(linkedVariantCostRequests), usdToIqd, codDefaults?.value, codDefaults?.type],
+    enabled: linkedVariantCostRequests.length > 0,
+    staleTime: 30_000,
+    queryFn: () => fetchVariantDirectSalePrices(linkedVariantCostRequests),
+  });
+
   // Simple item price getter for protection discount calculation
   const getCartItemPrice = (item: CartItem): number => {
-    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null);
+    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null, liveVariantDirectPrices ?? null);
   };
 
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
@@ -1093,20 +1109,17 @@ const Cart = () => {
       if (!product) return sum;
       const qty = item.quantity || 1;
       const preorderUnitPrice = getCartItemPrice(item); // السعر الحالي للطلب المسبق (يشمل الخيار/اللون)
-      // إذا كان المنتج مربوطاً بنسبة COD العالمية، احسب فرق سعر البيع المباشر مباشرةً
+      // إذا كان المنتج مربوطاً بنسبة COD العالمية، احسب فرق سعر البيع المباشر بنفس حارس السعر
+      // حتى تكون تكلفة الخيار/اللون بديلاً لتكلفة المنتج وليست إضافة عليها.
       if (product.link_direct_commission_to_cod && codDefaults) {
-        const liveDirect = computeLinkedDirectSalePrice(
-          product as any,
-          { usd_to_iqd_rate: usdToIqd } as any,
-          codDefaults as any,
+        const directUnitPrice = getGuardedCartItemPrice(
+          { ...item, sale_type: 'direct' } as any,
+          usdToIqd,
+          codDefaults,
+          liveDirectPrices ?? null,
+          liveVariantDirectPrices ?? null,
         );
-        if (liveDirect != null) {
-          // أضف تعديل الخيار + تقريب 250 لمطابقة منطق صفحة المنتج
-          const optAdj = item.product_options?.price_adjustment
-            ? ensureAdjustmentIqd(Number(item.product_options.price_adjustment), usdToIqd, product.price_usd)
-            : 0;
-          const rawDirect = liveDirect + optAdj;
-          const directUnitPrice = product.round_up_price ? Math.ceil(rawDirect / 250) * 250 : rawDirect;
+        if (directUnitPrice > 0) {
           const feePerUnit = Math.max(0, directUnitPrice - preorderUnitPrice);
           if (feePerUnit > 0) return sum + (feePerUnit * qty);
           // إذا كان سعر البيع المباشر المحسوب أقل من سعر الطلب الحالي بسبب خيار/حزمة،
@@ -1720,7 +1733,7 @@ const Cart = () => {
 
           const isDirect = item.sale_type === 'direct';
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = item.is_gift ? 0 : (isRandomFilament ? (rfPriceByCartItem.get(item.id) || 0) : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null)));
+          const itemPrice = item.is_gift ? 0 : (isRandomFilament ? (rfPriceByCartItem.get(item.id) || 0) : (isBundle ? Number(bundle?.bundle_price || 0) : getCartItemPrice(item as any)));
 
           const productName = isRandomFilament
             ? 'Mystery Random Filament'
@@ -2286,7 +2299,7 @@ const Cart = () => {
             (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
           
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = item.is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null));
+          const itemPrice = item.is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getCartItemPrice(item as any));
 
           const productName = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
@@ -2392,7 +2405,7 @@ const Cart = () => {
           : (item.products?.name_ar || 'منتج');
         
         const isDirect = item.sale_type === 'direct';
-        const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null);
+        const itemPrice = getCartItemPrice(item as any);
         
         // Use product_options data directly from the cart item
         const itemOption = (item as any).product_options;
@@ -2855,7 +2868,7 @@ const Cart = () => {
                       ? 0
                       : isRandomFilamentItem
                         ? (Number((item as any).random_filament_price_iqd) || 0)
-                        : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices ?? null);
+                        : getCartItemPrice(item as any);
                     
                     const isRemoving = removingItemIds.has(item.id);
                     

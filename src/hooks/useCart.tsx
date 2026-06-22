@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useShippingSettings } from './useShippingCalculator';
-import { getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd, getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
 import { trackMetaEvent } from '@/lib/metaPixel';
@@ -169,6 +169,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // Server-computed live direct-sale prices (RPC) — internal cost columns are
   // hidden from clients, so we ask the DB to return the final IQD value.
   const [liveDirectPrices, setLiveDirectPrices] = useState<Map<string, number>>(new Map());
+  const [liveVariantDirectPrices, setLiveVariantDirectPrices] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     const ids = items
@@ -188,6 +189,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Re-fetch when item set, exchange rate, or COD defaults change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.map((i: any) => i.products?.id || '').join(','), usdToIqd, codDefaults?.value, codDefaults?.type]);
+
+  useEffect(() => {
+    const requests = items.flatMap((it: any) => {
+      if (it.sale_type !== 'direct' || !it.products?.id || !it.products?.link_direct_commission_to_cod) return [];
+      const costIqd = getCartItemVariantOverrideCostIqd(it, usdToIqd);
+      return costIqd ? [{ productId: it.products.id, costIqd }] : [];
+    });
+    if (requests.length === 0) {
+      if (liveVariantDirectPrices.size > 0) setLiveVariantDirectPrices(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetchVariantDirectSalePrices(requests).then((map) => {
+      if (!cancelled) setLiveVariantDirectPrices(map);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.map((i: any) => `${i.products?.id || ''}:${i.product_options?.price_adjustment || ''}:${i.selected_color || ''}`).join('|'), usdToIqd, codDefaults?.value, codDefaults?.type]);
 
   // Fetch pending cart request
   const fetchPendingCartRequest = async () => {
@@ -1213,7 +1232,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return sum + (rfPrice * item.quantity);
     }
     if (item.products) {
-      const itemPrice = getGuardedCartItemPrice(item, usdToIqd, codDefaults, liveDirectPrices);
+      const itemPrice = getGuardedCartItemPrice(item, usdToIqd, codDefaults, liveDirectPrices, liveVariantDirectPrices);
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
