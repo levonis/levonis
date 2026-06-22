@@ -10,6 +10,23 @@ import { useShippingSettings } from "@/hooks/useShippingCalculator";
 
 type Currency = "USD" | "CNY" | "IQD";
 
+const normalizeNumberInput = (value: string): string => {
+  const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
+  const persianDigits = "۰۱۲۳۴۵۶۷۸۹";
+  return value
+    .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)))
+    .replace(/[٬,\s]/g, "")
+    .replace(/٫/g, ".");
+};
+
+const parseNumberInput = (value: string): number | null => {
+  const cleaned = normalizeNumberInput(value);
+  if (!cleaned) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
 interface OptionRow {
   id: string;
   name_ar: string;
@@ -158,8 +175,8 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
   }, [currency, productCostIqd, usdToIqd, cnyToUsd]);
 
   const previewIqd = useMemo(() => {
-    const v = parseFloat(productInput);
-    return Number.isFinite(v) && v > 0 ? toIqd(v, currency) : null;
+    const v = parseNumberInput(productInput);
+    return v != null ? toIqd(v, currency) : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productInput, currency, usdToIqd, cnyToUsd]);
 
@@ -167,15 +184,18 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
     if (!product?.id) return;
     setSaving(true);
     try {
-      const productCostIqdToSave =
-        productInput === "" ? null : toIqd(parseFloat(productInput) || 0, currency);
+      const parsedProductCost = parseNumberInput(productInput);
+      const productCostIqdToSave = parsedProductCost == null ? null : toIqd(parsedProductCost, currency);
       const productUsdToSave =
         productCostIqdToSave == null
           ? null
           : Math.round((productCostIqdToSave / usdToIqd) * 100) / 100;
       const payloadOptions = options.map((o) => ({
         id: o.id,
-        cost: o.input === "" ? null : toIqd(parseFloat(o.input) || 0, currency),
+        cost: (() => {
+          const parsed = parseNumberInput(o.input);
+          return parsed == null ? null : toIqd(parsed, currency);
+        })(),
       }));
       const { data: savedRows, error } = await (supabase as any).rpc("admin_quick_update_costs", {
         _product_id: product.id,
@@ -205,7 +225,9 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
           if (row.input === "") {
             return { ...c, cost_iqd: null, cost_usd: null };
           }
-          const iqd = toIqd(parseFloat(row.input) || 0, currency);
+          const parsed = parseNumberInput(row.input);
+          const iqd = parsed == null ? null : toIqd(parsed, currency);
+          if (iqd == null) return { ...c, cost_iqd: null, cost_usd: null };
           const usd = Math.round((iqd / usdToIqd) * 100) / 100;
           return { ...c, cost_iqd: iqd, cost_usd: usd };
         });
@@ -289,8 +311,8 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
                 <h4 className="text-xs font-semibold">تكلفة الخيارات ({currencyLabel})</h4>
                 <div className="max-h-[28vh] overflow-y-auto space-y-1.5 pr-1">
                   {options.map((opt, idx) => {
-                    const iqdPreview = opt.input !== "" && Number.isFinite(parseFloat(opt.input)) && parseFloat(opt.input) > 0
-                      ? toIqd(parseFloat(opt.input), currency) : null;
+                    const parsed = parseNumberInput(opt.input);
+                    const iqdPreview = parsed != null ? toIqd(parsed, currency) : null;
                     return (
                       <div key={opt.id} className="flex items-center gap-2">
                         <span className="text-xs flex-1 truncate">{opt.name_ar || opt.name}</span>
@@ -327,8 +349,8 @@ export default function QuickCostEditDialog({ open, onOpenChange, product, onSav
                 <h4 className="text-xs font-semibold">تكلفة الألوان ({currencyLabel})</h4>
                 <div className="max-h-[28vh] overflow-y-auto space-y-1.5 pr-1">
                   {colors.map((col, idx) => {
-                    const iqdPreview = col.input !== "" && Number.isFinite(parseFloat(col.input)) && parseFloat(col.input) > 0
-                      ? toIqd(parseFloat(col.input), currency) : null;
+                    const parsed = parseNumberInput(col.input);
+                    const iqdPreview = parsed != null ? toIqd(parsed, currency) : null;
                     return (
                       <div key={col.idx} className="flex items-center gap-2">
                         <span className="text-xs flex-1 truncate">{col.name_ar || col.name || `لون ${col.idx + 1}`}</span>
