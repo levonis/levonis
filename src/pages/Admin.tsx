@@ -1255,7 +1255,7 @@ const Admin = () => {
       const cleaned = tags
         .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
         .filter((t: string) => t.length > 0);
-      let finalTags = Array.from(new Set(cleaned));
+      let finalTags: string[] = Array.from(new Set(cleaned)) as string[];
       // Fallback: build tags from the product name tokens
       if (finalTags.length === 0) {
         const tokens = `${baselineNameEn} ${baselineNameAr}`
