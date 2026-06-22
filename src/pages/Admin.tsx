@@ -618,7 +618,7 @@ const Admin = () => {
       const { data: productRows, error } = await (supabase as any)
         .from('products_admin')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: true, nullsFirst: true });
       
       if (error) throw error;
 
@@ -4298,6 +4298,11 @@ const Admin = () => {
                                  </Badge>
                                );
                              })()}
+                             {(product as any).updated_at && (
+                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">
+                                 آخر تعديل: {new Date((product as any).updated_at).toLocaleDateString('ar-IQ', { year: 'numeric', month: 'short', day: 'numeric' })}
+                               </Badge>
+                             )}
                              {isAdmin && (product as any).pending_admin_review && (
                                <Badge className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-1.5 py-0 gap-1">
                                  <AlertCircle className="h-3 w-3" />
@@ -4415,6 +4420,9 @@ const Admin = () => {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{(product as any).categories?.name_ar || '-'}</p>
+                        {(product as any).updated_at && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">آخر تعديل: {new Date((product as any).updated_at).toLocaleDateString('ar-IQ', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                        )}
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <span className="text-xs font-bold text-primary">{formatPrice(Number(product.price))} د.ع</span>
                           {product.original_price && product.original_price !== product.price && (
