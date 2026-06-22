@@ -832,8 +832,7 @@ const Admin = () => {
       clearProductDraft();
     },
     onError: (error: any) => {
-      const msg = error?.message || error?.details || error?.hint || 'حدث خطأ أثناء تحديث المنتج';
-      toast.error(msg, { duration: 8000 });
+      // Toast shown in handleProductSubmit so the full error text is displayed once.
       console.error('[updateProduct] error:', error);
     }
   });
