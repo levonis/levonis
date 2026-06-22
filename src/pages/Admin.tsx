@@ -351,6 +351,7 @@ const Admin = () => {
   const latestFormValuesRef = useRef<Record<string, string>>({});
   const restoredDraftRef = useRef(false);
   const draftRestoredOnceRef = useRef(false);
+  const initializedProductIdRef = useRef<string | null>(null);
 
   // Hydrate form inputs from the latest snapshot (used on form remount, e.g. after tab switch)
   const hydrateFormFromSnapshot = useCallback((node: HTMLFormElement) => {
@@ -404,6 +405,9 @@ const Admin = () => {
         latestFormValuesRef.current = seed;
       }
       setEditingProduct(draft.editingProduct ?? null);
+      initializedProductIdRef.current = draft.editingProduct
+        ? String(draft.editingProduct.id || draft.editingProduct.slug || 'editing-product')
+        : null;
       setUploadedImages(Array.isArray(draft.uploadedImages) ? draft.uploadedImages : []);
       setProductOptions(Array.isArray(draft.productOptions) ? draft.productOptions : []);
       setProductColors(Array.isArray(draft.productColors) ? draft.productColors : []);
@@ -523,6 +527,11 @@ const Admin = () => {
       return;
     }
     if (productDialogOpen && editingProduct) {
+      const productInitKey = String(editingProduct.id || editingProduct.slug || 'editing-product');
+      if (initializedProductIdRef.current === productInitKey) {
+        return;
+      }
+      initializedProductIdRef.current = productInitKey;
       // Initialize from the current product - include stock_quantity from colors
       const colorsWithStock = Array.isArray(editingProduct.colors) 
         ? editingProduct.colors.map((c: any) => ({ ...c, stock_quantity: c.stock_quantity ?? undefined }))
@@ -538,6 +547,8 @@ const Admin = () => {
       setProductSearchableAttrs(
         Array.isArray(editingProduct.searchable_attributes) ? editingProduct.searchable_attributes : []
       );
+      setSearchableAttrInput('');
+      setProductUrl(editingProduct.taobao_url || editingProduct.source_url || '');
       // preOrderShippingOptions removed
       
       // Load card discounts from product
@@ -574,6 +585,7 @@ const Admin = () => {
           });
       }
     } else if (productDialogOpen && !editingProduct) {
+      initializedProductIdRef.current = null;
       // New product: use default settings from database
       setProductOptions([]);
       setProductColors([]);
@@ -588,6 +600,7 @@ const Admin = () => {
       
       // preOrderShippingOptions removed - handled by pricing section
     } else if (!productDialogOpen) {
+      initializedProductIdRef.current = null;
       // Clear URL when closing dialog
       setProductUrl('');
       setFormKey(prev => prev + 1); // Reset form key when closing
@@ -1083,6 +1096,13 @@ const Admin = () => {
       return;
     }
 
+    const form = formNodeRef.current;
+    const currentFormData = form ? new FormData(form) : null;
+    const currentNameEn = ((currentFormData?.get('name_en') as string) || editingProduct?.name_en || editingProduct?.name || '').trim();
+    const currentNameAr = ((currentFormData?.get('name_ar') as string) || editingProduct?.name_ar || '').trim();
+    const currentDescription = ((currentFormData?.get('description') as string) || editingProduct?.description || '').trim();
+    const currentDescriptionAr = ((currentFormData?.get('description_ar') as string) || editingProduct?.description_ar || '').trim();
+
     setExtractingInfo(true);
     initExtractionSteps();
     advanceExtractionStep('fetch', 'active');
@@ -1100,11 +1120,11 @@ const Admin = () => {
       const response = await supabase.functions.invoke('extract-product-info', {
         body: {
           url: productUrl,
-          forceSeoRegenerate: opts?.forceSeoRegenerate === true,
-          existingName: editingProduct?.name_en || editingProduct?.name || '',
-          existingNameAr: editingProduct?.name_ar || '',
-          existingDescription: editingProduct?.description || '',
-          existingDescriptionAr: editingProduct?.description_ar || '',
+          forceSeoRegenerate: opts?.forceSeoRegenerate === true || !!editingProduct,
+          existingName: currentNameEn,
+          existingNameAr: currentNameAr,
+          existingDescription: currentDescription,
+          existingDescriptionAr: currentDescriptionAr,
         }
       });
 
@@ -1128,7 +1148,7 @@ const Admin = () => {
         throw new Error(response.error.message || 'فشل في استخراج المعلومات');
       }
 
-      const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message } = response.data;
+      const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message, canonical_url } = response.data;
       
       // If requires manual input, show the manual input form
       if (requiresManualInput) {
@@ -1167,6 +1187,7 @@ const Admin = () => {
         ai_content_keys: productInfo.ai_content ? Object.keys(productInfo.ai_content) : [],
       });
       applyProductInfo(productInfo);
+      if (canonical_url && typeof canonical_url === 'string') setProductUrl(canonical_url);
       advanceExtractionStep('apply', 'done');
       toast.success('تم الاستخراج والتعبئة بنجاح');
       
@@ -1205,49 +1226,52 @@ const Admin = () => {
 
   // Apply product info to form (shared between auto and manual extraction)
   const applyProductInfo = (productInfo: any) => {
-    const form = document.querySelector('form') as HTMLFormElement;
+    const form = formNodeRef.current || (document.querySelector('form') as HTMLFormElement);
     if (!form) return;
+    const updateSnapshot = (name: string, value: string) => {
+      latestFormValuesRef.current = { ...latestFormValuesRef.current, [name]: value };
+    };
+    const setFormValue = (selector: string, value: any, fieldName?: string) => {
+      const el = form.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+      if (!el) return;
+      const textValue = String(value ?? '');
+      el.value = textValue;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      const name = fieldName || el.getAttribute('name') || '';
+      if (name) updateSnapshot(name, textValue);
+    };
 
     // Fill text inputs
     if (productInfo.name_ar) {
-      const input = form.querySelector('#name_ar') as HTMLInputElement;
-      if (input) input.value = productInfo.name_ar;
+      setFormValue('#name_ar', productInfo.name_ar, 'name_ar');
       markFieldFilled('name_ar');
     }
     const extractedNameEn = String(productInfo.name_en || productInfo.name || '').trim();
     if (extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
-      const nameEnInput = form.querySelector('#name_en') as HTMLInputElement | null;
       const legacyNameInput = form.querySelector('input[name="name"]') as HTMLInputElement | null;
-      if (nameEnInput) {
-        nameEnInput.value = extractedNameEn;
-        nameEnInput.dispatchEvent(new Event('input', { bubbles: true }));
-        nameEnInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      if (legacyNameInput) legacyNameInput.value = extractedNameEn;
+      setFormValue('#name_en', extractedNameEn, 'name_en');
+      if (legacyNameInput) setFormValue('input[name="name"]', extractedNameEn, 'name');
       markFieldFilled('name_en');
       markFieldFilled('name');
     }
     if (productInfo.name_ar && extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
       const slug = extractedNameEn.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const input = form.querySelector('#slug') as HTMLInputElement;
-      if (input) input.value = slug;
+      setFormValue('#slug', slug, 'slug');
       markFieldFilled('slug');
     }
     if (productInfo.description_ar) {
-      const textarea = form.querySelector('#description_ar') as HTMLTextAreaElement;
-      if (textarea) textarea.value = productInfo.description_ar;
+      setFormValue('#description_ar', productInfo.description_ar, 'description_ar');
       markFieldFilled('description_ar');
     }
     if (productInfo.description) {
-      const textarea = form.querySelector('#description') as HTMLTextAreaElement;
-      if (textarea) textarea.value = productInfo.description;
+      setFormValue('textarea#description, input[name="description"]', productInfo.description, 'description');
       markFieldFilled('description');
     }
 
     // Set price (current price after discount)
     if (productInfo.price && productInfo.price > 0) {
-      const priceInput = form.querySelector('#price') as HTMLInputElement;
-      if (priceInput) priceInput.value = String(productInfo.price);
+      setFormValue('#price, input[name="price"]', productInfo.price, 'price');
       markFieldFilled('price');
     }
 
@@ -1256,17 +1280,14 @@ const Admin = () => {
     if (productInfo.original_price_usd && productInfo.original_price_usd > 0) {
       const originalPriceUsdInput = form.querySelector('#original_price_usd') as HTMLInputElement;
       if (originalPriceUsdInput) {
-        originalPriceUsdInput.value = String(productInfo.original_price_usd);
-        originalPriceUsdInput.dispatchEvent(new Event('input', { bubbles: true }));
-        originalPriceUsdInput.dispatchEvent(new Event('change', { bubbles: true }));
+        setFormValue('#original_price_usd', productInfo.original_price_usd, 'original_price_usd');
       }
       window.dispatchEvent(new CustomEvent('admin-product-pricing-autofill', {
         detail: { originalPriceUsd: productInfo.original_price_usd }
       }));
       markFieldFilled('original_price');
     } else if (productInfo.original_price && productInfo.original_price > 0) {
-      const originalPriceInput = form.querySelector('input[name="original_price"]') as HTMLInputElement;
-      if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
+      setFormValue('input[name="original_price"]', productInfo.original_price, 'original_price');
       markFieldFilled('original_price');
     }
 
@@ -1343,9 +1364,7 @@ const Admin = () => {
     if (productInfo.brand && typeof productInfo.brand === 'string') {
       const brandInput = form.querySelector('#brand') as HTMLInputElement | null;
       if (brandInput && !brandInput.value.trim()) {
-        brandInput.value = productInfo.brand;
-        brandInput.dispatchEvent(new Event('input', { bubbles: true }));
-        brandInput.dispatchEvent(new Event('change', { bubbles: true }));
+        setFormValue('#brand', productInfo.brand, 'brand');
         markFieldFilled('brand');
       }
     }
@@ -1360,9 +1379,7 @@ const Admin = () => {
           ? (products as any[]).filter((p) => p.category_id === currentCategoryId)
           : (products as any[]);
         const maxOrder = sameCat.reduce((m, p) => Math.max(m, Number(p.display_order) || 0), 0);
-        orderInput.value = String(maxOrder + 1);
-        orderInput.dispatchEvent(new Event('input', { bubbles: true }));
-        orderInput.dispatchEvent(new Event('change', { bubbles: true }));
+        setFormValue('#display_order', maxOrder + 1, 'display_order');
         markFieldFilled('display_order');
       }
     } catch (_) { /* non-fatal */ }
@@ -1374,9 +1391,7 @@ const Admin = () => {
       if (!el) return;
       const n = Number(value);
       if (!Number.isFinite(n) || n <= 0) return;
-      el.value = String(n);
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.dispatchEvent(new Event('change', { bubbles: true }));
+      setFormValue(selector, n);
     };
     setNumInput('#length_cm', dims.length_cm);
     setNumInput('#width_cm', dims.width_cm);
@@ -1447,9 +1462,10 @@ const Admin = () => {
           uniqueImages.push(img);
         }
       }
-      // When extracting new product info, clear editing product images and use only new ones
+      // When extracting new product info, clear editing product images and use only new ones.
+      // Keep extracted SEO state from being reset by the editor initialization effect.
       if (editingProduct) {
-        setEditingProduct({ ...editingProduct, images: [] });
+        setEditingProduct((prev: any) => prev ? { ...prev, images: [], image_url: uniqueImages[0] || null } : prev);
       }
       setUploadedImages(uniqueImages);
     }
@@ -1775,7 +1791,7 @@ const Admin = () => {
         short_summary: productShortSummary || {},
         searchable_attributes: productSearchableAttrs || [],
         // Taobao sync fields
-        taobao_url: (formData.get('taobao_url') as string)?.trim() || null,
+        taobao_url: productUrl.trim() || (formData.get('taobao_url') as string)?.trim() || editingProduct?.taobao_url || null,
         // Product rewards - points from form (can be auto-calculated or manually set)
         points_reward: formData.get('points_reward') && formData.get('points_reward') !== '' 
           ? Number(formData.get('points_reward')) 

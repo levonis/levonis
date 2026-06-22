@@ -301,6 +301,26 @@ function normalizeSeoText(value: unknown): string {
   return s;
 }
 
+function parseAiJsonObject(text: string): any {
+  let cleaned = String(text || '')
+    .replace(/```json\s*/gi, '')
+    .replace(/```/g, '')
+    .trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) throw new Error('No JSON object found in AI response');
+  cleaned = cleaned.slice(start, end + 1);
+  try {
+    return JSON.parse(cleaned);
+  } catch (_) {
+    const repaired = cleaned
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']')
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    return JSON.parse(repaired);
+  }
+}
+
 function hasTriLangValue(value: any): boolean {
   return Boolean(normalizeSeoText(value?.ar) && normalizeSeoText(value?.en) && normalizeSeoText(value?.ku));
 }
@@ -1724,9 +1744,8 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
         const text = aiData.choices[0]?.message?.content || '';
         console.log('AI response length:', text.length);
         
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const ai = JSON.parse(jsonMatch[0]);
+        {
+          const ai = parseAiJsonObject(text);
           
           const aiName = cleanExtractedText(ai.name);
           productInfo.name = isUsefulProductName(aiName) ? aiName : (directProductName || productInfo.name);
@@ -2065,9 +2084,8 @@ Return JSON ONLY:
         if (seoResponse.ok) {
           const seoData = await seoResponse.json();
           const seoText = seoData.choices[0]?.message?.content || '';
-          const seoMatch = seoText.match(/\{[\s\S]*\}/);
-          if (seoMatch) {
-            const seo = JSON.parse(seoMatch[0]);
+          try {
+            const seo = parseAiJsonObject(seoText);
             if (ssEmpty && seo.short_summary && typeof seo.short_summary === 'object') {
               productInfo.short_summary = {
                 ar: normalizeSeoText(seo.short_summary.ar),
@@ -2087,6 +2105,8 @@ Return JSON ONLY:
               productInfo.ai_content = seo.ai_content;
               console.log('Filled ai_content via fallback');
             }
+          } catch (seoParseErr) {
+            console.error('SEO fallback JSON parse error:', seoParseErr);
           }
         } else {
           console.error('SEO fallback AI call failed:', seoResponse.status, await seoResponse.text());
