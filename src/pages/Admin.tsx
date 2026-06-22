@@ -1376,9 +1376,7 @@ const Admin = () => {
           ? (products as any[]).filter((p) => p.category_id === currentCategoryId)
           : (products as any[]);
         const maxOrder = sameCat.reduce((m, p) => Math.max(m, Number(p.display_order) || 0), 0);
-        orderInput.value = String(maxOrder + 1);
-        orderInput.dispatchEvent(new Event('input', { bubbles: true }));
-        orderInput.dispatchEvent(new Event('change', { bubbles: true }));
+        setFormValue('#display_order', maxOrder + 1, 'display_order');
         markFieldFilled('display_order');
       }
     } catch (_) { /* non-fatal */ }
@@ -1390,9 +1388,7 @@ const Admin = () => {
       if (!el) return;
       const n = Number(value);
       if (!Number.isFinite(n) || n <= 0) return;
-      el.value = String(n);
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.dispatchEvent(new Event('change', { bubbles: true }));
+      setFormValue(selector, n);
     };
     setNumInput('#length_cm', dims.length_cm);
     setNumInput('#width_cm', dims.width_cm);
