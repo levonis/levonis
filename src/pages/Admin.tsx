@@ -1788,7 +1788,7 @@ const Admin = () => {
         short_summary: productShortSummary || {},
         searchable_attributes: productSearchableAttrs || [],
         // Taobao sync fields
-        taobao_url: (formData.get('taobao_url') as string)?.trim() || null,
+        taobao_url: productUrl.trim() || (formData.get('taobao_url') as string)?.trim() || editingProduct?.taobao_url || null,
         // Product rewards - points from form (can be auto-calculated or manually set)
         points_reward: formData.get('points_reward') && formData.get('points_reward') !== '' 
           ? Number(formData.get('points_reward')) 
