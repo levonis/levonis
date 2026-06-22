@@ -7,7 +7,7 @@ const LOVABLE_AI_MODEL = 'google/gemini-3.1-pro-preview';
 
 const buildLovableAiHeaders = (lovableApiKey: string) => ({
   'Lovable-API-Key': lovableApiKey,
-  'X-Lovable-AIG-SDK': 'manual-edge-function',
+  'X-Lovable-AIG-SDK': 'vercel-ai-sdk',
   'Content-Type': 'application/json',
 });
 
