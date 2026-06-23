@@ -42,6 +42,16 @@ const CategoryCard = ({
 
   const linkRef = useRef<HTMLAnchorElement>(null);
   const [inView, setInView] = useState(false);
+  // Defer video activation: image/poster appears first, real <video> mounts only
+  // after the card has been in viewport for ~1.2s. Saves 3-10 MB of autoplaying
+  // category videos from the LCP critical path.
+  const [activateVideo, setActivateVideo] = useState(false);
+  // Poster derived from the video's first frame via Supabase image render endpoint.
+  // For non-supabase URLs we fall back to no poster (still better than autoplay).
+  const videoPoster = useMemo(() => {
+    if (!showVideo || !mediaUrl) return undefined;
+    return resizeSupabaseImage(mediaUrl, useFullMedia ? 400 : 200, 60) || undefined;
+  }, [showVideo, mediaUrl, useFullMedia]);
 
   useEffect(() => {
     if (!mediaUrl) return;
@@ -65,6 +75,14 @@ const CategoryCard = ({
     io.observe(el);
     return () => io.disconnect();
   }, [mediaUrl]);
+
+  useEffect(() => {
+    if (!inView || !showVideo || activateVideo) return;
+    const idle = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 1200));
+    const cancel = (window as any).cancelIdleCallback || clearTimeout;
+    const id = idle(() => setActivateVideo(true), { timeout: 2500 });
+    return () => cancel(id);
+  }, [inView, showVideo, activateVideo]);
 
   return (
     <Link
