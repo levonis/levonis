@@ -33,7 +33,7 @@ const OptimizedImage = memo(({
   height,
   sizes = "(max-width: 768px) 100vw, 50vw",
   targetWidth,
-  quality = 75,
+  quality = 65,
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
@@ -90,10 +90,14 @@ const OptimizedImage = memo(({
     return resizeSupabaseImage(src, snapped, quality) || src;
   }, [src, targetWidth, width, quality]);
 
-  const srcSet = useMemo(
-    () => buildResponsiveSrcSet(src, [200, 400, 600, 800, 1200], quality),
-    [src, quality]
-  );
+  const srcSet = useMemo(() => {
+    // Narrow srcSet on small viewports — no point shipping a 1200px candidate
+    // to a 360px phone.
+    const widths = typeof window !== 'undefined' && window.innerWidth < 480
+      ? [200, 400]
+      : [200, 400, 600, 800, 1200];
+    return buildResponsiveSrcSet(src, widths, quality);
+  }, [src, quality]);
 
   return (
     <div ref={imgRef} className={`relative overflow-hidden ${className}`}>

@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import DirectSaleRibbon from "./ui/DirectSaleRibbon";
 import { resizeSupabaseImage } from "@/lib/imageUtils";
+import { shouldSkipHeavyMedia, isLowEndDevice } from "@/lib/networkQuality";
 
 interface CategoryCardProps {
   name: string;
@@ -78,6 +79,8 @@ const CategoryCard = ({
 
   useEffect(() => {
     if (!inView || !showVideo || activateVideo) return;
+    // Skip video entirely on Data Saver / 2G / low-memory devices.
+    if (shouldSkipHeavyMedia() || isLowEndDevice()) return;
     const idle = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 1200));
     const cancel = (window as any).cancelIdleCallback || clearTimeout;
     const id = idle(() => setActivateVideo(true), { timeout: 2500 });
