@@ -3,7 +3,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_AI_MODEL = 'google/gemini-3.1-pro-preview';
+const LOVABLE_AI_MODEL = 'openai/gpt-5.5';
+// GPT-5 family only supports default temperature (1). Omit `temperature` from requests.
 
 const buildLovableAiHeaders = (lovableApiKey: string) => ({
   'Lovable-API-Key': lovableApiKey,
