@@ -2127,8 +2127,7 @@ Return JSON ONLY:
               { role: 'system', content: 'You are a product packaging expert. Always return PACKAGE/CARTON dimensions and GROSS weight (with packaging), never bare product dimensions or net weight.' },
               { role: 'user', content: searchPrompt }
             ],
-            temperature: 0.1,
-            max_tokens: 1000,
+            max_completion_tokens: 1000,
           }),
         });
 
