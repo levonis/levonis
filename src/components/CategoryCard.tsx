@@ -168,15 +168,25 @@ const CategoryCard = ({
             }
             aria-hidden="true"
           >
-            {inView && showVideo ? (
+            {inView && showVideo && activateVideo ? (
               <video
                 src={mediaUrl!}
+                poster={videoPoster}
                 className="w-full h-full object-cover"
                 autoPlay
                 muted
                 loop
                 playsInline
                 preload="none"
+              />
+            ) : inView && showVideo && videoPoster ? (
+              <img
+                src={videoPoster}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+                draggable={false}
               />
             ) : inView && showImage ? (
               <img
