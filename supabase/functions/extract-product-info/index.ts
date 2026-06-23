@@ -2234,8 +2234,7 @@ Return JSON ONLY:
               { role: 'system', content: 'أنت كاتب SEO ومسوق منتجات محترف. أنتج محتوى تسويقي عالي الجودة بـ 3 لغات. أرجع JSON صحيح فقط.' },
               { role: 'user', content: seoPrompt }
             ],
-            temperature: 0.4,
-            max_tokens: 12000,
+            max_completion_tokens: 12000,
           }),
         });
 
