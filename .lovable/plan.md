@@ -1,53 +1,93 @@
-# المرحلة 5 — تحسينات جذرية للسلاسة والاستجابة
+# المرحلة 6 — تحسينات قوية وجذرية للأداء على الموبايل
 
-تركيز هذه المرحلة على تقليل **TBT** (Total Blocking Time) و **INP** (Interaction to Next Paint) و **LCP** بشكل ملحوظ، لأن هذه هي المقاييس التي تُسقط درجة الموبايل في تقرير PageSpeed الحالي.
+التحسينات السابقة كانت تدريجية. هذه المرحلة جذرية: نقطع كل ما يستهلك CPU/شبكة على الموبايل في أول 3 ثوانٍ، ونؤجل أو نحذف ما لا يُرى في الشاشة الأولى.
 
-## 1. تقليل JavaScript على الصفحة الرئيسية (الأثر الأكبر)
+## 1. حذف الفيديو نهائياً من الشاشة الأولى على الموبايل
 
-- **تأجيل `ReelsBar` و `CategoryCard` فيديو** خلف `IntersectionObserver` صارم + `requestIdleCallback`، مع إيقاف التحميل تماماً على الـ Data Saver وعلى الشبكات `2g/slow-2g` (عبر `navigator.connection`).
-- **إزالة `framer-motion` من المسار الحرج للهوم** عبر استبدال الحركات البسيطة (fade/slide) بـ CSS transitions، وإبقاء framer-motion فقط للصفحات الثقيلة (Reels, Games).
-- **تقسيم `Home.tsx`** إلى أقسام `lazy()` مغلفة بـ `ProgressiveSection` بحيث لا يُحمَّل أي قسم تحت الطية حتى يقترب المستخدم منه.
+- `CategoryCard.tsx` و `ReelsBar.tsx`: على الموبايل، لا نحمّل الفيديو إطلاقاً (نعرض صورة مصغّرة poster فقط). الفيديو يبدأ فقط عند نقر المستخدم. توفير TBT ~400-800ms.
+- إزالة كل preload فيديو، autoplay، loop على الموبايل.
 
-## 2. تقليل Main-Thread Work
+## 2. تقسيم Home.tsx بشكل عدواني (Code Splitting)
 
-- **Web Worker** لأي parsing/format ثقيل يتم حالياً على الـ main thread (مثلاً تحويلات الأسعار الكثيرة في `cardPrice.ts` عند عرض شبكة منتجات كبيرة) — أو على الأقل `useDeferredValue` + `useTransition` حول الـ filtering/sorting.
-- **`scheduler.postTask`** (مع polyfill بسيط) لجدولة مهام الـ prefetching و analytics في `priority: 'background'`.
-- **إلغاء `MutationObserver` الواسع في `ImageQualityBoost`** على body كله — استبداله بنسخة مُحدودة (يراقب فقط الحاويات الحرجة) أو الاكتفاء بـ CSS attribute selector + loading="lazy" افتراضياً في build step.
+- كل قسم تحت الـ fold الأول يصبح `React.lazy()` ملفوف بـ `ProgressiveSection`.
+- الأقسام: Reels، Categories السفلية، Featured، Stories، Community Teaser، Games Teaser، Footer — كلها lazy.
+- النتيجة: bundle أولي ~40-50% أصغر.
 
-## 3. CLS = 0 على الهوم
+## 3. حذف Framer Motion من المسار الحرج
 
-- تثبيت `aspect-ratio` و `min-height` على: بطاقات الـ Reels، بطاقات الفئات، البانر، شريط التنقل، والـ DynamicIsland قبل الـ hydration.
-- استبدال `PageLoader` الحالي بـ skeleton متطابق الأبعاد مع المحتوى النهائي (نفس المقاسات بالضبط) لتجنب أي قفزة عند انتهاء التحميل.
+- `Home`, `AppNavBar`, `CategoryCard`, `PageLoader` → CSS transitions/keyframes فقط.
+- framer-motion يبقى فقط داخل المسارات الثقيلة (Reels page، Games، Dialogs) المحمّلة كسولاً.
+- توفير ~50KB gzip من main bundle.
 
-## 4. الشبكة و الـ Caching
+## 4. LCP Image: preload صريح + AVIF
 
-- **تفعيل `<link rel="preconnect">`** لـ Supabase storage و CDN الصور في `index.html`.
-- **`Cache-Control: public, max-age=31536000, immutable`** عبر `public/_headers` لكل ملفات `/assets/` (Vite hashed).
-- **Service Worker**: تحديث استراتيجية الـ runtime caching للصور إلى `stale-while-revalidate` مع حد أقصى 200 صورة، وإضافة precache للـ critical CSS و الـ font subset.
+- `index.html`: إضافة `<link rel="preload" as="image" fetchpriority="high">` لأول صورة hero/banner (نستخرج URL من Supabase storage).
+- استخدام `?format=avif` مع `<picture>` fallback إلى WebP.
+- خفض جودة الصور المصغّرة من 65→55 على الشاشات <480px.
 
-## 5. الصور (LCP)
+## 5. تعطيل backdrop-filter على الموبايل ضعيف الأداء
 
-- **Hero/Banner الرئيسي**: إضافة `<link rel="preload" as="image" imagesrcset="..." fetchpriority="high">` في `index.html` للصورة LCP بصيغة AVIF/WebP.
-- **خفض جودة الـ thumbnails** في `OptimizedImage` من 75 إلى 65 (فرق بصري شبه معدوم على الموبايل، توفير ~20% bytes).
-- **منع تحميل srcSet كامل** على شاشات < 400px — اكتفاء بـ width 200/400 فقط.
+- `index.css`: على `(max-width: 768px) and (max-device-memory: 4gb)` أو `prefers-reduced-motion` → استبدال `backdrop-filter: blur(20px)` بـ `background: rgba(...)` صلب.
+- backdrop-filter من أثقل العمليات على GPU في الموبايل.
 
-## 6. تحسينات micro-INP
+## 6. Service Worker: precache صدفة التطبيق
 
-- **`pointer-events: none`** على عناصر الزخرفة (glow, particles) في كل مكان لمنع hit-testing zaman.
-- **passive listeners** على كل `touchstart/wheel/scroll` الحالية (مراجعة شاملة سريعة).
-- **`content-visibility: auto`** على كل قسم تحت الطية في `Home`, `RewardsHub`, `MiniGames`.
+- `public/sw.js`: precache لـ `/`, `/assets/index-*.js`, `/assets/index-*.css`, font Cairo subset.
+- الزيارة الثانية تفتح فوراً (~200ms FCP بدل ~2s).
 
-## الملفات المتوقع تعديلها
+## 7. تأجيل كل المراقبات والاشتراكات
 
-`index.html` · `vite.config.ts` · `public/_headers` · `public/sw.js` · `src/main.tsx` · `src/pages/Home.tsx` · `src/components/CategoryCard.tsx` · `src/components/reels/ReelsBar.tsx` · `src/components/ImageQualityBoost.tsx` · `src/components/OptimizedImage.tsx` · `src/components/ProgressiveSection.tsx` · `src/components/ui/PageLoader.tsx`
+- `useOrderRealtimeNotifications`, `useMessageNotifications`, `useOnlineHeartbeat`, `useDailyLogin`, `useNotificationPermission`: كلها خلف `requestIdleCallback(timeout: 3000)` بعد التحميل الأول.
+- realtime channels لا تُفتح إلا بعد `load` + idle.
 
-## خارج النطاق
+## 8. تحجيم العناصر مسبقاً (CLS = 0)
 
-- لا تغييرات على منطق الـ business (cart, pricing, orders).
-- لا تغيير على framer-motion في صفحات Games/Reels.
-- لا تغيير على Supabase queries أو RLS.
+- تثبيت `aspect-ratio` و `min-height` على: بطاقات الفئات، Reels، Banner، Nav، Dynamic Island، Hero قبل hydration.
+- استبدال `PageLoader` الحالي (دوائر متحركة) بـ skeleton ثابت بنفس أبعاد المحتوى النهائي.
 
-## المخاطر
+## 9. خفض react-query polling/refetch
 
-- تقسيم `Home.tsx` بـ lazy قد يُظهر skeletons أكثر مما يعتاد المستخدم — سنضمن أبعاداً مطابقة لتجنب أي إحساس بالقفز.
-- تخفيض جودة الصور من 75→65: سنراجع بصرياً قبل النشر.
+- `staleTime` افتراضي 5 دقائق على Home.
+- `refetchOnWindowFocus: false` على المسار الحرج.
+- إلغاء أي `refetchInterval` < 60s على الشاشة الأولى.
+
+## 10. Cache headers صارمة
+
+- `public/_headers`: `Cache-Control: public, max-age=31536000, immutable` لـ `/assets/*`، و `stale-while-revalidate=86400` لـ HTML.
+
+## الملفات المتأثرة
+
+```text
+index.html
+vite.config.ts
+public/sw.js
+public/_headers
+src/index.css
+src/main.tsx
+src/pages/Home.tsx
+src/components/CategoryCard.tsx
+src/components/reels/ReelsBar.tsx
+src/components/AppNavBar.tsx
+src/components/ui/PageLoader.tsx
+src/components/ProgressiveSection.tsx
+src/components/OptimizedImage.tsx
+src/hooks/useOrderRealtimeNotifications.tsx
+src/hooks/useMessageNotifications.ts
+src/hooks/useOnlineHeartbeat.ts
+src/hooks/useDailyLogin.tsx
+```
+
+## ما لن يتغيّر
+
+- لا تعديل على منطق الأعمال، Supabase schema، RLS، Cart، Checkout، Auth.
+- framer-motion يبقى في Reels/Games/Dialogs.
+- التصميم البصري نفسه (Glassmorphism) — فقط على الموبايل الضعيف يصبح صلباً بدل blur.
+
+## المتوقع بعد التطبيق
+
+- LCP: 4.5s → ~2.0s
+- TBT: 600ms → ~150ms
+- INP: تحسّن ملحوظ على النقر/التمرير
+- CLS: ~0
+
+هل أبدأ التنفيذ؟
