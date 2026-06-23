@@ -33,7 +33,7 @@ const OptimizedImage = memo(({
   height,
   sizes = "(max-width: 768px) 100vw, 50vw",
   targetWidth,
-  quality = 65,
+  quality = 60,
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
