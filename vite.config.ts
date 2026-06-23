@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       output: {
+        // Merge tiny chunks (<10 KB) to reduce the long waterfall on first paint
+        // — PageSpeed showed 22 chained micro-chunks delaying LCP by ~3s.
+        experimentalMinChunkSize: 10_000,
         manualChunks: (id) => {
           if (!id.includes('node_modules')) return undefined;
           // Only split libs that are SAFE (no internal circular deps that break in prod).
