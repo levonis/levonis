@@ -1,4 +1,4 @@
-import { memo, useState, useContext } from 'react';
+import { memo, useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, ShoppingCart, Users, Trophy, Gamepad2, MessageCircle, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
