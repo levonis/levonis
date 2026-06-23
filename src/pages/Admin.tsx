@@ -572,8 +572,8 @@ const Admin = () => {
       // Load options from the database ONLY if editing an existing product (has id)
       // For duplicated products (no id), options are already set by handleDuplicateProduct
       if (editingProduct.id) {
-        supabase
-          .from('product_options')
+        (supabase as any)
+          .from('product_options_admin')
           .select('*')
           .eq('product_id', editingProduct.id)
           .then(({ data, error }) => {
