@@ -1,16 +1,41 @@
-## ترقية نموذج استخراج المنتجات
+# تفعيل bfcache بإزالة موانع الاسترجاع
 
-### التغيير
-ترقية النموذج المستخدم في `supabase/functions/extract-product-info/index.ts` من `google/gemini-3.1-pro-preview` إلى `openai/gpt-5.5` لكل عمليات الاستخراج.
+## السياق
+بعد فحص المشروع، **مانع bfcache الوحيد** هو `beforeunload` listener في `src/pages/Admin.tsx` (السطر 479–488). يُسجَّل فقط عندما يكون حوار تعديل المنتج (productDialogOpen) مفتوحاً، لتحذير الأدمن قبل إغلاق التبويب بفقدان مسودة المنتج.
 
-### التفاصيل التقنية
-- في `supabase/functions/extract-product-info/index.ts` (السطر 6):
-  - `LOVABLE_AI_MODEL = 'openai/gpt-5.5'`
-- مراجعة جميع استدعاءات `fetch` للـ AI Gateway للتأكد من توافق body مع GPT-5.5 (إزالة أي معاملات Gemini-specific مثل `thinkingConfig` إن وُجدت، والإبقاء فقط على `model`, `messages`, `tools`/`response_format`).
-- إعادة نشر الـ edge function بعد التعديل.
+وجود `beforeunload` (حتى لو لم يستدعي `preventDefault`) **يُعطّل bfcache في Chrome/Edge تلقائياً** — أي ضغطة "رجوع" تُعيد بناء الصفحة بدل استرجاعها فورياً.
 
-### ملاحظة على التكلفة
-GPT-5.5 أعلى تكلفة وأبطأ قليلاً من Gemini 3.1 Pro، لكنه أقوى في دقة الاستخراج المنظم (colors/options/specs).
+باقي المشروع نظيف:
+- `ScrollRestoration.tsx` يستخدم `pagehide` و`visibilitychange` فقط (متوافقة مع bfcache).
+- لا يوجد `unload`/`onunload` في أي مكان.
+- `sw.js` لا يحتوي أي تعارض مع bfcache.
 
-### التحقق
-استدعاء الـ function بالرابط الذي ذكرته سابقاً (BIQU CryoGrip) والتأكد أن Type يذهب لـ options و Print Size يذهب لـ colors بدون أخطاء.
+## التعديل الوحيد
+**File:** `src/pages/Admin.tsx` (داخل useEffect حوار المنتج، السطور 477–488)
+
+استبدال `beforeunload` بـ `pagehide` (وهو متوافق مع bfcache ويعمل بنفس الفعالية لحفظ المسودة):
+
+```ts
+snapshot();
+const id = window.setInterval(snapshot, 1500);
+const onPageHide = () => { snapshot(); };
+window.addEventListener('pagehide', onPageHide);
+return () => {
+  window.clearInterval(id);
+  window.removeEventListener('pagehide', onPageHide);
+};
+```
+
+### لماذا هذا آمن
+- المسودة تُحفظ كل 1500ms في `localStorage`، فلا حاجة لتحذير المتصفح.
+- `pagehide` يضمن snapshot أخيرة قبل التنقل/الإغلاق بدون تعطيل bfcache.
+- يُحذف صندوق "هل تريد الخروج؟" — لكن المسودة محفوظة فعلياً، ويُعاد تحميلها عند فتح الحوار من جديد (المنطق الموجود مسبقاً).
+
+## النتيجة المتوقعة
+- زر "رجوع/تقديم" يُعيد الصفحة فوراً (instant restoration) بدل إعادة التحميل.
+- التطبيق يصبح مماثلاً لسلوك Amazon/Bambulab في التنقل داخل الموقع.
+- لا تغيير على أي وظيفة أخرى.
+
+## خارج النطاق
+- التنقل بين نطاقات مختلفة (levonisiq.com ↔ bambulab.com) يبقى reload كاملاً بحكم same-origin policy — لا يمكن تجنبه.
+- service worker، التوجيه، والكاش بدون تغيير.
