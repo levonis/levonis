@@ -1,48 +1,53 @@
-# المرحلة الرابعة — استقرار التخطيط (CLS) + تسريع أول رسم (FCP)
+# المرحلة 5 — تحسينات جذرية للسلاسة والاستجابة
 
-## الهدف
-- خفض **CLS** إلى < 0.1 عبر حجز مساحات ثابتة للعناصر المتأخرة في التحميل.
-- تقليل **FCP/LCP** عبر إدراج CSS حرج داخل `index.html` وتأجيل الورقة الكاملة.
-- قطع آخر سلسلة عرض (render chain) متبقية من المرحلة الثالثة.
+تركيز هذه المرحلة على تقليل **TBT** (Total Blocking Time) و **INP** (Interaction to Next Paint) و **LCP** بشكل ملحوظ، لأن هذه هي المقاييس التي تُسقط درجة الموبايل في تقرير PageSpeed الحالي.
 
-## التغييرات
+## 1. تقليل JavaScript على الصفحة الرئيسية (الأثر الأكبر)
 
-### 1) `index.html` — Critical CSS مضمّن + تحميل لا-حاجز
-- إدراج ~3 KiB CSS حرج داخل `<style>` في `<head>`: ألوان الخلفية، الخط الأساسي، أبعاد البانر/الـ Nav، إخفاء الومضة البيضاء.
-- تحويل `<link rel="stylesheet">` الرئيسي إلى:
-  ```html
-  <link rel="preload" as="style" href="..." onload="this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="..."></noscript>
-  ```
-- إضافة `<link rel="preload" as="image" fetchpriority="high">` لصورة البانر الأولى المعروفة.
+- **تأجيل `ReelsBar` و `CategoryCard` فيديو** خلف `IntersectionObserver` صارم + `requestIdleCallback`، مع إيقاف التحميل تماماً على الـ Data Saver وعلى الشبكات `2g/slow-2g` (عبر `navigator.connection`).
+- **إزالة `framer-motion` من المسار الحرج للهوم** عبر استبدال الحركات البسيطة (fade/slide) بـ CSS transitions، وإبقاء framer-motion فقط للصفحات الثقيلة (Reels, Games).
+- **تقسيم `Home.tsx`** إلى أقسام `lazy()` مغلفة بـ `ProgressiveSection` بحيث لا يُحمَّل أي قسم تحت الطية حتى يقترب المستخدم منه.
 
-### 2) حجز مساحات (Reserve Space) لمنع CLS
-- **`ReelsBar.tsx`**: تثبيت `aspect-ratio` + `min-height` على كل بطاقة ريل قبل تحميل الـ thumbnail.
-- **`CategoryCard.tsx`**: تثبيت `aspect-ratio` على الـ wrapper بدلاً من ترك الفيديو/الصورة يحددان الارتفاع.
-- **بانر الهوم**: ضبط `width`/`height` صريحين على `<img>` لتجنّب القفزة بعد التحميل.
-- **`AppNavBar`**: ضمان `min-height` ثابت قبل ركوب الـ JS (يمنع قفزة بعد hydration).
+## 2. تقليل Main-Thread Work
 
-### 3) خطوط بلا قفزات
-- إضافة `font-display: swap` لأي `@font-face` محلي.
-- preconnect لـ Google Fonts إن وُجد، وحذف أي خط غير مستخدم فعلياً.
+- **Web Worker** لأي parsing/format ثقيل يتم حالياً على الـ main thread (مثلاً تحويلات الأسعار الكثيرة في `cardPrice.ts` عند عرض شبكة منتجات كبيرة) — أو على الأقل `useDeferredValue` + `useTransition` حول الـ filtering/sorting.
+- **`scheduler.postTask`** (مع polyfill بسيط) لجدولة مهام الـ prefetching و analytics في `priority: 'background'`.
+- **إلغاء `MutationObserver` الواسع في `ImageQualityBoost`** على body كله — استبداله بنسخة مُحدودة (يراقب فقط الحاويات الحرجة) أو الاكتفاء بـ CSS attribute selector + loading="lazy" افتراضياً في build step.
 
-### 4) إزالة CSS غير مستخدم
-- مراجعة `tailwind.config.ts` `content` للتأكد من عدم وجود مسارات تجلب CSS زائد.
-- إزالة `@tailwind components;` من `index.css` إن لم تكن مستخدمة (وفّر ~5–10 KiB).
+## 3. CLS = 0 على الهوم
 
-## الملفات المُعدّلة
-- `index.html`
-- `src/components/reels/ReelsBar.tsx`
-- `src/components/CategoryCard.tsx`
-- `src/pages/Home.tsx` (للبانر فقط)
-- `src/index.css` (تنظيف فقط)
-- `tailwind.config.ts` (مراجعة `content` إذا لزم)
+- تثبيت `aspect-ratio` و `min-height` على: بطاقات الـ Reels، بطاقات الفئات، البانر، شريط التنقل، والـ DynamicIsland قبل الـ hydration.
+- استبدال `PageLoader` الحالي بـ skeleton متطابق الأبعاد مع المحتوى النهائي (نفس المقاسات بالضبط) لتجنب أي قفزة عند انتهاء التحميل.
 
-## ما لن يُلمس
-- منطق الأعمال، الأسعار، السلة، RLS.
-- `framer-motion` / `radix` chunks (محذّر منه في `vite.config.ts`).
-- `DynamicIsland` (يكسر الحركة).
+## 4. الشبكة و الـ Caching
 
-## التحقق
-- `tsgo --noEmit`.
-- نشر ثم قياس PageSpeed جديد: التركيز على CLS و FCP و LCP.
+- **تفعيل `<link rel="preconnect">`** لـ Supabase storage و CDN الصور في `index.html`.
+- **`Cache-Control: public, max-age=31536000, immutable`** عبر `public/_headers` لكل ملفات `/assets/` (Vite hashed).
+- **Service Worker**: تحديث استراتيجية الـ runtime caching للصور إلى `stale-while-revalidate` مع حد أقصى 200 صورة، وإضافة precache للـ critical CSS و الـ font subset.
+
+## 5. الصور (LCP)
+
+- **Hero/Banner الرئيسي**: إضافة `<link rel="preload" as="image" imagesrcset="..." fetchpriority="high">` في `index.html` للصورة LCP بصيغة AVIF/WebP.
+- **خفض جودة الـ thumbnails** في `OptimizedImage` من 75 إلى 65 (فرق بصري شبه معدوم على الموبايل، توفير ~20% bytes).
+- **منع تحميل srcSet كامل** على شاشات < 400px — اكتفاء بـ width 200/400 فقط.
+
+## 6. تحسينات micro-INP
+
+- **`pointer-events: none`** على عناصر الزخرفة (glow, particles) في كل مكان لمنع hit-testing zaman.
+- **passive listeners** على كل `touchstart/wheel/scroll` الحالية (مراجعة شاملة سريعة).
+- **`content-visibility: auto`** على كل قسم تحت الطية في `Home`, `RewardsHub`, `MiniGames`.
+
+## الملفات المتوقع تعديلها
+
+`index.html` · `vite.config.ts` · `public/_headers` · `public/sw.js` · `src/main.tsx` · `src/pages/Home.tsx` · `src/components/CategoryCard.tsx` · `src/components/reels/ReelsBar.tsx` · `src/components/ImageQualityBoost.tsx` · `src/components/OptimizedImage.tsx` · `src/components/ProgressiveSection.tsx` · `src/components/ui/PageLoader.tsx`
+
+## خارج النطاق
+
+- لا تغييرات على منطق الـ business (cart, pricing, orders).
+- لا تغيير على framer-motion في صفحات Games/Reels.
+- لا تغيير على Supabase queries أو RLS.
+
+## المخاطر
+
+- تقسيم `Home.tsx` بـ lazy قد يُظهر skeletons أكثر مما يعتاد المستخدم — سنضمن أبعاداً مطابقة لتجنب أي إحساس بالقفز.
+- تخفيض جودة الصور من 75→65: سنراجع بصرياً قبل النشر.
