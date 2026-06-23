@@ -1,49 +1,70 @@
-## المشكلة
+## الهدف
 
-عند الاستخراج تظهر رسالة "نجاح" لكن الحقول (الخيارات، الألوان، الصور، الوصف، الأبعاد) تبقى فارغة، ولا تظهر أي رسائل في Console.
+تحسين دقة الاستخراج في `supabase/functions/extract-product-info/index.ts` لحقول: **الخيارات، الألوان، الصور الرئيسية، الوصف، الأبعاد** — خاصة لروابط Bambu Lab (filament/parts) ومتاجر Shopify العامة المشابهة. تركيز على خرائط حقول أدق + فلاتر تنظيف.
 
-## السبب الأرجح
+## النطاق
 
-في `src/pages/Admin.tsx` داخل دالة `applyProductInfo` (السطر 1237) أول سطرين:
+ملف واحد فقط: `supabase/functions/extract-product-info/index.ts`. لا تغيير في الـ frontend ولا في قاعدة البيانات.
 
-```ts
-const form = formNodeRef.current || (document.querySelector('form') as HTMLFormElement);
-if (!form) return;
+## التحسينات
+
+### 1) خرائط الحقول الدقيقة (Field maps)
+
+أ. **الألوان – Bambu**
+- توسيع `bambuBaseColorMap` و`bambuQualifierMap` لتغطية: Matte / Silk+ / Glow / Sparkle / Marble / Galaxy / Translucent / Dual Color / Gradient / CF / GF / HF.
+- عند فشل التطابق، استخراج رمز ست عشري من صورة swatch (موجود) + احتياطي: المسار الجزئي للصورة قد يحتوي اسم اللون (`.../red-yellow.png`).
+- توحيد الأسماء المكررة بحرف الكبير/الصغير وفراغات داخلية قبل المقارنة في `seenColorNames`.
+
+ب. **الخيارات – Bambu / Shopify**
+- إضافة طبقة JSON-LD: قراءة `<script type="application/ld+json">` لاستخراج `offers[].sku` و`hasVariant[]` كمصدر أولي قبل تحليل HTML.
+- التقاط axes إضافية شائعة: `Nozzle Diameter`, `Material`, `Capacity`, `Spool Type`, `Plate Size`, `Build Plate` — مع تصنيفها كـ options دائماً (لا colors).
+- استخراج `price_adjustment` من JSON-LD عند توفره (دلتا السعر بين variants).
+
+ج. **الوصف**
+- ترتيب أولوية: `<meta name="description">` → `<meta property="og:description">` → JSON-LD `description` → أول فقرة معنوية من `<main>`/`#product-description`.
+- تنظيف: إزالة "Free shipping", "Add to cart", قوائم التنقل، روابط CTA، scripts، tags HTML المتبقية.
+- اقتطاع لـ ≤2000 حرف مع المحافظة على الجمل الكاملة.
+
+د. **الأبعاد والوزن**
+- خريطة units: in→cm (×2.54)، mm→cm (÷10)، lb→kg (×0.4536)، g→kg (÷1000)، oz→kg (×0.02835).
+- regex مرتب الأولوية: `Package Size`, `Carton Size`, `Box Dimensions` (gross) > `Product Size`, `Item Dimensions` (net).
+- لـ Bambu specifically: قراءة جدول specs (`<table class="specs">` أو DL list) مع مفاتيح مثل "Spool Dimensions", "Net Weight", "Gross Weight".
+
+### 2) فلاتر حالات الصفحة (Page-state filters)
+
+أ. **فلتر صور**
+- استبعاد صور <200×200 (من attributes width/height) أو من مسارات معروفة: `/icons/`, `/logos/`, `/banners/`, `/recommendations/`, `/social/`, `favicon`, `sprite`.
+- استبعاد صور swatches الصغيرة من gallery (تبقى مرتبطة باللون فقط).
+- إزالة duplicates عبر `getImageBaseUrl` (موجود) + تطبيع amazon/cdn query suffixes.
+
+ب. **فلتر خيارات**
+- تخطّي خيارات بـ `disabled`/`unavailable`/`sold-out` markers في HTML المحيط.
+- تخطّي قيم رقمية صرفة (`/^\d+$/`) — موجود — وتوسيعه ليشمل قيم تبدأ بـ `+$` أو `+€`.
+- دمج خيارات متطابقة بعد التطبيع (case-insensitive، trim، collapse whitespace).
+
+ج. **فلتر ألوان**
+- تخطّي ألوان `Out of Stock` إن أمكن تحديدها (class/attribute في `<li>`).
+- إزالة ألوان شبه متطابقة (فرق ΔE<5 في hex) لتجنّب "Red"/"Dark Red" المتكررة كنوع واحد عندما لا توجد swatch مختلفة فعلياً.
+
+### 3) Logging تشخيصي
+
+سطر `console.log` واحد بعد كل مرحلة:
+```
+[Extract:bambu] colors=N options=M axes=[...] filtered_images=X/Y
+[Extract:desc] source=jsonld|og|meta|paragraph length=N
+[Extract:dims] source=table|regex|jsonld L=.. W=.. H=.. kg=..
 ```
 
-- إذا كان `formNodeRef.current` غير مهيأ في لحظة الاستخراج (سباق mount/remount للنموذج)، يستعمل `document.querySelector('form')` ويلتقط أول `<form>` في الصفحة — وهو غالباً ليس نموذج المنتج. فتفشل كل عمليات `form.querySelector('#name_ar')`/`#description`/... بصمت لأن `setFormValue` يرجع مبكراً عندما العنصر غير موجود.
-- النتيجة: لا أخطاء، لا logs، toast النجاح يظهر، والحقول فارغة. وهذا يطابق وصف المستخدم تماماً.
+## ما لن يتغير
 
-ملاحظة إضافية: حتى الحقول التي لا تعتمد على النموذج (الألوان، الصور، الخيارات، AI content، short_summary) — هذه تستعمل `setUploadedImages` / `setProductOptions` / `setProductColors` مباشرة وليست متأثرة بالنموذج. لذا لو كانت أيضاً فارغة فالسبب الثاني المحتمل هو أن `productInfo` نفسه فارغ من الـ edge function لكن `success=true`. سنغطي الحالتين بـ logging قاطع.
-
-## الخطة
-
-تعديل ملف واحد فقط: `src/pages/Admin.tsx`
-
-### 1) تشخيص قاطع قبل/بعد التعبئة
-
-- في `handleExtractProductInfo` بعد استلام `response.data` (السطر 1160): سجّل ما الذي وصل فعلاً بالتفصيل: `success`, مفاتيح `productInfo`, عدد الصور/الألوان/الخيارات، طول الوصف، الأبعاد.
-- في بداية `applyProductInfo` (السطر 1237): سجّل ما إذا كان `formNodeRef.current` موجوداً، وعدد عناصر `<form>` في الـ DOM، و id/aria-label للنموذج الذي تم اختياره (للتأكد إنه نموذج المنتج لا غيره).
-- داخل `setFormValue` (السطر 1243): عند فشل العثور على العنصر، سجّل تحذيراً يحدد الـ selector المفقود (مرة واحدة لكل selector لتجنب الإغراق).
-
-### 2) إصلاح اختيار النموذج
-
-- استبدال `document.querySelector('form')` بانتقاء نموذج المنتج تحديداً: البحث عن `form[data-product-form="true"]` (أو selector ثابت لنموذج المحرر)، وإضافة هذا الـ attribute على وسم `<form>` لمحرر المنتج.
-- إذا لم يوجد بعد، إعادة المحاولة بـ `requestAnimationFrame` مرة أو مرتين بدل الفشل الصامت، ثم إصدار خطأ واضح في Console وtoast تحذيري.
-
-### 3) ضمان عدم تعليق الإصلاح على النموذج
-
-- الحقول غير المرتبطة بـ DOM (الصور، الألوان، الخيارات، AI content، الأبعاد عبر event) موجودة أصلاً بعد `if (!form) return;` — سأنقلها قبل ذلك الحارس، حتى لو فشل العثور على النموذج، تُملأ الحالة على الأقل (Images/Options/Colors/AI Content).
-
-## ما لن أغيره
-
-- لن أعدّل edge function `extract-product-info` — السجلات السابقة تؤكد أنه يُرجع بيانات كاملة لرابط Bambu (9 خيارات، صور، أبعاد، AI content).
-- لا تغيير في قواعد البيانات أو RLS.
-- لا تغيير في باقي صفحات الإدارة.
+- لا تغيير في تركيب الـ response أو أسماء الحقول التي يقرأها الـ frontend (`productInfo.colors`, `.options`, `.images`, `.description`, `.dimensions`, `.weight_kg`).
+- لا تغيير في الـ AI prompt أو الـ model.
+- لا تغيير في حدود الصلاحيات/RLS.
 
 ## التحقق
 
-1. فتح محرر المنتج، لصق رابط Bambu، الضغط على استخراج.
-2. مراقبة Console: يجب أن تظهر `[AI Extract] response.data` و`[AI Extract] applyProductInfo: form=found, fields=...`
-3. التحقق بصرياً: الوصف، الأبعاد، الخيارات، الألوان، الصور كلها تظهر معبأة.
-4. إن استمرت أي حقول فارغة، السجلات الجديدة ستحدد بالضبط السبب (selector مفقود، أو productInfo بدون الحقل من الـ edge function).
+1. اختبار `https://us.store.bambulab.com/products/pla-basic-filament` — يجب إرجاع 15+ لون مع swatches و1-3 options (Spool Type / Weight).
+2. اختبار `https://us.store.bambulab.com/products/bambu-engineering-plate` — يجب أن تبقى 9 خيارات (كما كانت) دون فقد.
+3. اختبار رابط Shopify عام — التأكد من عدم regression.
+4. فحص edge function logs بعد كل اختبار للتأكد من سطور `[Extract:*]` تظهر بالقيم المتوقعة.
+5. التأكد من ملء الـ frontend لكل الحقول (الـ Admin.tsx لا يحتاج تعديل).
