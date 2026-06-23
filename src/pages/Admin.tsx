@@ -476,15 +476,15 @@ const Admin = () => {
     };
     snapshot();
     const id = window.setInterval(snapshot, 1500);
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      snapshot();
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
+    // Use `pagehide` instead of `beforeunload` so the browser's back/forward
+    // cache (bfcache) stays eligible — `beforeunload` disables bfcache in
+    // Chrome/Edge. The draft is already auto-saved every 1500ms, and pagehide
+    // guarantees one final snapshot on navigation/close.
+    const onPageHide = () => { snapshot(); };
+    window.addEventListener('pagehide', onPageHide);
     return () => {
       window.clearInterval(id);
-      window.removeEventListener('beforeunload', onBeforeUnload);
+      window.removeEventListener('pagehide', onPageHide);
     };
   }, [productDialogOpen, editingProduct, uploadedImages, productOptions, productColors, productFeatures, productCardDiscounts, productAIContent, productShortSummary, productSearchableAttrs, productUrl]);
 
