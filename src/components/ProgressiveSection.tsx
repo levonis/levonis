@@ -60,7 +60,19 @@ export default function ProgressiveSection({
   }, [eager, show]);
 
   return (
-    <div ref={ref} style={!show ? { minHeight, contain: "layout" } : undefined}>
+    <div
+      ref={ref}
+      style={
+        !show
+          ? {
+              minHeight,
+              contain: "layout paint",
+              contentVisibility: "auto" as any,
+              containIntrinsicSize: `0 ${minHeight}`,
+            }
+          : { contentVisibility: "auto" as any, containIntrinsicSize: `0 ${minHeight}` }
+      }
+    >
       {show ? children : null}
     </div>
   );
