@@ -1158,6 +1158,20 @@ const Admin = () => {
       }
 
       const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message, canonical_url } = response.data;
+      console.log('[AI Extract] response.data summary:', {
+        success,
+        hasProductInfo: !!productInfo,
+        keys: productInfo ? Object.keys(productInfo) : [],
+        images: Array.isArray(productInfo?.images) ? productInfo.images.length : 0,
+        colors: Array.isArray(productInfo?.colors) ? productInfo.colors.length : 0,
+        options: Array.isArray(productInfo?.options) ? productInfo.options.length : (Array.isArray(productInfo?.sizes) ? productInfo.sizes.length : 0),
+        descLen: (productInfo?.description || '').length,
+        descArLen: (productInfo?.description_ar || '').length,
+        dimensions: productInfo?.dimensions,
+        weight_kg: productInfo?.weight_kg,
+        requiresManualInput,
+        extractError,
+      });
       
       // If requires manual input, show the manual input form
       if (requiresManualInput) {
@@ -1235,14 +1249,32 @@ const Admin = () => {
 
   // Apply product info to form (shared between auto and manual extraction)
   const applyProductInfo = (productInfo: any) => {
-    const form = formNodeRef.current || (document.querySelector('form') as HTMLFormElement);
-    if (!form) return;
+    // Prefer the explicit product editor form; fall back to scoped data attribute, then to the registered ref.
+    const productForm =
+      (document.querySelector('form[data-product-form="true"]') as HTMLFormElement | null) ||
+      formNodeRef.current;
+    const form: HTMLFormElement | null = productForm;
+    const allForms = document.querySelectorAll('form');
+    console.log('[AI Extract] applyProductInfo:', {
+      formFound: !!form,
+      refForm: !!formNodeRef.current,
+      formsInDom: allForms.length,
+      formIsProductForm: !!(form && form.getAttribute('data-product-form') === 'true'),
+    });
+    const missingSelectors = new Set<string>();
     const updateSnapshot = (name: string, value: string) => {
       latestFormValuesRef.current = { ...latestFormValuesRef.current, [name]: value };
     };
     const setFormValue = (selector: string, value: any, fieldName?: string) => {
+      if (!form) return;
       const el = form.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
-      if (!el) return;
+      if (!el) {
+        if (!missingSelectors.has(selector)) {
+          missingSelectors.add(selector);
+          console.warn('[AI Extract] missing selector in product form:', selector);
+        }
+        return;
+      }
       const textValue = String(value ?? '');
       el.value = textValue;
       el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1251,6 +1283,11 @@ const Admin = () => {
       if (name) updateSnapshot(name, textValue);
     };
 
+    if (!form) {
+      console.error('[AI Extract] product form not mounted — filling state-backed fields only (images/options/colors/AI content). Open the product editor first.');
+      toast.error('نموذج المنتج غير مفتوح — افتح محرر المنتج ثم أعد الاستخراج');
+    }
+
     // Fill text inputs
     if (productInfo.name_ar) {
       setFormValue('#name_ar', productInfo.name_ar, 'name_ar');
@@ -1258,7 +1295,7 @@ const Admin = () => {
     }
     const extractedNameEn = String(productInfo.name_en || productInfo.name || '').trim();
     if (extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
-      const legacyNameInput = form.querySelector('input[name="name"]') as HTMLInputElement | null;
+      const legacyNameInput = form?.querySelector('input[name="name"]') as HTMLInputElement | null;
       setFormValue('#name_en', extractedNameEn, 'name_en');
       if (legacyNameInput) setFormValue('input[name="name"]', extractedNameEn, 'name');
       markFieldFilled('name_en');
@@ -1287,7 +1324,7 @@ const Admin = () => {
     // Set original source price ($) used by the pricing section.
     // The final original_price (IQD) is calculated on save as source × exchange rate only.
     if (productInfo.original_price_usd && productInfo.original_price_usd > 0) {
-      const originalPriceUsdInput = form.querySelector('#original_price_usd') as HTMLInputElement;
+      const originalPriceUsdInput = form?.querySelector('#original_price_usd') as HTMLInputElement;
       if (originalPriceUsdInput) {
         setFormValue('#original_price_usd', productInfo.original_price_usd, 'original_price_usd');
       }
@@ -1371,7 +1408,7 @@ const Admin = () => {
 
     // Auto-fill brand (only when empty, to preserve admin edits)
     if (productInfo.brand && typeof productInfo.brand === 'string') {
-      const brandInput = form.querySelector('#brand') as HTMLInputElement | null;
+      const brandInput = form?.querySelector('#brand') as HTMLInputElement | null;
       if (brandInput && !brandInput.value.trim()) {
         setFormValue('#brand', productInfo.brand, 'brand');
         markFieldFilled('brand');
@@ -1380,8 +1417,8 @@ const Admin = () => {
 
     // Auto-fill display_order: next available within the same category (only when empty/0)
     try {
-      const orderInput = form.querySelector('#display_order') as HTMLInputElement | null;
-      const categorySelect = form.querySelector('#category_id') as HTMLSelectElement | null;
+      const orderInput = form?.querySelector('#display_order') as HTMLInputElement | null;
+      const categorySelect = form?.querySelector('#category_id') as HTMLSelectElement | null;
       const currentCategoryId = categorySelect?.value || editingProduct?.category_id || null;
       if (orderInput && (!orderInput.value || Number(orderInput.value) === 0) && Array.isArray(products)) {
         const sameCat = currentCategoryId
@@ -1396,7 +1433,7 @@ const Admin = () => {
     // Auto-fill packaging dimensions (carton with packaging) and gross weight
     const dims = productInfo.dimensions || {};
     const setNumInput = (selector: string, value: any) => {
-      const el = form.querySelector(selector) as HTMLInputElement | null;
+      const el = form?.querySelector(selector) as HTMLInputElement | null;
       if (!el) return;
       const n = Number(value);
       if (!Number.isFinite(n) || n <= 0) return;
@@ -1529,7 +1566,7 @@ const Admin = () => {
 
     // Set points_reward if extracted
     if (productInfo.points_reward && productInfo.points_reward > 0) {
-      const pointsInput = form.querySelector('#points_reward') as HTMLInputElement;
+      const pointsInput = form?.querySelector('#points_reward') as HTMLInputElement;
       if (pointsInput) pointsInput.value = String(productInfo.points_reward);
     }
 
@@ -2772,7 +2809,7 @@ const Admin = () => {
                       </Button>
                     </div>
                     <div className="max-w-3xl mx-auto p-4">
-                  <form ref={formRefCallback} key={editingProduct?.id || `new-${formKey}`} onSubmit={handleProductSubmit} className="space-y-4">
+                  <form ref={formRefCallback} data-product-form="true" key={editingProduct?.id || `new-${formKey}`} onSubmit={handleProductSubmit} className="space-y-4">
 
                     {/* Text Paste & URL Extraction Section - For Quick Access */}
                     <div className="p-4 border-2 border-dashed border-amber-500/30 rounded-lg bg-amber-500/5 space-y-3">

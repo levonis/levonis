@@ -1,41 +1,49 @@
-# تفعيل bfcache بإزالة موانع الاسترجاع
+## المشكلة
 
-## السياق
-بعد فحص المشروع، **مانع bfcache الوحيد** هو `beforeunload` listener في `src/pages/Admin.tsx` (السطر 479–488). يُسجَّل فقط عندما يكون حوار تعديل المنتج (productDialogOpen) مفتوحاً، لتحذير الأدمن قبل إغلاق التبويب بفقدان مسودة المنتج.
+عند الاستخراج تظهر رسالة "نجاح" لكن الحقول (الخيارات، الألوان، الصور، الوصف، الأبعاد) تبقى فارغة، ولا تظهر أي رسائل في Console.
 
-وجود `beforeunload` (حتى لو لم يستدعي `preventDefault`) **يُعطّل bfcache في Chrome/Edge تلقائياً** — أي ضغطة "رجوع" تُعيد بناء الصفحة بدل استرجاعها فورياً.
+## السبب الأرجح
 
-باقي المشروع نظيف:
-- `ScrollRestoration.tsx` يستخدم `pagehide` و`visibilitychange` فقط (متوافقة مع bfcache).
-- لا يوجد `unload`/`onunload` في أي مكان.
-- `sw.js` لا يحتوي أي تعارض مع bfcache.
-
-## التعديل الوحيد
-**File:** `src/pages/Admin.tsx` (داخل useEffect حوار المنتج، السطور 477–488)
-
-استبدال `beforeunload` بـ `pagehide` (وهو متوافق مع bfcache ويعمل بنفس الفعالية لحفظ المسودة):
+في `src/pages/Admin.tsx` داخل دالة `applyProductInfo` (السطر 1237) أول سطرين:
 
 ```ts
-snapshot();
-const id = window.setInterval(snapshot, 1500);
-const onPageHide = () => { snapshot(); };
-window.addEventListener('pagehide', onPageHide);
-return () => {
-  window.clearInterval(id);
-  window.removeEventListener('pagehide', onPageHide);
-};
+const form = formNodeRef.current || (document.querySelector('form') as HTMLFormElement);
+if (!form) return;
 ```
 
-### لماذا هذا آمن
-- المسودة تُحفظ كل 1500ms في `localStorage`، فلا حاجة لتحذير المتصفح.
-- `pagehide` يضمن snapshot أخيرة قبل التنقل/الإغلاق بدون تعطيل bfcache.
-- يُحذف صندوق "هل تريد الخروج؟" — لكن المسودة محفوظة فعلياً، ويُعاد تحميلها عند فتح الحوار من جديد (المنطق الموجود مسبقاً).
+- إذا كان `formNodeRef.current` غير مهيأ في لحظة الاستخراج (سباق mount/remount للنموذج)، يستعمل `document.querySelector('form')` ويلتقط أول `<form>` في الصفحة — وهو غالباً ليس نموذج المنتج. فتفشل كل عمليات `form.querySelector('#name_ar')`/`#description`/... بصمت لأن `setFormValue` يرجع مبكراً عندما العنصر غير موجود.
+- النتيجة: لا أخطاء، لا logs، toast النجاح يظهر، والحقول فارغة. وهذا يطابق وصف المستخدم تماماً.
 
-## النتيجة المتوقعة
-- زر "رجوع/تقديم" يُعيد الصفحة فوراً (instant restoration) بدل إعادة التحميل.
-- التطبيق يصبح مماثلاً لسلوك Amazon/Bambulab في التنقل داخل الموقع.
-- لا تغيير على أي وظيفة أخرى.
+ملاحظة إضافية: حتى الحقول التي لا تعتمد على النموذج (الألوان، الصور، الخيارات، AI content، short_summary) — هذه تستعمل `setUploadedImages` / `setProductOptions` / `setProductColors` مباشرة وليست متأثرة بالنموذج. لذا لو كانت أيضاً فارغة فالسبب الثاني المحتمل هو أن `productInfo` نفسه فارغ من الـ edge function لكن `success=true`. سنغطي الحالتين بـ logging قاطع.
 
-## خارج النطاق
-- التنقل بين نطاقات مختلفة (levonisiq.com ↔ bambulab.com) يبقى reload كاملاً بحكم same-origin policy — لا يمكن تجنبه.
-- service worker، التوجيه، والكاش بدون تغيير.
+## الخطة
+
+تعديل ملف واحد فقط: `src/pages/Admin.tsx`
+
+### 1) تشخيص قاطع قبل/بعد التعبئة
+
+- في `handleExtractProductInfo` بعد استلام `response.data` (السطر 1160): سجّل ما الذي وصل فعلاً بالتفصيل: `success`, مفاتيح `productInfo`, عدد الصور/الألوان/الخيارات، طول الوصف، الأبعاد.
+- في بداية `applyProductInfo` (السطر 1237): سجّل ما إذا كان `formNodeRef.current` موجوداً، وعدد عناصر `<form>` في الـ DOM، و id/aria-label للنموذج الذي تم اختياره (للتأكد إنه نموذج المنتج لا غيره).
+- داخل `setFormValue` (السطر 1243): عند فشل العثور على العنصر، سجّل تحذيراً يحدد الـ selector المفقود (مرة واحدة لكل selector لتجنب الإغراق).
+
+### 2) إصلاح اختيار النموذج
+
+- استبدال `document.querySelector('form')` بانتقاء نموذج المنتج تحديداً: البحث عن `form[data-product-form="true"]` (أو selector ثابت لنموذج المحرر)، وإضافة هذا الـ attribute على وسم `<form>` لمحرر المنتج.
+- إذا لم يوجد بعد، إعادة المحاولة بـ `requestAnimationFrame` مرة أو مرتين بدل الفشل الصامت، ثم إصدار خطأ واضح في Console وtoast تحذيري.
+
+### 3) ضمان عدم تعليق الإصلاح على النموذج
+
+- الحقول غير المرتبطة بـ DOM (الصور، الألوان، الخيارات، AI content، الأبعاد عبر event) موجودة أصلاً بعد `if (!form) return;` — سأنقلها قبل ذلك الحارس، حتى لو فشل العثور على النموذج، تُملأ الحالة على الأقل (Images/Options/Colors/AI Content).
+
+## ما لن أغيره
+
+- لن أعدّل edge function `extract-product-info` — السجلات السابقة تؤكد أنه يُرجع بيانات كاملة لرابط Bambu (9 خيارات، صور، أبعاد، AI content).
+- لا تغيير في قواعد البيانات أو RLS.
+- لا تغيير في باقي صفحات الإدارة.
+
+## التحقق
+
+1. فتح محرر المنتج، لصق رابط Bambu، الضغط على استخراج.
+2. مراقبة Console: يجب أن تظهر `[AI Extract] response.data` و`[AI Extract] applyProductInfo: form=found, fields=...`
+3. التحقق بصرياً: الوصف، الأبعاد، الخيارات، الألوان، الصور كلها تظهر معبأة.
+4. إن استمرت أي حقول فارغة، السجلات الجديدة ستحدد بالضبط السبب (selector مفقود، أو productInfo بدون الحقل من الـ edge function).
