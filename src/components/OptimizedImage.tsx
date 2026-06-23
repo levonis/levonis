@@ -92,10 +92,12 @@ const OptimizedImage = memo(({
 
   const srcSet = useMemo(() => {
     // Narrow srcSet on small viewports — no point shipping a 1200px candidate
-    // to a 360px phone.
+    // to a 360px phone. Phase 6: small screens get the smallest pair only.
     const widths = typeof window !== 'undefined' && window.innerWidth < 480
-      ? [200, 400]
-      : [200, 400, 600, 800, 1200];
+      ? [160, 320]
+      : typeof window !== 'undefined' && window.innerWidth < 768
+        ? [200, 400, 600]
+        : [200, 400, 600, 800, 1200];
     return buildResponsiveSrcSet(src, widths, quality);
   }, [src, quality]);
 
