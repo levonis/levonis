@@ -74,7 +74,7 @@
                   return k && k !== 'width' && k !== 'height' && k !== 'quality' && k !== 'resize' && k !== 'format';
                 }) : [];
                 kept.push('width=' + w);
-                kept.push('quality=70');
+                kept.push('quality=60');
                 kept.push('resize=contain');
                 kept.push('format=webp');
                 src = path + '?' + kept.join('&');
