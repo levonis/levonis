@@ -1,6 +1,7 @@
-const VERSION = 'v19';
+const VERSION = 'v20';
 const STATIC_CACHE = `levonis-static-${VERSION}`;
 const HTML_CACHE = `levonis-html-${VERSION}`;
+const HTML_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour — never serve HTML older than this
 
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
 const HASHED_ASSET_PATH = /^\/assets\/.+\.(js|css)$/i;
@@ -100,15 +101,35 @@ async function networkFirstHtml(request) {
   try {
     const response = await fetch(request);
     if (response && response.ok) {
-      cache.put(request, response.clone()).catch(() => {});
+      // Stash with a custom header so we can enforce TTL on fallback reads
+      const cloned = response.clone();
+      const headers = new Headers(cloned.headers);
+      headers.set('x-levo-cached-at', String(Date.now()));
+      const body = await cloned.blob();
+      const stamped = new Response(body, {
+        status: cloned.status,
+        statusText: cloned.statusText,
+        headers,
+      });
+      cache.put(request, stamped).catch(() => {});
     }
     return response;
   } catch (err) {
     const cached = await cache.match(request);
-    if (cached) return cached;
+    if (cached && isFresh(cached)) return cached;
     const fallback = await cache.match('/');
-    if (fallback) return fallback;
+    if (fallback && isFresh(fallback)) return fallback;
     throw err;
+  }
+}
+
+function isFresh(response) {
+  try {
+    const ts = +(response.headers.get('x-levo-cached-at') || 0);
+    if (!ts) return false;
+    return Date.now() - ts < HTML_MAX_AGE_MS;
+  } catch (e) {
+    return false;
   }
 }
 
