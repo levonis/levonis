@@ -10,65 +10,6 @@
     <meta name="description" content="تسوق أحدث الإلكترونيات والأجهزة الذكية | أسعار منافسة وضمان رسمي | توصيل سريع لجميع أنحاء العراق | LEVONIS متجرك الموثوق للتقنية">
     <meta name="author" content="LEVONIS" />
     <meta name="google-site-verification" content="R7W7mm8vXH-duHyxh0XDAEeOHImcbBk_Ggdk6QL9Lps" />
-
-    <!-- EARLY chunk-load error recovery. Runs BEFORE any <script type="module"> below
-         so it can catch the very first failed module import (which is what causes the
-         blank/"connection error" screen after a deploy when an old SW serves stale
-         HTML pointing to chunks that no longer exist). Recovery strategy: unregister
-         all service workers, clear all caches, then hard-reload bypassing the SW
-         via ?_swkill=1. Guarded by sessionStorage so we never loop. -->
-    <script>
-      (function () {
-        var KEY = '__levo_chunk_recover_v2';
-        function isStale(err) {
-          try {
-            var msg = '';
-            if (err) {
-              if (err.message) msg = String(err.message);
-              else if (err.reason && err.reason.message) msg = String(err.reason.message);
-              else msg = String(err);
-            }
-            return /Importing a module script failed|Failed to fetch dynamically imported module|Loading chunk [\w-]+ failed|ChunkLoadError|error loading dynamically imported module/i.test(msg);
-          } catch (e) { return false; }
-        }
-        var recovering = false;
-        function recover() {
-          if (recovering) return;
-          recovering = true;
-          try {
-            var last = +(sessionStorage.getItem(KEY) || 0);
-            if (Date.now() - last < 30000) return; // already tried in last 30s — let user see error
-            sessionStorage.setItem(KEY, String(Date.now()));
-          } catch (e) {}
-          var p = Promise.resolve();
-          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-            p = p.then(function () {
-              return navigator.serviceWorker.getRegistrations().then(function (regs) {
-                return Promise.all(regs.map(function (r) { return r.unregister().catch(function () {}); }));
-              }).catch(function () {});
-            });
-          }
-          if (window.caches && caches.keys) {
-            p = p.then(function () {
-              return caches.keys().then(function (keys) {
-                return Promise.all(keys.map(function (k) { return caches.delete(k).catch(function () {}); }));
-              }).catch(function () {});
-            });
-          }
-          p.then(function () {
-            var sep = location.pathname.indexOf('?') === -1 ? '?' : '&';
-            location.replace(location.pathname + sep + '_swkill=1&_r=' + Date.now());
-          });
-        }
-        window.addEventListener('error', function (e) {
-          if (isStale(e) || isStale(e && e.error)) recover();
-        }, true);
-        window.addEventListener('unhandledrejection', function (e) {
-          if (isStale(e) || isStale(e && e.reason)) recover();
-        });
-      })();
-    </script>
-    
     
     <!-- Preconnect to backend (used immediately after mount for auth/data) -->
     <link rel="preconnect" href="https://sajlfpygebpqwzpotrsg.supabase.co" crossorigin>
