@@ -680,6 +680,13 @@ export type Database = {
             referencedRelation: "product_options"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bundle_items_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
+            referencedColumns: ["id"]
+          },
         ]
       }
       card_discount_limits: {
@@ -1044,6 +1051,13 @@ export type Database = {
             columns: ["product_option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
             referencedColumns: ["id"]
           },
           {
@@ -2540,6 +2554,13 @@ export type Database = {
             referencedRelation: "product_options"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "crossy_road_leaderboard_prizes_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
+            referencedColumns: ["id"]
+          },
         ]
       }
       crossy_road_milestone_claims: {
@@ -2631,6 +2652,13 @@ export type Database = {
             columns: ["selected_option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crossy_road_milestones_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -2784,6 +2812,13 @@ export type Database = {
             columns: ["selected_option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crossy_road_winners_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -4960,6 +4995,13 @@ export type Database = {
             referencedRelation: "product_options"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "knife_rain_leaderboard_prizes_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
+            referencedColumns: ["id"]
+          },
         ]
       }
       knife_rain_milestone_claims: {
@@ -5051,6 +5093,13 @@ export type Database = {
             columns: ["selected_option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knife_rain_milestones_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -7371,6 +7420,13 @@ export type Database = {
             referencedRelation: "product_options"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "mystery_case_rewards_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mystery_case_settings: {
@@ -7618,10 +7674,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "order_items_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "order_items_product_option_id_fkey_product_options"
             columns: ["product_option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_option_id_fkey_product_options"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
             referencedColumns: ["id"]
           },
           {
@@ -10214,6 +10284,13 @@ export type Database = {
             columns: ["product_option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "random_filament_orders_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options_admin"
             referencedColumns: ["id"]
           },
         ]
@@ -13809,6 +13886,77 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      product_options_admin: {
+        Row: {
+          available_for_direct_sale: boolean | null
+          available_for_pre_order: boolean | null
+          cost_iqd: number | null
+          cost_usd: number | null
+          created_at: string | null
+          id: string | null
+          image_url: string | null
+          in_stock: boolean | null
+          name: string | null
+          name_ar: string | null
+          name_en: string | null
+          name_ku: string | null
+          price_adjustment: number | null
+          product_id: string | null
+          stock_quantity: number | null
+          taobao_available: boolean | null
+          taobao_last_sync_at: string | null
+          taobao_sku_id: string | null
+        }
+        Insert: {
+          available_for_direct_sale?: boolean | null
+          available_for_pre_order?: boolean | null
+          cost_iqd?: number | null
+          cost_usd?: number | null
+          created_at?: string | null
+          id?: string | null
+          image_url?: string | null
+          in_stock?: boolean | null
+          name?: string | null
+          name_ar?: string | null
+          name_en?: string | null
+          name_ku?: string | null
+          price_adjustment?: number | null
+          product_id?: string | null
+          stock_quantity?: number | null
+          taobao_available?: boolean | null
+          taobao_last_sync_at?: string | null
+          taobao_sku_id?: string | null
+        }
+        Update: {
+          available_for_direct_sale?: boolean | null
+          available_for_pre_order?: boolean | null
+          cost_iqd?: number | null
+          cost_usd?: number | null
+          created_at?: string | null
+          id?: string | null
+          image_url?: string | null
+          in_stock?: boolean | null
+          name?: string | null
+          name_ar?: string | null
+          name_en?: string | null
+          name_ku?: string | null
+          price_adjustment?: number | null
+          product_id?: string | null
+          stock_quantity?: number | null
+          taobao_available?: boolean | null
+          taobao_last_sync_at?: string | null
+          taobao_sku_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products_admin: {
         Row: {
