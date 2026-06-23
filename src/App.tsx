@@ -378,7 +378,9 @@ function AppContent() {
 
   return (
     <>
-      <AppBackground />
+      <Suspense fallback={null}>
+        <AppBackground />
+      </Suspense>
       <ScrollRestoration />
       <TopProgressBar />
       <PrefetchOnHover />
@@ -389,7 +391,11 @@ function AppContent() {
         <DeferredEffects />
       </Suspense>
       {!isAuthPage && !isStandaloneStore && <DynamicIsland />}
-      {!isAuthPage && !isStandaloneStore && <ProfileOrb />}
+      {!isAuthPage && !isStandaloneStore && (
+        <Suspense fallback={null}>
+          <ProfileOrb />
+        </Suspense>
+      )}
       {!isAuthPage && !isStandaloneStore && (
         <ProfileExpansionShell>
           <Suspense fallback={null}>
