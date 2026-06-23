@@ -1295,7 +1295,7 @@ const Admin = () => {
     }
     const extractedNameEn = String(productInfo.name_en || productInfo.name || '').trim();
     if (extractedNameEn && extractedNameEn.toLowerCase() !== 'product') {
-      const legacyNameInput = form.querySelector('input[name="name"]') as HTMLInputElement | null;
+      const legacyNameInput = form?.querySelector('input[name="name"]') as HTMLInputElement | null;
       setFormValue('#name_en', extractedNameEn, 'name_en');
       if (legacyNameInput) setFormValue('input[name="name"]', extractedNameEn, 'name');
       markFieldFilled('name_en');
@@ -1324,7 +1324,7 @@ const Admin = () => {
     // Set original source price ($) used by the pricing section.
     // The final original_price (IQD) is calculated on save as source × exchange rate only.
     if (productInfo.original_price_usd && productInfo.original_price_usd > 0) {
-      const originalPriceUsdInput = form.querySelector('#original_price_usd') as HTMLInputElement;
+      const originalPriceUsdInput = form?.querySelector('#original_price_usd') as HTMLInputElement;
       if (originalPriceUsdInput) {
         setFormValue('#original_price_usd', productInfo.original_price_usd, 'original_price_usd');
       }
@@ -1408,7 +1408,7 @@ const Admin = () => {
 
     // Auto-fill brand (only when empty, to preserve admin edits)
     if (productInfo.brand && typeof productInfo.brand === 'string') {
-      const brandInput = form.querySelector('#brand') as HTMLInputElement | null;
+      const brandInput = form?.querySelector('#brand') as HTMLInputElement | null;
       if (brandInput && !brandInput.value.trim()) {
         setFormValue('#brand', productInfo.brand, 'brand');
         markFieldFilled('brand');
@@ -1417,8 +1417,8 @@ const Admin = () => {
 
     // Auto-fill display_order: next available within the same category (only when empty/0)
     try {
-      const orderInput = form.querySelector('#display_order') as HTMLInputElement | null;
-      const categorySelect = form.querySelector('#category_id') as HTMLSelectElement | null;
+      const orderInput = form?.querySelector('#display_order') as HTMLInputElement | null;
+      const categorySelect = form?.querySelector('#category_id') as HTMLSelectElement | null;
       const currentCategoryId = categorySelect?.value || editingProduct?.category_id || null;
       if (orderInput && (!orderInput.value || Number(orderInput.value) === 0) && Array.isArray(products)) {
         const sameCat = currentCategoryId
@@ -1433,7 +1433,7 @@ const Admin = () => {
     // Auto-fill packaging dimensions (carton with packaging) and gross weight
     const dims = productInfo.dimensions || {};
     const setNumInput = (selector: string, value: any) => {
-      const el = form.querySelector(selector) as HTMLInputElement | null;
+      const el = form?.querySelector(selector) as HTMLInputElement | null;
       if (!el) return;
       const n = Number(value);
       if (!Number.isFinite(n) || n <= 0) return;
@@ -1566,7 +1566,7 @@ const Admin = () => {
 
     // Set points_reward if extracted
     if (productInfo.points_reward && productInfo.points_reward > 0) {
-      const pointsInput = form.querySelector('#points_reward') as HTMLInputElement;
+      const pointsInput = form?.querySelector('#points_reward') as HTMLInputElement;
       if (pointsInput) pointsInput.value = String(productInfo.points_reward);
     }
 
