@@ -35,6 +35,7 @@ import { ProfileTransitionProvider } from "@/components/ProfileTransitionProvide
 const UnifiedChatButton = lazy(() => import("@/components/UnifiedChatButton"));
 const LevoHelpBot = lazy(() => import("@/components/LevoHelpBot"));
 const InstallPrompt = lazy(() => import("@/components/pwa/InstallPrompt"));
+const InAppBrowserNotice = lazy(() => import("@/components/InAppBrowserNotice"));
 const SpriteDebugPage = lazy(() => import("@/components/games/SpriteDebug"));
 
 // Lazy load all routes (including Home) to keep initial bundle small
@@ -379,6 +380,9 @@ function AppContent() {
   return (
     <>
       <AppBackground />
+      <Suspense fallback={null}>
+        <InAppBrowserNotice />
+      </Suspense>
       <ScrollRestoration />
       <TopProgressBar />
       <PrefetchOnHover />
