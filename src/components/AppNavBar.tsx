@@ -46,6 +46,21 @@ const AppNavBar = memo(() => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
+  // Defer the unread-messages query until the browser is idle so it doesn't
+  // block FCP/LCP on cold loads. The realtime channel (elsewhere) keeps the
+  // count fresh, so we don't need an aggressive polling interval.
+  const [queryReady, setQueryReady] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    const idle: (cb: () => void) => number =
+      (window as any).requestIdleCallback?.bind(window) ??
+      ((cb: () => void) => window.setTimeout(cb, 2000));
+    const id = idle(() => setQueryReady(true));
+    return () => {
+      (window as any).cancelIdleCallback?.(id);
+    };
+  }, [user]);
+
   const { data: unreadMsgCount = 0 } = useQuery({
     queryKey: ["nav-unread-messages", user?.id],
     queryFn: async () => {
@@ -63,9 +78,11 @@ const AppNavBar = memo(() => {
         .eq("is_read", false);
       return count || 0;
     },
-    enabled: !!user,
-    refetchInterval: 30000,
+    enabled: !!user && queryReady,
+    staleTime: 60_000,
+    refetchInterval: 120_000,
   });
+
   const [dockPosition, setDockPosition] = useState<DockPosition>(getStoredPosition);
 
   const isActive = (item: NavItem) => {

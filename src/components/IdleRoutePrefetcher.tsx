@@ -24,7 +24,17 @@ export default function IdleRoutePrefetcher() {
       warm(() => import("@/pages/MiniGames"));
       warm(() => import("@/pages/SearchResults"));
       warm(() => import("@/pages/Notifications"));
+      // Common navigation targets from home/product cards
+      warm(() => import("@/pages/ProductDetail"));
+      warm(() => import("@/pages/CategoryDetail"));
+      warm(() => import("@/pages/ProductShop"));
+      warm(() => import("@/pages/Favorites"));
+      warm(() => import("@/pages/Profile"));
+      warm(() => import("@/pages/Auth"));
+      warm(() => import("@/pages/UserInfo"));
+      warm(() => import("@/pages/MyOrders"));
     });
+
 
     return () => {
       (window as any).cancelIdleCallback?.(id);
