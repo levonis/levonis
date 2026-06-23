@@ -79,10 +79,8 @@ const CategoryCard = ({
 
   useEffect(() => {
     if (!inView || !showVideo || activateVideo) return;
-    // Phase 6: never autoplay videos on mobile, low-end devices, or constrained
-    // networks. Users see the poster and tap through to the category page.
-    // Eliminates the biggest TBT contributor on the homepage.
-    if (isMobileViewport() || shouldSkipHeavyMedia() || isLowEndDevice()) return;
+    // Skip video only on Data Saver / 2G connections (keep on mobile by default).
+    if (shouldSkipHeavyMedia()) return;
     const idle = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 1200));
     const cancel = (window as any).cancelIdleCallback || clearTimeout;
     const id = idle(() => setActivateVideo(true), { timeout: 2500 });
