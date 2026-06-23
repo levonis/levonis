@@ -92,12 +92,14 @@ export default function ReelsBar() {
                 />
 
               ) : (
-                <video
-                  src={reel.video_url}
-                  className="w-full h-full object-cover pointer-events-none"
-                  muted
-                  preload="metadata"
-                />
+                /* No thumbnail — show static gradient placeholder instead of
+                   loading the full video (was costing 5+ MB per reel on home). */
+                <div
+                  className="w-full h-full bg-gradient-to-br from-primary/30 via-accent/20 to-primary/40 flex items-center justify-center"
+                  aria-hidden="true"
+                >
+                  <Play className="w-8 h-8 text-white/70 fill-white/70" />
+                </div>
               )}
               {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
