@@ -1249,14 +1249,32 @@ const Admin = () => {
 
   // Apply product info to form (shared between auto and manual extraction)
   const applyProductInfo = (productInfo: any) => {
-    const form = formNodeRef.current || (document.querySelector('form') as HTMLFormElement);
-    if (!form) return;
+    // Prefer the explicit product editor form; fall back to scoped data attribute, then to the registered ref.
+    const productForm =
+      (document.querySelector('form[data-product-form="true"]') as HTMLFormElement | null) ||
+      formNodeRef.current;
+    const form: HTMLFormElement | null = productForm;
+    const allForms = document.querySelectorAll('form');
+    console.log('[AI Extract] applyProductInfo:', {
+      formFound: !!form,
+      refForm: !!formNodeRef.current,
+      formsInDom: allForms.length,
+      formIsProductForm: !!(form && form.getAttribute('data-product-form') === 'true'),
+    });
+    const missingSelectors = new Set<string>();
     const updateSnapshot = (name: string, value: string) => {
       latestFormValuesRef.current = { ...latestFormValuesRef.current, [name]: value };
     };
     const setFormValue = (selector: string, value: any, fieldName?: string) => {
+      if (!form) return;
       const el = form.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
-      if (!el) return;
+      if (!el) {
+        if (!missingSelectors.has(selector)) {
+          missingSelectors.add(selector);
+          console.warn('[AI Extract] missing selector in product form:', selector);
+        }
+        return;
+      }
       const textValue = String(value ?? '');
       el.value = textValue;
       el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1264,6 +1282,11 @@ const Admin = () => {
       const name = fieldName || el.getAttribute('name') || '';
       if (name) updateSnapshot(name, textValue);
     };
+
+    if (!form) {
+      console.error('[AI Extract] product form not mounted — filling state-backed fields only (images/options/colors/AI content). Open the product editor first.');
+      toast.error('نموذج المنتج غير مفتوح — افتح محرر المنتج ثم أعد الاستخراج');
+    }
 
     // Fill text inputs
     if (productInfo.name_ar) {
