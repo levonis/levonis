@@ -25,8 +25,8 @@ import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
 import NativeAuthGate from "@/components/auth/NativeAuthGate";
 // EmailVerificationBanner available for post-login verification
-import AppBackground from "@/components/AppBackground";
-import ProfileOrb from "@/components/ProfileOrb";
+const AppBackground = lazy(() => import("@/components/AppBackground"));
+const ProfileOrb = lazy(() => import("@/components/ProfileOrb"));
 import ProfileExpansionShell from "@/components/ProfileExpansionShell";
 import { ProfileTransitionProvider } from "@/components/ProfileTransitionProvider";
 
