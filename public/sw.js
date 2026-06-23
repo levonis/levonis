@@ -1,6 +1,8 @@
-const VERSION = 'v19';
+const VERSION = 'v20';
 const STATIC_CACHE = `levonis-static-${VERSION}`;
 const HTML_CACHE = `levonis-html-${VERSION}`;
+const IMG_CACHE = `levonis-img-${VERSION}`;
+const IMG_CACHE_MAX = 220;
 
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
 const HASHED_ASSET_PATH = /^\/assets\/.+\.(js|css)$/i;
@@ -19,7 +21,7 @@ self.addEventListener('activate', (event) => {
     const names = await caches.keys();
     await Promise.all(
       names
-        .filter((n) => n !== STATIC_CACHE && n !== HTML_CACHE)
+        .filter((n) => n !== STATIC_CACHE && n !== HTML_CACHE && n !== IMG_CACHE)
         .map((n) => caches.delete(n))
     );
     if (IS_PREVIEW_HOST) {
@@ -48,9 +50,22 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
-  if (url.origin !== self.location.origin) return;
-
   if (url.search.includes('_swkill=1')) return;
+
+  // Stale-while-revalidate for Supabase transformed images (cross-origin).
+  // Huge win on repeat visits: home page reuses cached thumbnails instantly
+  // while a background fetch refreshes them.
+  if (
+    url.origin !== self.location.origin &&
+    url.hostname.endsWith('.supabase.co') &&
+    (url.pathname.includes('/storage/v1/render/image/public/') ||
+     url.pathname.includes('/storage/v1/object/public/'))
+  ) {
+    event.respondWith(staleWhileRevalidateImage(request));
+    return;
+  }
+
+  if (url.origin !== self.location.origin) return;
 
   if (
     url.pathname.includes('/rest/') ||
@@ -110,6 +125,39 @@ async function networkFirstHtml(request) {
     if (fallback) return fallback;
     throw err;
   }
+}
+
+async function staleWhileRevalidateImage(request) {
+  const cache = await caches.open(IMG_CACHE);
+  const cached = await cache.match(request);
+  const networkPromise = fetch(request)
+    .then((response) => {
+      if (response && (response.ok || response.type === 'opaque')) {
+        cache.put(request, response.clone()).then(() => trimCache(IMG_CACHE, IMG_CACHE_MAX)).catch(() => {});
+      }
+      return response;
+    })
+    .catch(() => null);
+  if (cached) {
+    // Refresh in the background; serve cached immediately.
+    networkPromise.catch(() => {});
+    return cached;
+  }
+  const fresh = await networkPromise;
+  if (fresh) return fresh;
+  return new Response('', { status: 504 });
+}
+
+async function trimCache(name, max) {
+  try {
+    const cache = await caches.open(name);
+    const keys = await cache.keys();
+    if (keys.length <= max) return;
+    const excess = keys.length - max;
+    for (let i = 0; i < excess; i++) {
+      await cache.delete(keys[i]);
+    }
+  } catch {}
 }
 
 self.addEventListener('push', (event) => {
