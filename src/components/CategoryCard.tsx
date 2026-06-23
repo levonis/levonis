@@ -99,15 +99,25 @@ const CategoryCard = ({
 
       {useFullMedia && (
         <div className="absolute inset-0 z-0 overflow-hidden">
-          {inView && showVideo ? (
+          {inView && showVideo && activateVideo ? (
             <video
               src={mediaUrl!}
+              poster={videoPoster}
               className="w-full h-full object-cover scale-[1.02]"
               autoPlay
               muted
               loop
               playsInline
               preload="none"
+            />
+          ) : inView && showVideo && videoPoster ? (
+            <img
+              src={videoPoster}
+              alt=""
+              className="w-full h-full object-cover scale-[1.02]"
+              loading="lazy"
+              decoding="async"
+              draggable={false}
             />
           ) : inView && showImage ? (
             <img
