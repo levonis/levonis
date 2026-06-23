@@ -48,12 +48,12 @@
 /*.svg
   Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
 
-# HTML should be revalidated
+# HTML must never be cached (prevents stale shells after deploys)
 /*.html
-  Cache-Control: no-cache, must-revalidate
+  Cache-Control: no-store, must-revalidate
 
 /
-  Cache-Control: no-cache, must-revalidate
+  Cache-Control: no-store, must-revalidate
 
 # JS/CSS bundles with hashes
 /*.js
