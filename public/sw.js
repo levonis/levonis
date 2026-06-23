@@ -1,4 +1,4 @@
-const VERSION = 'v20';
+const VERSION = 'v21';
 const STATIC_CACHE = `levonis-static-${VERSION}`;
 const HTML_CACHE = `levonis-html-${VERSION}`;
 const IMG_CACHE = `levonis-img-${VERSION}`;
@@ -7,12 +7,32 @@ const IMG_CACHE_MAX = 220;
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
 const HASHED_ASSET_PATH = /^\/assets\/.+\.(js|css)$/i;
 
+// App shell — precached on install so the second visit gets instant FCP.
+// Hashed JS/CSS chunks are not in this list; they hit the cacheFirst runtime
+// cache on first request and stay there until VERSION bumps.
+const APP_SHELL = [
+  '/',
+  '/manifest.json',
+  '/fonts/cairo-400.woff2',
+  '/fonts/cairo-700.woff2',
+  '/icons/icon-192.png',
+  '/favicon.png',
+];
+
 const IS_PREVIEW_HOST =
   self.location.hostname.includes('lovableproject.com') ||
   self.location.hostname.startsWith('id-preview--') ||
   (self.location.hostname.includes('lovable.app') && !self.location.hostname.includes('levonis.lovable.app'));
 
-self.addEventListener('install', () => {
+self.addEventListener('install', (event) => {
+  if (!IS_PREVIEW_HOST) {
+    event.waitUntil((async () => {
+      try {
+        const cache = await caches.open(STATIC_CACHE);
+        await Promise.allSettled(APP_SHELL.map((u) => cache.add(u).catch(() => {})));
+      } catch {}
+    })());
+  }
   self.skipWaiting();
 });
 

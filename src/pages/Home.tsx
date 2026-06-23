@@ -161,7 +161,7 @@ const Home = () => {
           <StoriesBar />
         </section>
 
-        <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative min-h-[1700px] md:min-h-[900px]" style={{ contain: 'layout' }}>
+        <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative" style={{ contain: 'layout' }}>
           
           <div className="text-center mb-6 md:mb-8 relative z-10">
             <div className="inline-block mb-2">
@@ -249,13 +249,13 @@ const Home = () => {
                   </div>
                 );
 
-                // First 2 sections render immediately; the rest load progressively on scroll
+                // First section renders immediately; the rest load progressively on scroll.
                 return (
                   <ProgressiveSection
                     key={mainSection.id}
-                    eager={idx < 2}
-                    minHeight={idx < 2 ? undefined : "260px"}
-                    rootMargin="400px"
+                    eager={idx < 1}
+                    minHeight={idx < 1 ? undefined : "260px"}
+                    rootMargin="500px"
                   >
                     {sectionContent}
                   </ProgressiveSection>
