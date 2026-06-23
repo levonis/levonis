@@ -1973,6 +1973,53 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
           productInfo.name_ar = ai.name_ar || productInfo.name_ar;
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
+
+          // Fallback: when AI returns empty/too-short description, pull from page meta/JSON-LD
+          const cleanHtmlText = (s: string): string =>
+            s.replace(/<[^>]+>/g, ' ')
+             .replace(/&nbsp;/gi, ' ')
+             .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+             .replace(/\s+/g, ' ')
+             .trim();
+          const extractMetaDesc = (html: string): { text: string; source: string } => {
+            try {
+              // 1) JSON-LD description
+              const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+              let mm: RegExpExecArray | null;
+              while ((mm = ldRe.exec(html)) !== null) {
+                try {
+                  const blob = mm[1].trim();
+                  const parsed = JSON.parse(blob);
+                  const nodes = Array.isArray(parsed) ? parsed : [parsed];
+                  for (const n of nodes) {
+                    const d = n?.description;
+                    if (typeof d === 'string' && d.trim().length >= 40) {
+                      return { text: cleanHtmlText(d).slice(0, 2000), source: 'jsonld' };
+                    }
+                  }
+                } catch { /* ignore individual block */ }
+              }
+              // 2) og:description
+              const og = html.match(/<meta\s+[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)
+                     || html.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i);
+              if (og && og[1].trim().length >= 40) return { text: cleanHtmlText(og[1]).slice(0, 2000), source: 'og' };
+              // 3) meta description
+              const md = html.match(/<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
+                     || html.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i);
+              if (md && md[1].trim().length >= 40) return { text: cleanHtmlText(md[1]).slice(0, 2000), source: 'meta' };
+            } catch { /* ignore */ }
+            return { text: '', source: 'none' };
+          };
+          if ((productInfo.description || '').trim().length < 40 && pageContent) {
+            const fb = extractMetaDesc(pageContent);
+            if (fb.text) {
+              productInfo.description = fb.text;
+              console.log(`[Extract:desc] source=${fb.source} length=${fb.text.length}`);
+            }
+          } else if (productInfo.description) {
+            console.log(`[Extract:desc] source=ai length=${productInfo.description.length}`);
+          }
+
           if (typeof ai.brand === 'string' && ai.brand.trim().length > 0) {
             productInfo.brand = ai.brand.trim().slice(0, 80);
           }
