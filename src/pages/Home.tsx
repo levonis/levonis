@@ -249,13 +249,13 @@ const Home = () => {
                   </div>
                 );
 
-                // First 2 sections render immediately; the rest load progressively on scroll
+                // First section renders immediately; the rest load progressively on scroll.
                 return (
                   <ProgressiveSection
                     key={mainSection.id}
-                    eager={idx < 2}
-                    minHeight={idx < 2 ? undefined : "260px"}
-                    rootMargin="400px"
+                    eager={idx < 1}
+                    minHeight={idx < 1 ? undefined : "260px"}
+                    rootMargin="500px"
                   >
                     {sectionContent}
                   </ProgressiveSection>
