@@ -2678,20 +2678,35 @@ Return ONLY JSON:
       console.log('Images after direct extraction:', productInfo.images.length);
     }
 
-    // Final cleanup - only remove duplicates and SVGs, don't exclude variant images
+    // Final cleanup - remove duplicates, SVGs, and noisy non-product images (icons, logos, sprites, banners, recommendations, social)
     console.log('Before final cleanup:', productInfo.images.length, 'images');
+    const NOISY_IMAGE_PATTERNS = /\/(?:icons?|logos?|banners?|recommendations?|recommended|social|share|sprite[s]?|favicon|placeholder|loader|spinner|gift|coupon|badge|trust)[\/\-]/i;
+    const TINY_QUERY_HINT = /[?&](?:w|width)=([0-9]{1,3})\b/i;
+    const isLikelyNoisyImage = (img: string): boolean => {
+      try {
+        if (NOISY_IMAGE_PATTERNS.test(img)) return true;
+        if (/[\-_/](?:icon|logo|sprite|favicon|thumb|thumbnail)[\-_./]/i.test(img)) return true;
+        const m = img.match(TINY_QUERY_HINT);
+        if (m && Number(m[1]) > 0 && Number(m[1]) < 200) return true;
+        return false;
+      } catch { return false; }
+    };
     const finalImages: string[] = [];
     const finalBases = new Set<string>();
+    let droppedNoisy = 0;
     for (const img of productInfo.images) {
       const base = getImageBaseUrl(img);
       const isSvg = /\.svg/i.test(img);
       const isDupe = finalBases.has(base);
+      const isNoisy = isLikelyNoisyImage(img);
+      if (isNoisy) { droppedNoisy++; continue; }
       if (isDupe || isSvg) continue;
       finalBases.add(base);
       finalImages.push(img);
     }
     productInfo.images = finalImages.slice(0, 10);
-    console.log('After final cleanup:', productInfo.images.length, 'images');
+    console.log(`[Extract:images] kept=${productInfo.images.length} dropped_noisy=${droppedNoisy}`);
+
 
     // Add estimated air shipping cost to product info
     (productInfo as any).estimated_air_shipping_cost = estimatedAirShippingCost;
