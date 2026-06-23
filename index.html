@@ -186,6 +186,12 @@
   <!-- og:title / og:description / twitter:title / twitter:description are emitted per-route via the SEO component (react-helmet-async). -->
     <style>
       html, body { background-color: #000000; margin: 0; }
+      /* CLS guards — prevent horizontal scroll jumps and image-aspect collapse */
+      html { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+      body { overflow-x: hidden; min-height: 100vh; min-height: 100dvh; color: #c7b46c; font-family: 'Cairo', 'Cairo Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      img, video { max-width: 100%; }
+      /* Reserve scrollbar gutter so layout doesn't shift when modals open */
+      html { scrollbar-gutter: stable; }
       #initial-loader {
         position: fixed; inset: 0; z-index: 99999;
         display: none; align-items: center; justify-content: center;
