@@ -10,6 +10,12 @@
     <meta name="description" content="تسوق أحدث الإلكترونيات والأجهزة الذكية | أسعار منافسة وضمان رسمي | توصيل سريع لجميع أنحاء العراق | LEVONIS متجرك الموثوق للتقنية">
     <meta name="author" content="LEVONIS" />
     <meta name="google-site-verification" content="R7W7mm8vXH-duHyxh0XDAEeOHImcbBk_Ggdk6QL9Lps" />
+
+    <!-- Security: enforced via <meta> because Lovable hosting does not honor
+         public/_headers. HSTS/X-Frame-Options/COOP require real HTTP headers
+         and are configured at the CDN/infra layer. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://ai.gateway.lovable.dev https://*.lovable.app https://*.lovable.dev https://*.lovableproject.com https://cdn.gpteng.co https://connect.facebook.net https://www.googletagmanager.com https://challenges.cloudflare.com https://telegram.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https://challenges.cloudflare.com https://www.facebook.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     
     <!-- Preconnect to backend (used immediately after mount for auth/data) -->
     <link rel="preconnect" href="https://sajlfpygebpqwzpotrsg.supabase.co" crossorigin>
@@ -85,11 +91,11 @@
       })();
     </script>
 
-    <!-- Preload critical font weights to remove them from the LCP-blocking
-         network chain (Lighthouse showed cairo-700 at 4.3s discovery). With
-         Cloudflare's 30-day edge cache the cost is paid only on first visit. -->
+    <!-- Preload ONLY the LCP-critical font weight (Cairo 400 = body text).
+         Cairo 700/900 are headings that appear after FCP and load via the
+         `font-display: swap` chain below — preloading them was forcing the
+         browser to download ~50KB of bold fonts before the first paint. -->
     <link rel="preload" href="/fonts/cairo-400.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/cairo-700.woff2" as="font" type="font/woff2" crossorigin>
 
     <!-- Inline @font-face so the browser discovers Cairo BEFORE the large render-blocking
          CSS bundle is parsed. Combined with `font-display: swap`, this lets the FCP
