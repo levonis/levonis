@@ -24,10 +24,19 @@ export function shouldSkipHeavyMedia(): boolean {
   return false;
 }
 
-/** True for low-memory devices (< 2GB) — also skip videos. */
+/** True for low-memory devices (< 4GB) — skip videos and other GPU-heavy media. */
 export function isLowEndDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
   const mem = (navigator as any).deviceMemory as number | undefined;
-  if (typeof mem === 'number' && mem > 0 && mem < 2) return true;
+  if (typeof mem === 'number' && mem > 0 && mem < 4) return true;
+  const cores = (navigator as any).hardwareConcurrency as number | undefined;
+  if (typeof cores === 'number' && cores > 0 && cores <= 4) return true;
   return false;
+}
+
+/** True when the device is a phone-sized viewport. Used to skip autoplay videos
+ *  on the homepage cards — they are the single biggest TBT contributor on mobile. */
+export function isMobileViewport(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia?.('(max-width: 768px)').matches ?? window.innerWidth < 768;
 }
