@@ -26,7 +26,7 @@ export default function ReelsBar() {
         .select('id, thumbnail_url, video_url, caption, views_count, merchant_id')
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(10);
       if (error) throw error;
       const all = (data || []) as ReelThumb[];
       // Pin site/admin reels (no merchant_id) first
