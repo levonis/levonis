@@ -1158,6 +1158,20 @@ const Admin = () => {
       }
 
       const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message, canonical_url } = response.data;
+      console.log('[AI Extract] response.data summary:', {
+        success,
+        hasProductInfo: !!productInfo,
+        keys: productInfo ? Object.keys(productInfo) : [],
+        images: Array.isArray(productInfo?.images) ? productInfo.images.length : 0,
+        colors: Array.isArray(productInfo?.colors) ? productInfo.colors.length : 0,
+        options: Array.isArray(productInfo?.options) ? productInfo.options.length : (Array.isArray(productInfo?.sizes) ? productInfo.sizes.length : 0),
+        descLen: (productInfo?.description || '').length,
+        descArLen: (productInfo?.description_ar || '').length,
+        dimensions: productInfo?.dimensions,
+        weight_kg: productInfo?.weight_kg,
+        requiresManualInput,
+        extractError,
+      });
       
       // If requires manual input, show the manual input form
       if (requiresManualInput) {
