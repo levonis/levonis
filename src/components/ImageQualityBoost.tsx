@@ -55,7 +55,10 @@ export default function ImageQualityBoost() {
     // Initial pass
     document.querySelectorAll<HTMLImageElement>("img").forEach(enhance);
 
-    // Watch for new images added later
+    // Watch for new images added later — only inside #root to skip noise
+    // (toast portals, devtools, etc.). Auto-disconnect after 30s; by then the
+    // app shell is hydrated and `loading="lazy"` is set on most images anyway.
+    const target = document.getElementById("root") || document.body;
     const obs = new MutationObserver((mutations) => {
       for (const m of mutations) {
         m.addedNodes.forEach((node) => {
@@ -66,9 +69,13 @@ export default function ImageQualityBoost() {
         });
       }
     });
-    obs.observe(document.body, { childList: true, subtree: true });
+    obs.observe(target, { childList: true, subtree: true });
+    const disconnectTimer = window.setTimeout(() => obs.disconnect(), 30_000);
 
-    return () => obs.disconnect();
+    return () => {
+      window.clearTimeout(disconnectTimer);
+      obs.disconnect();
+    };
   }, []);
 
   return null;
