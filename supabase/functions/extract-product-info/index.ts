@@ -1367,6 +1367,7 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
   }
 
   console.log(`Bambu unified parser: ${colors.length} colors, ${options.length} options, axes=${JSON.stringify([...byAxis.entries()].map(([a, v]) => [a, v.length]))}`);
+  console.log(`[Extract:bambu] colors=${colors.length} options=${options.length} axes=${[...byAxis.keys()].join('|')}`);
   return { colors, options };
 }
 
