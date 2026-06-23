@@ -81,7 +81,7 @@ export default function ReelsBar() {
             >
               {reel.thumbnail_url ? (
                 <img
-                  src={resizeSupabaseImage(reel.thumbnail_url, 300, 70) || reel.thumbnail_url}
+                  src={resizeSupabaseImage(reel.thumbnail_url, 240, 60) || reel.thumbnail_url}
                   alt=""
                   className="w-full h-full object-cover pointer-events-none"
                   loading="lazy"
@@ -90,6 +90,7 @@ export default function ReelsBar() {
                   height={190}
                   draggable={false}
                 />
+
 
               ) : (
                 /* No thumbnail — show static gradient placeholder instead of
