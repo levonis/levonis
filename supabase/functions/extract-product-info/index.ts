@@ -2190,6 +2190,26 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
       console.log('Applied structured original price fallback:', structuredPrices.originalPrice, structuredPrices.currency, productInfo.original_price_usd, productInfo.original_price);
     }
 
+    // ===== STEP: Direct dimensions / weight extraction from page HTML =====
+    // Run BEFORE the AI web-search fallback so we don't waste a paid AI call
+    // when the page itself already lists package size or gross weight.
+    if (pageContent) {
+      try {
+        const directDimsWeight = extractDimensionsAndWeightFromHtml(pageContent);
+        if ((!productInfo.dimensions || (!productInfo.dimensions.length_cm && !productInfo.dimensions.width_cm && !productInfo.dimensions.height_cm))
+            && directDimsWeight.dimensions) {
+          productInfo.dimensions = directDimsWeight.dimensions;
+          console.log('Direct HTML dimensions extracted:', productInfo.dimensions);
+        }
+        if (!productInfo.weight_kg && directDimsWeight.weight_kg) {
+          productInfo.weight_kg = directDimsWeight.weight_kg;
+          console.log('Direct HTML weight extracted:', productInfo.weight_kg, 'kg');
+        }
+      } catch (e) {
+        console.log('Direct dimensions/weight extraction error:', (e as Error).message);
+      }
+    }
+
     // ===== STEP: Search web for dimensions and weight if not found =====
     const needsDimensionsSearch = !productInfo.dimensions || 
       (!productInfo.dimensions.length_cm && !productInfo.dimensions.width_cm && !productInfo.dimensions.height_cm);
