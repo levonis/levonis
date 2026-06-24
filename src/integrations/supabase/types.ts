@@ -14615,6 +14615,10 @@ export type Database = {
         }[]
       }
       admin_remove_assistant: { Args: { _user_id: string }; Returns: undefined }
+      admin_sync_product_options: {
+        Args: { _options: Json; _product_id: string }
+        Returns: undefined
+      }
       admin_update_level_prize_claim: {
         Args: { p_claim_id: string; p_new_status: string; p_notes?: string }
         Returns: Json
