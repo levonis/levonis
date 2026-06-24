@@ -3,8 +3,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_AI_MODEL = 'openai/gpt-5.5';
-// GPT-5 family only supports default temperature (1). Omit `temperature` from requests.
+// Upgraded to Gemini 2.5 Pro for highest extraction accuracy (images, dimensions,
+// description, colors, variants/SKU). Slower/pricier than Flash but much more reliable
+// at parsing AliExpress/Taobao/Amazon HTML and producing complete JSON.
+const LOVABLE_AI_MODEL = 'google/gemini-2.5-pro';
 
 const buildLovableAiHeaders = (lovableApiKey: string) => ({
   'Lovable-API-Key': lovableApiKey,
