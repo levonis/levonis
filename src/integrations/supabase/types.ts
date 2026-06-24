@@ -13480,6 +13480,80 @@ export type Database = {
           },
         ]
       }
+      delivery_methods_admin: {
+        Row: {
+          actual_cost: number | null
+          base_price: number | null
+          base_price_category_id: string | null
+          base_price_units_per_delivery: number | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
+          display_order: number | null
+          free_delivery_enabled: boolean | null
+          free_delivery_min_order: number | null
+          icon: string | null
+          id: string | null
+          is_active: boolean | null
+          method_key: string | null
+          name_ar: string | null
+          name_en: string | null
+          name_ku: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          base_price?: number | null
+          base_price_category_id?: string | null
+          base_price_units_per_delivery?: number | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
+          display_order?: number | null
+          free_delivery_enabled?: boolean | null
+          free_delivery_min_order?: number | null
+          icon?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          method_key?: string | null
+          name_ar?: string | null
+          name_en?: string | null
+          name_ku?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_cost?: number | null
+          base_price?: number | null
+          base_price_category_id?: string | null
+          base_price_units_per_delivery?: number | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
+          display_order?: number | null
+          free_delivery_enabled?: boolean | null
+          free_delivery_min_order?: number | null
+          icon?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          method_key?: string | null
+          name_ar?: string | null
+          name_en?: string | null
+          name_ku?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_methods_base_price_category_id_fkey"
+            columns: ["base_price_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_applications_owner_view: {
         Row: {
           away_message: string | null
@@ -13598,6 +13672,92 @@ export type Database = {
           total_debt?: number | null
         }
         Relationships: []
+      }
+      merchant_public_profiles_admin: {
+        Row: {
+          accepted_payment_methods: Json | null
+          badge_tier: string | null
+          bio: string | null
+          city: string | null
+          created_at: string | null
+          debt_suspended: boolean | null
+          debt_suspended_at: string | null
+          delivery_price_iqd: number | null
+          delivery_rules: Json | null
+          display_name: string | null
+          id: string | null
+          is_verified: boolean | null
+          selected_frame_id: string | null
+          social_links: Json | null
+          specialty: string | null
+          store_background_blur: number | null
+          store_background_type: string | null
+          store_background_value: string | null
+          store_image_url: string | null
+          store_layout: string | null
+          store_slug: string | null
+          total_debt: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_payment_methods?: Json | null
+          badge_tier?: string | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          debt_suspended?: boolean | null
+          debt_suspended_at?: string | null
+          delivery_price_iqd?: number | null
+          delivery_rules?: Json | null
+          display_name?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          selected_frame_id?: string | null
+          social_links?: Json | null
+          specialty?: string | null
+          store_background_blur?: number | null
+          store_background_type?: string | null
+          store_background_value?: string | null
+          store_image_url?: string | null
+          store_layout?: string | null
+          store_slug?: string | null
+          total_debt?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_payment_methods?: Json | null
+          badge_tier?: string | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          debt_suspended?: boolean | null
+          debt_suspended_at?: string | null
+          delivery_price_iqd?: number | null
+          delivery_rules?: Json | null
+          display_name?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          selected_frame_id?: string | null
+          social_links?: Json | null
+          specialty?: string | null
+          store_background_blur?: number | null
+          store_background_type?: string | null
+          store_background_value?: string | null
+          store_image_url?: string | null
+          store_layout?: string | null
+          store_slug?: string | null
+          total_debt?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_public_profiles_selected_frame_id_fkey"
+            columns: ["selected_frame_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_frames"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_rating_stats: {
         Row: {
