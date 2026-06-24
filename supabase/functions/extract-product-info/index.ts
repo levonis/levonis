@@ -2821,22 +2821,52 @@ Return ONLY JSON:
       }
     }
 
-    // ===== Shopify override: replace AI-merged colors/options with structured axes =====
-    if (shopifyExtracted && (shopifyExtracted.colors.length > 0 || shopifyExtracted.options.length > 0)) {
-      console.log('Shopify structured override — replacing AI colors/options',
-        'colors:', productInfo.colors.length, '→', shopifyExtracted.colors.length,
-        'options:', productInfo.options.length, '→', shopifyExtracted.options.length);
-      productInfo.colors = shopifyExtracted.colors.map(c => ({ ...c }));
-      productInfo.options = shopifyExtracted.options.map(o => ({ ...o }));
-      for (const c of shopifyExtracted.colors) {
-        if (c.image_url) variantImageUrls.add(getImageBaseUrl(c.image_url));
+    // ===== Shopify structured merge: ONLY replace each axis when Shopify provides
+    // a richer set than what AI / direct SKU extraction already produced. Otherwise
+    // we'd downgrade rich extraction (e.g. 10 options) with a Shopify default of 1. =====
+    if (shopifyExtracted) {
+      const beforeColors = productInfo.colors.length;
+      const beforeOptions = productInfo.options.length;
+
+      if (shopifyExtracted.colors.length > beforeColors) {
+        productInfo.colors = shopifyExtracted.colors.map(c => ({ ...c }));
+        for (const c of shopifyExtracted.colors) {
+          if (c.image_url) variantImageUrls.add(getImageBaseUrl(c.image_url));
+        }
+      } else if (shopifyExtracted.colors.length > 0 && beforeColors > 0) {
+        // Merge variant images from Shopify into matching existing colors (by name).
+        const byName = new Map(productInfo.colors.map((c: any, i: number) => [String(c.name || '').toLowerCase().trim(), i]));
+        for (const c of shopifyExtracted.colors) {
+          const idx = byName.get(String(c.name || '').toLowerCase().trim());
+          if (idx !== undefined && !productInfo.colors[idx].image_url && c.image_url) {
+            productInfo.colors[idx].image_url = c.image_url;
+            variantImageUrls.add(getImageBaseUrl(c.image_url));
+          }
+        }
       }
-      for (const o of shopifyExtracted.options) {
-        if (o.image_url) variantImageUrls.add(getImageBaseUrl(o.image_url));
+
+      if (shopifyExtracted.options.length > beforeOptions) {
+        productInfo.options = shopifyExtracted.options.map(o => ({ ...o }));
+        for (const o of shopifyExtracted.options) {
+          if (o.image_url) variantImageUrls.add(getImageBaseUrl(o.image_url));
+        }
       }
-      if (productInfo.images.length === 0 && shopifyExtracted.images.length > 0) {
-        productInfo.images = shopifyExtracted.images.slice(0, 10);
+
+      // Always merge gallery images (Shopify product.images is authoritative for Shopify storefronts).
+      if (shopifyExtracted.images.length > 0) {
+        const seen = new Set(productInfo.images.map((img: string) => getImageBaseUrl(img)));
+        for (const img of shopifyExtracted.images) {
+          const base = getImageBaseUrl(img);
+          if (!seen.has(base) && !variantImageUrls.has(base)) {
+            seen.add(base);
+            productInfo.images.push(img);
+          }
+        }
       }
+
+      console.log('Shopify merge — colors:', beforeColors, '→', productInfo.colors.length,
+        'options:', beforeOptions, '→', productInfo.options.length,
+        'images merged:', shopifyExtracted.images.length);
     }
 
 
