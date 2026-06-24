@@ -40,3 +40,20 @@ export const adminDeleteProduct = async (productId: string) => {
   const { error } = await (supabase as any).rpc('admin_delete_product', { _product_id: productId });
   if (error) throw error;
 };
+
+/**
+ * Replaces all options on a product in one atomic, security-definer call.
+ * Works for both admins and assistants — bypasses any per-column or per-row
+ * permission edge case that would otherwise block a direct PostgREST insert.
+ */
+export const adminSyncProductOptions = async (
+  productId: string,
+  options: Array<Record<string, any>>
+) => {
+  if (!productId) throw new Error('adminSyncProductOptions: productId is required');
+  const { error } = await (supabase as any).rpc('admin_sync_product_options', {
+    _product_id: productId,
+    _options: options ?? [],
+  });
+  if (error) throw error;
+};
