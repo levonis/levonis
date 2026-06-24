@@ -2152,25 +2152,16 @@ const Admin = () => {
         productId = await adminCreateProduct(values as any);
       }
 
-      // Save product options - always delete existing options when editing
+      // Save product options atomically via secure RPC (works for admins AND assistants
+      // — bypasses any RLS / column-level edge case that could fail a direct insert).
       if (productId) {
-        // Delete existing options if editing (even if no new options)
-        if (editingProduct) {
-          await supabase
-            .from('product_options')
-            .delete()
-            .eq('product_id', productId);
-        }
-
-        // Insert new options if any
-        const optionsToInsert = productOptions
+        const optionsToSync = productOptions
           .filter(opt => opt.name_ar.trim() && opt.name.trim())
           .map(opt => {
             const adj = adjustmentUsdToIqd(Number(opt.price_adjustment || 0), usdToIqdRate);
             const costUsd = Number(opt.cost_usd) || 0;
             const costIqd = Number(opt.cost_iqd) || Math.round(costUsd * usdToIqdRate);
             return {
-              product_id: productId,
               name: opt.name,
               name_ar: opt.name_ar,
               price_adjustment: adj,
@@ -2181,15 +2172,13 @@ const Admin = () => {
               available_for_pre_order: opt.available_for_pre_order ?? false,
               cost_usd: costUsd,
               cost_iqd: costIqd,
+              taobao_sku_id: (opt as any).taobao_sku_id ?? null,
             };
           });
 
-        if (optionsToInsert.length > 0) {
-          const { error: optionsError } = await supabase
-            .from('product_options')
-            .insert(optionsToInsert);
-          
-          if (optionsError) throw optionsError;
+        // Always call sync — when editing it deletes existing rows even if list is empty.
+        if (editingProduct || optionsToSync.length > 0) {
+          await adminSyncProductOptions(productId, optionsToSync);
         }
       }
 
