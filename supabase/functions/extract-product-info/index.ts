@@ -1531,6 +1531,105 @@ function extractStructuredPrices(html: string, platform: string, url: string): {
   return { price, originalPrice, currency };
 }
 
+// Best-effort scan of page text for package/carton dimensions and gross weight.
+// Looks for common English, Chinese, and Arabic labels and normalizes units
+// (mm/inch -> cm, g/lb -> kg). Prefers package/gross values over net/product.
+function extractDimensionsAndWeightFromHtml(html: string): {
+  dimensions: { length_cm: number | null; width_cm: number | null; height_cm: number | null } | null;
+  weight_kg: number | null;
+} {
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ');
+
+  const toCm = (n: number, unit: string): number => {
+    const u = unit.toLowerCase();
+    if (u.startsWith('mm')) return n / 10;
+    if (u.startsWith('in') || u === '"' || u === '”') return n * 2.54;
+    return n; // assume cm
+  };
+  const toKg = (n: number, unit: string): number => {
+    const u = unit.toLowerCase();
+    if (u === 'g' || u.startsWith('gram') || u === 'گ') return n / 1000;
+    if (u.startsWith('lb') || u.startsWith('pound')) return n * 0.45359237;
+    return n; // assume kg
+  };
+
+  // Dimensions — prefer package/carton/shipping/gross labels.
+  const dimLabels = [
+    /(package|packaging|carton|shipping|box|gross|outer)\s*(?:size|dimension|dimensions)\s*[:：]?\s*([\d.,]+)\s*(?:×|x|\*|by)\s*([\d.,]+)\s*(?:×|x|\*|by)\s*([\d.,]+)\s*(cm|mm|in|inch|inches|")/i,
+    /(包装尺寸|外箱尺寸|纸箱尺寸|装箱尺寸|包装大小|包装规格)\s*[:：]?\s*([\d.,]+)\s*(?:×|x|\*)\s*([\d.,]+)\s*(?:×|x|\*)\s*([\d.,]+)\s*(cm|mm|厘米|毫米)?/,
+    /(?:أبعاد|قياسات)\s*(?:الكرتون|التغليف|الشحن|الصندوق)\s*[:：]?\s*([\d.,]+)\s*(?:×|x|\*)\s*([\d.,]+)\s*(?:×|x|\*)\s*([\d.,]+)\s*(سم|مم|cm|mm)?/,
+  ];
+  // Fallback: any L x W x H pattern with a unit.
+  const genericDim = /([\d.,]+)\s*(?:×|x|\*|by)\s*([\d.,]+)\s*(?:×|x|\*|by)\s*([\d.,]+)\s*(cm|mm|in|inch|inches|")/i;
+
+  let dims: { length_cm: number | null; width_cm: number | null; height_cm: number | null } | null = null;
+  for (const re of dimLabels) {
+    const m = text.match(re);
+    if (m) {
+      const groups = m.slice(-4); // last 4 groups: l,w,h,unit
+      const unit = (groups[3] || 'cm') as string;
+      const l = parseFloat(String(groups[0]).replace(/,/g, ''));
+      const w = parseFloat(String(groups[1]).replace(/,/g, ''));
+      const h = parseFloat(String(groups[2]).replace(/,/g, ''));
+      if ([l, w, h].every((v) => Number.isFinite(v) && v > 0)) {
+        const u = /cm|厘米|سم/i.test(unit) ? 'cm' : /mm|毫米|مم/i.test(unit) ? 'mm' : 'in';
+        dims = { length_cm: Math.round(toCm(l, u) * 10) / 10, width_cm: Math.round(toCm(w, u) * 10) / 10, height_cm: Math.round(toCm(h, u) * 10) / 10 };
+        break;
+      }
+    }
+  }
+  if (!dims) {
+    const m = text.match(genericDim);
+    if (m) {
+      const l = parseFloat(m[1].replace(/,/g, ''));
+      const w = parseFloat(m[2].replace(/,/g, ''));
+      const h = parseFloat(m[3].replace(/,/g, ''));
+      const u = m[4].toLowerCase();
+      if ([l, w, h].every((v) => Number.isFinite(v) && v > 0)) {
+        dims = { length_cm: Math.round(toCm(l, u) * 10) / 10, width_cm: Math.round(toCm(w, u) * 10) / 10, height_cm: Math.round(toCm(h, u) * 10) / 10 };
+      }
+    }
+  }
+
+  // Weight — prefer gross/shipping/package labels.
+  const weightLabels = [
+    /(gross|shipping|package|packaging|carton|with\s*packaging|total)\s*weight\s*[:：]?\s*([\d.,]+)\s*(kg|g|lb|lbs|pound|pounds)/i,
+    /(毛重|包装重量|运输重量|总重|带包装)\s*[:：]?\s*([\d.,]+)\s*(kg|g|公斤|克)?/,
+    /(?:الوزن)\s*(?:الإجمالي|الكلي|مع\s*التغليف|الشحن)\s*[:：]?\s*([\d.,]+)\s*(كغ|كجم|غ|kg|g)?/,
+  ];
+  const genericWeight = /weight\s*[:：]?\s*([\d.,]+)\s*(kg|g|lb|lbs|pound|pounds)/i;
+
+  let weightKg: number | null = null;
+  for (const re of weightLabels) {
+    const m = text.match(re);
+    if (m) {
+      const groups = m.slice(-2);
+      const num = parseFloat(String(groups[0]).replace(/,/g, ''));
+      let unit = (groups[1] || 'kg').toString().toLowerCase();
+      if (/公斤|kg/.test(unit)) unit = 'kg';
+      else if (/克|^g$/.test(unit)) unit = 'g';
+      if (Number.isFinite(num) && num > 0) {
+        weightKg = Math.round(toKg(num, unit) * 100) / 100;
+        break;
+      }
+    }
+  }
+  if (!weightKg) {
+    const m = text.match(genericWeight);
+    if (m) {
+      const num = parseFloat(m[1].replace(/,/g, ''));
+      if (Number.isFinite(num) && num > 0) weightKg = Math.round(toKg(num, m[2].toLowerCase()) * 100) / 100;
+    }
+  }
+
+  return { dimensions: dims, weight_kg: weightKg };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -2190,6 +2289,26 @@ dimensions.length_cm/width_cm/height_cm بالسنتيمتر، weight_kg بال�
       console.log('Applied structured original price fallback:', structuredPrices.originalPrice, structuredPrices.currency, productInfo.original_price_usd, productInfo.original_price);
     }
 
+    // ===== STEP: Direct dimensions / weight extraction from page HTML =====
+    // Run BEFORE the AI web-search fallback so we don't waste a paid AI call
+    // when the page itself already lists package size or gross weight.
+    if (pageContent) {
+      try {
+        const directDimsWeight = extractDimensionsAndWeightFromHtml(pageContent);
+        if ((!productInfo.dimensions || (!productInfo.dimensions.length_cm && !productInfo.dimensions.width_cm && !productInfo.dimensions.height_cm))
+            && directDimsWeight.dimensions) {
+          productInfo.dimensions = directDimsWeight.dimensions;
+          console.log('Direct HTML dimensions extracted:', productInfo.dimensions);
+        }
+        if (!productInfo.weight_kg && directDimsWeight.weight_kg) {
+          productInfo.weight_kg = directDimsWeight.weight_kg;
+          console.log('Direct HTML weight extracted:', productInfo.weight_kg, 'kg');
+        }
+      } catch (e) {
+        console.log('Direct dimensions/weight extraction error:', (e as Error).message);
+      }
+    }
+
     // ===== STEP: Search web for dimensions and weight if not found =====
     const needsDimensionsSearch = !productInfo.dimensions || 
       (!productInfo.dimensions.length_cm && !productInfo.dimensions.width_cm && !productInfo.dimensions.height_cm);
@@ -2492,25 +2611,34 @@ Return JSON ONLY:
       }
     }
 
-    // Merge direct SKU data if AI didn't find enough
-    if (productInfo.colors.length === 0 && directSkuData.colors.length > 0) {
-      console.log('Using direct SKU colors...');
+    // Merge direct SKU data with AI results — always merge missing entries instead of
+    // only when AI is empty, so a partial AI answer never drops real variants.
+    if (directSkuData.colors.length > 0) {
+      const seen = new Set(productInfo.colors.map((c: any) => String(c.name || '').trim().toLowerCase()));
+      let added = 0;
       for (const c of directSkuData.colors) {
-        if (c.image_url) {
-          variantImageUrls.add(getImageBaseUrl(c.image_url));
-        }
+        const key = String(c.name || '').trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        if (c.image_url) variantImageUrls.add(getImageBaseUrl(c.image_url));
         productInfo.colors.push({ ...c });
+        added++;
       }
+      if (added > 0) console.log(`Merged ${added} extra colors from direct SKU extraction`);
     }
-    
-    if (productInfo.options.length === 0 && directSkuData.options.length > 0) {
-      console.log('Using direct SKU options...');
+
+    if (directSkuData.options.length > 0) {
+      const seen = new Set(productInfo.options.map((o: any) => String(o.name || '').trim().toLowerCase()));
+      let added = 0;
       for (const o of directSkuData.options) {
-        if (o.image_url) {
-          variantImageUrls.add(getImageBaseUrl(o.image_url));
-        }
+        const key = String(o.name || '').trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        if (o.image_url) variantImageUrls.add(getImageBaseUrl(o.image_url));
         productInfo.options.push({ ...o, price_adjustment: 0 });
+        added++;
       }
+      if (added > 0) console.log(`Merged ${added} extra options from direct SKU extraction`);
     }
 
     // ===== Strategy 3: Firecrawl fallback for JS-rendered sites =====

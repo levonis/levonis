@@ -1,93 +1,44 @@
-# المرحلة 6 — تحسينات قوية وجذرية للأداء على الموبايل
+## خطة إصلاح مشاكل المساعد في استخراج وحفظ المنتجات
 
-التحسينات السابقة كانت تدريجية. هذه المرحلة جذرية: نقطع كل ما يستهلك CPU/شبكة على الموبايل في أول 3 ثوانٍ، ونؤجل أو نحذف ما لا يُرى في الشاشة الأولى.
+### الهدف
+جعل دور **المساعد** قادراً على استخراج معلومات المنتج وحفظ المنتج والخيارات والألوان مثل الأدمن، مع استمرار إخفاء قسم التكلفة والربح عنه في الواجهة.
 
-## 1. حذف الفيديو نهائياً من الشاشة الأولى على الموبايل
+### ما سأصلحه
+1. **فشل حفظ المنتج للمساعد**
+   - نقل حفظ خيارات المنتج (`product_options`) إلى RPC آمن بصلاحيات أدمن/مساعد بدلاً من الاعتماد على إدخال مباشر من المتصفح.
+   - نفس الشيء للحذف/إعادة الإدراج عند تعديل المنتج حتى لا يفشل بسبب RLS أو نقص صلاحيات Data API.
+   - إظهار رسالة خطأ أوضح في الواجهة عند فشل الحفظ، بدل رسالة عامة فقط.
 
-- `CategoryCard.tsx` و `ReelsBar.tsx`: على الموبايل، لا نحمّل الفيديو إطلاقاً (نعرض صورة مصغّرة poster فقط). الفيديو يبدأ فقط عند نقر المستخدم. توفير TBT ~400-800ms.
-- إزالة كل preload فيديو، autoplay، loop على الموبايل.
+2. **صلاحيات المساعد**
+   - التأكد أن المساعد يمر عبر نفس مسار الأدمن في إنشاء/تعديل المنتجات.
+   - إبقاء المنتج الذي ينشئه المساعد تحت مراجعة الأدمن (`pending_admin_review`) كما هو حالياً، بدون كشف التكلفة/الربح له.
+   - عدم توسيع صلاحيات عامة أو صلاحيات `anon`.
 
-## 2. تقسيم Home.tsx بشكل عدواني (Code Splitting)
+3. **استخراج الصور والألوان والخيارات/SKU**
+   - تحسين دالة `extract-product-info` لتقرأ المتغيرات من مصادر أكثر موثوقية داخل HTML/JSON مثل:
+     - `skuProps`, `skuList`, `skuMap`, `skuCore`, `propertyPics`, `skuBase`, `sku2info`
+     - JSON-LD و `__NEXT_DATA__`
+     - صور الخلفية `background-image`, `data-img`, `data-bigpic`, `picUrl`, `imageUrl`
+   - دمج نتائج الاستخراج المباشر مع نتائج AI بدلاً من استخدامها فقط عندما تكون نتائج AI فارغة، حتى لا تضيع خيارات/ألوان ناقصة.
+   - الحفاظ على أسماء SKU/variant codes داخل أسماء الألوان/الخيارات عند توفرها.
 
-- كل قسم تحت الـ fold الأول يصبح `React.lazy()` ملفوف بـ `ProgressiveSection`.
-- الأقسام: Reels، Categories السفلية، Featured، Stories، Community Teaser، Games Teaser، Footer — كلها lazy.
-- النتيجة: bundle أولي ~40-50% أصغر.
+4. **الأبعاد والوزن**
+   - إضافة استخراج مباشر للأبعاد والوزن من HTML والنصوص قبل اللجوء إلى AI.
+   - قبول صيغ شائعة مثل: `Package Dimensions`, `Carton Size`, `Gross Weight`, `包装尺寸`, `毛重` مع تحويل الوحدات.
+   - إذا كانت القيم ناقصة، تبقى تعبئة AI الاحتياطية موجودة لكن مع تنظيف/تحقق أفضل.
 
-## 3. حذف Framer Motion من المسار الحرج
+5. **التأكد من الحقول المحفوظة**
+   - ضمان حفظ الصور، الألوان، الخيارات، SKU/روابط الصور، الأبعاد، الوزن، والحقول متعددة اللغات بشكل متسق.
+   - منع حذف الصور المستخرجة أو الخيارات بسبب reset/initialization داخل محرر المنتج.
 
-- `Home`, `AppNavBar`, `CategoryCard`, `PageLoader` → CSS transitions/keyframes فقط.
-- framer-motion يبقى فقط داخل المسارات الثقيلة (Reels page، Games، Dialogs) المحمّلة كسولاً.
-- توفير ~50KB gzip من main bundle.
+### الملفات المتوقع تعديلها
+- `src/pages/Admin.tsx`
+- `src/lib/adminMutations.ts`
+- `supabase/functions/extract-product-info/index.ts`
+- Migration جديدة لإضافة RPC آمن لحفظ خيارات المنتج إن لم يكن موجوداً.
 
-## 4. LCP Image: preload صريح + AVIF
-
-- `index.html`: إضافة `<link rel="preload" as="image" fetchpriority="high">` لأول صورة hero/banner (نستخرج URL من Supabase storage).
-- استخدام `?format=avif` مع `<picture>` fallback إلى WebP.
-- خفض جودة الصور المصغّرة من 65→55 على الشاشات <480px.
-
-## 5. تعطيل backdrop-filter على الموبايل ضعيف الأداء
-
-- `index.css`: على `(max-width: 768px) and (max-device-memory: 4gb)` أو `prefers-reduced-motion` → استبدال `backdrop-filter: blur(20px)` بـ `background: rgba(...)` صلب.
-- backdrop-filter من أثقل العمليات على GPU في الموبايل.
-
-## 6. Service Worker: precache صدفة التطبيق
-
-- `public/sw.js`: precache لـ `/`, `/assets/index-*.js`, `/assets/index-*.css`, font Cairo subset.
-- الزيارة الثانية تفتح فوراً (~200ms FCP بدل ~2s).
-
-## 7. تأجيل كل المراقبات والاشتراكات
-
-- `useOrderRealtimeNotifications`, `useMessageNotifications`, `useOnlineHeartbeat`, `useDailyLogin`, `useNotificationPermission`: كلها خلف `requestIdleCallback(timeout: 3000)` بعد التحميل الأول.
-- realtime channels لا تُفتح إلا بعد `load` + idle.
-
-## 8. تحجيم العناصر مسبقاً (CLS = 0)
-
-- تثبيت `aspect-ratio` و `min-height` على: بطاقات الفئات، Reels، Banner، Nav، Dynamic Island، Hero قبل hydration.
-- استبدال `PageLoader` الحالي (دوائر متحركة) بـ skeleton ثابت بنفس أبعاد المحتوى النهائي.
-
-## 9. خفض react-query polling/refetch
-
-- `staleTime` افتراضي 5 دقائق على Home.
-- `refetchOnWindowFocus: false` على المسار الحرج.
-- إلغاء أي `refetchInterval` < 60s على الشاشة الأولى.
-
-## 10. Cache headers صارمة
-
-- `public/_headers`: `Cache-Control: public, max-age=31536000, immutable` لـ `/assets/*`، و `stale-while-revalidate=86400` لـ HTML.
-
-## الملفات المتأثرة
-
-```text
-index.html
-vite.config.ts
-public/sw.js
-public/_headers
-src/index.css
-src/main.tsx
-src/pages/Home.tsx
-src/components/CategoryCard.tsx
-src/components/reels/ReelsBar.tsx
-src/components/AppNavBar.tsx
-src/components/ui/PageLoader.tsx
-src/components/ProgressiveSection.tsx
-src/components/OptimizedImage.tsx
-src/hooks/useOrderRealtimeNotifications.tsx
-src/hooks/useMessageNotifications.ts
-src/hooks/useOnlineHeartbeat.ts
-src/hooks/useDailyLogin.tsx
-```
-
-## ما لن يتغيّر
-
-- لا تعديل على منطق الأعمال، Supabase schema، RLS، Cart، Checkout، Auth.
-- framer-motion يبقى في Reels/Games/Dialogs.
-- التصميم البصري نفسه (Glassmorphism) — فقط على الموبايل الضعيف يصبح صلباً بدل blur.
-
-## المتوقع بعد التطبيق
-
-- LCP: 4.5s → ~2.0s
-- TBT: 600ms → ~150ms
-- INP: تحسّن ملحوظ على النقر/التمرير
-- CLS: ~0
-
-هل أبدأ التنفيذ؟
+### التحقق بعد التنفيذ
+- تشغيل فحص TypeScript.
+- فحص سياسات/RPC الحفظ للتأكد أن الأدمن والمساعد فقط يمكنهما الحفظ.
+- التحقق من أن الحفظ لا يعتمد على إدخال مباشر إلى `product_options` من المتصفح.
+- التأكد من أن قسم التكلفة/الربح يبقى مخفياً عن المساعد في الواجهة.
