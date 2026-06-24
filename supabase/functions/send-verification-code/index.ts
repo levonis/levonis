@@ -223,6 +223,27 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // For password_change/email_change: require an authenticated caller whose email matches the target.
+    if (type === 'password_change' || type === 'email_change') {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ success: false, error: "غير مصرح" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const token = authHeader.replace('Bearer ', '');
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!);
+      const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+      const callerEmail = (claimsData?.claims as { email?: string } | undefined)?.email?.toLowerCase();
+      if (claimsErr || !callerEmail || callerEmail !== email) {
+        return new Response(
+          JSON.stringify({ success: false, error: "غير مصرح" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // For password_reset, check if user exists but return generic message to prevent enumeration
     if (type === 'password_reset') {
       const { data: profile, error: profileError } = await supabase

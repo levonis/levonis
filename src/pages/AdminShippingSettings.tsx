@@ -563,7 +563,7 @@ function DeliveryMethodsManager() {
   const { data: methods = [] } = useQuery({
     queryKey: ["delivery-methods"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("delivery_methods").select("*").order("display_order");
+      const { data, error } = await (supabase as any).from("delivery_methods_admin").select("*").order("display_order");
       if (error) throw error;
       return data;
     },

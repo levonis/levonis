@@ -279,7 +279,7 @@ const AdminFinancials = () => {
   const { data: deliveryMethodsData = [] } = useQuery({
     queryKey: ['delivery-methods-financials'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('delivery_methods').select('method_key, actual_cost, name_ar');
+      const { data, error } = await (supabase as any).from('delivery_methods_admin').select('method_key, actual_cost, name_ar');
       if (error) throw error;
       return data || [];
     },
