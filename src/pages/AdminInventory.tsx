@@ -866,8 +866,8 @@ export default function AdminInventory() {
         return `<tr>
           <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;text-align:center;color:#64748b;font-size:11px">${i + 1}</td>
           <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#1e293b">${(it.product_name || '').replace(/</g, '&lt;')}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center">${it.color || '—'}</td>
-          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center">${it.option || '—'}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center">${String(it.color || '—').replace(/</g, '&lt;')}</td>
+          <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center">${String(it.option || '—').replace(/</g, '&lt;')}</td>
           <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#1e293b;direction:ltr;text-align:center;font-family:monospace;font-weight:bold">${fmt(it.quantity)}</td>
           <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#7c3aed;direction:ltr;text-align:right;font-family:monospace">${fmt(it.unit_cost)}</td>
           <td style="background:${bg};padding:6px 10px;border:1px solid #e2e8f0;font-size:11px;color:#0369a1;direction:ltr;text-align:right;font-family:monospace">${fmt(it.shipping_cost || 0)}</td>
