@@ -2492,25 +2492,34 @@ Return JSON ONLY:
       }
     }
 
-    // Merge direct SKU data if AI didn't find enough
-    if (productInfo.colors.length === 0 && directSkuData.colors.length > 0) {
-      console.log('Using direct SKU colors...');
+    // Merge direct SKU data with AI results — always merge missing entries instead of
+    // only when AI is empty, so a partial AI answer never drops real variants.
+    if (directSkuData.colors.length > 0) {
+      const seen = new Set(productInfo.colors.map((c: any) => String(c.name || '').trim().toLowerCase()));
+      let added = 0;
       for (const c of directSkuData.colors) {
-        if (c.image_url) {
-          variantImageUrls.add(getImageBaseUrl(c.image_url));
-        }
+        const key = String(c.name || '').trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        if (c.image_url) variantImageUrls.add(getImageBaseUrl(c.image_url));
         productInfo.colors.push({ ...c });
+        added++;
       }
+      if (added > 0) console.log(`Merged ${added} extra colors from direct SKU extraction`);
     }
-    
-    if (productInfo.options.length === 0 && directSkuData.options.length > 0) {
-      console.log('Using direct SKU options...');
+
+    if (directSkuData.options.length > 0) {
+      const seen = new Set(productInfo.options.map((o: any) => String(o.name || '').trim().toLowerCase()));
+      let added = 0;
       for (const o of directSkuData.options) {
-        if (o.image_url) {
-          variantImageUrls.add(getImageBaseUrl(o.image_url));
-        }
+        const key = String(o.name || '').trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        if (o.image_url) variantImageUrls.add(getImageBaseUrl(o.image_url));
         productInfo.options.push({ ...o, price_adjustment: 0 });
+        added++;
       }
+      if (added > 0) console.log(`Merged ${added} extra options from direct SKU extraction`);
     }
 
     // ===== Strategy 3: Firecrawl fallback for JS-rendered sites =====
