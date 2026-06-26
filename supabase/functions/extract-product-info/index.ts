@@ -1225,6 +1225,33 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
   return map;
 }
 
+// Map normalized variant name -> declared hex code from Bambu's RSC/JSON payload.
+// Used to avoid sampling swatch PNGs (which can produce wrong hex on transparent
+// or padded swatches). Hex codes here are authoritative.
+export function buildBambuVariantHexMap(html: string): Map<string, string> {
+  const map = new Map<string, string>();
+  const HEX_KEYS = '(?:colorHex|propertyHex|hex|colorCode|hexCode)';
+  const patterns = [
+    new RegExp(`"propertyValue"\\s*:\\s*"([^"]+)"[^{}]{0,800}?"${HEX_KEYS}"\\s*:\\s*"#?([0-9a-fA-F]{6})"`, 'gi'),
+    new RegExp(`"${HEX_KEYS}"\\s*:\\s*"#?([0-9a-fA-F]{6})"[^{}]{0,800}?"propertyValue"\\s*:\\s*"([^"]+)"`, 'gi'),
+    new RegExp(`\\\\"propertyValue\\\\"\\s*:\\s*\\\\"([^\\\\"]+)\\\\"[^{}]{0,800}?\\\\"${HEX_KEYS}\\\\"\\s*:\\s*\\\\"#?([0-9a-fA-F]{6})\\\\"`, 'gi'),
+    new RegExp(`\\\\"${HEX_KEYS}\\\\"\\s*:\\s*\\\\"#?([0-9a-fA-F]{6})\\\\"[^{}]{0,800}?\\\\"propertyValue\\\\"\\s*:\\s*\\\\"([^\\\\"]+)\\\\"`, 'gi'),
+  ];
+  const nameFirst = [true, false, true, false];
+  for (let p = 0; p < patterns.length; p++) {
+    let mm: RegExpExecArray | null;
+    while ((mm = patterns[p].exec(html)) !== null) {
+      const rawName = nameFirst[p] ? mm[1] : mm[2];
+      const rawHex = nameFirst[p] ? mm[2] : mm[1];
+      const key = normalizeVariantName(rawName);
+      if (!key) continue;
+      const hex = '#' + rawHex.toLowerCase();
+      if (!map.has(key)) map.set(key, hex);
+    }
+  }
+  return map;
+}
+
 // Build a map of normalized propertyValue -> propertyKey (axis name) by scanning
 // the RSC payload. Lets us tell which axis ("Type", "Size", "Color", ...) each
 // <li value="..."> belongs to so we can group multi-axis Bambu products correctly.
