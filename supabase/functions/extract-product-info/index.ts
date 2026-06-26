@@ -2824,7 +2824,90 @@ Return ONLY JSON:
               const renderedHtml = fcData.data?.html || fcData.html || '';
               if (renderedHtml.length > 1000) {
                 bambuResult = await parseBambuLabUnified(renderedHtml);
+    }
+
+    // ===== Bambu Lab name + description normalization (runs even when AI failed/402) =====
+    if (platform === 'bambulab') {
+      // 1) Strip variant suffix from product name: "PLA Pure - Milky Pink (17200) / Refill / 1kg" -> "PLA Pure"
+      const stripBambuVariantSuffix = (raw: string): string => {
+        if (!raw) return raw;
+        let s = String(raw).trim();
+        // Cut on first " - " followed by a variant token (color name in parens, refill, kg, g, spool...)
+        const variantRe = /\s*[-/]\s*(?:[^/]*\(\d{4,6}\)|refill|with\s*spool|filament\s*with\s*spool|cardboard|\d+\s?(?:kg|g|m)\b).*$/i;
+        s = s.replace(variantRe, '').trim();
+        // Also drop trailing " / " segments that are size/type values
+        s = s.replace(/\s*\/\s*(?:refill|with\s*spool|filament\s*with\s*spool|\d+\s?(?:kg|g|m)\b).*$/i, '').trim();
+        return s;
+      };
+      // Prefer JSON-LD root Product.name when present
+      let bambuCleanName = '';
+      try {
+        const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+        let mm: RegExpExecArray | null;
+        while ((mm = ldRe.exec(pageContent)) !== null) {
+          try {
+            const parsed = JSON.parse(mm[1].trim());
+            const nodes = Array.isArray(parsed) ? parsed : [parsed];
+            for (const n of nodes) {
+              if (n?.['@type'] === 'Product' && typeof n?.name === 'string' && n.name.trim()) {
+                bambuCleanName = stripBambuVariantSuffix(n.name);
+                break;
               }
+            }
+            if (bambuCleanName) break;
+          } catch { /* skip */ }
+        }
+      } catch { /* skip */ }
+      if (!bambuCleanName) {
+        const og = pageContent.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+        if (og && og[1]) bambuCleanName = stripBambuVariantSuffix(og[1].replace(/\s*[\|\-–]\s*Bambu\s*Lab.*$/i, '').trim());
+      }
+      if (!bambuCleanName) {
+        try {
+          const slug = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
+          if (slug) bambuCleanName = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        } catch { /* skip */ }
+      }
+      if (bambuCleanName && bambuCleanName.length >= 3) {
+        productInfo.name = bambuCleanName;
+      } else if (productInfo.name) {
+        productInfo.name = stripBambuVariantSuffix(productInfo.name);
+      }
+
+      // 2) Description fallback from JSON-LD / og:description / meta when AI didn't fill it
+      if (!productInfo.description || productInfo.description.trim().length < 40) {
+        const cleanHtml = (s: string) => s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+          .replace(/\s+/g, ' ').trim();
+        let descCandidate = '';
+        try {
+          const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+          let mm: RegExpExecArray | null;
+          while ((mm = ldRe.exec(pageContent)) !== null) {
+            try {
+              const parsed = JSON.parse(mm[1].trim());
+              const nodes = Array.isArray(parsed) ? parsed : [parsed];
+              for (const n of nodes) {
+                if (typeof n?.description === 'string' && n.description.trim().length >= 40) {
+                  descCandidate = cleanHtml(n.description); break;
+                }
+              }
+              if (descCandidate) break;
+            } catch { /* skip */ }
+          }
+        } catch { /* skip */ }
+        if (!descCandidate) {
+          const og = pageContent.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
+                  || pageContent.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
+          if (og && og[1] && og[1].trim().length >= 40) descCandidate = cleanHtml(og[1]);
+        }
+        if (descCandidate) {
+          productInfo.description = descCandidate.slice(0, 2000);
+          console.log('[Extract:bambu] description filled from page meta, length=', productInfo.description.length);
+        }
+      }
+    }
+
             }
           } catch (e) {
             console.error('Firecrawl Bambu error:', e);
