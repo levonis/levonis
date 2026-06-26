@@ -1284,7 +1284,10 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
   const options: BambuExtractResult['options'] = [];
   const seenColorNames = new Set<string>();
   const seenOptionNames = new Set<string>();
+  const variantImages = buildBambuVariantImageMap(html);
+  const variantAxes = buildBambuVariantAxisMap(html);
   const variantHexes = buildBambuVariantHexMap(html);
+
 
 
 
