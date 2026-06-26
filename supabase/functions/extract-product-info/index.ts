@@ -1297,19 +1297,54 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
     byAxis.get(a)!.push(e);
   }
 
-  const knownAxes = [...byAxis.keys()].filter((a) => a !== '__unknown__');
-  const colorAxis = knownAxes.find((a) => /^color$/i.test(a)) || null;
+  const knownAxesOrig = [...byAxis.keys()].filter((a) => a !== '__unknown__');
   const sizePattern = /(?:mm|flow|kg|g\b|stainless|hardened|nozzle|size|capacity|left|right)/i;
+  const typePattern = /\b(refill|with\s*spool|filament\s*with\s*spool|spool|cardboard|reusable)\b/i;
+  const sizeValuePattern = /\b\d+\s?(kg|g|m|meters?|mm)\b/i;
+  const colorParenHex = /\(\d{4,6}\)/;
+
+  // Reclassify __unknown__ entries by name pattern (Bambu sometimes ships variants
+  // without a propertyKey — they'd otherwise collapse into one bogus pseudo-axis
+  // and pollute the colors list with sizes/types).
+  const unknownEntries = byAxis.get('__unknown__');
+  if (unknownEntries && unknownEntries.length > 0) {
+    byAxis.delete('__unknown__');
+    const inferredColor: LiEntry[] = [];
+    const inferredType: LiEntry[] = [];
+    const inferredSize: LiEntry[] = [];
+    const inferredOther: LiEntry[] = [];
+    for (const e of unknownEntries) {
+      const n = e.rawName;
+      const nLower = n.toLowerCase();
+      const isKnownColor = Object.keys(bambuBaseColorMap).some((k) => nLower.includes(k));
+      if (colorParenHex.test(n) || isKnownColor || !!e.swatchUrl) inferredColor.push(e);
+      else if (typePattern.test(n)) inferredType.push(e);
+      else if (sizeValuePattern.test(n)) inferredSize.push(e);
+      else inferredOther.push(e);
+    }
+    const pushAxis = (name: string, list: LiEntry[]) => {
+      if (!list.length) return;
+      const existing = byAxis.get(name) || [];
+      byAxis.set(name, existing.concat(list));
+      for (const e of list) e.axis = name;
+    };
+    pushAxis('Color', inferredColor);
+    pushAxis('Type', inferredType);
+    pushAxis('Size', inferredSize);
+    pushAxis('__option__', inferredOther);
+  }
+
+  const knownAxes = [...byAxis.keys()];
+  const colorAxis = knownAxes.find((a) => /^color$/i.test(a)) || null;
 
   // Map axis name -> "color" | "option"
   const axisRole = new Map<string, 'color' | 'option'>();
   if (colorAxis) {
-    // Filament-style page: keep current behavior (Color axis -> colors, others -> options).
+    // Filament-style page: Color axis -> colors, every other axis -> options.
     for (const a of knownAxes) axisRole.set(a, a === colorAxis ? 'color' : 'option');
-  } else if (knownAxes.length === 2) {
+  } else if (knownAxesOrig.length === 2) {
     // No real Color axis but two non-color axes (e.g. H2C Hotend: Type + Size).
-    // Bigger axis or the one whose values look like sizes/nozzles -> colors.
-    const [a, b] = knownAxes;
+    const [a, b] = knownAxesOrig;
     const aEntries = byAxis.get(a)!;
     const bEntries = byAxis.get(b)!;
     const aLooksSize = aEntries.some((e) => sizePattern.test(e.rawName));
