@@ -3001,9 +3001,11 @@ Return ONLY JSON:
     console.log('Before final cleanup:', productInfo.images.length, 'images');
     const NOISY_IMAGE_PATTERNS = /\/(?:icons?|logos?|banners?|recommendations?|recommended|social|share|sprite[s]?|favicon|placeholder|loader|spinner|gift|coupon|badge|trust)[\/\-]/i;
     const TINY_QUERY_HINT = /[?&](?:w|width)=([0-9]{1,3})\b/i;
+    const TRUST_BADGE_PATTERN = /(?:^|\/)(?:shipping|secure[_-]?payment|lifetime[_-]?support|14[-_]?day|14[-_]?days?[-_]?returns?|returns?|warranty[_-]?badge|payment[_-]?methods?|guarantee|free[_-]?shipping|money[_-]?back)\.(?:png|jpe?g|webp|svg)(?:$|[?#])/i;
     const isLikelyNoisyImage = (img: string): boolean => {
       try {
         if (NOISY_IMAGE_PATTERNS.test(img)) return true;
+        if (TRUST_BADGE_PATTERN.test(img)) return true;
         if (/[\-_/](?:icon|logo|sprite|favicon|thumb|thumbnail)[\-_./]/i.test(img)) return true;
         const m = img.match(TINY_QUERY_HINT);
         if (m && Number(m[1]) > 0 && Number(m[1]) < 200) return true;
