@@ -1284,8 +1284,9 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
   const options: BambuExtractResult['options'] = [];
   const seenColorNames = new Set<string>();
   const seenOptionNames = new Set<string>();
-  const variantImages = buildBambuVariantImageMap(html);
-  const variantAxes = buildBambuVariantAxisMap(html);
+  const variantHexes = buildBambuVariantHexMap(html);
+
+
 
   // First pass: collect every <li value="..."> and group by axis (RSC propertyKey).
   type LiEntry = { rawName: string; key: string; swatchUrl: string | null; axis: string | null };
