@@ -2949,6 +2949,8 @@ Return ONLY JSON:
       const currentAr = (productInfo.name_ar || '').trim();
       const arLooksBad = !currentAr
         || currentAr === 'منتج'
+        || /^https?:\/\//i.test(currentAr)
+        || /feishu|notion\.so|wiki\.|docs\.google/i.test(currentAr)
         || /\(\d{4,6}\)|refill|with\s*spool|\d+\s?(?:kg|g|m)\b|\s\/\s/i.test(currentAr);
       if (arLooksBad && productInfo.name) {
         productInfo.name_ar = productInfo.name;
