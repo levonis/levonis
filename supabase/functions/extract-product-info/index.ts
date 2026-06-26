@@ -2068,6 +2068,86 @@ Deno.serve(async (req) => {
     console.log('Structured prices:', structuredPrices);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
+    // Fast deterministic path for Bambu PLA Pure. Avoid AI entirely because this
+    // product page contains enough structured data and shared Bambu chunks can
+    // otherwise leak wrong printer dimensions into the result.
+    if (platform === 'bambulab' && isBambuPlaPureProduct(url, directProductName)) {
+      console.log('[Extract:bambu:pla-pure] using deterministic fast path');
+      const bambuResult = await parseBambuLabUnified(pageContent);
+      const extractedOriginalPrice = Math.max(
+        directPrice || 0,
+        structuredPrices.price || 0,
+        structuredPrices.originalPrice || 0,
+      );
+      const originalPriceUsd = Math.round(convertToUSD(extractedOriginalPrice, structuredPrices.currency || 'EUR') * 100) / 100;
+      let originalPriceInIqd = convertToIQD(extractedOriginalPrice, structuredPrices.currency || 'EUR');
+      originalPriceInIqd = roundPrice(originalPriceInIqd);
+      const productInfo: any = {
+        name: 'PLA Pure',
+        name_ar: 'خيط PLA Pure من Bambu Lab',
+        description: '',
+        description_ar: '',
+        price: null,
+        original_price: originalPriceInIqd > 0 ? originalPriceInIqd : null,
+        original_price_usd: originalPriceUsd > 0 ? originalPriceUsd : null,
+        currency: 'IQD',
+        brand: 'Bambu Lab',
+        images: [],
+        colors: bambuResult.colors.map(c => ({
+          name: c.name,
+          name_ar: c.name_ar,
+          hex_code: c.hex_code || getBambuKnownColorHex(c.name) || '#808080',
+          image_url: c.image_url,
+        })),
+        options: bambuResult.options.map(o => ({
+          name: o.name,
+          name_ar: o.name_ar,
+          image_url: o.image_url,
+          price_adjustment: 0,
+        })),
+        features: [],
+        points_reward: originalPriceInIqd > 0 ? Math.floor(originalPriceInIqd / 1000) : 0,
+        dimensions: null,
+        weight_kg: null,
+      };
+      applyBambuPlaPureDeterministicFields(productInfo, url);
+
+      const NOISY_IMAGE_PATTERNS = /\/(?:icons?|logos?|banners?|recommendations?|recommended|social|share|sprite[s]?|favicon|placeholder|loader|spinner|gift|coupon|badge|trust)[\/\-]/i;
+      const TRUST_BADGE_PATTERN = /(?:^|\/)(?:shipping|secure[_-]?payment|lifetime[_-]?support|14[-_]?day|14[-_]?days?[-_]?returns?|returns?|warranty[_-]?badge|payment[_-]?methods?|guarantee|free[_-]?shipping|money[_-]?back)\.(?:png|jpe?g|webp|svg)(?:$|[?#])/i;
+      const seenImages = new Set<string>();
+      for (const img of directImages) {
+        if (!img || /\.svg/i.test(img) || NOISY_IMAGE_PATTERNS.test(img) || TRUST_BADGE_PATTERN.test(img)) continue;
+        const base = getImageBaseUrl(img);
+        if (seenImages.has(base)) continue;
+        seenImages.add(base);
+        productInfo.images.push(img);
+      }
+      productInfo.images = productInfo.images.slice(0, 10);
+
+      const volumetricWeight = productInfo.dimensions
+        ? (productInfo.dimensions.length_cm * productInfo.dimensions.width_cm * productInfo.dimensions.height_cm) / 5000
+        : 0;
+      const chargeableWeight = Math.max(productInfo.weight_kg || 0, volumetricWeight);
+      productInfo.estimated_air_shipping_cost = chargeableWeight > 0
+        ? Math.ceil(Math.ceil(chargeableWeight * 1.2 * 6000) / 500) * 500
+        : null;
+
+      console.log('[Extract:bambu:pla-pure] fast path final', JSON.stringify({
+        colors: productInfo.colors.length,
+        options: productInfo.options.length,
+        images: productInfo.images.length,
+        dimensions: productInfo.dimensions,
+        weight_kg: productInfo.weight_kg,
+        desc_ar_len: productInfo.description_ar.length,
+        hexes: productInfo.colors.map((c: any) => `${c.name}:${c.hex_code}`).join('|'),
+      }));
+
+      return new Response(
+        JSON.stringify({ success: true, productInfo, platform, item_id: itemId, canonical_url: canonicalUrl }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // AI extraction with enhanced prompt
     console.log('Using AI for extraction...');
 
