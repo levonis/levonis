@@ -1297,19 +1297,54 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
     byAxis.get(a)!.push(e);
   }
 
-  const knownAxes = [...byAxis.keys()].filter((a) => a !== '__unknown__');
-  const colorAxis = knownAxes.find((a) => /^color$/i.test(a)) || null;
+  const knownAxesOrig = [...byAxis.keys()].filter((a) => a !== '__unknown__');
   const sizePattern = /(?:mm|flow|kg|g\b|stainless|hardened|nozzle|size|capacity|left|right)/i;
+  const typePattern = /\b(refill|with\s*spool|filament\s*with\s*spool|spool|cardboard|reusable)\b/i;
+  const sizeValuePattern = /\b\d+\s?(kg|g|m|meters?|mm)\b/i;
+  const colorParenHex = /\(\d{4,6}\)/;
+
+  // Reclassify __unknown__ entries by name pattern (Bambu sometimes ships variants
+  // without a propertyKey — they'd otherwise collapse into one bogus pseudo-axis
+  // and pollute the colors list with sizes/types).
+  const unknownEntries = byAxis.get('__unknown__');
+  if (unknownEntries && unknownEntries.length > 0) {
+    byAxis.delete('__unknown__');
+    const inferredColor: LiEntry[] = [];
+    const inferredType: LiEntry[] = [];
+    const inferredSize: LiEntry[] = [];
+    const inferredOther: LiEntry[] = [];
+    for (const e of unknownEntries) {
+      const n = e.rawName;
+      const nLower = n.toLowerCase();
+      const isKnownColor = Object.keys(bambuBaseColorMap).some((k) => nLower.includes(k));
+      if (colorParenHex.test(n) || isKnownColor || !!e.swatchUrl) inferredColor.push(e);
+      else if (typePattern.test(n)) inferredType.push(e);
+      else if (sizeValuePattern.test(n)) inferredSize.push(e);
+      else inferredOther.push(e);
+    }
+    const pushAxis = (name: string, list: LiEntry[]) => {
+      if (!list.length) return;
+      const existing = byAxis.get(name) || [];
+      byAxis.set(name, existing.concat(list));
+      for (const e of list) e.axis = name;
+    };
+    pushAxis('Color', inferredColor);
+    pushAxis('Type', inferredType);
+    pushAxis('Size', inferredSize);
+    pushAxis('__option__', inferredOther);
+  }
+
+  const knownAxes = [...byAxis.keys()];
+  const colorAxis = knownAxes.find((a) => /^color$/i.test(a)) || null;
 
   // Map axis name -> "color" | "option"
   const axisRole = new Map<string, 'color' | 'option'>();
   if (colorAxis) {
-    // Filament-style page: keep current behavior (Color axis -> colors, others -> options).
+    // Filament-style page: Color axis -> colors, every other axis -> options.
     for (const a of knownAxes) axisRole.set(a, a === colorAxis ? 'color' : 'option');
-  } else if (knownAxes.length === 2) {
+  } else if (knownAxesOrig.length === 2) {
     // No real Color axis but two non-color axes (e.g. H2C Hotend: Type + Size).
-    // Bigger axis or the one whose values look like sizes/nozzles -> colors.
-    const [a, b] = knownAxes;
+    const [a, b] = knownAxesOrig;
     const aEntries = byAxis.get(a)!;
     const bEntries = byAxis.get(b)!;
     const aLooksSize = aEntries.some((e) => sizePattern.test(e.rawName));
@@ -2819,7 +2854,83 @@ Return ONLY JSON:
           price_adjustment: 0,
         }));
       }
+
+      // ===== Bambu Lab name + description normalization (runs even when AI failed/402) =====
+      const stripBambuVariantSuffix = (raw: string): string => {
+        if (!raw) return raw;
+        let s = String(raw).trim();
+        const variantRe = /\s*[-/]\s*(?:[^/]*\(\d{4,6}\)|refill|with\s*spool|filament\s*with\s*spool|cardboard|\d+\s?(?:kg|g|m)\b).*$/i;
+        s = s.replace(variantRe, '').trim();
+        s = s.replace(/\s*\/\s*(?:refill|with\s*spool|filament\s*with\s*spool|\d+\s?(?:kg|g|m)\b).*$/i, '').trim();
+        return s;
+      };
+      let bambuCleanName = '';
+      try {
+        const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+        let mm: RegExpExecArray | null;
+        while ((mm = ldRe.exec(pageContent)) !== null) {
+          try {
+            const parsed = JSON.parse(mm[1].trim());
+            const nodes = Array.isArray(parsed) ? parsed : [parsed];
+            for (const n of nodes) {
+              if (n?.['@type'] === 'Product' && typeof n?.name === 'string' && n.name.trim()) {
+                bambuCleanName = stripBambuVariantSuffix(n.name);
+                break;
+              }
+            }
+            if (bambuCleanName) break;
+          } catch { /* skip */ }
+        }
+      } catch { /* skip */ }
+      if (!bambuCleanName) {
+        const og = pageContent.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+        if (og && og[1]) bambuCleanName = stripBambuVariantSuffix(og[1].replace(/\s*[\|\-–]\s*Bambu\s*Lab.*$/i, '').trim());
+      }
+      if (!bambuCleanName) {
+        try {
+          const slug = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
+          if (slug) bambuCleanName = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        } catch { /* skip */ }
+      }
+      if (bambuCleanName && bambuCleanName.length >= 3) {
+        productInfo.name = bambuCleanName;
+      } else if (productInfo.name) {
+        productInfo.name = stripBambuVariantSuffix(productInfo.name);
+      }
+
+      if (!productInfo.description || productInfo.description.trim().length < 40) {
+        const cleanHtml = (s: string) => s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+          .replace(/\s+/g, ' ').trim();
+        let descCandidate = '';
+        try {
+          const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+          let mm: RegExpExecArray | null;
+          while ((mm = ldRe.exec(pageContent)) !== null) {
+            try {
+              const parsed = JSON.parse(mm[1].trim());
+              const nodes = Array.isArray(parsed) ? parsed : [parsed];
+              for (const n of nodes) {
+                if (typeof n?.description === 'string' && n.description.trim().length >= 40) {
+                  descCandidate = cleanHtml(n.description); break;
+                }
+              }
+              if (descCandidate) break;
+            } catch { /* skip */ }
+          }
+        } catch { /* skip */ }
+        if (!descCandidate) {
+          const og = pageContent.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
+                  || pageContent.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
+          if (og && og[1] && og[1].trim().length >= 40) descCandidate = cleanHtml(og[1]);
+        }
+        if (descCandidate) {
+          productInfo.description = descCandidate.slice(0, 2000);
+          console.log('[Extract:bambu] description filled from page meta, length=', productInfo.description.length);
+        }
+      }
     }
+
 
     // ===== Shopify structured merge: ONLY replace each axis when Shopify provides
     // a richer set than what AI / direct SKU extraction already produced. Otherwise
@@ -2835,7 +2946,7 @@ Return ONLY JSON:
         }
       } else if (shopifyExtracted.colors.length > 0 && beforeColors > 0) {
         // Merge variant images from Shopify into matching existing colors (by name).
-        const byName = new Map(productInfo.colors.map((c: any, i: number) => [String(c.name || '').toLowerCase().trim(), i]));
+        const byName = new Map<string, number>(productInfo.colors.map((c: any, i: number) => [String(c.name || '').toLowerCase().trim(), i] as [string, number]));
         for (const c of shopifyExtracted.colors) {
           const idx = byName.get(String(c.name || '').toLowerCase().trim());
           if (idx !== undefined && !productInfo.colors[idx].image_url && c.image_url) {
@@ -2890,9 +3001,11 @@ Return ONLY JSON:
     console.log('Before final cleanup:', productInfo.images.length, 'images');
     const NOISY_IMAGE_PATTERNS = /\/(?:icons?|logos?|banners?|recommendations?|recommended|social|share|sprite[s]?|favicon|placeholder|loader|spinner|gift|coupon|badge|trust)[\/\-]/i;
     const TINY_QUERY_HINT = /[?&](?:w|width)=([0-9]{1,3})\b/i;
+    const TRUST_BADGE_PATTERN = /(?:^|\/)(?:shipping|secure[_-]?payment|lifetime[_-]?support|14[-_]?day|14[-_]?days?[-_]?returns?|returns?|warranty[_-]?badge|payment[_-]?methods?|guarantee|free[_-]?shipping|money[_-]?back)\.(?:png|jpe?g|webp|svg)(?:$|[?#])/i;
     const isLikelyNoisyImage = (img: string): boolean => {
       try {
         if (NOISY_IMAGE_PATTERNS.test(img)) return true;
+        if (TRUST_BADGE_PATTERN.test(img)) return true;
         if (/[\-_/](?:icon|logo|sprite|favicon|thumb|thumbnail)[\-_./]/i.test(img)) return true;
         const m = img.match(TINY_QUERY_HINT);
         if (m && Number(m[1]) > 0 && Number(m[1]) < 200) return true;
