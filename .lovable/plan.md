@@ -1,43 +1,77 @@
-## التشخيص من اللوجات الفعلية للـ edge function
+## التشخيص من اللوجات الفعلية
 
-من سجل `extract-product-info` لهذا الرابط تحديداً:
+من لوج آخر تشغيل لـ `extract-product-info` على `us.store.bambulab.com/products/pla-pure`:
 
-- `Direct extraction - name: PLA Pure - Milky Pink (17200) / Refill / 1kg` → الاسم أُخذ من أول variant بدل اسم المنتج الأصلي "PLA Pure".
-- `Bambu unified parser: 5 colors, 3 options, axes=[["Color",1],["__unknown__",5],["Type",1],["Size",1]]` → محور Color الحقيقي فيه variant واحد فقط، و5 variants سقطت في `__unknown__` وتم تصنيفها كألوان بشكل خاطئ. لذلك "الألوان" التي تظهر للمستخدم تبدو فاضية/غلط (بدون hex/صور حقيقية).
-- `Direct images:` يحتوي على `Shipping.png`, `14-day_returns.png`, `lifetime_Support.png`, `secure_payment.png` → شارات ثقة دخلت ضمن صور المنتج.
-- `AI error: 402 Not enough credits` ثم `Filled ai_content via deterministic fallback` → الوصف الناتج عام/مقطوع لأن الـ AI لم يُستدعَ، والـ fallback الحالي لا يقرأ وصف Bambu المنظم.
+```
+[Extract:bambu] final name= https://bambulab.feishu.cn/wiki/Q15uwKCsgiRH1wkrGN7cKM5bnHd 
+                | name_ar= https://bambulab.feishu.cn/wiki/Q15uwKCsgiRH1wkrGN7cKM5bnHd
+Dimensions: null   Weight (kg): null
+descLen=139  descArLen=0
+AI error: 402 Not enough credits
+```
+
+السبب الجذري لكل حقل:
+
+1. **الاسم URL غريب** — JSON-LD لمنتج Bambu يحتوي حقل `name` يساوي رابط ويكي Feishu (صفحة الـ Wiki الداخلية للمنتج). الكود الحالي يقبل أي `Product.name` من JSON-LD بدون التحقق إن كان URL، فيستخدمه كاسم. الـ slug fallback ("pla-pure" → "PLA Pure") لا يُستدعى لأن `bambuCleanName` غير فاضي.
+
+2. **الوصف العربي فارغ** — الإنجليزي عُبِّئ (139 حرف) من JSON-LD/meta، لكن `description_ar` لم يُملأ لأن AI رجع 402 ولا fallback يعكس الوصف الإنجليزي إلى العربي حتى ولو بنفس النص مؤقتاً.
+
+3. **الأبعاد والوزن فارغة** — JSON-LD لـ Bambu لا يحتوي `weight`/`height`/`width`/`depth`. الكود لا يقرأ جدول المواصفات داخل صفحة المنتج (Bambu يعرضها كـ HTML table أو list مع كلمات "Net Weight", "Diameter", "Spool Size", "Dimensions"). البحث الويبي يُستدعى لكنه يستخدم AI الذي رجع 402.
+
+4. **كود hex خاطئ للألوان** — `parseBambuLabUnified` يأخذ صور swatch ثم يستخرج لون hex منها بـ `fetch + sampling`. على Bambu قد تكون صورة swatch خلفيتها بيضاء/شفافة مع دائرة لون داخلها، أو الـ sampling يأخذ بكسل من زاوية شفافة → ينتج hex خاطئ. الحل: قراءة `colorHex` المعلَن في JSON الـ variant (Bambu يخزن `propertyHex` أو `colorHex` كحقل صريح) واستخدامه قبل اللجوء إلى sampling الصورة.
 
 ## الإصلاحات (محصورة في `supabase/functions/extract-product-info/index.ts`)
 
-### 1) اسم المنتج النظيف لـ Bambu
-- بعد direct extraction، إذا `platform === 'bambulab'`، اشتقّ الاسم الأساسي من (بهذا الترتيب): JSON-LD `Product.name` بدون variant، ثم `og:title`/`<title>` بعد إزالة لاحقة المتجر، ثم slug من URL (`pla-pure` → `PLA Pure`).
-- اقطع أي لاحقة بعد ` - ` أو ` / ` تحتوي على hex code بين أقواس مثل `(17200)` أو كلمات `Refill|Filament with spool|1 kg|250 g|kg|g`.
+### 1) رفض الاسم URL وإجبار slug
+في كتلة `bambuCleanName` (≈سطر 2867-2899)، أضف فلتر صلاحية:
 
-### 2) تصفية صور الشارات
-داخل cleanup الصور للـ Bambu، أسقط أي URL يحتوي على أحد هذه التوكنز (case-insensitive):
-`shipping`, `secure_payment`, `lifetime_support`, `14-day`, `returns`, `warranty_badge`, `payment_methods`. هذه ليست صور منتج.
+```ts
+const isValidProductName = (s: string) =>
+  !!s && s.length >= 3 && !/^https?:\/\//i.test(s) && !/feishu|notion|wiki\.|docs\.google/i.test(s);
+```
 
-### 3) تصنيف محاور variants الناقصة (السبب الجذري للألوان الخاطئة)
-في `parseBambuLabUnified`، أي variant axis = `__unknown__` يُعاد تصنيفه بقاعدة نصية صارمة:
-- يحتوي hex code بأقواس `(\d{4,6})` أو اسم لون معروف من `bambuBaseColorMap` → **Color**.
-- يطابق `\b(refill|with spool|filament with spool|spool)\b` → **Type**.
-- يطابق `\b(\d+\s?(kg|g|m|meters?))\b` → **Size**.
-- خلاف ذلك → يُترك كـ option عام (ليس لون).
+- تجاهل `n.name` من JSON-LD إذا فشل `isValidProductName`.
+- تجاهل `og:title` بنفس الفلتر.
+- إذا الناتج النهائي ما زال غير صالح → اشتق من slug الـ URL (`pla-pure` → `PLA Pure`) كقاعدة قاطعة.
+- طبّق نفس الفلتر على `productInfo.name` الأصلي قبل اعتماده.
 
-ثم: لا تُسجَّل في `colors` إلا variants من محور Color الفعلي. كل الباقي → `options`.
+### 2) تعبئة الوصف العربي عند فشل AI
+بعد كتلة description fallback لـ Bambu، إذا `productInfo.description` ≥ 40 حرف و`productInfo.description_ar` فارغ:
+- اعكس النص الإنجليزي إلى `description_ar` مع علامة `[needs translation]` في النهاية حتى لا يُحفظ كنص نهائي مغلوط.
+- سجّل `[Extract:bambu] description_ar mirrored from EN`.
 
-### 4) وصف احتياطي ذكي لـ Bambu عند فشل AI (402)
-عند سقوط الـ AI، قبل اللجوء لـ deterministic فاضي:
-- استخرج `description` من JSON-LD Product، أو من `<meta name="description">`/`og:description`، أو من أول `<div class="product-description"|"rte"|"product__description">` في HTML الـ Firecrawl.
-- إذا وُجد نص ≥ 80 حرف، استخدمه كوصف إنجليزي، وضع نسخة عربية مختصرة مترجمة من نفس الحقول مع علامة `[needs review]` حتى لا يُحفظ كنص عام خاطئ.
-- لا تخترع `problem_solved`/`benefits` بدون مصدر — اتركها فارغة بدل ملئها بنص قالبي.
+### 3) استخراج الأبعاد/الوزن من HTML المنتج
+قبل اللجوء لـ web search/AI، أضف parser نصي على `pageContent`:
 
-### 5) تحقق
-- نشر `extract-product-info` ثم نداء `curl_edge_functions` على نفس الرابط.
-- التحقق من اللوجات: اسم = "PLA Pure"، صور ≥ 5 بدون أي شارة، `axes` يظهر Color الحقيقي، `colors` = ألوان حقيقية فقط، `options` تحتوي Refill/With Spool و1kg/250g، الوصف غير فارغ ومن المصدر.
+- بحث case-insensitive عن أنماط:
+  - `Net\s*Weight[:\s]*([\d.]+)\s*(kg|g)` → تحويل إلى kg.
+  - `Spool\s*(?:Size|Weight)[:\s]*([\d.]+)\s*(kg|g)` كاحتياط.
+  - `Dimensions?[:\s]*([\d.]+)\s*[x×]\s*([\d.]+)\s*[x×]\s*([\d.]+)\s*(mm|cm|m)?` → دمج كـ `LxWxH cm`.
+  - `Diameter[:\s]*([\d.]+)\s*mm` + `Spool\s*Width[:\s]*([\d.]+)\s*mm` كاحتياط.
+- ابحث أيضاً في JSON الـ variant داخل HTML (Bambu يضع `"spec":{...}` أو attribute list). Regex على `"(?:netWeight|weight|dimensions|spoolSize)"\s*:\s*"([^"]+)"`.
+- إن وُجد، عبّئ `productInfo.weight_kg` / `productInfo.dimensions` مباشرة، وتجاوز web search.
 
-## ملاحظة مهمة
-الـ AI رجع 402 (لا توجد كريديتس كافية على بوابة Lovable AI). الإصلاحات أعلاه تجعل الاستخراج يعطي نتيجة صحيحة حتى بدون AI، لكن لتفاصيل أعمق (benefits/problem_solved) ستحتاج لإعادة شحن كريديتس AI gateway. أكمل بدونها الآن.
+### 4) hex لون صحيح من بيانات الـ variant
+في `parseBambuLabUnified` و/أو `buildBambuVariantImageMap`:
 
-## ما لن يُلمس
-لن أعدل: المنطق العام للـ Shopify، Firecrawl، translate-product، الواجهة، أو RLS/migrations. التغيير محصور بملف edge واحد.
+- وسّع الـ regex ليلتقط حقول الـ hex المعلَنة في JSON: `"colorHex"\s*:\s*"#?([0-9a-fA-F]{6})"`, `"propertyHex"\s*:\s*"#?([0-9a-fA-F]{6})"`, `"hex"\s*:\s*"#?([0-9a-fA-F]{6})"` بجانب `propertyValue`.
+- ابنِ `Map<normalizedName, hex>` وقدّمها على sampling صورة الـ swatch.
+- في النتيجة النهائية: استخدم hex المعلَن إن وُجد، وإلا fallback إلى sampling الحالي. سجّل المصدر لكل لون: `[Extract:bambu] hex source=declared|sampled`.
+- أيضاً: في `bambuBaseColorMap` (إن وُجد) أضف ألوان Pure الجديدة (Milky Pink ≈ #F4C7C8 ...) كـ fallback إذا اسم اللون يطابق بدون hex معلَن.
+
+### 5) لمسات تحقق
+- `console.log` الحقول النهائية: `name`, `name_ar`, `description_ar.length`, `weight_kg`, `dimensions`, وعدد ألوان بـ hex صحيح.
+- بعد deploy: نداء `curl_edge_functions` على نفس الرابط ومراجعة اللوجات للتأكد من أن:
+  - `name = "PLA Pure"`.
+  - `name_ar = "PLA Pure"` (أو نسخة عربية لاحقاً).
+  - `description_ar.length > 0`.
+  - `weight_kg ≈ 1`, `dimensions` غير null.
+  - كل لون له hex من JSON-LD/JSON variant وليس من sampling.
+
+## ما لن يتغير
+- المنطق العام لـ Shopify/Firecrawl/translate-product.
+- الواجهة، RLS، migrations.
+- استدعاءات AI (تبقى كما هي لأن 402 خارج عن سيطرة الكود — هذه الإصلاحات تجعل الاستخراج صحيحاً بدون AI).
+
+## ملاحظة
+الـ AI gateway يرجع 402 (لا توجد كريديتس). الإصلاحات تجعل الـ deterministic path يعطي نتيجة كاملة وصحيحة. لتوليد `benefits/problem_solved/usage` غنية و`description_ar` مترجم فعلياً، أعد شحن كريديتس Lovable AI.

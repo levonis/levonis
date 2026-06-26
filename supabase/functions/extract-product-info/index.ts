@@ -1225,6 +1225,33 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
   return map;
 }
 
+// Map normalized variant name -> declared hex code from Bambu's RSC/JSON payload.
+// Used to avoid sampling swatch PNGs (which can produce wrong hex on transparent
+// or padded swatches). Hex codes here are authoritative.
+export function buildBambuVariantHexMap(html: string): Map<string, string> {
+  const map = new Map<string, string>();
+  const HEX_KEYS = '(?:colorHex|propertyHex|hex|colorCode|hexCode)';
+  const patterns = [
+    new RegExp(`"propertyValue"\\s*:\\s*"([^"]+)"[^{}]{0,800}?"${HEX_KEYS}"\\s*:\\s*"#?([0-9a-fA-F]{6})"`, 'gi'),
+    new RegExp(`"${HEX_KEYS}"\\s*:\\s*"#?([0-9a-fA-F]{6})"[^{}]{0,800}?"propertyValue"\\s*:\\s*"([^"]+)"`, 'gi'),
+    new RegExp(`\\\\"propertyValue\\\\"\\s*:\\s*\\\\"([^\\\\"]+)\\\\"[^{}]{0,800}?\\\\"${HEX_KEYS}\\\\"\\s*:\\s*\\\\"#?([0-9a-fA-F]{6})\\\\"`, 'gi'),
+    new RegExp(`\\\\"${HEX_KEYS}\\\\"\\s*:\\s*\\\\"#?([0-9a-fA-F]{6})\\\\"[^{}]{0,800}?\\\\"propertyValue\\\\"\\s*:\\s*\\\\"([^\\\\"]+)\\\\"`, 'gi'),
+  ];
+  const nameFirst = [true, false, true, false];
+  for (let p = 0; p < patterns.length; p++) {
+    let mm: RegExpExecArray | null;
+    while ((mm = patterns[p].exec(html)) !== null) {
+      const rawName = nameFirst[p] ? mm[1] : mm[2];
+      const rawHex = nameFirst[p] ? mm[2] : mm[1];
+      const key = normalizeVariantName(rawName);
+      if (!key) continue;
+      const hex = '#' + rawHex.toLowerCase();
+      if (!map.has(key)) map.set(key, hex);
+    }
+  }
+  return map;
+}
+
 // Build a map of normalized propertyValue -> propertyKey (axis name) by scanning
 // the RSC payload. Lets us tell which axis ("Type", "Size", "Color", ...) each
 // <li value="..."> belongs to so we can group multi-axis Bambu products correctly.
@@ -1259,6 +1286,10 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
   const seenOptionNames = new Set<string>();
   const variantImages = buildBambuVariantImageMap(html);
   const variantAxes = buildBambuVariantAxisMap(html);
+  const variantHexes = buildBambuVariantHexMap(html);
+
+
+
 
   // First pass: collect every <li value="..."> and group by axis (RSC propertyKey).
   type LiEntry = { rawName: string; key: string; swatchUrl: string | null; axis: string | null };
@@ -1372,14 +1403,16 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
       // Pick the right Arabic translator: real color names use the color map;
       // size-style values (no swatch) use the option map.
       const isSwatchColor = !!e.swatchUrl && (!e.axis || /^color$/i.test(e.axis));
+      // Prefer hex declared in the page payload over swatch sampling (more accurate).
+      const declaredHex = variantHexes.get(e.key) || null;
       colors.push({
         name: e.rawName,
         name_ar: isSwatchColor ? translateBambuColorName(e.rawName) : translateBambuOption(e.rawName),
-        hex_code: null,
+        hex_code: declaredHex,
         image_url: finalImg,
       });
-      // Only sample hex when the swatch really represents a color value.
-      if (isSwatchColor && e.swatchUrl && e.swatchUrl.startsWith('http')) {
+      // Only sample hex when no declared hex AND swatch really represents a color value.
+      if (!declaredHex && isSwatchColor && e.swatchUrl && e.swatchUrl.startsWith('http')) {
         colorImageJobs.push({ idx, url: e.swatchUrl });
       }
     } else {
@@ -2864,6 +2897,14 @@ Return ONLY JSON:
         s = s.replace(/\s*\/\s*(?:refill|with\s*spool|filament\s*with\s*spool|\d+\s?(?:kg|g|m)\b).*$/i, '').trim();
         return s;
       };
+      const isValidProductName = (s: string | undefined | null): boolean => {
+        if (!s) return false;
+        const t = String(s).trim();
+        if (t.length < 3) return false;
+        if (/^https?:\/\//i.test(t)) return false;
+        if (/feishu|notion\.so|wiki\.|docs\.google|airtable|sharepoint/i.test(t)) return false;
+        return true;
+      };
       let bambuCleanName = '';
       try {
         const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -2874,8 +2915,8 @@ Return ONLY JSON:
             const nodes = Array.isArray(parsed) ? parsed : [parsed];
             for (const n of nodes) {
               if (n?.['@type'] === 'Product' && typeof n?.name === 'string' && n.name.trim()) {
-                bambuCleanName = stripBambuVariantSuffix(n.name);
-                break;
+                const candidate = stripBambuVariantSuffix(n.name);
+                if (isValidProductName(candidate)) { bambuCleanName = candidate; break; }
               }
             }
             if (bambuCleanName) break;
@@ -2884,23 +2925,32 @@ Return ONLY JSON:
       } catch { /* skip */ }
       if (!bambuCleanName) {
         const og = pageContent.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
-        if (og && og[1]) bambuCleanName = stripBambuVariantSuffix(og[1].replace(/\s*[\|\-–]\s*Bambu\s*Lab.*$/i, '').trim());
+        if (og && og[1]) {
+          const candidate = stripBambuVariantSuffix(og[1].replace(/\s*[\|\-–]\s*Bambu\s*Lab.*$/i, '').trim());
+          if (isValidProductName(candidate)) bambuCleanName = candidate;
+        }
       }
-      if (!bambuCleanName) {
-        try {
-          const slug = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
-          if (slug) bambuCleanName = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-        } catch { /* skip */ }
-      }
-      if (bambuCleanName && bambuCleanName.length >= 3) {
+      // Slug fallback — always derive and use as last resort.
+      let slugName = '';
+      try {
+        const slug = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
+        if (slug) slugName = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      } catch { /* skip */ }
+      if (!bambuCleanName && slugName) bambuCleanName = slugName;
+      if (isValidProductName(bambuCleanName)) {
         productInfo.name = bambuCleanName;
-      } else if (productInfo.name) {
+      } else if (isValidProductName(productInfo.name)) {
         productInfo.name = stripBambuVariantSuffix(productInfo.name);
+      } else if (slugName) {
+        productInfo.name = slugName;
       }
+
       // Mirror cleaned English name to name_ar when AI failed / left a variant-suffixed value
       const currentAr = (productInfo.name_ar || '').trim();
       const arLooksBad = !currentAr
         || currentAr === 'منتج'
+        || /^https?:\/\//i.test(currentAr)
+        || /feishu|notion\.so|wiki\.|docs\.google/i.test(currentAr)
         || /\(\d{4,6}\)|refill|with\s*spool|\d+\s?(?:kg|g|m)\b|\s\/\s/i.test(currentAr);
       if (arLooksBad && productInfo.name) {
         productInfo.name_ar = productInfo.name;
@@ -2966,7 +3016,53 @@ Return ONLY JSON:
           console.log('[Extract:bambu] description filled from page meta, length=', productInfo.description.length);
         }
       }
+
+      // HTML-level weight/dimensions fallback (Bambu spec tables, no JSON-LD).
+      if (!productInfo.weight_kg) {
+        // 1) Spec JSON keys
+        const wJson = pageContent.match(/"(?:netWeight|net_weight|weight|spoolWeight|spool_weight)"\s*:\s*"?([\d.]+)\s*(kg|g)?"?/i);
+        if (wJson) {
+          const num = parseFloat(wJson[1]);
+          const unit = (wJson[2] || 'kg').toLowerCase();
+          const kg = unit === 'g' ? num / 1000 : num;
+          if (!isNaN(kg) && kg > 0 && kg < 50) productInfo.weight_kg = kg;
+        }
+        // 2) Plain text "Net Weight: 1 kg"
+        if (!productInfo.weight_kg) {
+          const wTxt = pageContent.match(/Net\s*Weight[^<\d]{0,20}([\d.]+)\s*(kg|g)\b/i)
+                    || pageContent.match(/Spool\s*(?:Size|Weight)[^<\d]{0,20}([\d.]+)\s*(kg|g)\b/i)
+                    || pageContent.match(/Filament\s*Weight[^<\d]{0,20}([\d.]+)\s*(kg|g)\b/i);
+          if (wTxt) {
+            const num = parseFloat(wTxt[1]);
+            const kg = wTxt[2].toLowerCase() === 'g' ? num / 1000 : num;
+            if (!isNaN(kg) && kg > 0 && kg < 50) productInfo.weight_kg = kg;
+          }
+        }
+      }
+      if (!productInfo.dimensions) {
+        const dim = pageContent.match(/Dimensions?[^<\d]{0,20}([\d.]+)\s*[x×]\s*([\d.]+)\s*[x×]\s*([\d.]+)\s*(mm|cm|m)?/i)
+                 || pageContent.match(/Package\s*Size[^<\d]{0,20}([\d.]+)\s*[x×]\s*([\d.]+)\s*[x×]\s*([\d.]+)\s*(mm|cm|m)?/i);
+        if (dim) {
+          const unit = (dim[4] || 'cm').toLowerCase();
+          const toCm = (v: string) => {
+            const n = parseFloat(v);
+            if (unit === 'mm') return (n / 10).toFixed(1);
+            if (unit === 'm') return (n * 100).toFixed(1);
+            return String(n);
+          };
+          productInfo.dimensions = `${toCm(dim[1])} x ${toCm(dim[2])} x ${toCm(dim[3])} cm`;
+        }
+      }
+
+      // Mirror English description to Arabic when AI failed (better than empty).
+      if (!productInfo.description_ar && productInfo.description && productInfo.description.length >= 40) {
+        productInfo.description_ar = productInfo.description;
+        console.log('[Extract:bambu] description_ar mirrored from EN, length=', productInfo.description_ar.length);
+      }
+
+      console.log('[Extract:bambu] post-fix weight_kg=', productInfo.weight_kg, 'dimensions=', productInfo.dimensions, 'desc_ar_len=', (productInfo.description_ar || '').length);
     }
+
 
 
     // ===== Shopify structured merge: ONLY replace each axis when Shopify provides
