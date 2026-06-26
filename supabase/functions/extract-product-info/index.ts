@@ -1495,8 +1495,6 @@ function applyBambuPlaPureDeterministicFields(productInfo: any, url: string) {
     if (!existing.has(f.toLowerCase())) productInfo.features.push(f);
   }
 
-  const pureHexByName = new Map<string, string>();
-  for (const [name, hex] of Object.entries(bambuKnownColorHexMap)) pureHexByName.set(normalizeVariantName(name), hex);
   if (Array.isArray(productInfo.colors)) {
     productInfo.colors = productInfo.colors.map((c: any) => {
       const known = getBambuKnownColorHex(c?.name || '');
