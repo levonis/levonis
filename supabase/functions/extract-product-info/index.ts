@@ -2897,6 +2897,14 @@ Return ONLY JSON:
         s = s.replace(/\s*\/\s*(?:refill|with\s*spool|filament\s*with\s*spool|\d+\s?(?:kg|g|m)\b).*$/i, '').trim();
         return s;
       };
+      const isValidProductName = (s: string | undefined | null): boolean => {
+        if (!s) return false;
+        const t = String(s).trim();
+        if (t.length < 3) return false;
+        if (/^https?:\/\//i.test(t)) return false;
+        if (/feishu|notion\.so|wiki\.|docs\.google|airtable|sharepoint/i.test(t)) return false;
+        return true;
+      };
       let bambuCleanName = '';
       try {
         const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -2907,8 +2915,8 @@ Return ONLY JSON:
             const nodes = Array.isArray(parsed) ? parsed : [parsed];
             for (const n of nodes) {
               if (n?.['@type'] === 'Product' && typeof n?.name === 'string' && n.name.trim()) {
-                bambuCleanName = stripBambuVariantSuffix(n.name);
-                break;
+                const candidate = stripBambuVariantSuffix(n.name);
+                if (isValidProductName(candidate)) { bambuCleanName = candidate; break; }
               }
             }
             if (bambuCleanName) break;
@@ -2917,19 +2925,26 @@ Return ONLY JSON:
       } catch { /* skip */ }
       if (!bambuCleanName) {
         const og = pageContent.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
-        if (og && og[1]) bambuCleanName = stripBambuVariantSuffix(og[1].replace(/\s*[\|\-–]\s*Bambu\s*Lab.*$/i, '').trim());
+        if (og && og[1]) {
+          const candidate = stripBambuVariantSuffix(og[1].replace(/\s*[\|\-–]\s*Bambu\s*Lab.*$/i, '').trim());
+          if (isValidProductName(candidate)) bambuCleanName = candidate;
+        }
       }
-      if (!bambuCleanName) {
-        try {
-          const slug = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
-          if (slug) bambuCleanName = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-        } catch { /* skip */ }
-      }
-      if (bambuCleanName && bambuCleanName.length >= 3) {
+      // Slug fallback — always derive and use as last resort.
+      let slugName = '';
+      try {
+        const slug = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
+        if (slug) slugName = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      } catch { /* skip */ }
+      if (!bambuCleanName && slugName) bambuCleanName = slugName;
+      if (isValidProductName(bambuCleanName)) {
         productInfo.name = bambuCleanName;
-      } else if (productInfo.name) {
+      } else if (isValidProductName(productInfo.name)) {
         productInfo.name = stripBambuVariantSuffix(productInfo.name);
+      } else if (slugName) {
+        productInfo.name = slugName;
       }
+
       // Mirror cleaned English name to name_ar when AI failed / left a variant-suffixed value
       const currentAr = (productInfo.name_ar || '').trim();
       const arLooksBad = !currentAr
