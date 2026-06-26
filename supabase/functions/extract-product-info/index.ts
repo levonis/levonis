@@ -1403,14 +1403,16 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
       // Pick the right Arabic translator: real color names use the color map;
       // size-style values (no swatch) use the option map.
       const isSwatchColor = !!e.swatchUrl && (!e.axis || /^color$/i.test(e.axis));
+      // Prefer hex declared in the page payload over swatch sampling (more accurate).
+      const declaredHex = variantHexes.get(e.key) || null;
       colors.push({
         name: e.rawName,
         name_ar: isSwatchColor ? translateBambuColorName(e.rawName) : translateBambuOption(e.rawName),
-        hex_code: null,
+        hex_code: declaredHex,
         image_url: finalImg,
       });
-      // Only sample hex when the swatch really represents a color value.
-      if (isSwatchColor && e.swatchUrl && e.swatchUrl.startsWith('http')) {
+      // Only sample hex when no declared hex AND swatch really represents a color value.
+      if (!declaredHex && isSwatchColor && e.swatchUrl && e.swatchUrl.startsWith('http')) {
         colorImageJobs.push({ idx, url: e.swatchUrl });
       }
     } else {
