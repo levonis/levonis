@@ -2897,6 +2897,43 @@ Return ONLY JSON:
       } else if (productInfo.name) {
         productInfo.name = stripBambuVariantSuffix(productInfo.name);
       }
+      // Mirror cleaned English name to name_ar when AI failed / left a variant-suffixed value
+      const currentAr = (productInfo.name_ar || '').trim();
+      const arLooksBad = !currentAr
+        || currentAr === 'منتج'
+        || /\(\d{4,6}\)|refill|with\s*spool|\d+\s?(?:kg|g|m)\b|\s\/\s/i.test(currentAr);
+      if (arLooksBad && productInfo.name) {
+        productInfo.name_ar = productInfo.name;
+      } else if (currentAr) {
+        productInfo.name_ar = stripBambuVariantSuffix(currentAr);
+      }
+      console.log('[Extract:bambu] final name=', productInfo.name, '| name_ar=', productInfo.name_ar);
+
+      // Dimensions/weight from JSON-LD (Bambu often exposes these)
+      try {
+        const ldRe2 = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+        let mm2: RegExpExecArray | null;
+        while ((mm2 = ldRe2.exec(pageContent)) !== null) {
+          try {
+            const parsed = JSON.parse(mm2[1].trim());
+            const nodes = Array.isArray(parsed) ? parsed : [parsed];
+            for (const n of nodes) {
+              if (n?.['@type'] !== 'Product') continue;
+              const w = n?.weight?.value ?? n?.weight;
+              if (w && !productInfo.weight_kg) {
+                const num = parseFloat(String(w));
+                if (!isNaN(num) && num > 0 && num < 50) productInfo.weight_kg = num;
+              }
+              const h = n?.height?.value ?? n?.height;
+              const wd = n?.width?.value ?? n?.width;
+              const d = n?.depth?.value ?? n?.depth;
+              if ((h || wd || d) && !productInfo.dimensions) {
+                productInfo.dimensions = [wd, d, h].filter(Boolean).join(' x ');
+              }
+            }
+          } catch { /* skip */ }
+        }
+      } catch { /* skip */ }
 
       if (!productInfo.description || productInfo.description.trim().length < 40) {
         const cleanHtml = (s: string) => s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ')
