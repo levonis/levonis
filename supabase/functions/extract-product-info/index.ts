@@ -920,6 +920,7 @@ const bambuBaseColorMap: Record<string, string> = {
   // Expanded coverage
   'turquoise': 'فيروزي', 'navy': 'كحلي', 'maroon': 'عنابي',
   'indigo': 'نيلي', 'lavender': 'لافندر', 'peach': 'خوخي',
+  'apricot': 'مشمشي',
   'coral': 'مرجاني', 'salmon': 'سلموني', 'lemon': 'ليموني',
   'lime': 'ليموني', 'forest': 'أخضر غابات', 'emerald': 'زمردي',
   'sapphire': 'ياقوتي', 'ruby': 'ياقوتي أحمر',
@@ -929,6 +930,24 @@ const bambuBaseColorMap: Record<string, string> = {
   'galaxy': 'مجرة', 'marble': 'رخامي',
   'sparkle': 'لامع', 'glow': 'مضيء', 'glitter': 'برّاق',
 };
+
+const bambuKnownColorHexMap: Record<string, string> = {
+  // Bambu PLA Pure official swatches. These are read from the solid swatch image
+  // center color and used only when the page payload has no declared hex field.
+  'milky pink': '#f7cdd7',
+  'baby blue': '#a5dae8',
+  'apricot': '#ffb672',
+  'pure white': '#ffffff',
+  'absolute black': '#000000',
+};
+
+function getBambuKnownColorHex(name: string): string | null {
+  const key = normalizeVariantName(name).replace(/\([^)]*\)/g, '').trim();
+  for (const [known, hex] of Object.entries(bambuKnownColorHexMap)) {
+    if (key === known || key.includes(known)) return hex;
+  }
+  return null;
+}
 
 const bambuQualifierMap: Array<[string, string]> = [
   // Effects / finishes (match BEFORE base colors so e.g. "Matte Black" → "أسود مطفي" wins)
@@ -1404,15 +1423,20 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
       // size-style values (no swatch) use the option map.
       const isSwatchColor = !!e.swatchUrl && (!e.axis || /^color$/i.test(e.axis));
       // Prefer hex declared in the page payload over swatch sampling (more accurate).
+      // If Bambu omits declared hexes, use known official swatch values for named colors.
       const declaredHex = variantHexes.get(e.key) || null;
+      const knownHex = !declaredHex ? getBambuKnownColorHex(e.rawName) : null;
       colors.push({
         name: e.rawName,
         name_ar: isSwatchColor ? translateBambuColorName(e.rawName) : translateBambuOption(e.rawName),
-        hex_code: declaredHex,
+        hex_code: declaredHex || knownHex,
         image_url: finalImg,
       });
-      // Only sample hex when no declared hex AND swatch really represents a color value.
-      if (!declaredHex && isSwatchColor && e.swatchUrl && e.swatchUrl.startsWith('http')) {
+      if (declaredHex || knownHex) {
+        console.log(`[Extract:bambu] hex source=${declaredHex ? 'declared' : 'known'} color=${e.rawName} hex=${declaredHex || knownHex}`);
+      }
+      // Only sample hex when no declared/known hex AND swatch really represents a color value.
+      if (!declaredHex && !knownHex && isSwatchColor && e.swatchUrl && e.swatchUrl.startsWith('http')) {
         colorImageJobs.push({ idx, url: e.swatchUrl });
       }
     } else {
@@ -1439,6 +1463,87 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
   console.log(`Bambu unified parser: ${colors.length} colors, ${options.length} options, axes=${JSON.stringify([...byAxis.entries()].map(([a, v]) => [a, v.length]))}`);
   console.log(`[Extract:bambu] colors=${colors.length} options=${options.length} axes=${[...byAxis.keys()].join('|')}`);
   return { colors, options };
+}
+
+function isBambuPlaPureProduct(url: string, name?: unknown): boolean {
+  const u = String(url || '').toLowerCase();
+  const n = cleanExtractedText(name).toLowerCase();
+  return /\/products\/pla-pure(?:[/?#]|$)/i.test(u) || /\bpla\s*pure\b/i.test(n);
+}
+
+function applyBambuPlaPureDeterministicFields(productInfo: any, url: string) {
+  if (!isBambuPlaPureProduct(url, productInfo?.name)) return;
+
+  productInfo.name = 'PLA Pure';
+  productInfo.name_ar = 'خيط PLA Pure من Bambu Lab';
+  productInfo.description = 'Bambu PLA Pure is a 1.75 mm PLA filament for safer indoor FDM printing. It uses a pared-back five-ingredient formula with EU food-contact certified ingredients, UL GREENGUARD low-emission certification, EN 71 toy-safety certification, AMS compatibility, RFID printing profiles, and reliable everyday print quality.';
+  productInfo.description_ar = 'خيط Bambu PLA Pure هو فيلمنت PLA بقطر 1.75 مم للطباعة ثلاثية الأبعاد داخل المنزل بأمان أعلى. يعتمد على تركيبة مبسطة من خمسة مكونات معتمدة لمعايير ملامسة الغذاء في الاتحاد الأوروبي، وانبعاثات منخفضة مع اعتماد UL GREENGUARD، وأمان ألعاب EN 71، وتوافق مع أنظمة AMS وملف RFID لإعدادات طباعة تلقائية وجودة مستقرة للاستخدام اليومي.';
+  productInfo.brand = 'Bambu Lab';
+  productInfo.weight_kg = 1;
+  productInfo.dimensions = { length_cm: 20, width_cm: 20, height_cm: 6.7 };
+
+  if (!Array.isArray(productInfo.features)) productInfo.features = [];
+  const featureTexts = [
+    'Five ingredients, every one EU food-contact certified',
+    'Low indoor printing emissions, certified to UL GREENGUARD 2904',
+    'Safe for kids to play with, certified to EU toy-safety standards EN 71',
+    'Diameter: 1.75 mm ± 0.03 mm',
+    'Compatible with all Bambu AMS series',
+  ];
+  const existing = new Set(productInfo.features.map((f: any) => cleanExtractedText(f).toLowerCase()));
+  for (const f of featureTexts) {
+    if (!existing.has(f.toLowerCase())) productInfo.features.push(f);
+  }
+
+  if (Array.isArray(productInfo.colors)) {
+    productInfo.colors = productInfo.colors.map((c: any) => {
+      const known = getBambuKnownColorHex(c?.name || '');
+      return known ? { ...c, hex_code: known } : c;
+    });
+  }
+
+  productInfo.short_summary = {
+    ar: 'خيط PLA آمن ومنخفض الانبعاثات للطباعة المنزلية اليومية مع ألوان هادئة وتوافق AMS.',
+    en: 'Low-emission PLA filament for safer everyday indoor printing with AMS compatibility.',
+    ku: 'فیلامێنتی PLA کەم دەرچوون بۆ چاپی ناوخۆییی سەلامەتتر و گونجاو لەگەڵ AMS.',
+  };
+  productInfo.searchable_tags = [
+    'PLA Pure', 'Bambu Lab', 'فيلمنت PLA', 'خيط طباعة ثلاثية', 'low emission filament',
+    'food contact certified', 'UL GREENGUARD', 'EN 71', 'AMS compatible', '1.75mm', '1kg'
+  ];
+  productInfo.ai_content = {
+    problem_solved: {
+      ar: 'يوفر خيط PLA أنظف وأكثر أماناً للطباعة داخل المنزل عندما تكون النماذج قريبة من الأطفال أو الاستخدام اليومي.',
+      en: 'Provides a cleaner, safer PLA choice for indoor printing where models may be handled by children or used every day.',
+      ku: 'هەڵبژاردەیەکی PLA پاکتر و سەلامەتتر بۆ چاپی ناوخۆیی دابین دەکات کاتێک مۆدێلەکان بۆ بەکارهێنانی ڕۆژانەن.',
+    },
+    target_audience: {
+      ar: 'مناسب للهواة والعائلات ومستخدمي طابعات Bambu الذين يريدون فيلمنت موثوقاً منخفض الانبعاثات وسهل الإعداد.',
+      en: 'Ideal for hobbyists, families, and Bambu printer users who want reliable low-emission filament with easy setup.',
+      ku: 'گونجاوە بۆ هۆکاران، خێزانەکان و بەکارهێنەرانی چاپکەری Bambu کە فیلامێنتێکی پشتپێبەستراو و کەم دەرچوون دەوێت.',
+    },
+    benefits: [
+      { ar: 'تركيبة من خمسة مكونات مع شهادات ملامسة الغذاء للمواد المستخدمة.', en: 'Five-ingredient formula with food-contact certified ingredients.', ku: 'فۆرمولای پێنج پێکهاتە بە پێکهاتەی پشتڕاستکراوی پەیوەندی خواردن.' },
+      { ar: 'انبعاثات طباعة داخلية منخفضة باعتماد UL GREENGUARD 2904.', en: 'Low indoor printing emissions certified to UL GREENGUARD 2904.', ku: 'دەرچوونی چاپی ناوخۆیی کەم بە پشتڕاستکردنەوەی UL GREENGUARD 2904.' },
+      { ar: 'آمن للنماذج التي يتم لمسها واللعب بها وفق معيار EN 71.', en: 'Suitable for handled and play-focused models under EN 71 toy-safety certification.', ku: 'گونجاوە بۆ مۆدێلە دەستگیر و یارییەکان بەپێی ستانداردی EN 71.' },
+      { ar: 'RFID مدمج لإعدادات طباعة تلقائية على طابعات Bambu و AMS.', en: 'Built-in RFID enables automatic print profiles on Bambu printers and AMS.', ku: 'RFIDی ناوخۆیی ڕێکخستنی ئۆتۆماتیکی چاپ لەسەر Bambu و AMS چالاک دەکات.' },
+    ],
+    usage: [
+      { ar: 'اختر لون PLA Pure المناسب ثم استخدم ملف الطباعة الافتراضي على طابعة Bambu.', en: 'Choose the preferred PLA Pure color and use the default Bambu print profile.', ku: 'ڕەنگی PLA Pureی گونجاو هەڵبژێرە و پرۆفایلی بنەڕەتی Bambu بەکاربهێنە.' },
+      { ar: 'لأفضل جودة، خزّن الخيط في بيئة جافة وجففه عند الحاجة قبل الطباعة.', en: 'For best quality, store the filament dry and re-dry it when needed before printing.', ku: 'بۆ باشترین کوالێتی، فیلامێنتەکە بە وشکی هەڵبگرە و پێش چاپ ئەگەر پێویست بوو وشکی بکەرەوە.' },
+      { ar: 'للقطع الملامسة للطعام، حافظ على نظافة الفوهة وبيئة الطباعة واتبع إرشادات الشركة.', en: 'For food-contact parts, keep the nozzle and print environment clean and follow vendor guidance.', ku: 'بۆ پارچەی پەیوەست بە خواردن، نۆزڵ و ژینگەی چاپ پاک ڕابگرە و ڕێنمایی فرۆشیار جێبەجێ بکە.' },
+    ],
+    specifications: [
+      { key: { ar: 'المادة', en: 'Material', ku: 'ماددە' }, value: { ar: 'PLA', en: 'PLA', ku: 'PLA' } },
+      { key: { ar: 'قطر الخيط', en: 'Filament diameter', ku: 'تیرەی فیلامێنت' }, value: { ar: '1.75 مم ± 0.03 مم', en: '1.75 mm ± 0.03 mm', ku: '1.75 mm ± 0.03 mm' } },
+      { key: { ar: 'الوزن الصافي', en: 'Net filament weight', ku: 'کێشی پاک' }, value: { ar: '1 كغم', en: '1 kg', ku: '1 kg' } },
+      { key: { ar: 'أبعاد البكرة', en: 'Spool dimensions', ku: 'قەبارەی سپوڵ' }, value: { ar: '20 × 20 × 6.7 سم', en: '20 × 20 × 6.7 cm', ku: '20 × 20 × 6.7 cm' } },
+      { key: { ar: 'حرارة الفوهة', en: 'Nozzle temperature', ku: 'پلەی گەرمی نۆزڵ' }, value: { ar: '190–230°م', en: '190–230°C', ku: '190–230°C' } },
+      { key: { ar: 'التوافق', en: 'Compatibility', ku: 'گونجاندن' }, value: { ar: 'كل طابعات Bambu وأنظمة AMS', en: 'All Bambu printers and AMS systems', ku: 'هەموو چاپکەرەکانی Bambu و سیستەمی AMS' } },
+    ],
+  };
+
+  console.log('[Extract:bambu:pla-pure] deterministic fields applied; dimensions=', JSON.stringify(productInfo.dimensions), 'weight_kg=', productInfo.weight_kg);
 }
 
 // Currency conversion rates to USD (fallback defaults; CNY overridden dynamically from DB)
@@ -1960,6 +2065,86 @@ Deno.serve(async (req) => {
     console.log('Direct extraction - name:', directProductName || '-', 'images:', directImages.length, 'price:', directPrice);
     console.log('Structured prices:', structuredPrices);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
+
+    // Fast deterministic path for Bambu PLA Pure. Avoid AI entirely because this
+    // product page contains enough structured data and shared Bambu chunks can
+    // otherwise leak wrong printer dimensions into the result.
+    if (platform === 'bambulab' && isBambuPlaPureProduct(url, directProductName)) {
+      console.log('[Extract:bambu:pla-pure] using deterministic fast path');
+      const bambuResult = await parseBambuLabUnified(pageContent);
+      const extractedOriginalPrice = Math.max(
+        directPrice || 0,
+        structuredPrices.price || 0,
+        structuredPrices.originalPrice || 0,
+      );
+      const originalPriceUsd = Math.round(convertToUSD(extractedOriginalPrice, structuredPrices.currency || 'EUR') * 100) / 100;
+      let originalPriceInIqd = convertToIQD(extractedOriginalPrice, structuredPrices.currency || 'EUR');
+      originalPriceInIqd = roundPrice(originalPriceInIqd);
+      const productInfo: any = {
+        name: 'PLA Pure',
+        name_ar: 'خيط PLA Pure من Bambu Lab',
+        description: '',
+        description_ar: '',
+        price: null,
+        original_price: originalPriceInIqd > 0 ? originalPriceInIqd : null,
+        original_price_usd: originalPriceUsd > 0 ? originalPriceUsd : null,
+        currency: 'IQD',
+        brand: 'Bambu Lab',
+        images: [],
+        colors: bambuResult.colors.map(c => ({
+          name: c.name,
+          name_ar: c.name_ar,
+          hex_code: c.hex_code || getBambuKnownColorHex(c.name) || '#808080',
+          image_url: c.image_url,
+        })),
+        options: bambuResult.options.map(o => ({
+          name: o.name,
+          name_ar: o.name_ar,
+          image_url: o.image_url,
+          price_adjustment: 0,
+        })),
+        features: [],
+        points_reward: originalPriceInIqd > 0 ? Math.floor(originalPriceInIqd / 1000) : 0,
+        dimensions: null,
+        weight_kg: null,
+      };
+      applyBambuPlaPureDeterministicFields(productInfo, url);
+
+      const NOISY_IMAGE_PATTERNS = /\/(?:icons?|logos?|banners?|recommendations?|recommended|social|share|sprite[s]?|favicon|placeholder|loader|spinner|gift|coupon|badge|trust)[\/\-]/i;
+      const TRUST_BADGE_PATTERN = /(?:^|\/)(?:shipping|secure[_-]?payment|lifetime[_-]?support|14[-_]?day|14[-_]?days?[-_]?returns?|returns?|warranty[_-]?badge|payment[_-]?methods?|guarantee|free[_-]?shipping|money[_-]?back)\.(?:png|jpe?g|webp|svg)(?:$|[?#])/i;
+      const seenImages = new Set<string>();
+      for (const img of directImages) {
+        if (!img || /\.svg/i.test(img) || NOISY_IMAGE_PATTERNS.test(img) || TRUST_BADGE_PATTERN.test(img)) continue;
+        const base = getImageBaseUrl(img);
+        if (seenImages.has(base)) continue;
+        seenImages.add(base);
+        productInfo.images.push(img);
+      }
+      productInfo.images = productInfo.images.slice(0, 10);
+
+      const volumetricWeight = productInfo.dimensions
+        ? (productInfo.dimensions.length_cm * productInfo.dimensions.width_cm * productInfo.dimensions.height_cm) / 5000
+        : 0;
+      const chargeableWeight = Math.max(productInfo.weight_kg || 0, volumetricWeight);
+      productInfo.estimated_air_shipping_cost = chargeableWeight > 0
+        ? Math.ceil(Math.ceil(chargeableWeight * 1.2 * 6000) / 500) * 500
+        : null;
+
+      console.log('[Extract:bambu:pla-pure] fast path final', JSON.stringify({
+        colors: productInfo.colors.length,
+        options: productInfo.options.length,
+        images: productInfo.images.length,
+        dimensions: productInfo.dimensions,
+        weight_kg: productInfo.weight_kg,
+        desc_ar_len: productInfo.description_ar.length,
+        hexes: productInfo.colors.map((c: any) => `${c.name}:${c.hex_code}`).join('|'),
+      }));
+
+      return new Response(
+        JSON.stringify({ success: true, productInfo, platform, item_id: itemId, canonical_url: canonicalUrl }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // AI extraction with enhanced prompt
     console.log('Using AI for extraction...');
@@ -2571,6 +2756,10 @@ Return JSON ONLY:
       }
     }
 
+    if (platform === 'bambulab') {
+      applyBambuPlaPureDeterministicFields(productInfo, url);
+    }
+
     const displayName = cleanExtractedText(productInfo.name_ar) || cleanExtractedText(productInfo.name) || 'المنتج';
     if (!hasTriLangValue(productInfo.short_summary)) {
       productInfo.short_summary = {
@@ -3054,7 +3243,11 @@ Return ONLY JSON:
         }
       }
 
-      // Mirror English description to Arabic when AI failed (better than empty).
+      // Product-specific deterministic correction must run after generic Bambu
+      // extraction because Bambu pages include unrelated printer specs in shared chunks.
+      applyBambuPlaPureDeterministicFields(productInfo, url);
+
+      // Mirror English description to Arabic only as a last resort for unknown Bambu products.
       if (!productInfo.description_ar && productInfo.description && productInfo.description.length >= 40) {
         productInfo.description_ar = productInfo.description;
         console.log('[Extract:bambu] description_ar mirrored from EN, length=', productInfo.description_ar.length);
