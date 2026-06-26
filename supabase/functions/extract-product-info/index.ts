@@ -3016,7 +3016,53 @@ Return ONLY JSON:
           console.log('[Extract:bambu] description filled from page meta, length=', productInfo.description.length);
         }
       }
+
+      // HTML-level weight/dimensions fallback (Bambu spec tables, no JSON-LD).
+      if (!productInfo.weight_kg) {
+        // 1) Spec JSON keys
+        const wJson = pageContent.match(/"(?:netWeight|net_weight|weight|spoolWeight|spool_weight)"\s*:\s*"?([\d.]+)\s*(kg|g)?"?/i);
+        if (wJson) {
+          const num = parseFloat(wJson[1]);
+          const unit = (wJson[2] || 'kg').toLowerCase();
+          const kg = unit === 'g' ? num / 1000 : num;
+          if (!isNaN(kg) && kg > 0 && kg < 50) productInfo.weight_kg = kg;
+        }
+        // 2) Plain text "Net Weight: 1 kg"
+        if (!productInfo.weight_kg) {
+          const wTxt = pageContent.match(/Net\s*Weight[^<\d]{0,20}([\d.]+)\s*(kg|g)\b/i)
+                    || pageContent.match(/Spool\s*(?:Size|Weight)[^<\d]{0,20}([\d.]+)\s*(kg|g)\b/i)
+                    || pageContent.match(/Filament\s*Weight[^<\d]{0,20}([\d.]+)\s*(kg|g)\b/i);
+          if (wTxt) {
+            const num = parseFloat(wTxt[1]);
+            const kg = wTxt[2].toLowerCase() === 'g' ? num / 1000 : num;
+            if (!isNaN(kg) && kg > 0 && kg < 50) productInfo.weight_kg = kg;
+          }
+        }
+      }
+      if (!productInfo.dimensions) {
+        const dim = pageContent.match(/Dimensions?[^<\d]{0,20}([\d.]+)\s*[x×]\s*([\d.]+)\s*[x×]\s*([\d.]+)\s*(mm|cm|m)?/i)
+                 || pageContent.match(/Package\s*Size[^<\d]{0,20}([\d.]+)\s*[x×]\s*([\d.]+)\s*[x×]\s*([\d.]+)\s*(mm|cm|m)?/i);
+        if (dim) {
+          const unit = (dim[4] || 'cm').toLowerCase();
+          const toCm = (v: string) => {
+            const n = parseFloat(v);
+            if (unit === 'mm') return (n / 10).toFixed(1);
+            if (unit === 'm') return (n * 100).toFixed(1);
+            return String(n);
+          };
+          productInfo.dimensions = `${toCm(dim[1])} x ${toCm(dim[2])} x ${toCm(dim[3])} cm`;
+        }
+      }
+
+      // Mirror English description to Arabic when AI failed (better than empty).
+      if (!productInfo.description_ar && productInfo.description && productInfo.description.length >= 40) {
+        productInfo.description_ar = productInfo.description;
+        console.log('[Extract:bambu] description_ar mirrored from EN, length=', productInfo.description_ar.length);
+      }
+
+      console.log('[Extract:bambu] post-fix weight_kg=', productInfo.weight_kg, 'dimensions=', productInfo.dimensions, 'desc_ar_len=', (productInfo.description_ar || '').length);
     }
+
 
 
     // ===== Shopify structured merge: ONLY replace each axis when Shopify provides
