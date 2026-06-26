@@ -2946,7 +2946,7 @@ Return ONLY JSON:
         }
       } else if (shopifyExtracted.colors.length > 0 && beforeColors > 0) {
         // Merge variant images from Shopify into matching existing colors (by name).
-        const byName = new Map(productInfo.colors.map((c: any, i: number) => [String(c.name || '').toLowerCase().trim(), i]));
+        const byName = new Map<string, number>(productInfo.colors.map((c: any, i: number) => [String(c.name || '').toLowerCase().trim(), i] as [string, number]));
         for (const c of shopifyExtracted.colors) {
           const idx = byName.get(String(c.name || '').toLowerCase().trim());
           if (idx !== undefined && !productInfo.colors[idx].image_url && c.image_url) {
