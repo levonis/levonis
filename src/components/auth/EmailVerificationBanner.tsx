@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Mail, X, Loader2 } from 'lucide-react';
+import { AlertTriangle, Mail, X } from 'lucide-react';
 import { toast } from 'sonner';
 import EmailVerificationDialog from './EmailVerificationDialog';
 
 interface EmailVerificationBannerProps {
   onHeightChange?: (height: number) => void;
 }
+
 
 // Global timer to persist across component remounts (10 minutes = 600000ms)
 const bannerSendTimers: Record<string, number> = {};
