@@ -266,8 +266,7 @@ function AppContent() {
       <PrefetchOnHover />
       <ViewTransitions />
       <ImageQualityBoost />
-      <ViewTransitions />
-      <ImageQualityBoost />
+      {mountedSearch && <DeferredGlobalNavSearch />}
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
