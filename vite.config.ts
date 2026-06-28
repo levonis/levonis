@@ -39,7 +39,17 @@ export default defineConfig(({ mode }) => ({
         // — PageSpeed showed 22 chained micro-chunks delaying LCP by ~3s.
         experimentalMinChunkSize: 10_000,
         manualChunks: (id) => {
-          if (!id.includes('node_modules')) return undefined;
+          // Group app page modules so the browser fetches one chunk per area
+          // instead of dozens of tiny per-route requests on slow networks.
+          // Public pages (Home, ProductDetail, Cart, ...) stay on their own
+          // default per-route chunks — only admin/community/merchant get bundled.
+          if (!id.includes('node_modules')) {
+            const norm = id.replace(/\\/g, '/');
+            if (norm.includes('/src/pages/Admin')) return 'admin-pages';
+            if (norm.includes('/src/pages/Community') || norm.includes('/src/pages/community/')) return 'community-pages';
+            if (norm.includes('/src/pages/Merchant') || norm.includes('/src/pages/Storefront')) return 'merchant-pages';
+            return undefined;
+          }
           // Only split libs that are SAFE (no internal circular deps that break in prod).
           // recharts/d3, framer-motion, @radix-ui all have internal cross-imports that
           // TDZ-crash when split into separate chunks — leave them with vendor-react.
@@ -52,6 +62,7 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
           return undefined;
         },
+
       },
     },
   },

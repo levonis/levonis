@@ -1,51 +1,53 @@
-## Refactor: performance, reload loops, hydration, and mobile blur
+## Scope
 
-Apply the five fixes exactly as requested, scoped to the named files. No routing, auth, or Telegram logic touched.
+Most of the request was already implemented in the previous turn (verified now):
 
-### 1. `src/main.tsx` — stop wiping browser caches on chunk errors
-In `recoverFromStaleChunk`:
-- Remove the `caches.keys()` + `caches.delete(...)` block.
-- Keep the one-shot `sessionStorage` guard and the `serviceWorker.unregister()` step (SW must go, since it's what serves stale HTML referencing the missing chunk).
-- End with a plain `window.location.reload()`.
+- `IdleRoutePrefetcher` and `navigator.connection` background prefetch — **already removed** from `App.tsx`.
+- 12s `recoverFromStuckRoute` / `ROUTE_FALLBACK_TIMEOUT_MS` — **already removed**; `RouteSuspenseFallback` just renders `RouteAwareSkeleton`.
+- `AppNavBar` — **already statically imported** (no longer lazy).
+- No `queryClient.prefetchQuery` calls exist anywhere in the provider tree.
 
-No prompt UI is added (out of scope of the named file and would touch React tree). The reload remains one-shot, guarded against loops.
+Per your answers, providers stay at the root (item 2 skipped — moving Island/PageSearch would break the Home page chrome and you confirmed the current setup works). Footer skipped (no global Footer exists).
 
-### 2. `src/App.tsx` — remove 12s route timeout self-reload
-- Delete `ROUTE_FALLBACK_TIMEOUT_MS`, `recoverFromStuckRoute`, and the timer/visibility logic inside `RouteSuspenseFallback`.
-- Simplify `RouteSuspenseFallback` to just `return <RouteAwareSkeleton />;` so Suspense waits for chunks naturally on slow networks.
+The only remaining item is **chunk grouping** for admin/* and community/* routes.
 
-### 3. `src/App.tsx` — un-lazy the navbar + lighten provider tree
-- Replace `const AppNavBar = lazy(() => import("@/components/AppNavBar"));` with a static `import AppNavBar from "@/components/AppNavBar";` so it ships in the initial bundle and renders without a Suspense gap.
-- Keep `IslandProvider` and `PageSearchProvider` (they own context other components read), but ensure they don't block initial paint:
-  - Move `useGlobalNavSearchItems()` out of the synchronous render path — call it inside a small child component that mounts after first paint (e.g. `useEffect` + state flag) so the global search index build doesn't run during the first render pass.
-  - Confirm no provider does sync work in its body beyond `useState`/`useMemo` of stable values; if any does, wrap the heavy bit in `useEffect`.
+## What changes
 
-### 4. `src/App.tsx` + `src/components/IdleRoutePrefetcher.tsx` — disable background route prefetch
-- Remove the `IdleRoutePrefetcher` mount from `App.tsx` (and its import).
-- Remove the `useEffect` in `AppContent` (lines ~341+) that uses `navigator.connection` to prefetch Cart/ProductDetail/etc.
-- Leave `PrefetchOnHover` intact — it only runs on explicit user intent, which is not "background prefetching."
+### `vite.config.ts` — add `manualChunks`
 
-### 5. `src/index.css` — kill mobile backdrop-filter
-Append at the end of the file:
+Today every `lazy(() => import("./pages/AdminX"))` becomes its own HTTP request. Visiting the admin panel currently fans out into 70+ tiny chunk requests. Group them by filename prefix so the browser fetches one chunk per area:
 
-```css
-@media (max-width: 768px) {
-  .glass-floating,
-  .glass-panel,
-  [class*="backdrop-blur"] {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background-color: rgba(15, 15, 18, 0.95) !important;
-  }
-}
+```text
+output.manualChunks(id):
+  if id matches  /src/pages/Admin*          → "admin-pages"
+  if id matches  /src/pages/Community*
+     or /src/pages/community/*              → "community-pages"
+  if id matches  /src/pages/Merchant*
+     or /src/pages/Storefront*              → "merchant-pages"
+  (everything else: leave to Vite defaults — per-route chunks)
 ```
 
-### Out of scope / preserved
-- Telegram Mini App init in `main.tsx` — untouched.
-- Capacitor init, SW registration guards, `installFriendlyFunctionErrorMessages`, auth flow, routing table — untouched.
-- `PrefetchOnHover` (user-intent only) — kept.
-- Service worker file itself — kept (only runtime cache wipes on chunk error are removed).
+Implementation: add a `build.rollupOptions.output.manualChunks` function to `vite.config.ts`. The function inspects the resolved module `id`, returns the chunk name for admin / community / merchant page modules, and returns `undefined` for everything else so Vite keeps its default per-route splitting for public pages (Home, ProductDetail, Cart, etc. stay independent and small).
 
-### Risk notes
-- Removing the 12s fallback means a genuinely broken chunk on a dead deploy will show the skeleton indefinitely instead of self-healing. The kept one-shot SW unregister + reload in `main.tsx` still recovers from the most common cause (stale SW serving HTML with missing chunks).
-- The solid `rgba(15,15,18,0.95)` mobile fallback assumes a dark theme. On the Light theme it will look out of place on mobile; if that matters, say the word and I'll switch to a theme-token-driven fallback.
+### Nothing else changes
+
+- `App.tsx` lazy import list stays as-is — grouping is done at the bundler level, not by rewriting imports. This keeps the route table readable and avoids touching 70+ route definitions.
+- Providers (`IslandProvider`, `PageSearchProvider`, `ProfileTransitionProvider`) stay at the root per your decision.
+- No changes to `main.tsx`, `index.css`, routing logic, auth gates, or the Telegram Mini App init.
+
+## Expected effect
+
+- Home / public pages: unchanged (still small per-route chunks; no admin or community code pulled in).
+- Admin panel: first visit downloads one `admin-pages-*.js` chunk instead of 70+ — fewer round trips on slow networks, total bytes roughly the same (slightly less due to shared imports deduped inside the chunk).
+- Community pages: same pattern, one chunk for all community routes.
+
+## Risk
+
+- A single admin chunk is larger than one route's worth of JS. The user pays it once on the first admin navigation, then it's cached. Acceptable since regular users never hit admin routes.
+- If a community page is very heavy (e.g. a chart-only page), grouping all community pages pulls those libs in even on a lighter community route. Mitigation: shared deps (recharts, etc.) are already in shared vendor chunks, not in page chunks.
+
+## Technical details
+
+- `vite.config.ts` `output.manualChunks` receives the absolute module id. Use `id.includes("/src/pages/Admin")` etc. — works on Windows and Linux because Vite normalizes to forward slashes.
+- Return `undefined` (not `null`) for non-matching ids — that's the Rollup contract for "use default chunking".
+- Do NOT put `node_modules` into these chunks; only match `/src/pages/...`. Vendor splitting stays default.
