@@ -64,38 +64,12 @@ export default function EmailVerificationBanner({ onHeightChange }: EmailVerific
     }
   };
 
-  const handleOpenVerificationDialog = async () => {
-    if (!user?.email || isSending) return;
-    
-    // Check if we can send from banner (10 minute cooldown)
-    if (canSendFromBanner()) {
-      setIsSending(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('send-verification-code', {
-          body: { email: user.email, type: 'signup', user_id: user.id }
-        });
-
-        if (error) {
-          console.error('[Banner] Edge function error:', error);
-        } else if (data?.success) {
-          if (!data?.alreadySent) {
-            toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
-          }
-          // Set 10 minute cooldown for banner
-          bannerSendTimers[timerKey] = Date.now() + 600000; // 10 minutes
-        } else if (data?.error) {
-          toast.error(data.error);
-        }
-      } catch (error) {
-        console.error('[Banner] Catch error:', error);
-      } finally {
-        setIsSending(false);
-      }
-    }
-    
-    // Always open the dialog
+  const handleOpenVerificationDialog = () => {
+    if (!user?.email) return;
+    // Open the dialog; the dialog handles sending the code (with its own cooldown).
     setShowVerificationDialog(true);
   };
+
 
   const handleVerified = () => {
     setEmailVerified(true);
