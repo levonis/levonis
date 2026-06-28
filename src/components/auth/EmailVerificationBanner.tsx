@@ -11,29 +11,14 @@ interface EmailVerificationBannerProps {
 }
 
 
-// Global timer to persist across component remounts (10 minutes = 600000ms)
-const bannerSendTimers: Record<string, number> = {};
-
 export default function EmailVerificationBanner({ onHeightChange }: EmailVerificationBannerProps) {
   const { user } = useAuth();
   const [showBanner, setShowBanner] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
 
-  const timerKey = user?.id ? `banner-${user.id}-${user.email}` : '';
-
-  const canSendFromBanner = useCallback(() => {
-    if (!timerKey) return false;
-    const storedTime = bannerSendTimers[timerKey];
-    if (storedTime) {
-      const remaining = storedTime - Date.now();
-      return remaining <= 0;
-    }
-    return true;
-  }, [timerKey]);
 
   useEffect(() => {
     if (user) {
