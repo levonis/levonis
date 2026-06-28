@@ -102,17 +102,13 @@ export default function EmailVerificationBanner({ onHeightChange }: EmailVerific
             <Button
               size="sm"
               onClick={handleOpenVerificationDialog}
-              disabled={isSending}
               className="text-amber-950 hover:opacity-80"
               style={{ backgroundColor: '#000', color: '#f59e0b' }}
             >
-              {isSending ? (
-                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-              ) : (
-                <Mail className="h-4 w-4 ml-2" />
-              )}
+              <Mail className="h-4 w-4 ml-2" />
               تأكيد البريد
             </Button>
+
             <Button
               size="sm"
               variant="ghost"
