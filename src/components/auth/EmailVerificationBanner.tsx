@@ -129,7 +129,7 @@ export default function EmailVerificationBanner({ onHeightChange }: EmailVerific
           type="signup"
           userId={user.id}
           onVerified={handleVerified}
-          autoSendOnOpen={false}
+          autoSendOnOpen={true}
         />
       )}
     </>
