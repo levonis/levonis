@@ -37,8 +37,11 @@ const LevoHelpBot = lazy(() => import("@/components/LevoHelpBot"));
 const InstallPrompt = lazy(() => import("@/components/pwa/InstallPrompt"));
 const SpriteDebugPage = lazy(() => import("@/components/games/SpriteDebug"));
 
-// Lazy load all routes (including Home) to keep initial bundle small
-const Home = lazy(() => import("./pages/Home"));
+// Keep the active landing route in the primary app graph. Lazy-loading the
+// root route caused the production/preview proxy to occasionally fail fetching
+// /src/pages/Home.tsx as a dynamic module, leaving users on the static fallback
+// screen. Other routes remain lazy-loaded behind Suspense.
+import Home from "./pages/Home";
 const SearchResults = lazy(() => import("./pages/SearchResults"));
 
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
