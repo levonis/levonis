@@ -189,11 +189,27 @@ function RouteSuspenseFallback() {
 }
 
 
+function DeferredGlobalNavSearch() {
+  useGlobalNavSearchItems();
+  return null;
+}
+
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { visible: islandVisible } = useIsland();
-  useGlobalNavSearchItems();
+  const [mountedSearch, setMountedSearch] = useState(false);
+  useEffect(() => {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: any) => number)
+      | undefined;
+    const cb = () => setMountedSearch(true);
+    const id = ric ? ric(cb, { timeout: 2000 }) : window.setTimeout(cb, 800);
+    return () => {
+      if (ric && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(id);
+      else clearTimeout(id as number);
+    };
+  }, []);
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const isAuthPage = location.pathname === "/auth";
