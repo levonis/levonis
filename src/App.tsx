@@ -14,7 +14,7 @@ import { CartProvider } from "@/hooks/useCart";
 import AdminRoute from "@/components/AdminRoute";
 
 // Defer chrome and non-critical hooks for faster first paint on mobile
-const AppNavBar = lazy(() => import("@/components/AppNavBar"));
+import AppNavBar from "@/components/AppNavBar";
 const DeferredEffects = lazy(() => import("@/components/DeferredEffects"));
 import { IslandProvider, useIsland } from "@/island/IslandContext";
 import { PageSearchProvider } from "@/island/PageSearchContext";
@@ -181,116 +181,35 @@ import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
 import PageFade from "@/components/PageFade";
 import TopProgressBar from "@/components/TopProgressBar";
 import PrefetchOnHover from "@/components/PrefetchOnHover";
-import IdleRoutePrefetcher from "@/components/IdleRoutePrefetcher";
 import ViewTransitions from "@/components/ViewTransitions";
 import ImageQualityBoost from "@/components/ImageQualityBoost";
 
-const ROUTE_FALLBACK_TIMEOUT_MS = 12000;
-
-const recoverFromStuckRoute = async () => {
-  if (typeof window === "undefined") return;
-
-  try {
-    (window as any).__levoReportError?.(
-      "route-suspense-timeout",
-      "Route fallback stayed visible too long",
-      null,
-    );
-  } catch {}
-
-  try {
-    if (sessionStorage.getItem("__levo_route_recovered_v1") === "1") return;
-    sessionStorage.setItem("__levo_route_recovered_v1", "1");
-  } catch {}
-
-  try {
-    localStorage.removeItem("lvn-rq-cache-v1");
-    localStorage.removeItem("__levo_chunk_retry");
-  } catch {}
-
-  try {
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister()));
-    }
-  } catch {}
-
-  try {
-    if ("caches" in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((k) => caches.delete(k)));
-    }
-  } catch {}
-
-  window.location.reload();
-};
-
 function RouteSuspenseFallback() {
-  const [stuck, setStuck] = useState(false);
-
-  useEffect(() => {
-    let remaining = ROUTE_FALLBACK_TIMEOUT_MS;
-    let startedAt = Date.now();
-    let timer: number | null = null;
-
-    const trigger = () => {
-      setStuck(true);
-      recoverFromStuckRoute();
-    };
-
-    const start = () => {
-      if (timer != null) return;
-      startedAt = Date.now();
-      timer = window.setTimeout(trigger, remaining);
-    };
-
-    const pause = () => {
-      if (timer == null) return;
-      window.clearTimeout(timer);
-      timer = null;
-      remaining = Math.max(0, remaining - (Date.now() - startedAt));
-    };
-
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        // لا نحتسب الوقت أثناء غياب التبويب — يمنع إعادة التحميل عند العودة
-        pause();
-      } else {
-        start();
-      }
-    };
-
-    if (document.visibilityState === "visible") start();
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      if (timer != null) window.clearTimeout(timer);
-    };
-  }, []);
-
-  if (stuck) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4 text-center">
-        <div className="glass-panel max-w-sm space-y-4 p-6">
-          <p className="text-sm font-semibold text-foreground">التحميل عالق بسبب كاش قديم أو اتصال بطيء</p>
-          <button type="button" className="glass-trigger px-5 py-2 text-sm font-bold" onClick={recoverFromStuckRoute}>
-            إعادة المحاولة
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return <RouteAwareSkeleton />;
 }
 
+
+function DeferredGlobalNavSearch() {
+  useGlobalNavSearchItems();
+  return null;
+}
 
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { visible: islandVisible } = useIsland();
-  useGlobalNavSearchItems();
+  const [mountedSearch, setMountedSearch] = useState(false);
+  useEffect(() => {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: any) => number)
+      | undefined;
+    const cb = () => setMountedSearch(true);
+    const id = ric ? ric(cb, { timeout: 2000 }) : window.setTimeout(cb, 800);
+    return () => {
+      if (ric && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(id);
+      else clearTimeout(id as number);
+    };
+  }, []);
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const isAuthPage = location.pathname === "/auth";
@@ -334,45 +253,6 @@ function AppContent() {
     }
   }, [navigate, location.pathname]);
 
-  // Idle prefetch: warm up the most-likely next routes ONLY on fast connections,
-  // and only well after first paint so we never compete with LCP bandwidth.
-  // On mobile 4G/3G, eager prefetch of Cart/ProductDetail was costing ~3s of
-  // LCP without measurable navigation gain.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const conn = (navigator as any).connection;
-    if (conn?.saveData) return;
-    // Restrict to true broadband: 4g effectiveType + downlink >= 5 Mbps.
-    if (!conn || conn.effectiveType !== "4g") return;
-    if (typeof conn.downlink === "number" && conn.downlink < 5) return;
-
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: () => void, opts?: any) => number)
-      | undefined;
-    const run = () => {
-      const path = location.pathname;
-      const tasks: Array<() => Promise<unknown>> = [];
-      if (path === "/" || path.startsWith("/category")) {
-        tasks.push(() => import("./pages/ProductDetail"));
-      }
-      if (path.startsWith("/product/")) {
-        tasks.push(() => import("./pages/Cart"));
-      }
-      if (path === "/cart") {
-        tasks.push(() => import("./pages/UserInfo"));
-      }
-      tasks.forEach((t) => t().catch(() => {}));
-    };
-    // Wait at least 5s after mount before issuing prefetches, so LCP window
-    // is fully clear of contention.
-    const delayed = () => {
-      if (ric) ric(run, { timeout: 4000 });
-      else setTimeout(run, 0);
-    };
-    const id = window.setTimeout(delayed, 5000);
-    return () => clearTimeout(id);
-  }, [location.pathname]);
-
   // Padding mirrors island visibility so the layout breathes in/out smoothly.
   const mainPaddingTop = hideChrome || !islandVisible ? 0 : 64;
 
@@ -384,9 +264,9 @@ function AppContent() {
       <ScrollRestoration />
       <TopProgressBar />
       <PrefetchOnHover />
-      <IdleRoutePrefetcher />
       <ViewTransitions />
       <ImageQualityBoost />
+      {mountedSearch && <DeferredGlobalNavSearch />}
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
