@@ -2642,3 +2642,14 @@ html.is-scrolling *::after {
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none; }
 }
+
+/* Mobile GPU relief: drop backdrop-filter blur, use solid translucent fill instead. */
+@media (max-width: 768px) {
+  .glass-floating,
+  .glass-panel,
+  [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: rgba(15, 15, 18, 0.95) !important;
+  }
+}
