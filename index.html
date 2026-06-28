@@ -362,8 +362,12 @@
         // Be generous: many IQ mobile networks take 10-20s for first paint.
         // Showing the "slow" UI too early scares users into hammering retry,
         // which wipes caches and makes the next load even slower.
-        var SHOW_RECOVERY_AFTER = IS_MOBILE ? 15000 : 12000;
-        var FORCE_RELOAD_AFTER = IS_MOBILE ? 60000 : 45000;
+        // Effectively disabled: the recovery overlay was hiding the real UI
+        // on slow networks before the bundle had a chance to mount. Push it
+        // far out so it never blocks normal loading; users can still reload
+        // manually if they truly are stuck.
+        var SHOW_RECOVERY_AFTER = IS_MOBILE ? 120000 : 90000;
+        var FORCE_RELOAD_AFTER = IS_MOBILE ? 300000 : 240000;
         var MAX_AUTO_RECOVERIES = 1;
 
         window.__levoMounted = false;
