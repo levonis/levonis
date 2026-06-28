@@ -237,45 +237,6 @@ function AppContent() {
     }
   }, [navigate, location.pathname]);
 
-  // Idle prefetch: warm up the most-likely next routes ONLY on fast connections,
-  // and only well after first paint so we never compete with LCP bandwidth.
-  // On mobile 4G/3G, eager prefetch of Cart/ProductDetail was costing ~3s of
-  // LCP without measurable navigation gain.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const conn = (navigator as any).connection;
-    if (conn?.saveData) return;
-    // Restrict to true broadband: 4g effectiveType + downlink >= 5 Mbps.
-    if (!conn || conn.effectiveType !== "4g") return;
-    if (typeof conn.downlink === "number" && conn.downlink < 5) return;
-
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: () => void, opts?: any) => number)
-      | undefined;
-    const run = () => {
-      const path = location.pathname;
-      const tasks: Array<() => Promise<unknown>> = [];
-      if (path === "/" || path.startsWith("/category")) {
-        tasks.push(() => import("./pages/ProductDetail"));
-      }
-      if (path.startsWith("/product/")) {
-        tasks.push(() => import("./pages/Cart"));
-      }
-      if (path === "/cart") {
-        tasks.push(() => import("./pages/UserInfo"));
-      }
-      tasks.forEach((t) => t().catch(() => {}));
-    };
-    // Wait at least 5s after mount before issuing prefetches, so LCP window
-    // is fully clear of contention.
-    const delayed = () => {
-      if (ric) ric(run, { timeout: 4000 });
-      else setTimeout(run, 0);
-    };
-    const id = window.setTimeout(delayed, 5000);
-    return () => clearTimeout(id);
-  }, [location.pathname]);
-
   // Padding mirrors island visibility so the layout breathes in/out smoothly.
   const mainPaddingTop = hideChrome || !islandVisible ? 0 : 64;
 
@@ -287,7 +248,8 @@ function AppContent() {
       <ScrollRestoration />
       <TopProgressBar />
       <PrefetchOnHover />
-      <IdleRoutePrefetcher />
+      <ViewTransitions />
+      <ImageQualityBoost />
       <ViewTransitions />
       <ImageQualityBoost />
       <Suspense fallback={null}>
