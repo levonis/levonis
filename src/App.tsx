@@ -14,7 +14,7 @@ import { CartProvider } from "@/hooks/useCart";
 import AdminRoute from "@/components/AdminRoute";
 
 // Defer chrome and non-critical hooks for faster first paint on mobile
-const AppNavBar = lazy(() => import("@/components/AppNavBar"));
+import AppNavBar from "@/components/AppNavBar";
 const DeferredEffects = lazy(() => import("@/components/DeferredEffects"));
 import { IslandProvider, useIsland } from "@/island/IslandContext";
 import { PageSearchProvider } from "@/island/PageSearchContext";
@@ -181,107 +181,10 @@ import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
 import PageFade from "@/components/PageFade";
 import TopProgressBar from "@/components/TopProgressBar";
 import PrefetchOnHover from "@/components/PrefetchOnHover";
-import IdleRoutePrefetcher from "@/components/IdleRoutePrefetcher";
 import ViewTransitions from "@/components/ViewTransitions";
 import ImageQualityBoost from "@/components/ImageQualityBoost";
 
-const ROUTE_FALLBACK_TIMEOUT_MS = 12000;
-
-const recoverFromStuckRoute = async () => {
-  if (typeof window === "undefined") return;
-
-  try {
-    (window as any).__levoReportError?.(
-      "route-suspense-timeout",
-      "Route fallback stayed visible too long",
-      null,
-    );
-  } catch {}
-
-  try {
-    if (sessionStorage.getItem("__levo_route_recovered_v1") === "1") return;
-    sessionStorage.setItem("__levo_route_recovered_v1", "1");
-  } catch {}
-
-  try {
-    localStorage.removeItem("lvn-rq-cache-v1");
-    localStorage.removeItem("__levo_chunk_retry");
-  } catch {}
-
-  try {
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister()));
-    }
-  } catch {}
-
-  try {
-    if ("caches" in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((k) => caches.delete(k)));
-    }
-  } catch {}
-
-  window.location.reload();
-};
-
 function RouteSuspenseFallback() {
-  const [stuck, setStuck] = useState(false);
-
-  useEffect(() => {
-    let remaining = ROUTE_FALLBACK_TIMEOUT_MS;
-    let startedAt = Date.now();
-    let timer: number | null = null;
-
-    const trigger = () => {
-      setStuck(true);
-      recoverFromStuckRoute();
-    };
-
-    const start = () => {
-      if (timer != null) return;
-      startedAt = Date.now();
-      timer = window.setTimeout(trigger, remaining);
-    };
-
-    const pause = () => {
-      if (timer == null) return;
-      window.clearTimeout(timer);
-      timer = null;
-      remaining = Math.max(0, remaining - (Date.now() - startedAt));
-    };
-
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        // لا نحتسب الوقت أثناء غياب التبويب — يمنع إعادة التحميل عند العودة
-        pause();
-      } else {
-        start();
-      }
-    };
-
-    if (document.visibilityState === "visible") start();
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      if (timer != null) window.clearTimeout(timer);
-    };
-  }, []);
-
-  if (stuck) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4 text-center">
-        <div className="glass-panel max-w-sm space-y-4 p-6">
-          <p className="text-sm font-semibold text-foreground">التحميل عالق بسبب كاش قديم أو اتصال بطيء</p>
-          <button type="button" className="glass-trigger px-5 py-2 text-sm font-bold" onClick={recoverFromStuckRoute}>
-            إعادة المحاولة
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return <RouteAwareSkeleton />;
 }
 
