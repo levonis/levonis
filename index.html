@@ -386,69 +386,35 @@
           loader.classList.add('show');
         }
 
+        // Show the recovery UI after a generous timeout — but DO NOT auto-reload,
+        // DO NOT wipe caches, and DO NOT self-heal on chunk errors. Forced
+        // reloads-before-the-bundle-finishes were the root cause of an infinite
+        // loop on slow networks (60s timer kept firing before the JS bundle
+        // could finish downloading). Let the bundle load naturally; show a
+        // manual "Retry" button so the user is in control.
         var showTimer = setTimeout(function () {
           if (window.__levoMounted) return;
-          if (getAttempts() >= MAX_AUTO_RECOVERIES) {
-            showRecovery('اتصالك بطيء — جرّب شبكة أخرى ثم اضغط إعادة المحاولة');
-          } else {
-            showRecovery();
-          }
+          showRecovery('التحميل يستغرق وقتاً أطول من المعتاد على شبكتك. يمكنك الانتظار أو الضغط على إعادة المحاولة.');
         }, SHOW_RECOVERY_AFTER);
-
-        var autoTimer = setTimeout(function () {
-          if (window.__levoMounted) return;
-          var attempts = getAttempts();
-          if (attempts >= MAX_AUTO_RECOVERIES) {
-            showRecovery('اتصالك بطيء — جرّب شبكة أخرى ثم اضغط إعادة المحاولة');
-            return;
-          }
-          setAttempts(attempts + 1);
-          window.__levoRecover();
-        }, FORCE_RELOAD_AFTER);
 
         window.addEventListener('levo:mounted', function () {
           window.__levoMounted = true;
           clearTimeout(showTimer);
-          clearTimeout(autoTimer);
           setAttempts(0);
         });
 
+        // Manual recovery only — triggered by the user clicking the Retry
+        // button. No automatic cache wipes anywhere.
         window.__levoRecover = function () {
-          var clearAll = Promise.resolve();
-          try {
-            if ('serviceWorker' in navigator) {
-              clearAll = navigator.serviceWorker.getRegistrations().then(function (regs) {
-                return Promise.all(regs.map(function (r) { return r.unregister(); }));
-              });
-            }
-          } catch (e) {}
-
-          clearAll
-            .then(function () {
-              if ('caches' in window) {
-                return caches.keys().then(function (keys) {
-                  return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-                });
-              }
-            })
-            .catch(function () {})
-            .then(function () {
-              try { localStorage.removeItem('__levo_chunk_retry'); } catch (e) {}
-              window.location.reload();
-            });
+          try { localStorage.removeItem('__levo_chunk_retry'); } catch (e) {}
+          window.location.reload();
         };
 
-        // Self-heal: if ANY JS chunk fails to load before mount, it almost always
-        // means a stale Service Worker is serving a stale index.html that points to
-        // chunk hashes that no longer exist after a deploy. Auto-nuke SW + caches
-        // and reload ONCE — far faster than the 25s force-reload timer.
-        var SELF_HEAL_KEY = '__levo_self_healed_v16';
-        function selfHealOnce() {
-          if (window.__levoMounted) return;
-          try { if (sessionStorage.getItem(SELF_HEAL_KEY)) return; } catch (e) {}
-          try { sessionStorage.setItem(SELF_HEAL_KEY, '1'); } catch (e) {}
-          window.__levoRecover();
-        }
+        // No-op: self-heal disabled. A single failed chunk no longer triggers
+        // a cache wipe + reload — that behavior was causing infinite loops on
+        // slow networks.
+        function selfHealOnce() { /* intentionally empty */ }
+
         // Report mount-timeout once when recovery UI is shown
         var REPORTED_TIMEOUT = false;
         function reportMountTimeout() {
