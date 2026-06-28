@@ -396,10 +396,10 @@
         // loop on slow networks (60s timer kept firing before the JS bundle
         // could finish downloading). Let the bundle load naturally; show a
         // manual "Retry" button so the user is in control.
-        var showTimer = setTimeout(function () {
-          if (window.__levoMounted) return;
-          showRecovery('التحميل يستغرق وقتاً أطول من المعتاد على شبكتك. يمكنك الانتظار أو الضغط على إعادة المحاولة.');
-        }, SHOW_RECOVERY_AFTER);
+        // Recovery overlay disabled — it was hiding the real UI on slow networks.
+        // Users can manually reload the page from the browser if truly stuck.
+        var showTimer = null;
+
 
         window.addEventListener('levo:mounted', function () {
           window.__levoMounted = true;
