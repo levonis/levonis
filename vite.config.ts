@@ -17,22 +17,9 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
     target: 'es2020',
-    // Trim modulepreload graph: the initial HTML must NOT preload heavy lazy chunks
-    // (three.js, html2canvas, jspdf, qr, charts, motion, sanitize, day-picker) — they
-    // should load only when the route that needs them is visited. This dramatically
-    // improves LCP on the homepage (saves ~493 KiB of unused JS preloaded eagerly).
-    modulePreload: {
-      resolveDependencies: (_filename, deps) => {
-        const HEAVY = [
-          'vendor-html2canvas',
-          'vendor-jspdf',
-          'vendor-sanitize',
-          'vendor-capacitor',
-          'vendor-canvg',
-        ];
-        return deps.filter((d) => !HEAVY.some((h) => d.includes(h)));
-      },
-    },
+    // All third-party deps now live in a single `vendor` chunk to avoid TDZ
+    // crashes from circular imports across split chunks. modulePreload uses
+    // default behavior.
     rollupOptions: {
       output: {
         manualChunks: (id) => {
