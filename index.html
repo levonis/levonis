@@ -352,15 +352,8 @@
           try { localStorage.setItem('__levo_recovery_attempts', String(n)); } catch (e) {}
         }
 
-        function showRecovery(message) {
-          var loader = document.getElementById('initial-loader');
-          var rec = document.getElementById('il-recover');
-          if (!rec || !loader) return;
-          if (message) {
-            var p = rec.querySelector('p');
-            if (p) p.textContent = message;
-          }
-          loader.classList.add('show');
+        function showRecovery(_message) {
+          // Initial loader removed — no-op kept for compatibility.
         }
 
         // Show the recovery UI after a generous timeout — but DO NOT auto-reload,
