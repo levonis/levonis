@@ -137,7 +137,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
   <link rel="manifest" href="/manifest.json?v=levo-20260428">
-  <meta name="theme-color" content="#234d3f">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LEVONIS">
@@ -185,34 +185,13 @@
   </script>
   <!-- og:title / og:description / twitter:title / twitter:description are emitted per-route via the SEO component (react-helmet-async). -->
     <style>
-      html, body { background-color: hsl(160, 38%, 22%); margin: 0; }
+      html, body { background-color: #000000; margin: 0; }
       /* CLS guards — prevent horizontal scroll jumps and image-aspect collapse */
       html { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
       body { overflow-x: hidden; min-height: 100vh; min-height: 100dvh; color: #c7b46c; font-family: 'Cairo', 'Cairo Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
       img, video { max-width: 100%; }
       /* Reserve scrollbar gutter so layout doesn't shift when modals open */
       html { scrollbar-gutter: stable; }
-      #initial-loader {
-        position: fixed; inset: 0; z-index: 99999;
-        display: none; align-items: center; justify-content: center;
-        background: hsl(160, 38%, 22%);
-        transition: opacity 0.4s ease;
-      }
-      #initial-loader.show { display: flex; }
-      #initial-loader.fade-out { opacity: 0; pointer-events: none; }
-      #il-recover {
-        display: flex; flex-direction: column; align-items: center; gap: 12px;
-        font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        text-align: center; color: #d8c887; max-width: 320px; padding: 0 20px;
-      }
-      #il-recover p { margin: 0; font-size: 14px; opacity: 0.85; line-height: 1.6; }
-      #il-recover button {
-        background: linear-gradient(135deg, #c7b46c 0%, #8e6c3d 100%);
-        color: #0b3028; border: none; padding: 12px 28px; border-radius: 10px;
-        font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
-        box-shadow: 0 4px 14px rgba(199, 180, 108, 0.3);
-      }
-      #il-recover button:active { transform: scale(0.97); }
     </style>
     <!-- Meta Pixel Code (deferred until after FCP/load to avoid blocking initial render) -->
     <script>
@@ -271,12 +250,6 @@
          The H1 below mirrors the size/weight/text of the real homepage hero in
          src/pages/Home.tsx, so the LCP candidate doesn't flip after hydration. -->
     <div id="root"></div>
-    <div id="initial-loader">
-      <div id="il-recover">
-        <p>التحميل يستغرق وقتاً أطول من المعتاد</p>
-        <button onclick="window.__levoRecover()">إعادة المحاولة</button>
-      </div>
-    </div>
     <script>
       // ===== Chunk error reporter — POSTs to Supabase chunk_load_errors table =====
       (function () {
@@ -379,15 +352,8 @@
           try { localStorage.setItem('__levo_recovery_attempts', String(n)); } catch (e) {}
         }
 
-        function showRecovery(message) {
-          var loader = document.getElementById('initial-loader');
-          var rec = document.getElementById('il-recover');
-          if (!rec || !loader) return;
-          if (message) {
-            var p = rec.querySelector('p');
-            if (p) p.textContent = message;
-          }
-          loader.classList.add('show');
+        function showRecovery(_message) {
+          // Initial loader removed — no-op kept for compatibility.
         }
 
         // Show the recovery UI after a generous timeout — but DO NOT auto-reload,

@@ -1,59 +1,34 @@
-# خطة تنظيف الملفات المكررة وغير المستخدمة
+# حذف شاشة التحميل الأولية بالكامل
 
-تم فحص المشروع بالكامل. النتائج بإيجاز:
+الشاشة الخضراء التي تراها في الصورة هي خلفية `html, body` الخضراء + عنصر `#initial-loader` المضمَّن في `index.html`. سأحذف الفكرة كاملة.
 
-## 1) شعارات الموقع (5 نسخ من نفس الصورة 57K!)
-سيتم حذف النسخ غير المستخدمة، وإبقاء فقط ما هو مرتبط فعلياً:
+## التغييرات في `index.html`
 
-**حذف:**
-- `public/og-logo.png` (57K) — 0 مراجع
-- `public/logo-medium.png` (57K) — 0 مراجع
-- `public/logo-small.png` (15K) — 0 مراجع
-- `public/logo-small.webp` (7.5K) — 0 مراجع
-- `src/assets/levonis-logo.png` (57K) — 0 مراجع
+1. **خلفية html/body**: تغيير `background-color: hsl(160, 38%, 22%)` (الأخضر) إلى `#000000` (أسود) ليطابق `AppBackground.tsx` الفعلي للتطبيق — بدون أي وميض أخضر.
 
-**إبقاء:** `favicon.png`, `apple-touch-icon.png`, `icons/icon-192.png`, `icons/icon-512.png`, `og-image.jpg`
+2. **حذف CSS الخاص بالـ loader** (الأسطر ~195–216):
+   - `#initial-loader { ... }`
+   - `#initial-loader.show`, `#initial-loader.fade-out`
+   - `#il-recover { ... }`, `#il-recover p`, `#il-recover button`, `#il-recover button:active`
 
-⚠️ ملاحظة: `src/components/Footer.tsx` يشير إلى `/logo-small.webp` — سأتحقق ثانية وأبقي الملف إذا كان مستخدماً فعلاً (التقرير قد يكون فاته هذا المرجع).
+3. **حذف HTML markup** (الأسطر 274–279):
+   ```html
+   <div id="initial-loader">
+     <div id="il-recover">...</div>
+   </div>
+   ```
 
-## 2) صفحات Dead Code (255KB)
-صفحات غير مسجلة في `App.tsx` ولا تُستورد في أي مكان:
+4. **تبسيط سكربت `showRecovery`** (السطر ~382): إزالة الإشارات إلى `initial-loader` و `il-recover` (تصبح no-op لأن العناصر محذوفة)، مع إبقاء `__levoMounted` و `__levoRecover` (يستدعيهما كود آخر).
 
-- `src/pages/Competitions.tsx` (77K)
-- `src/pages/MyPrinters.tsx` (49K)
-- `src/pages/PrinterProtection.tsx` (49K)
-- `src/pages/AdminLoyaltyCardCodes.tsx` (32K)
-- `src/pages/AdminCustomRequests.tsx` (13K)
-- `src/pages/AdminMainSections.tsx` (6K)
-- `src/pages/CommunityMerchantDashboard.tsx` (5K)
-- `src/pages/MyPoints.tsx` (25K)
+5. **theme-color**: تغيير `#234d3f` إلى `#000000` ليطابق ثيم التطبيق الحقيقي ويمنع شريط المتصفح الأخضر.
 
-## 3) مكونات Dead Code
-- `src/components/WavyColors.tsx`
-- `src/components/IdleRoutePrefetcher.tsx`
-- `src/components/PrintReputationSummary.tsx`
+6. **manifest.json**: تغيير `background_color` و `theme_color` من `#234d3f` إلى `#000000`.
 
-## 4) أصول قديمة في src/assets
-- `src/assets/crossy-road-logo.jpg`
-- `src/assets/stack-tower-logo.png`
-- `src/assets/engine-supercharge.png`, `engine-normal.png`
-- `src/assets/missile-sprite.png`, `missile-base-sprite.png`
-- `src/assets/player-ship.png`
-- `src/assets/ship-damage-1.png`, `ship-damage-2.png`, `ship-damage-3.png`
-- `src/assets/shield-anim.png`
+## ما سيبقى كما هو
+- مُبلّغ أخطاء الـ chunks (`__levoReportError`)
+- مستمع `levo:mounted`
+- `__levoRecover` (للاستخدام اليدوي إن لزم)
+- Service worker و Meta Pixel وغيرها
 
-⚠️ **لن أحذف:** مجلد `src/assets/knife-rain/` لأنها قد تُحمَّل ديناميكياً من محرك اللعبة.
-
-## 5) الثيم القديم في manifest
-- `public/manifest.json` فيه `theme_color: #103D33` و `background_color: #103D33` (الأخضر القديم)
-- **اقتراح:** تحديثهما إلى `#234d3f` (الأخضر الحالي) لمطابقة بقية الموقع
-
-## خطوات التنفيذ
-1. التحقق مرة أخيرة من كل ملف قبل الحذف (grep سريع للتأكد من 0 references).
-2. حذف الملفات عبر `rm`.
-3. تحديث `manifest.json` بالأخضر الجديد.
-4. تشغيل build للتأكد من عدم كسر أي شيء.
-
-**الإجمالي:** ~26 ملفاً، توفير ~596KB.
-
-هل تريد المتابعة؟ أم تريد استبعاد فئة معينة (مثل الإبقاء على ملفات الألعاب أو الصفحات للاحتياط)؟
+## النتيجة المتوقعة
+خلفية سوداء فقط في أول ثوانٍ التحميل قبل ظهور React، بدون أي مستطيل أخضر، بدون أي UI تحميل أو "إعادة المحاولة".
