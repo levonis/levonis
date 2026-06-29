@@ -35,47 +35,15 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       output: {
-        // Merge tiny chunks (<10 KB) to reduce the long waterfall on first paint
-        // — PageSpeed showed 22 chained micro-chunks delaying LCP by ~3s.
-        experimentalMinChunkSize: 10_000,
         manualChunks: (id) => {
-          // Group app page modules so the browser fetches one chunk per area
-          // instead of dozens of tiny per-route requests on slow networks.
-          // Public pages (Home, ProductDetail, Cart, ...) stay on their own
-          // default per-route chunks — only admin/community/merchant get bundled.
-          if (!id.includes('node_modules')) {
-            const norm = id.replace(/\\/g, '/');
-            if (norm.includes('/src/pages/Admin')) return 'admin-pages';
-            if (norm.includes('/src/pages/Community') || norm.includes('/src/pages/community/')) return 'community-pages';
-            if (norm.includes('/src/pages/Merchant') || norm.includes('/src/pages/Storefront')) return 'merchant-pages';
-            return undefined;
-          }
-          // CRITICAL: React MUST be in its own chunk that loads first. Otherwise a
-          // vendor chunk (framer-motion, @radix-ui) can evaluate before React is
-          // available, causing "Cannot read properties of undefined (reading
-          // 'forwardRef')" and a stuck blank/colored screen in production.
-          if (
-            id.includes('node_modules/react/') ||
-            id.includes('node_modules/react-dom/') ||
-            id.includes('node_modules/scheduler/') ||
-            id.includes('node_modules/react/jsx-runtime') ||
-            id.includes('node_modules/react/jsx-dev-runtime')
-          ) {
-            return 'vendor-react';
-          }
-          // Only split libs that are SAFE (no internal circular deps that break in prod).
-          // recharts/d3, framer-motion, @radix-ui all have internal cross-imports that
-          // TDZ-crash when split into separate chunks — leave them with vendor-react.
-          if (id.includes('html2canvas')) return 'vendor-html2canvas';
-          if (id.includes('node_modules/jspdf/') || id.includes('node_modules/jspdf-autotable/')) return 'vendor-jspdf';
-          if (id.includes('node_modules/canvg/')) return 'vendor-canvg';
-          if (id.includes('@supabase') || id.includes('postgrest') || id.includes('gotrue') || id.includes('realtime-js')) return 'vendor-supabase';
-          if (id.includes('dompurify') || id.includes('sanitize-html')) return 'vendor-sanitize';
-          if (id.includes('@capacitor')) return 'vendor-capacitor';
-          if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
-          return undefined;
+          if (!id.includes('node_modules')) return undefined;
+          // CRITICAL: React + the entire React ecosystem MUST live in ONE chunk so
+          // that any library doing `import * as React from 'react'` (radix, framer,
+          // react-router, etc.) cannot evaluate before React initializes. Splitting
+          // these caused a TDZ crash ("Cannot access 'gr' before initialization")
+          // in production, leaving the app stuck on the green background.
+          return 'vendor';
         },
-
       },
     },
   },
