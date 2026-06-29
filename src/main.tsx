@@ -190,8 +190,3 @@ try {
   localStorage.removeItem('__levo_recovery_attempts');
 } catch {}
 
-// Remove initial HTML loader container after first paint
-requestAnimationFrame(() => {
-  const loader = document.getElementById('initial-loader');
-  if (loader) loader.remove();
-});
