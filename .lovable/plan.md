@@ -1,53 +1,59 @@
-## Scope
+# خطة تنظيف الملفات المكررة وغير المستخدمة
 
-Most of the request was already implemented in the previous turn (verified now):
+تم فحص المشروع بالكامل. النتائج بإيجاز:
 
-- `IdleRoutePrefetcher` and `navigator.connection` background prefetch — **already removed** from `App.tsx`.
-- 12s `recoverFromStuckRoute` / `ROUTE_FALLBACK_TIMEOUT_MS` — **already removed**; `RouteSuspenseFallback` just renders `RouteAwareSkeleton`.
-- `AppNavBar` — **already statically imported** (no longer lazy).
-- No `queryClient.prefetchQuery` calls exist anywhere in the provider tree.
+## 1) شعارات الموقع (5 نسخ من نفس الصورة 57K!)
+سيتم حذف النسخ غير المستخدمة، وإبقاء فقط ما هو مرتبط فعلياً:
 
-Per your answers, providers stay at the root (item 2 skipped — moving Island/PageSearch would break the Home page chrome and you confirmed the current setup works). Footer skipped (no global Footer exists).
+**حذف:**
+- `public/og-logo.png` (57K) — 0 مراجع
+- `public/logo-medium.png` (57K) — 0 مراجع
+- `public/logo-small.png` (15K) — 0 مراجع
+- `public/logo-small.webp` (7.5K) — 0 مراجع
+- `src/assets/levonis-logo.png` (57K) — 0 مراجع
 
-The only remaining item is **chunk grouping** for admin/* and community/* routes.
+**إبقاء:** `favicon.png`, `apple-touch-icon.png`, `icons/icon-192.png`, `icons/icon-512.png`, `og-image.jpg`
 
-## What changes
+⚠️ ملاحظة: `src/components/Footer.tsx` يشير إلى `/logo-small.webp` — سأتحقق ثانية وأبقي الملف إذا كان مستخدماً فعلاً (التقرير قد يكون فاته هذا المرجع).
 
-### `vite.config.ts` — add `manualChunks`
+## 2) صفحات Dead Code (255KB)
+صفحات غير مسجلة في `App.tsx` ولا تُستورد في أي مكان:
 
-Today every `lazy(() => import("./pages/AdminX"))` becomes its own HTTP request. Visiting the admin panel currently fans out into 70+ tiny chunk requests. Group them by filename prefix so the browser fetches one chunk per area:
+- `src/pages/Competitions.tsx` (77K)
+- `src/pages/MyPrinters.tsx` (49K)
+- `src/pages/PrinterProtection.tsx` (49K)
+- `src/pages/AdminLoyaltyCardCodes.tsx` (32K)
+- `src/pages/AdminCustomRequests.tsx` (13K)
+- `src/pages/AdminMainSections.tsx` (6K)
+- `src/pages/CommunityMerchantDashboard.tsx` (5K)
+- `src/pages/MyPoints.tsx` (25K)
 
-```text
-output.manualChunks(id):
-  if id matches  /src/pages/Admin*          → "admin-pages"
-  if id matches  /src/pages/Community*
-     or /src/pages/community/*              → "community-pages"
-  if id matches  /src/pages/Merchant*
-     or /src/pages/Storefront*              → "merchant-pages"
-  (everything else: leave to Vite defaults — per-route chunks)
-```
+## 3) مكونات Dead Code
+- `src/components/WavyColors.tsx`
+- `src/components/IdleRoutePrefetcher.tsx`
+- `src/components/PrintReputationSummary.tsx`
 
-Implementation: add a `build.rollupOptions.output.manualChunks` function to `vite.config.ts`. The function inspects the resolved module `id`, returns the chunk name for admin / community / merchant page modules, and returns `undefined` for everything else so Vite keeps its default per-route splitting for public pages (Home, ProductDetail, Cart, etc. stay independent and small).
+## 4) أصول قديمة في src/assets
+- `src/assets/crossy-road-logo.jpg`
+- `src/assets/stack-tower-logo.png`
+- `src/assets/engine-supercharge.png`, `engine-normal.png`
+- `src/assets/missile-sprite.png`, `missile-base-sprite.png`
+- `src/assets/player-ship.png`
+- `src/assets/ship-damage-1.png`, `ship-damage-2.png`, `ship-damage-3.png`
+- `src/assets/shield-anim.png`
 
-### Nothing else changes
+⚠️ **لن أحذف:** مجلد `src/assets/knife-rain/` لأنها قد تُحمَّل ديناميكياً من محرك اللعبة.
 
-- `App.tsx` lazy import list stays as-is — grouping is done at the bundler level, not by rewriting imports. This keeps the route table readable and avoids touching 70+ route definitions.
-- Providers (`IslandProvider`, `PageSearchProvider`, `ProfileTransitionProvider`) stay at the root per your decision.
-- No changes to `main.tsx`, `index.css`, routing logic, auth gates, or the Telegram Mini App init.
+## 5) الثيم القديم في manifest
+- `public/manifest.json` فيه `theme_color: #103D33` و `background_color: #103D33` (الأخضر القديم)
+- **اقتراح:** تحديثهما إلى `#234d3f` (الأخضر الحالي) لمطابقة بقية الموقع
 
-## Expected effect
+## خطوات التنفيذ
+1. التحقق مرة أخيرة من كل ملف قبل الحذف (grep سريع للتأكد من 0 references).
+2. حذف الملفات عبر `rm`.
+3. تحديث `manifest.json` بالأخضر الجديد.
+4. تشغيل build للتأكد من عدم كسر أي شيء.
 
-- Home / public pages: unchanged (still small per-route chunks; no admin or community code pulled in).
-- Admin panel: first visit downloads one `admin-pages-*.js` chunk instead of 70+ — fewer round trips on slow networks, total bytes roughly the same (slightly less due to shared imports deduped inside the chunk).
-- Community pages: same pattern, one chunk for all community routes.
+**الإجمالي:** ~26 ملفاً، توفير ~596KB.
 
-## Risk
-
-- A single admin chunk is larger than one route's worth of JS. The user pays it once on the first admin navigation, then it's cached. Acceptable since regular users never hit admin routes.
-- If a community page is very heavy (e.g. a chart-only page), grouping all community pages pulls those libs in even on a lighter community route. Mitigation: shared deps (recharts, etc.) are already in shared vendor chunks, not in page chunks.
-
-## Technical details
-
-- `vite.config.ts` `output.manualChunks` receives the absolute module id. Use `id.includes("/src/pages/Admin")` etc. — works on Windows and Linux because Vite normalizes to forward slashes.
-- Return `undefined` (not `null`) for non-matching ids — that's the Rollup contract for "use default chunking".
-- Do NOT put `node_modules` into these chunks; only match `/src/pages/...`. Vendor splitting stays default.
+هل تريد المتابعة؟ أم تريد استبعاد فئة معينة (مثل الإبقاء على ملفات الألعاب أو الصفحات للاحتياط)؟
