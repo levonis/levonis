@@ -327,77 +327,12 @@
       })();
     </script>
     <script>
-      // Safety net: if React doesn't mount in time, show recovery UI.
-      // Auto-recover only twice — after that show a clear "slow connection" message
-      // instead of looping cache wipes (which makes things worse on flaky networks).
+      // Lightweight chunk-error telemetry only. Initial loader / recovery UI
+      // has been removed entirely — no overlays, no auto-reload, no cache wipes.
       (function () {
-        var IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-        // Be generous: many IQ mobile networks take 10-20s for first paint.
-        // Showing the "slow" UI too early scares users into hammering retry,
-        // which wipes caches and makes the next load even slower.
-        // Effectively disabled: the recovery overlay was hiding the real UI
-        // on slow networks before the bundle had a chance to mount. Push it
-        // far out so it never blocks normal loading; users can still reload
-        // manually if they truly are stuck.
-        var SHOW_RECOVERY_AFTER = IS_MOBILE ? 120000 : 90000;
-        var FORCE_RELOAD_AFTER = IS_MOBILE ? 300000 : 240000;
-        var MAX_AUTO_RECOVERIES = 1;
-
         window.__levoMounted = false;
+        window.addEventListener('levo:mounted', function () { window.__levoMounted = true; });
 
-        function getAttempts() {
-          try { return parseInt(localStorage.getItem('__levo_recovery_attempts') || '0', 10) || 0; } catch (e) { return 0; }
-        }
-        function setAttempts(n) {
-          try { localStorage.setItem('__levo_recovery_attempts', String(n)); } catch (e) {}
-        }
-
-        function showRecovery(_message) {
-          // Initial loader removed — no-op kept for compatibility.
-        }
-
-        // Show the recovery UI after a generous timeout — but DO NOT auto-reload,
-        // DO NOT wipe caches, and DO NOT self-heal on chunk errors. Forced
-        // reloads-before-the-bundle-finishes were the root cause of an infinite
-        // loop on slow networks (60s timer kept firing before the JS bundle
-        // could finish downloading). Let the bundle load naturally; show a
-        // manual "Retry" button so the user is in control.
-        // Recovery overlay disabled — it was hiding the real UI on slow networks.
-        // Users can manually reload the page from the browser if truly stuck.
-        var showTimer = null;
-
-
-        window.addEventListener('levo:mounted', function () {
-          window.__levoMounted = true;
-          clearTimeout(showTimer);
-          setAttempts(0);
-        });
-
-        // Manual recovery only — triggered by the user clicking the Retry
-        // button. No automatic cache wipes anywhere.
-        window.__levoRecover = function () {
-          try { localStorage.removeItem('__levo_chunk_retry'); } catch (e) {}
-          window.location.reload();
-        };
-
-        // No-op: self-heal disabled. A single failed chunk no longer triggers
-        // a cache wipe + reload — that behavior was causing infinite loops on
-        // slow networks.
-        function selfHealOnce() { /* intentionally empty */ }
-
-        // Report mount-timeout once when recovery UI is shown
-        var REPORTED_TIMEOUT = false;
-        function reportMountTimeout() {
-          if (REPORTED_TIMEOUT) return;
-          REPORTED_TIMEOUT = true;
-          try { window.__levoReportError && window.__levoReportError('mount-timeout', 'React did not mount before SHOW_RECOVERY_AFTER', null); } catch (e) {}
-        }
-        var _origShow = showRecovery;
-        showRecovery = function (m) { reportMountTimeout(); return _origShow(m); };
-
-        // Only treat SAME-ORIGIN asset failures as chunk errors. Third-party
-        // scripts (Meta Pixel/fbevents.js, telegram, analytics) often fail on
-        // restrictive networks and MUST NOT trigger a cache wipe + reload.
         function isSameOriginAsset(src) {
           if (!src) return false;
           try {
@@ -406,7 +341,6 @@
           } catch (e) { return false; }
         }
         window.addEventListener('error', function (e) {
-          // Once React has mounted, any later asset failure is non-fatal.
           if (window.__levoMounted) return;
           var msg = (e && e.message) || '';
           var src = (e && e.target && (e.target.src || e.target.href)) || '';
@@ -416,8 +350,6 @@
           var isOwnAsset = src && /\.(js|mjs)(\?|$)/.test(src) && isSameOriginAsset(src);
           if (!isDynImport && !isOwnAsset) return;
           try { window.__levoReportError && window.__levoReportError(src ? 'resource' : 'chunk', msg || 'asset failed to load', src || null); } catch (er) {}
-          showRecovery();
-          selfHealOnce();
         }, true);
         window.addEventListener('unhandledrejection', function (e) {
           if (window.__levoMounted) return;
@@ -426,8 +358,6 @@
               msg.indexOf('Importing a module script failed') !== -1 ||
               msg.indexOf('error loading dynamically imported module') !== -1) {
             try { window.__levoReportError && window.__levoReportError('unhandledrejection', msg, null); } catch (er) {}
-            showRecovery();
-            selfHealOnce();
           }
         });
       })();
