@@ -1,184 +1,30 @@
-const VERSION = 'v21';
-const STATIC_CACHE = `levonis-static-${VERSION}`;
-const HTML_CACHE = `levonis-html-${VERSION}`;
-const IMG_CACHE = `levonis-img-${VERSION}`;
-const IMG_CACHE_MAX = 220;
-
-const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
-const HASHED_ASSET_PATH = /^\/assets\/.+\.(js|css)$/i;
-
-// App shell — precached on install so the second visit gets instant FCP.
-// Hashed JS/CSS chunks are not in this list; they hit the cacheFirst runtime
-// cache on first request and stay there until VERSION bumps.
-const APP_SHELL = [
-  '/',
-  '/manifest.json',
-  '/fonts/cairo-400.woff2',
-  '/fonts/cairo-700.woff2',
-  '/icons/icon-192.png',
-  '/favicon.png',
-];
-
-const IS_PREVIEW_HOST =
-  self.location.hostname.includes('lovableproject.com') ||
-  self.location.hostname.startsWith('id-preview--') ||
-  (self.location.hostname.includes('lovable.app') && !self.location.hostname.includes('levonis.lovable.app'));
+// One-release cleanup worker.
+// The old app-shell cache caused returning Android Chrome visitors to briefly
+// see stale screens/colors. Keep this file at the same /sw.js path so browsers
+// that already installed it receive the replacement, clear LEVONIS caches, then
+// unregister. Push/browser notifications fall back to the page code.
+function isLevonisAppCache(name) {
+  return /^levonis-(static|html|img)-/.test(name) ||
+    /(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-/.test(name);
+}
 
 self.addEventListener('install', (event) => {
-  if (!IS_PREVIEW_HOST) {
-    event.waitUntil((async () => {
-      try {
-        const cache = await caches.open(STATIC_CACHE);
-        await Promise.allSettled(APP_SHELL.map((u) => cache.add(u).catch(() => {})));
-      } catch {}
-    })());
-  }
-  self.skipWaiting();
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    const names = await caches.keys();
-    await Promise.all(
-      names
-        .filter((n) => n !== STATIC_CACHE && n !== HTML_CACHE && n !== IMG_CACHE)
-        .map((n) => caches.delete(n))
-    );
-    if (IS_PREVIEW_HOST) {
+    try {
+      const names = await caches.keys();
+      await Promise.allSettled(names.filter(isLevonisAppCache).map((name) => caches.delete(name)));
+      await clients.claim();
+      const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+      await Promise.allSettled(windowClients.map((client) => client.navigate(client.url)));
+    } finally {
       await self.registration.unregister();
     }
-    await clients.claim();
   })());
 });
-
-self.addEventListener('message', (event) => {
-  if (event.data === 'SKIP_WAITING') self.skipWaiting();
-  if (event.data === 'KILL_SW') {
-    event.waitUntil((async () => {
-      const names = await caches.keys();
-      await Promise.all(names.map((n) => caches.delete(n)));
-      await self.registration.unregister();
-    })());
-  }
-});
-
-self.addEventListener('fetch', (event) => {
-  if (IS_PREVIEW_HOST) return;
-
-  const { request } = event;
-  if (request.method !== 'GET') return;
-
-  const url = new URL(request.url);
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
-  if (url.search.includes('_swkill=1')) return;
-
-  // Stale-while-revalidate for Supabase transformed images (cross-origin).
-  // Huge win on repeat visits: home page reuses cached thumbnails instantly
-  // while a background fetch refreshes them.
-  if (
-    url.origin !== self.location.origin &&
-    url.hostname.endsWith('.supabase.co') &&
-    (url.pathname.includes('/storage/v1/render/image/public/') ||
-     url.pathname.includes('/storage/v1/object/public/'))
-  ) {
-    event.respondWith(staleWhileRevalidateImage(request));
-    return;
-  }
-
-  if (url.origin !== self.location.origin) return;
-
-  if (
-    url.pathname.includes('/rest/') ||
-    url.pathname.includes('/functions/') ||
-    url.pathname.includes('/auth/') ||
-    url.pathname.includes('/storage/') ||
-    url.pathname.startsWith('/src/') ||
-    url.pathname.startsWith('/node_modules/') ||
-    url.pathname.startsWith('/@vite/') ||
-    url.pathname.includes('/.vite/')
-  ) {
-    return;
-  }
-
-  const isHtml =
-    request.mode === 'navigate' ||
-    (request.headers.get('accept') || '').includes('text/html');
-
-  if (isHtml) {
-    event.respondWith(networkFirstHtml(request));
-    return;
-  }
-
-  if (HASHED_ASSET_PATH.test(url.pathname) || STATIC_EXTENSIONS.test(url.pathname)) {
-    event.respondWith(cacheFirst(request));
-  }
-});
-
-async function cacheFirst(request) {
-  const cache = await caches.open(STATIC_CACHE);
-  const cached = await cache.match(request);
-  if (cached) return cached;
-  try {
-    const response = await fetch(request);
-    if (response && response.ok && (response.type === 'basic' || response.type === 'default')) {
-      cache.put(request, response.clone()).catch(() => {});
-    }
-    return response;
-  } catch (err) {
-    if (cached) return cached;
-    throw err;
-  }
-}
-
-async function networkFirstHtml(request) {
-  const cache = await caches.open(HTML_CACHE);
-  try {
-    const response = await fetch(request);
-    if (response && response.ok) {
-      cache.put(request, response.clone()).catch(() => {});
-    }
-    return response;
-  } catch (err) {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-    const fallback = await cache.match('/');
-    if (fallback) return fallback;
-    throw err;
-  }
-}
-
-async function staleWhileRevalidateImage(request) {
-  const cache = await caches.open(IMG_CACHE);
-  const cached = await cache.match(request);
-  const networkPromise = fetch(request)
-    .then((response) => {
-      if (response && (response.ok || response.type === 'opaque')) {
-        cache.put(request, response.clone()).then(() => trimCache(IMG_CACHE, IMG_CACHE_MAX)).catch(() => {});
-      }
-      return response;
-    })
-    .catch(() => null);
-  if (cached) {
-    // Refresh in the background; serve cached immediately.
-    networkPromise.catch(() => {});
-    return cached;
-  }
-  const fresh = await networkPromise;
-  if (fresh) return fresh;
-  return new Response('', { status: 504 });
-}
-
-async function trimCache(name, max) {
-  try {
-    const cache = await caches.open(name);
-    const keys = await cache.keys();
-    if (keys.length <= max) return;
-    const excess = keys.length - max;
-    for (let i = 0; i < excess; i++) {
-      await cache.delete(keys[i]);
-    }
-  } catch {}
-}
 
 self.addEventListener('push', (event) => {
   let data = { title: 'LEVONIS', body: 'لديك إشعار جديد' };
