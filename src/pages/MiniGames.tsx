@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, Gamepad2, Filter, Flame, Clock, Star, Zap, ShoppingBag, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PixelBackground from "@/components/games/PixelBackground";
-import PixelLoadingScreen from "@/components/games/PixelLoadingScreen";
+
 import { useGameSounds } from "@/components/games/useGameSounds";
 import GameCard from "@/components/games/GameCard";
 import PixelMusicRadio from "@/components/games/PixelMusicRadio";
