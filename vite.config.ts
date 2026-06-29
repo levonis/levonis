@@ -50,6 +50,19 @@ export default defineConfig(({ mode }) => ({
             if (norm.includes('/src/pages/Merchant') || norm.includes('/src/pages/Storefront')) return 'merchant-pages';
             return undefined;
           }
+          // CRITICAL: React MUST be in its own chunk that loads first. Otherwise a
+          // vendor chunk (framer-motion, @radix-ui) can evaluate before React is
+          // available, causing "Cannot read properties of undefined (reading
+          // 'forwardRef')" and a stuck blank/colored screen in production.
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/') ||
+            id.includes('node_modules/react/jsx-runtime') ||
+            id.includes('node_modules/react/jsx-dev-runtime')
+          ) {
+            return 'vendor-react';
+          }
           // Only split libs that are SAFE (no internal circular deps that break in prod).
           // recharts/d3, framer-motion, @radix-ui all have internal cross-imports that
           // TDZ-crash when split into separate chunks — leave them with vendor-react.
