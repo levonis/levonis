@@ -62,16 +62,27 @@ export function useMessageNotifications(activeConversationId?: string | null) {
             const content = newMsg.content?.slice(0, 100) || '📷 وسائط';
 
             if ('serviceWorker' in navigator) {
-              const reg = await navigator.serviceWorker.ready;
-              reg.showNotification(`💬 ${senderName}`, {
+              const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+              if (reg) {
+                reg.showNotification(`💬 ${senderName}`, {
+                  body: content,
+                  icon: '/icons/icon-192.png',
+                  badge: '/icons/icon-192.png',
+                  dir: 'rtl',
+                  lang: 'ar',
+                  tag: `msg-${newMsg.conversation_id}`,
+                  renotify: true,
+                  data: { url: `/community/messages?auto_open=${newMsg.conversation_id}` },
+                } as NotificationOptions);
+                return;
+              }
+            }
+            if ('Notification' in window) {
+              new Notification(`💬 ${senderName}`, {
                 body: content,
                 icon: '/icons/icon-192.png',
-                badge: '/icons/icon-192.png',
                 dir: 'rtl',
                 lang: 'ar',
-                tag: `msg-${newMsg.conversation_id}`,
-                renotify: true,
-                data: { url: `/community/messages?auto_open=${newMsg.conversation_id}` },
               } as NotificationOptions);
             }
           }

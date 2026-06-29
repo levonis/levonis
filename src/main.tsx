@@ -55,24 +55,23 @@ idle(() => {
   import("@/lib/scrollPerformance").then((m) => m.installScrollPerformance()).catch(() => {});
 });
 
-// Service Worker registration — production hosts only. Preview/lovable.app
-// staging unregister themselves inside sw.js to avoid trapping the iframe.
+// Old app-shell Service Worker cleanup. Do not register a new app-shell SW:
+// returning Android Chrome visitors were seeing stale cached screens during
+// startup. The same-path public/sw.js now clears old LEVONIS caches once, then
+// unregisters itself.
 if ('serviceWorker' in navigator && typeof window !== 'undefined') {
-  const host = window.location.hostname;
-  const isPreviewHost =
-    host.includes('lovableproject.com') ||
-    host.startsWith('id-preview--') ||
-    (host.includes('lovable.app') && !host.includes('levonis.lovable.app'));
-  const killSw = window.location.search.includes('_swkill=1');
-  if (!isPreviewHost && !killSw) {
-    const register = () => {
-      navigator.serviceWorker
-        .register('/sw.js', { scope: '/', updateViaCache: 'none' })
-        .catch(() => {});
-    };
-    if (document.readyState === 'complete') idle(register);
-    else window.addEventListener('load', () => idle(register));
-  }
+  idle(async () => {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    } catch {}
+    try {
+      if ('caches' in window) {
+        const names = await caches.keys();
+        await Promise.all(names.filter((name) => /^levonis-/.test(name)).map((name) => caches.delete(name)));
+      }
+    } catch {}
+  });
 }
 
 // Telegram Mini App: expand viewport to full height
