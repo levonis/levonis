@@ -153,7 +153,7 @@
         host.indexOf('id-preview--') === 0 ||
         (host.indexOf('lovable.app') !== -1 && host.indexOf('levonis.lovable.app') === -1);
       var killSw = window.location.search.indexOf('_swkill=1') !== -1;
-      try { localStorage.removeItem('__levo_recovery_attempts'); } catch (e) {}
+      try { localStorage.removeItem('__levo_recovery_attempts'); localStorage.removeItem('__levo_chunk_retry'); } catch (e) {}
       if (!isPreviewHost && !killSw) return;
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
