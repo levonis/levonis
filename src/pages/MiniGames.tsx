@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, Gamepad2, Filter, Flame, Clock, Star, Zap, ShoppingBag, Gift } from "lucide-react";
