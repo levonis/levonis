@@ -103,12 +103,13 @@ idle(() => { import('@capacitor/core').then(({ Capacitor }) => {
 
   import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
     StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-    StatusBar.setBackgroundColor({ color: '#103d33' }).catch(() => {});
+    StatusBar.setBackgroundColor({ color: '#09090b' }).catch(() => {});
     StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
   }).catch(() => {});
 
+  // Hide the native splash screen immediately — no pre-launch wallpaper.
   import('@capacitor/splash-screen').then(({ SplashScreen }) => {
-    setTimeout(() => SplashScreen.hide().catch(() => {}), 500);
+    SplashScreen.hide().catch(() => {});
   }).catch(() => {});
 
   import('@capacitor/app').then(({ App }) => {
