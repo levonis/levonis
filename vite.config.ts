@@ -17,6 +17,19 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
     target: 'es2020',
+    // Keep CommonJS helpers out of route chunks. Rollup can otherwise place
+    // them inside a lazy page chunk (e.g. admin-pages), making vendor code import
+    // back from that page chunk and triggering production TDZ crashes such as
+    // "Cannot access 'gr' before initialization" on Android Chrome.
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('commonjsHelpers')) return 'vendor';
+          if (id.includes('node_modules')) return 'vendor';
+          return undefined;
+        },
+      },
+    },
   },
   esbuild: mode === 'production'
     ? { drop: ['console', 'debugger'], legalComments: 'none' }
