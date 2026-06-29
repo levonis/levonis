@@ -31,7 +31,6 @@ export default function MiniGames() {
   const { isAdmin, loading: authLoading } = useAuth();
   const { playClick } = useGameSounds();
 
-  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<GameCategory>(GameCategory.ALL);
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [showStore, setShowStore] = useState(false);
@@ -43,7 +42,6 @@ export default function MiniGames() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleLoadComplete = useCallback(() => setLoading(false), []);
 
   useEffect(() => {
     // Only lock body scroll when a game is active (fullscreen)
@@ -247,8 +245,8 @@ export default function MiniGames() {
 
   return (
     <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
-      {loading && <PixelLoadingScreen onComplete={handleLoadComplete} />}
       <PixelBackground />
+
 
       {/* Header */}
       <div className="sticky top-0 z-20 pixel-header-bar">
