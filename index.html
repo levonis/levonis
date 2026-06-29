@@ -143,18 +143,11 @@
   <meta name="apple-mobile-web-app-title" content="LEVONIS">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=levo-20260428">
   <script>
-    // Preview hosts MUST NEVER keep a controlling SW (Lovable iframe + hot reload).
-    // On production, the SW (registered from main.tsx) handles its own version migration
-    // by namespacing caches by VERSION. We only do an emergency cleanup if the
-    // user appended ?_swkill=1 to the URL.
+    // Remove the old app-shell cache automatically. A stale Service Worker was
+    // causing Android Chrome to show the previous startup screen briefly unless
+    // the URL was cache-busted with ?v=fix.
     (function () {
-      var host = window.location.hostname || '';
-      var isPreviewHost = host.indexOf('lovableproject.com') !== -1 ||
-        host.indexOf('id-preview--') === 0 ||
-        (host.indexOf('lovable.app') !== -1 && host.indexOf('levonis.lovable.app') === -1);
-      var killSw = window.location.search.indexOf('_swkill=1') !== -1;
       try { localStorage.removeItem('__levo_recovery_attempts'); localStorage.removeItem('__levo_chunk_retry'); } catch (e) {}
-      if (!isPreviewHost && !killSw) return;
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           regs.forEach(function (r) { r.unregister(); });
@@ -162,7 +155,11 @@
       }
       if ('caches' in window) {
         caches.keys().then(function (keys) {
-          keys.forEach(function (k) { caches.delete(k); });
+          keys.forEach(function (k) {
+            if (/^levonis-/.test(k) || /(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-/.test(k)) {
+              caches.delete(k);
+            }
+          });
         }).catch(function () {});
       }
     })();
