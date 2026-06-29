@@ -17,19 +17,16 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
     target: 'es2020',
-    // All third-party deps now live in a single `vendor` chunk to avoid TDZ
-    // crashes from circular imports across split chunks. modulePreload uses
-    // default behavior.
+    // Keep CommonJS helpers out of route chunks. Rollup can otherwise place
+    // them inside a lazy page chunk (e.g. admin-pages), making vendor code import
+    // back from that page chunk and triggering production TDZ crashes such as
+    // "Cannot access 'gr' before initialization" on Android Chrome.
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          if (!id.includes('node_modules')) return undefined;
-          // CRITICAL: React + the entire React ecosystem MUST live in ONE chunk so
-          // that any library doing `import * as React from 'react'` (radix, framer,
-          // react-router, etc.) cannot evaluate before React initializes. Splitting
-          // these caused a TDZ crash ("Cannot access 'gr' before initialization")
-          // in production, leaving the app stuck on the green background.
-          return 'vendor';
+          if (id.includes('commonjsHelpers')) return 'vendor';
+          if (id.includes('node_modules')) return 'vendor';
+          return undefined;
         },
       },
     },
