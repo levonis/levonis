@@ -180,15 +180,26 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Faq = lazy(() => import("./pages/Faq"));
 const BambuVsCreality = lazy(() => import("./pages/guides/BambuVsCreality"));
 
-import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
 import PageFade from "@/components/PageFade";
 import TopProgressBar from "@/components/TopProgressBar";
 import PrefetchOnHover from "@/components/PrefetchOnHover";
 import ViewTransitions from "@/components/ViewTransitions";
 import ImageQualityBoost from "@/components/ImageQualityBoost";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function RouteSuspenseFallback() {
-  return <RouteAwareSkeleton />;
+  return (
+    <div className="min-h-[50vh] w-full max-w-5xl mx-auto px-4 py-6 space-y-4" aria-busy="true" aria-live="polite">
+      <Skeleton className="h-8 w-2/3" />
+      <Skeleton className="h-4 w-1/2" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    </div>
+  );
 }
 
 
