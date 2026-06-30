@@ -16,7 +16,7 @@ export function translateShippingOption(
   // Keep emojis/icons by stripping them for matching only.
   const norm = s.replace(/[^\u0600-\u06FF\s]/g, '').trim();
 
-  if (norm.includes('بحري')) return t('shipping_opt_sea');
+  if (norm.includes('بحري') || norm.includes('اقتصادي')) return t('shipping_opt_sea');
   if (norm.includes('جوي') || norm.includes('سريع')) return t('shipping_opt_air');
   if (norm.includes('مباشر')) return t('shipping_opt_direct');
   if (norm.includes('مسبق')) return t('shipping_opt_preorder');
@@ -34,7 +34,7 @@ export function getShippingCategory(
 ): 'air' | 'sea' | 'other' {
   if (!rawArabic) return 'other';
   const norm = rawArabic.replace(/[^\u0600-\u06FF\s]/g, '').trim();
-  if (norm.includes('بحري')) return 'sea';
+  if (norm.includes('بحري') || norm.includes('اقتصادي')) return 'sea';
   if (norm.includes('جوي') || norm.includes('سريع')) return 'air';
   return 'other';
 }
