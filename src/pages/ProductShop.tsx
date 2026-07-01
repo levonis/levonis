@@ -12,6 +12,8 @@ import { ShoppingBag, Gift, Loader2, Wallet, Info, Package, Ticket, History } fr
 import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 import { toast } from "sonner";
 import ProductWithGiftCard from "@/components/ProductWithGiftCard";
+import { useInfiniteReveal } from "@/hooks/useInfiniteReveal";
+
 
 interface ProductBasedCompetition {
   id: string;
