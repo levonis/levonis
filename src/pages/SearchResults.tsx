@@ -149,44 +149,70 @@ const SearchResults = () => {
             {labelNone}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
-            {allProducts.map((p) => {
-              const name = pickName(p, language);
-              return (
-                <Link
-                  key={p.id}
-                  to={`/product/${p.slug || p.id}`}
-                  className="group rounded-2xl border border-border/40 bg-card/70 backdrop-blur-md p-2.5 hover:border-primary/40 hover:shadow-lg transition-all"
-                >
-                  <div className="aspect-square w-full overflow-hidden rounded-xl bg-foreground/5 mb-2">
-                    {p.image_url && (
-                      <img
-                        src={p.image_url}
-                        alt={name || ''}
-                        loading="lazy"
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    )}
-                  </div>
-                  <div
-                    className="text-[12px] md:text-[13px] font-semibold text-foreground line-clamp-2 leading-tight"
-                    dir="auto"
-                  >
-                    {name}
-                  </div>
-                  {p.price != null && (
-                    <div className="text-[12px] text-primary font-bold mt-1">
-                      {Number(p.price).toLocaleString()} {t('common_iqd')}
-                    </div>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+          <SearchGrid products={allProducts} language={language} t={t} />
         )}
       </main>
     </div>
   );
 };
+
+function SearchGrid({
+  products,
+  language,
+  t,
+}: {
+  products: any[];
+  language: string;
+  t: (k: any) => string;
+}) {
+  // Reveal in chunks so first paint stays fast even at limit=60.
+  const { visible, sentinelRef, hasMore } = useInfiniteReveal(products.length, 18, 18);
+  const items = products.slice(0, visible);
+  return (
+    <>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+        {items.map((p) => {
+          const name = pickName(p, language as any);
+          return (
+            <Link
+              key={p.id}
+              to={`/product/${p.slug || p.id}`}
+              className="group rounded-2xl border border-border/40 bg-card/70 backdrop-blur-md p-2.5 hover:border-primary/40 hover:shadow-lg transition-all cv-auto"
+            >
+              <div className="aspect-square w-full overflow-hidden rounded-xl bg-foreground/5 mb-2">
+                {p.image_url && (
+                  <img
+                    src={p.image_url}
+                    alt={name || ''}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                )}
+              </div>
+              <div
+                className="text-[12px] md:text-[13px] font-semibold text-foreground line-clamp-2 leading-tight"
+                dir="auto"
+              >
+                {name}
+              </div>
+              {p.price != null && (
+                <div className="text-[12px] text-primary font-bold mt-1">
+                  {Number(p.price).toLocaleString()} {t('common_iqd')}
+                </div>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+      {hasMore && (
+        <div ref={sentinelRef} className="py-6 flex justify-center">
+          <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      )}
+    </>
+  );
+}
+
 
 export default SearchResults;
