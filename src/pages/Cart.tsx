@@ -998,7 +998,10 @@ const Cart = () => {
   const referralRemainingForFreeDelivery = appliedReferral
     ? Math.max(0, referralMinOrder - total)
     : 0;
-  const deliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
+  const couponFreeShippingApplied = !!(appliedCoupon
+    && appliedCoupon.discount_type === 'free_shipping'
+    && (!appliedCoupon.applicable_delivery_method || appliedCoupon.applicable_delivery_method === selectedDeliveryMethod));
+  const deliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied || couponFreeShippingApplied) ? 0 : rawDeliveryFee;
 
   
   // Referral commission per unit — added to the buyer's final price (paid to VIP+ owner)
@@ -1009,7 +1012,7 @@ const Cart = () => {
   // Calculate discount
   const calculateDiscount = () => {
     if (!appliedCoupon) return 0;
-    
+    if (appliedCoupon.discount_type === 'free_shipping') return 0;
     if (appliedCoupon.discount_type === 'percentage') {
       return (total * appliedCoupon.discount_value) / 100;
     }
