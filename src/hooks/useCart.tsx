@@ -664,7 +664,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
-      channels.forEach((ch) => supabase.removeChannel(ch));
+      supabase.removeChannel(channel);
     };
   }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart, queryClient]);
 
