@@ -114,9 +114,9 @@ export function useRealtimePriceSync(cartProductNames?: Map<string, string>) {
       toast(`تم تحديث سعر ${name}`.trim(), { duration: 2500 });
     };
 
-    // --- products ---
-    const productsChannel = supabase
-      .channel('rt-prices-products')
+    // Single channel with 3 handlers → 1 WebSocket subscription instead of 3.
+    const priceChannel = supabase
+      .channel('rt-prices')
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'products' },
@@ -149,11 +149,6 @@ export function useRealtimePriceSync(cartProductNames?: Map<string, string>) {
           maybeNotifyCart(id);
         },
       )
-      .subscribe();
-
-    // --- product_options ---
-    const optionsChannel = supabase
-      .channel('rt-prices-options')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'product_options' },
@@ -172,11 +167,6 @@ export function useRealtimePriceSync(cartProductNames?: Map<string, string>) {
           maybeNotifyCart(newP.product_id ?? oldP.product_id);
         },
       )
-      .subscribe();
-
-    // --- product_offers ---
-    const offersChannel = supabase
-      .channel('rt-prices-offers')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'product_offers' },
@@ -218,9 +208,8 @@ export function useRealtimePriceSync(cartProductNames?: Map<string, string>) {
         clearTimeout(pendingRef.current);
         pendingRef.current = null;
       }
-      supabase.removeChannel(productsChannel);
-      supabase.removeChannel(optionsChannel);
-      supabase.removeChannel(offersChannel);
+      supabase.removeChannel(priceChannel);
+
     };
   }, [queryClient]);
 }
