@@ -738,9 +738,9 @@ export default function AdminShippingSettings() {
 
       // Pre-order shipping options (multi-mode)
       const activeShipping: Array<{ key: string; name_ar: string; price: number }> = [];
-      if (hasSea && updates.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن بحري', price: updates.sea_price });
-      if (hasAir && updates.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن جوي', price: updates.air_price });
-      if (hasLand && updates.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن بري', price: updates.land_price });
+      if (hasSea && updates.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن اقتصادي', price: updates.sea_price });
+      if (hasAir && updates.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن سريع', price: updates.air_price });
+      if (hasLand && updates.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن قياسي', price: updates.land_price });
       if (activeShipping.length >= 2) {
         const basePreOrderPrice = Math.min(...activeShipping.map((s) => s.price));
         updates.pre_order_shipping_options = activeShipping.map((s) => ({
