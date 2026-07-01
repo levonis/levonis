@@ -1102,7 +1102,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
             justifyContent: 'center',
             background: '#e8f5e9',
           }}>
-            <img src={logoSrc} alt="LEVONIS" style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
+            <img src={logoSrc} alt="LEVONIS" style={{ width: '100px', height: '100px', objectFit: 'contain' }} loading="lazy" decoding="async" />
           </div>
 
           {/* Customer info */}

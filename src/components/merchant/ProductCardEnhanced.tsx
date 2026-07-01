@@ -72,7 +72,7 @@ export default function ProductCardEnhanced({
       <div className="group relative flex gap-4 p-4 rounded-2xl border border-border/50 bg-gradient-to-r from-card to-card/80 hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={onView}>
         <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
           {mainImage ? (
-            <img src={mainImage} alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+            <img src={mainImage} alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" decoding="async" />
           ) : (
             <div className="w-full h-full flex items-center justify-center"><Sparkles className="h-8 w-8 text-muted-foreground/30" /></div>
           )}
@@ -137,7 +137,7 @@ export default function ProductCardEnhanced({
       <div className="relative">
         <AspectRatio ratio={1}>
           {mainImage ? (
-            <img src={mainImage} alt={product.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            <img src={mainImage} alt={product.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" decoding="async" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center"><Sparkles className="h-12 w-12 text-muted-foreground/20" /></div>
           )}

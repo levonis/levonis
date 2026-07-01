@@ -760,8 +760,7 @@ export default function MerchantSignupDialog({
                               <img 
                                 src={storeImageUrl} 
                                 alt="صورة المتجر" 
-                                className="h-full w-full object-cover"
-                              />
+                                className="h-full w-full object-cover" loading="lazy" decoding="async" />
                               {canEdit && (
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                   <Upload className="h-6 w-6 text-white" />

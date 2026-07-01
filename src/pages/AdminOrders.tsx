@@ -2104,7 +2104,7 @@ const AdminOrders = () => {
                             />
                             {serialImagePreview && (
                               <div className="relative">
-                                <img src={serialImagePreview} alt="Serial" className="w-12 h-12 object-cover rounded" />
+                                <img src={serialImagePreview} alt="Serial" className="w-12 h-12 object-cover rounded" loading="lazy" decoding="async" />
                                 <Button
                                   type="button"
                                   size="icon"
@@ -2140,7 +2140,7 @@ const AdminOrders = () => {
                           <div className="flex flex-wrap gap-2 mt-2">
                             {existingAdminImages.map((url, idx) => (
                               <div key={`existing-${idx}`} className="relative">
-                                <img src={url} alt={`Admin ${idx}`} className="w-16 h-16 object-cover rounded" />
+                                <img src={url} alt={`Admin ${idx}`} className="w-16 h-16 object-cover rounded" loading="lazy" decoding="async" />
                                 <Button
                                   type="button"
                                   size="icon"
@@ -2156,7 +2156,7 @@ const AdminOrders = () => {
                             ))}
                             {adminImagePreviews.map((url, idx) => (
                               <div key={`new-${idx}`} className="relative">
-                                <img src={url} alt={`New ${idx}`} className="w-16 h-16 object-cover rounded border-2 border-primary" />
+                                <img src={url} alt={`New ${idx}`} className="w-16 h-16 object-cover rounded border-2 border-primary" loading="lazy" decoding="async" />
                                 <Button
                                   type="button"
                                   size="icon"

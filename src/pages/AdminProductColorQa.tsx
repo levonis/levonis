@@ -274,7 +274,7 @@ const AdminProductColorQa = () => {
                   >
                     <div className="h-10 w-10 rounded-md bg-muted overflow-hidden flex-shrink-0">
                       {p.image_url ? (
-                        <img src={p.image_url} alt="" className="h-full w-full object-cover" />
+                        <img src={p.image_url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <ImageOff className="h-4 w-4 m-auto mt-3 text-muted-foreground" />
                       )}

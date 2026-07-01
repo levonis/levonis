@@ -112,8 +112,7 @@ const GroupedCartItem = ({
             <img 
               src={displayImage}
               alt={product.name_ar || ''}
-              className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40"
-            />
+              className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40" loading="lazy" decoding="async" />
           </Link>
         )}
         

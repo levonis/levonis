@@ -51,7 +51,7 @@ export default function LocationMessage({ location, isMe, timestamp }: LocationM
               src={osmStaticMapUrl}
               alt="موقع على الخريطة"
               className="w-full h-full object-cover"
-              onError={() => setImageError(true)}
+              onError={() = loading="lazy" decoding="async"> setImageError(true)}
             />
           ) : (
             <>

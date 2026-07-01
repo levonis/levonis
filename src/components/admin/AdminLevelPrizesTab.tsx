@@ -243,7 +243,7 @@ export default function AdminLevelPrizesTab() {
             <Card key={prize.id} className={!prize.is_active ? 'opacity-50' : ''}>
               <CardContent className="p-3 flex items-center gap-3">
                 {prize.image_url ? (
-                  <img src={prize.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                  <img src={prize.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <div className="w-10 h-10 rounded-lg bg-purple-500/15 flex items-center justify-center">
                     <Gift className="h-5 w-5 text-purple-500" />

@@ -432,7 +432,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
                     className="flex items-center gap-3 px-3 py-2 rounded-lg pixel-frame"
                   >
                     {snap?.image_url ? (
-                      <img src={snap.image_url} alt="" className="w-8 h-8 object-contain" style={{ imageRendering: "pixelated" }} />
+                      <img src={snap.image_url} alt="" className="w-8 h-8 object-contain" style={{ imageRendering: "pixelated" }} loading="lazy" decoding="async" />
                     ) : (
                       <div className="w-8 h-8 rounded bg-muted/20 flex items-center justify-center text-sm">🎁</div>
                     )}

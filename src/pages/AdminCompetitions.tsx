@@ -332,7 +332,7 @@ export default function AdminCompetitions() {
                   <AdminCard key={competition.id} className="overflow-hidden">
                     {competition.image_url && (
                       <div className="aspect-video w-full overflow-hidden">
-                        <img src={competition.image_url} alt={competition.title_ar} className="w-full h-full object-cover" />
+                        <img src={competition.image_url} alt={competition.title_ar} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       </div>
                     )}
                     <div className="p-4">

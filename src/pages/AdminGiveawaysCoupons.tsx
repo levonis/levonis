@@ -285,7 +285,7 @@ export default function AdminGiveawaysCoupons({ embedded }: { embedded?: boolean
               {giveaways.map((g) => (
                 <AdminCard key={g.id} className="overflow-hidden">
                   {g.prize_image_url && (
-                    <div className="aspect-video overflow-hidden"><img src={g.prize_image_url} alt="" className="w-full h-full object-cover" /></div>
+                    <div className="aspect-video overflow-hidden"><img src={g.prize_image_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /></div>
                   )}
                   <div className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
@@ -365,7 +365,7 @@ export default function AdminGiveawaysCoupons({ embedded }: { embedded?: boolean
               <Label>صورة الجائزة</Label>
               {gForm.prize_image_url ? (
                 <div className="relative mt-1 w-32 h-32 rounded-xl overflow-hidden border border-border group">
-                  <img src={gForm.prize_image_url} alt="" className="w-full h-full object-cover" />
+                  <img src={gForm.prize_image_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   <button
                     type="button"
                     onClick={() => setGForm(p => ({ ...p, prize_image_url: "" }))}

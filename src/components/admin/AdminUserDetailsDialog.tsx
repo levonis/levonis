@@ -285,7 +285,7 @@ export default function AdminUserDetailsDialog({
                         >
                           <div className="flex items-center gap-3">
                             {entry.competition.image_url ? (
-                              <img src={entry.competition.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                              <img src={entry.competition.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" loading="lazy" decoding="async" />
                             ) : (
                               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                                 <Trophy className="h-6 w-6 text-primary" />
@@ -538,8 +538,7 @@ export default function AdminUserDetailsDialog({
                           <img
                             src={userCard.membership_cards.frame_url}
                             alt="Card"
-                            className="h-20 w-20 object-contain"
-                          />
+                            className="h-20 w-20 object-contain" loading="lazy" decoding="async" />
                         ) : (
                           <div
                             className="h-20 w-20 rounded-full flex items-center justify-center text-3xl"
@@ -627,8 +626,7 @@ export default function AdminUserDetailsDialog({
                             <img
                               src={printer.store_printers.image_url}
                               alt="Printer"
-                              className="h-16 w-16 object-contain rounded-lg bg-muted"
-                            />
+                              className="h-16 w-16 object-contain rounded-lg bg-muted" loading="lazy" decoding="async" />
                           ) : (
                             <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center">
                               <Printer className="h-8 w-8 text-muted-foreground" />

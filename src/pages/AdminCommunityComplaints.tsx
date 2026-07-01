@@ -267,7 +267,7 @@ function ComplaintsContent() {
               {selectedComplaint.images?.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
                   {selectedComplaint.images.map((img, i) => (
-                    <img key={i} src={img} alt="" className="rounded-lg object-cover aspect-square" />
+                    <img key={i} src={img} alt="" className="rounded-lg object-cover aspect-square" loading="lazy" decoding="async" />
                   ))}
                 </div>
               )}

@@ -494,7 +494,7 @@ export default function KnifeRainGame({ onBack }: Props) {
                           </div>
                         </div>
                         {getProfileAvatar(entry.user_id) ? (
-                          <img src={getProfileAvatar(entry.user_id)!} alt="" className="w-7 h-7 rounded-full object-cover border border-border/40" />
+                          <img src={getProfileAvatar(entry.user_id)!} alt="" className="w-7 h-7 rounded-full object-cover border border-border/40" loading="lazy" decoding="async" />
                         ) : (
                           <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
                             {getProfileName(entry.user_id)[0]}

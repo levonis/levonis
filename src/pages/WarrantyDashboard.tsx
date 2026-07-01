@@ -116,7 +116,7 @@ const WarrantyDashboard = () => {
           <div className="bg-gradient-to-l from-primary/10 to-primary/5 p-6">
             <div className="flex items-center gap-4">
               {printer.image_url ? (
-                <img src={printer.image_url} className="w-16 h-16 rounded-xl object-cover border bg-white" alt="" />
+                <img src={printer.image_url} className="w-16 h-16 rounded-xl object-cover border bg-white" alt="" loading="lazy" decoding="async" />
               ) : (
                 <div className="w-16 h-16 rounded-xl bg-card flex items-center justify-center">
                   <Printer className="w-8 h-8 text-muted-foreground" />

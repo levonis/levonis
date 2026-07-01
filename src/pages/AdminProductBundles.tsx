@@ -717,7 +717,7 @@ const AdminProductBundles = () => {
                       <TableRow key={b.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            {b.image_url && <img src={b.image_url} className="w-10 h-10 rounded object-cover" />}
+                            {b.image_url && <img src={b.image_url} className="w-10 h-10 rounded object-cover" loading="lazy" decoding="async" />}
                             <span className="font-medium">{b.title_ar}</span>
                           </div>
                         </TableCell>
@@ -814,7 +814,7 @@ const AdminProductBundles = () => {
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
               {form.image_url ? (
                 <div className="relative w-full h-40 rounded-lg overflow-hidden border border-border bg-muted">
-                  <img src={form.image_url} className="w-full h-full object-cover" alt="صورة البندل" />
+                  <img src={form.image_url} className="w-full h-full object-cover" alt="صورة البندل" loading="lazy" decoding="async" />
                   <div className="absolute top-2 left-2 flex gap-1">
                     <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                       <Upload className="h-4 w-4" />
@@ -840,7 +840,7 @@ const AdminProductBundles = () => {
                   <p className="text-xs text-muted-foreground mb-1">صور الألوان/الخيارات (تُعرض كصور إضافية):</p>
                   <div className="flex gap-1 flex-wrap">
                     {form.images.map((img, i) => (
-                      <img key={i} src={img} className="w-12 h-12 rounded object-cover border border-border" />
+                      <img key={i} src={img} className="w-12 h-12 rounded object-cover border border-border" loading="lazy" decoding="async" />
                     ))}
                   </div>
                 </div>
@@ -922,7 +922,7 @@ const AdminProductBundles = () => {
                   {products.map((p: any) => (
                     <div key={p.id} className="flex items-center justify-between p-2 hover:bg-muted/50 cursor-pointer" onClick={() => openProductPicker(p)}>
                       <div className="flex items-center gap-2">
-                        {(p.image_url || p.images?.[0]) && <img src={p.image_url || p.images?.[0]} className="w-8 h-8 rounded object-cover" />}
+                        {(p.image_url || p.images?.[0]) && <img src={p.image_url || p.images?.[0]} className="w-8 h-8 rounded object-cover" loading="lazy" decoding="async" />}
                         <span className="text-sm">{p.name_ar}</span>
                       </div>
                       <Plus className="h-4 w-4 text-primary" />
@@ -937,7 +937,7 @@ const AdminProductBundles = () => {
                   const stockInsufficient = form.sale_type === 'direct' && item.available_stock != null && item.available_stock < item.quantity;
                   return (
                     <div key={idx} className={`flex items-center gap-2 p-2 border rounded-lg ${stockInsufficient ? 'border-destructive/50 bg-destructive/5' : 'bg-muted/30'}`}>
-                      <img src={item.color_image || item.product_image || ''} className="w-10 h-10 rounded object-cover shrink-0" />
+                      <img src={item.color_image || item.product_image || ''} className="w-10 h-10 rounded object-cover shrink-0" loading="lazy" decoding="async" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.product_name}</p>
                         <div className="flex flex-wrap gap-1 mt-0.5">
@@ -988,7 +988,7 @@ const AdminProductBundles = () => {
         <DialogContent dir="rtl" className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {selectedProduct?.image_url && <img src={selectedProduct.image_url} className="w-8 h-8 rounded object-cover" />}
+              {selectedProduct?.image_url && <img src={selectedProduct.image_url} className="w-8 h-8 rounded object-cover" loading="lazy" decoding="async" />}
               إضافة: {selectedProduct?.name_ar}
             </DialogTitle>
           </DialogHeader>
@@ -1079,7 +1079,7 @@ const AdminProductBundles = () => {
                                 onCheckedChange={() => !outOfStock && toggleColor(colorName)}
                                 disabled={outOfStock}
                               />
-                              {colorImg && <img src={colorImg} className="w-8 h-8 rounded object-cover" />}
+                              {colorImg && <img src={colorImg} className="w-8 h-8 rounded object-cover" loading="lazy" decoding="async" />}
                               {!colorImg && c.hex_code && (
                                 <span className="w-6 h-6 rounded-full border border-border shrink-0" style={getColorSwatchStyle(c.hex_code)} />
                               )}

@@ -151,7 +151,7 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
               data.items.map((item, i) => (
                 <div key={`${item.orderId}-${i}`} className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-card/50">
                   {item.type === 'discount' && item.productImage ? (
-                    <img src={item.productImage} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    <img src={item.productImage} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" loading="lazy" decoding="async" />
                   ) : (
                     <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
                       <Ticket className="h-5 w-5 text-amber-500" />

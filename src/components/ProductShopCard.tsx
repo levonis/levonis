@@ -174,8 +174,7 @@ const ProductShopCard = memo(({
                     src={resizeSupabaseImage(images[0], 24, 20) || ''}
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover lqip-blur"
-                  />
+                    className="absolute inset-0 w-full h-full object-cover lqip-blur" loading="lazy" decoding="async" />
                   <img 
                     src={resizeSupabaseImage(images[0], 200, 75) || images[0]} 
                     alt={product.title_ar}

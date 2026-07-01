@@ -198,7 +198,7 @@ export default function AdminPendingOrdersSheet() {
                 <div className="space-y-1.5">
                   {Object.values(grouped).map((g, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
-                      {g.image && <img src={g.image} className="w-6 h-6 rounded object-cover" alt="" />}
+                      {g.image && <img src={g.image} className="w-6 h-6 rounded object-cover" alt="" loading="lazy" decoding="async" />}
                       <span className="flex-1 font-medium text-foreground truncate">
                         {g.name}
                         {g.color && <span className="text-muted-foreground"> ({g.color})</span>}
@@ -253,7 +253,7 @@ export default function AdminPendingOrdersSheet() {
                         {/* Items */}
                         {order.order_items.map(item => (
                           <div key={item.id} className="flex items-center gap-2 text-xs">
-                            {item.color_image_url && <img src={item.color_image_url} className="w-8 h-8 rounded object-cover border border-border" alt="" />}
+                            {item.color_image_url && <img src={item.color_image_url} className="w-8 h-8 rounded object-cover border border-border" alt="" loading="lazy" decoding="async" />}
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-foreground truncate">{item.product_name_ar}</p>
                               <p className="text-muted-foreground text-[11px]">
