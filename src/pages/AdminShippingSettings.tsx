@@ -839,7 +839,7 @@ export default function AdminShippingSettings() {
             <GlassCardHeader
               icon={<Ship className="h-5 w-5 text-white" />}
               iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-              title="الشحن البحري"
+              title="الشحن الاقتصادي"
               subtitle="من الصين - بالمتر المكعب"
             />
             <div className="px-5 pb-5 grid grid-cols-2 gap-4">
