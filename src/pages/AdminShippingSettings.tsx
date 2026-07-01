@@ -943,7 +943,7 @@ export default function AdminShippingSettings() {
           </div>
           <div className="mx-5 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <p className="text-[10px] text-amber-200/80">
-              <strong>ملاحظة:</strong> يُحسب الشحن البري على الوزن الفعلي فقط (بدون وزن حجمي ولا هامش تغليف).
+              <strong>ملاحظة:</strong> يُحسب الشحن القياسي على الوزن الفعلي فقط (بدون وزن حجمي ولا هامش تغليف).
             </p>
           </div>
         </GlassCard>
