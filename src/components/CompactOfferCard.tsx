@@ -94,3 +94,5 @@ function CompactOfferCard({
     </Card>
   );
 }
+
+export default memo(CompactOfferCard);
