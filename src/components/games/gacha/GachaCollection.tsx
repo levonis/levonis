@@ -134,7 +134,7 @@ export default function GachaCollection({ onBack }: Props) {
                 >
                   <div className="aspect-square bg-card flex items-center justify-center p-2">
                     {doll?.image_url ? (
-                      <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-full h-full object-contain" loading="lazy" decoding="async" />
+                      <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-full h-full object-contain" />
                     ) : (
                       <span className="text-3xl">🧸</span>
                     )}
@@ -174,7 +174,7 @@ export default function GachaCollection({ onBack }: Props) {
                 </DialogHeader>
                 <div className="text-center py-4">
                   {doll?.image_url ? (
-                    <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-24 h-24 mx-auto object-contain mb-3" loading="lazy" decoding="async" />
+                    <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-24 h-24 mx-auto object-contain mb-3" />
                   ) : (
                     <span className="text-5xl block mb-3">🧸</span>
                   )}

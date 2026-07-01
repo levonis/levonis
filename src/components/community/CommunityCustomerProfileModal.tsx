@@ -508,7 +508,8 @@ export default function CommunityCustomerProfileModal({
                       <img 
                         src={avatarUrl} 
                         alt="الصورة الشخصية" 
-                        className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-background">
                         <UserCircle2 className="h-5 w-5 text-muted-foreground/40" />

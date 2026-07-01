@@ -94,7 +94,7 @@ export default function PrintRequestCard({
     <div className="group relative rounded-xl border border-border/50 bg-gradient-to-b from-card to-background overflow-hidden hover:border-primary/40 hover:shadow-xl transition-all duration-300">
       <div className="relative aspect-[4/3] overflow-hidden">
         {mainImage ? (
-          <img src={mainImage} alt={request.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
+          <img src={mainImage} alt={request.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center">
             <Package className="h-10 w-10 text-muted-foreground/20" />

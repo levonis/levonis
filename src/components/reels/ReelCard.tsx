@@ -224,7 +224,7 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
           >
             <div className="w-9 h-9 rounded-full border-2 border-primary overflow-hidden bg-card">
               {reel.merchant?.store_image_url ? (
-                <img src={reel.merchant.store_image_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                <img src={reel.merchant.store_image_url} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-primary text-xs font-bold">
                   {reel.merchant?.display_name?.[0] || '?'}
@@ -247,7 +247,7 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
             className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-colors"
           >
             {activeProduct.image_urls?.[0] && (
-              <img src={activeProduct.image_urls[0]} alt={activeProduct.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" loading="lazy" decoding="async" />
+              <img src={activeProduct.image_urls[0]} alt={activeProduct.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
             )}
             <div className={`flex-1 min-w-0 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
               <div className="flex items-center gap-1.5">

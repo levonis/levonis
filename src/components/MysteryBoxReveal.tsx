@@ -232,7 +232,8 @@ export default function MysteryBoxReveal({
                             <img 
                               src={box.image_url} 
                               alt={box.name_ar}
-                              className="w-12 h-12 object-cover rounded-lg mb-1" loading="lazy" decoding="async" />
+                              className="w-12 h-12 object-cover rounded-lg mb-1"
+                            />
                           ) : (
                             <Gift className="w-10 h-10 text-white/90 mb-1" />
                           )}
@@ -308,7 +309,8 @@ export default function MysteryBoxReveal({
                     <img 
                       src={wonPrize.image_url} 
                       alt={wonPrize.name_ar}
-                      className="w-24 h-24 object-cover rounded-xl mb-2 shadow-lg" loading="lazy" decoding="async" />
+                      className="w-24 h-24 object-cover rounded-xl mb-2 shadow-lg"
+                    />
                   ) : (
                     <Gift className="w-20 h-20 text-white mb-2" />
                   )}

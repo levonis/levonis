@@ -75,7 +75,7 @@ function ProductPicker({ value, onChange, requireStock = false }: { value: Produ
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2 bg-muted/30 rounded-md p-2 text-xs">
-          {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" loading="lazy" decoding="async" />}
+          {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" />}
           <div className="flex-1 min-w-0">
             <div className="truncate text-foreground font-medium">{selected.name_ar}</div>
             <div className="text-muted-foreground">{getStockDisplay(selected)}</div>
@@ -120,7 +120,7 @@ function ProductPicker({ value, onChange, requireStock = false }: { value: Produ
       <div className="max-h-40 overflow-y-auto space-y-1">
         {products.map((p: any) => (
           <button key={p.id} onClick={() => { onChange({ product_id: p.id, selected_color: null, selected_option_id: null }, p.name_ar, p.image_url); setOpen(false); setSearch(""); }} className="flex items-center gap-2 w-full text-right p-2 rounded-md hover:bg-muted/50 transition-colors text-xs">
-            {p.image_url && <img src={p.image_url} className="h-7 w-7 rounded object-cover shrink-0" loading="lazy" decoding="async" />}
+            {p.image_url && <img src={p.image_url} className="h-7 w-7 rounded object-cover shrink-0" />}
             <div className="flex-1 min-w-0">
               <div className="truncate text-foreground">{p.name_ar}</div>
               <div className="text-muted-foreground text-[10px]">{getStockDisplay(p)}</div>

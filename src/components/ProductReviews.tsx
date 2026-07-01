@@ -344,7 +344,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                             <Video className="h-5 w-5 text-muted-foreground" />
                           </div>
                         ) : (
-                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
                         )}
                         <button
                           onClick={() => setMediaFiles((prev) => prev.filter((_, idx) => idx !== i))}

@@ -192,7 +192,7 @@ export default function MerchantStoryViewer({ groups, initialGroupIndex, onClose
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-full overflow-hidden bg-muted border-2 border-white/30">
             {currentGroup.store_logo ? (
-              <img src={currentGroup.store_logo} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+              <img src={currentGroup.store_logo} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm bg-primary/50">
                 {currentGroup.store_name.charAt(0)}
@@ -242,7 +242,8 @@ export default function MerchantStoryViewer({ groups, initialGroupIndex, onClose
             key={currentStory.id}
             src={currentStory.media_url}
             className="w-full h-full object-contain"
-            alt="" loading="lazy" decoding="async" />
+            alt=""
+          />
         )}
 
         {/* Caption */}
@@ -271,7 +272,8 @@ export default function MerchantStoryViewer({ groups, initialGroupIndex, onClose
               <img
                 src={(product.image_urls as string[])[0]}
                 alt=""
-                className="w-14 h-14 rounded-xl object-cover shrink-0" loading="lazy" decoding="async" />
+                className="w-14 h-14 rounded-xl object-cover shrink-0"
+              />
             )}
             <div className="flex-1 text-right min-w-0">
               <p className="text-white text-sm font-bold truncate">{product.title}</p>

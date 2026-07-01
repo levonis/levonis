@@ -1363,11 +1363,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               key={conv.id}
                               onClick={() => setSelectedConversation(conv.id)}
                               className={cn(
-                                "w-full p-3 flex gap-3 glass-row-hover transition-colors border-b border-white/10 dark:border-white/5 cv-auto-sm",
+                                "w-full p-3 flex gap-3 glass-row-hover transition-colors border-b border-white/10 dark:border-white/5",
                                 isActive && "glass-row-active"
                               )}
                             >
-
                                {/* Avatar - Dual avatar for disputes (admin view) */}
                                <div className="relative flex-shrink-0">
                                  {conv.status === 'disputed' && isAdmin ? (
@@ -1473,7 +1472,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       <img 
                                         src={convEntryContext.imageUrl} 
                                         alt="" 
-                                        className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                                        className="h-full w-full object-cover" 
+                                      />
                                     ) : (
                                       <Package className="h-4 w-4 text-muted-foreground" />
                                     )}
@@ -1986,7 +1986,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                               src={msg.image_url} 
                                               alt="" 
                                               className="rounded-lg max-w-full max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
-                                              onClick={open} loading="lazy" decoding="async" />
+                                              onClick={open}
+                                            />
                                           </div>
                                         )}
                                       </ImageLightbox>
@@ -2363,7 +2364,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   <img
                     src={adminCartRequest.user?.avatar_url || '/placeholder.svg'}
                     alt=""
-                    className="h-8 w-8 rounded-full object-cover" loading="lazy" decoding="async" />
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
                   <span className="text-sm font-medium">{adminCartRequest.user?.full_name || 'مستخدم'}</span>
                   <Badge variant="outline" className="mr-auto text-xs">
                     {adminCartRequest.status === 'pending' ? 'قيد المراجعة' : adminCartRequest.status === 'adjusted' ? 'تم التعديل' : adminCartRequest.status}
@@ -2385,7 +2387,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       const currentPrice = existingPrices[idx] ?? item.price ?? 0;
                       return (
                         <div key={idx} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg text-xs">
-                          {item.image_url && <img src={item.image_url} alt="" className="h-8 w-8 rounded object-cover" loading="lazy" decoding="async" />}
+                          {item.image_url && <img src={item.image_url} alt="" className="h-8 w-8 rounded object-cover" />}
                           <div className="flex-1 min-w-0">
                             <span className="block truncate">{item.name_ar || item.product_name || 'منتج'}</span>
                             <span className="text-muted-foreground">×{item.quantity}</span>

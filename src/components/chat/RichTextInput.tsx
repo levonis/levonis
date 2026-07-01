@@ -29,7 +29,7 @@ function textToHtml(text: string): string {
   html = html.replace(emojiRegex, (match) => {
     const emoji = emojiMap.get(match);
     if (emoji) {
-      return `<img src="${emoji.src}" alt="${emoji.alt}" class="inline-emoji" data-code="${match}" loading="lazy" decoding="async" />`;
+      return `<img src="${emoji.src}" alt="${emoji.alt}" class="inline-emoji" data-code="${match}" />`;
     }
     return match;
   });

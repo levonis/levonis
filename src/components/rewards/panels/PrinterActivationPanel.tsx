@@ -319,7 +319,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
             <CardContent className="p-5 space-y-4">
               <div className="flex items-center gap-4">
                 {warrantyData.image_url ? (
-                  <img src={warrantyData.image_url} className="w-16 h-16 rounded-xl object-cover border" alt={warrantyData.model_name_ar} loading="lazy" decoding="async" />
+                  <img src={warrantyData.image_url} className="w-16 h-16 rounded-xl object-cover border" alt={warrantyData.model_name_ar} />
                 ) : (
                   <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
                     <Printer className="w-8 h-8 text-muted-foreground" />
@@ -420,7 +420,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center gap-4">
               {printerData.image_url ? (
-                <img src={printerData.image_url} className="w-16 h-16 rounded-xl object-cover border" alt={printerData.model_name_ar} loading="lazy" decoding="async" />
+                <img src={printerData.image_url} className="w-16 h-16 rounded-xl object-cover border" alt={printerData.model_name_ar} />
               ) : (
                 <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
                   <Printer className="w-8 h-8 text-muted-foreground" />

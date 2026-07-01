@@ -690,7 +690,8 @@ function SupportMessagesContent() {
                             <img
                               src={msg.image_url}
                               alt=""
-                              className="max-w-full rounded-lg mb-2 max-h-48 object-cover" loading="lazy" decoding="async" />
+                              className="max-w-full rounded-lg mb-2 max-h-48 object-cover"
+                            />
                           )}
                           <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                           <span className={`text-[10px] mt-1 block ${
@@ -737,7 +738,8 @@ function SupportMessagesContent() {
                           <img
                             src={product.image_url}
                             alt=""
-                            className="w-full h-20 object-cover rounded mb-1" loading="lazy" decoding="async" />
+                            className="w-full h-20 object-cover rounded mb-1"
+                          />
                         )}
                         <p className="text-xs font-medium line-clamp-2">{product.name_ar}</p>
                         <p className="text-xs text-primary">{formatPrice(product.price)} د.ع</p>
@@ -752,7 +754,7 @@ function SupportMessagesContent() {
             <div className="p-3 border-t border-border/50">
               {imagePreview && (
                 <div className="relative mb-2 inline-block">
-                  <img src={imagePreview} alt="" className="h-20 rounded-lg" loading="lazy" decoding="async" />
+                  <img src={imagePreview} alt="" className="h-20 rounded-lg" />
                   <button
                     onClick={() => {
                       setSelectedImage(null);

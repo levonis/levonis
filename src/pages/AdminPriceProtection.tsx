@@ -154,13 +154,13 @@ export default function AdminPriceProtection() {
                       {/* Product */}
                       <div className="flex gap-3 flex-1 min-w-0">
                         {c.product_image ? (
-                          <img src={c.product_image} alt="" className="h-20 w-20 rounded-xl object-cover border" loading="lazy" decoding="async" />
+                          <img src={c.product_image} alt="" className="h-20 w-20 rounded-xl object-cover border" />
                         ) : <div className="h-20 w-20 rounded-xl bg-muted" />}
                         <div className="min-w-0 flex-1">
                           <h3 className="font-bold text-sm line-clamp-1">{c.product_name_ar ?? "منتج"}</h3>
                           <p className="text-xs text-muted-foreground font-mono">#{c.order_number ?? c.order_id.slice(0, 8)}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            {u?.avatar_url && <img src={u.avatar_url} alt="" className="h-5 w-5 rounded-full" loading="lazy" decoding="async" />}
+                            {u?.avatar_url && <img src={u.avatar_url} alt="" className="h-5 w-5 rounded-full" />}
                             <span className="text-xs text-foreground font-semibold">{u?.full_name ?? u?.username ?? "—"}</span>
                           </div>
                           <p className="text-[10px] text-muted-foreground mt-1">

@@ -134,7 +134,7 @@ export default function GachaMarketplace({ onBack }: Props) {
                 >
                   <div className="aspect-square bg-card flex items-center justify-center p-3 relative">
                     {doll?.image_url ? (
-                      <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-full h-full object-contain" loading="lazy" decoding="async" />
+                      <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-full h-full object-contain" />
                     ) : (
                       <span className="text-4xl">🧸</span>
                     )}
@@ -174,7 +174,7 @@ export default function GachaMarketplace({ onBack }: Props) {
           {confirmItem && (
             <div className="text-center py-3">
               {confirmItem.gacha_dolls?.image_url ? (
-                <img src={confirmItem.gacha_dolls.image_url} className="w-20 h-20 mx-auto object-contain mb-3" alt="" loading="lazy" decoding="async" />
+                <img src={confirmItem.gacha_dolls.image_url} className="w-20 h-20 mx-auto object-contain mb-3" alt="" />
               ) : (
                 <span className="text-4xl block mb-3">🧸</span>
               )}

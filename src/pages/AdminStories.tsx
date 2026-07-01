@@ -257,7 +257,7 @@ function StoriesManager() {
                 <CardContent className="p-3 flex items-center gap-3">
                   <GripVertical className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0 border border-border">
-                    {s.thumbnail_url ? <img src={s.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm font-bold">{s.title_ar.charAt(0)}</div>}
+                    {s.thumbnail_url ? <img src={s.thumbnail_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm font-bold">{s.title_ar.charAt(0)}</div>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{s.title_ar}</p>
@@ -331,7 +331,7 @@ function StoriesManager() {
             <div>
               <Label>صورة الغلاف</Label>
               <div className="flex gap-2 items-center mt-1">
-                {sectionForm.thumbnail_url && <div className="w-12 h-12 rounded-full overflow-hidden border border-border"><img src={sectionForm.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /></div>}
+                {sectionForm.thumbnail_url && <div className="w-12 h-12 rounded-full overflow-hidden border border-border"><img src={sectionForm.thumbnail_url} alt="" className="w-full h-full object-cover" /></div>}
                 <label className="cursor-pointer flex-1">
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleUploadThumbnail(e.target.files[0]); }} />
                   <div className="h-10 rounded-md border border-dashed border-input flex items-center justify-center gap-2 hover:bg-accent text-sm text-muted-foreground">

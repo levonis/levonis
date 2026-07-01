@@ -387,7 +387,7 @@ export default function OfferPurchasesTab() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {purchase.product_offers?.image_url && (
-                              <img src={purchase.product_offers.image_url} alt="" className="w-10 h-10 rounded object-cover" loading="lazy" decoding="async" />
+                              <img src={purchase.product_offers.image_url} alt="" className="w-10 h-10 rounded object-cover" />
                             )}
                             <span className="text-sm font-medium">{purchase.product_offers?.title_ar}</span>
                           </div>
@@ -450,7 +450,7 @@ export default function OfferPurchasesTab() {
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                 {selectedPurchase.product_offers?.image_url && (
-                  <img src={selectedPurchase.product_offers.image_url} alt="" className="w-16 h-16 rounded object-cover" loading="lazy" decoding="async" />
+                  <img src={selectedPurchase.product_offers.image_url} alt="" className="w-16 h-16 rounded object-cover" />
                 )}
                 <div>
                   <p className="font-medium">{selectedPurchase.product_offers?.title_ar}</p>
@@ -520,7 +520,7 @@ export default function OfferPurchasesTab() {
             <div className="space-y-4 py-2">
               <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                 {selectedPurchase.product_offers?.image_url && (
-                  <img src={selectedPurchase.product_offers.image_url} alt="" className="w-12 h-12 rounded object-cover" loading="lazy" decoding="async" />
+                  <img src={selectedPurchase.product_offers.image_url} alt="" className="w-12 h-12 rounded object-cover" />
                 )}
                 <div>
                   <p className="font-medium text-sm">{selectedPurchase.product_offers?.title_ar}</p>

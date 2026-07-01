@@ -602,7 +602,7 @@ function OfferDialog({
               <div className="flex items-center gap-3">
                 <div className="relative w-28 h-20 rounded-xl overflow-hidden border bg-muted shrink-0">
                   {draft.image_url ? (
-                    <img src={draft.image_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    <img src={draft.image_url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <WavyColors seed={(draft as any).id || draft.title_ar || "draft"} />
                   )}
@@ -703,7 +703,7 @@ function OfferDialog({
                         }`}
                       >
                         {p.image_url ? (
-                          <img src={p.image_url} alt="" className="w-10 h-10 rounded object-cover" loading="lazy" decoding="async" />
+                          <img src={p.image_url} alt="" className="w-10 h-10 rounded object-cover" />
                         ) : (
                           <div className="w-10 h-10 rounded bg-muted" />
                         )}

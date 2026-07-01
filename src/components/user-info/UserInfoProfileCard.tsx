@@ -83,7 +83,7 @@ export default function UserInfoProfileCard({
       {/* Hero Banner / Cover */}
       <div className="relative h-28 overflow-hidden group">
         {profile.cover_image_url ? (
-          <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+          <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gradient-to-bl from-primary/20 via-primary/10 to-accent/5">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_80%,hsl(var(--primary)/0.12),transparent_60%)]" />

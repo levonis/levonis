@@ -153,7 +153,7 @@ export default function MerchantCategoriesManager({ merchantId }: Props) {
                     <div className="flex items-center gap-2">
                       <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
                       {cat.image_url && (
-                        <img src={cat.image_url} alt="" className="h-7 w-7 rounded object-cover" loading="lazy" decoding="async" />
+                        <img src={cat.image_url} alt="" className="h-7 w-7 rounded object-cover" />
                       )}
                       <span className="text-sm font-medium">{cat.name_ar}</span>
                     </div>
@@ -178,7 +178,7 @@ export default function MerchantCategoriesManager({ merchantId }: Props) {
                       {subs.map((sub) => (
                         <div key={sub.id} className="flex items-center justify-between py-1 px-2 rounded bg-muted/30">
                           <div className="flex items-center gap-2">
-                            {sub.image_url && <img src={sub.image_url} alt="" className="h-5 w-5 rounded object-cover" loading="lazy" decoding="async" />}
+                            {sub.image_url && <img src={sub.image_url} alt="" className="h-5 w-5 rounded object-cover" />}
                             <span className="text-xs">{sub.name_ar}</span>
                           </div>
                           <div className="flex gap-1">
@@ -222,7 +222,7 @@ export default function MerchantCategoriesManager({ merchantId }: Props) {
               <div className="flex items-center gap-2 mt-1">
                 {newImageUrl && (
                   <div className="h-10 w-10 rounded border overflow-hidden shrink-0">
-                    <img src={newImageUrl} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                    <img src={newImageUrl} alt="" className="h-full w-full object-cover" />
                   </div>
                 )}
                 <label className="cursor-pointer flex-1">
@@ -261,7 +261,7 @@ export default function MerchantCategoriesManager({ merchantId }: Props) {
               <div className="flex items-center gap-2 mt-1">
                 {newImageUrl && (
                   <div className="h-10 w-10 rounded border overflow-hidden shrink-0">
-                    <img src={newImageUrl} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                    <img src={newImageUrl} alt="" className="h-full w-full object-cover" />
                   </div>
                 )}
                 <label className="cursor-pointer flex-1">

@@ -479,7 +479,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
                           <div className="space-y-1">
                             {item.product_bundles.bundle_items.map((bi, bIdx) => (
                               <div key={bIdx} className="flex items-center gap-2 text-xs bg-muted/30 rounded-lg p-1.5">
-                                {bi.products?.image_url && <img src={bi.products.image_url} alt="" className="w-7 h-7 rounded object-cover" loading="lazy" decoding="async" />}
+                                {bi.products?.image_url && <img src={bi.products.image_url} alt="" className="w-7 h-7 rounded object-cover" />}
                                 <span className="flex-1 truncate">{bi.products?.name_ar || 'منتج'}</span>
                                 <span className="text-muted-foreground tabular-nums">×{bi.quantity * item.quantity}</span>
                               </div>

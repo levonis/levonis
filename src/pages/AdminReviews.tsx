@@ -139,7 +139,7 @@ const AdminReviews = () => {
           <div className="flex gap-4" dir="rtl">
             {/* Product Image */}
             {productImg && (
-              <img src={productImg} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" loading="lazy" decoding="async" />
+              <img src={productImg} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
             )}
 
             <div className="flex-1 min-w-0 space-y-2">
@@ -260,7 +260,7 @@ const AdminReviews = () => {
               {/* Product */}
               <div className="flex items-center gap-3">
                 {getProductImage(selectedReview) && (
-                  <img src={getProductImage(selectedReview)} alt="" className="w-14 h-14 rounded-lg object-cover" loading="lazy" decoding="async" />
+                  <img src={getProductImage(selectedReview)} alt="" className="w-14 h-14 rounded-lg object-cover" />
                 )}
                 <div>
                   <p className="font-medium">{selectedReview.products?.name_ar || 'منتج محذوف'}</p>
@@ -283,7 +283,7 @@ const AdminReviews = () => {
                   <div className="grid grid-cols-3 gap-2">
                     {selectedReview.media_files.map((url: string, idx: number) => (
                       <a key={idx} href={url} target="_blank" rel="noreferrer">
-                        <img src={url} alt={`Media ${idx + 1}`} className="w-full aspect-square object-cover rounded-lg border hover:opacity-80 transition" loading="lazy" decoding="async" />
+                        <img src={url} alt={`Media ${idx + 1}`} className="w-full aspect-square object-cover rounded-lg border hover:opacity-80 transition" />
                       </a>
                     ))}
                   </div>

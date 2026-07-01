@@ -313,7 +313,7 @@ export default function MerchantRatingDialog({
               <div className="flex gap-2 mt-2 flex-wrap">
                 {imagePreviewUrls.map((url, i) => (
                   <div key={i} className="relative w-16 h-16 rounded-md overflow-hidden border border-border">
-                    <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    <img src={url} alt="" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removeImage(i)}

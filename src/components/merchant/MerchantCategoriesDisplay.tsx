@@ -178,7 +178,7 @@ export default function MerchantCategoriesDisplay({ merchantId, products, layout
               className="group relative aspect-square rounded-xl overflow-hidden border border-border/50 hover:border-primary/50 transition-all"
             >
               {cat.image_url ? (
-                <img src={cat.image_url} alt={cat.name_ar} className="h-full w-full object-cover group-hover:scale-105 transition-transform" loading="lazy" decoding="async" />
+                <img src={cat.image_url} alt={cat.name_ar} className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
               ) : (
                 <div className="h-full w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                   <Package className="h-8 w-8 text-primary/30" />

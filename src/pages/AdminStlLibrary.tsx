@@ -77,7 +77,7 @@ function FilesTab() {
         <div className="space-y-2">
           {data.map((f: any) => (
             <div key={f.id} className="p-3 rounded-xl border border-border flex items-center gap-3">
-              {f.cover_image_url && <img src={f.cover_image_url} alt="" className="w-14 h-14 object-cover rounded-lg" loading="lazy" decoding="async" />}
+              {f.cover_image_url && <img src={f.cover_image_url} alt="" className="w-14 h-14 object-cover rounded-lg" />}
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm truncate">{f.title_ar}</p>
                 <p className="text-[11px] text-muted-foreground">{f.file_format} · {f.downloads_count} تحميل</p>

@@ -53,7 +53,7 @@ export default function CartUpsellOffers() {
 
         {/* Offer image thumbnail */}
         {offer.image_url && (
-          <img src={offer.image_url} alt="" className="shrink-0 w-9 h-9 rounded-md object-cover border border-border/30" loading="lazy" decoding="async" />
+          <img src={offer.image_url} alt="" className="shrink-0 w-9 h-9 rounded-md object-cover border border-border/30" />
         )}
 
         {/* Info */}

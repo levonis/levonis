@@ -426,7 +426,8 @@ export default function AdminShipmentRequests() {
                             <img 
                               src={product.product_image} 
                               alt={product.product_name_ar}
-                              className="w-12 h-12 object-cover rounded" loading="lazy" decoding="async" />
+                              className="w-12 h-12 object-cover rounded"
+                            />
                           )}
                           <div className="flex-1">
                             <p className="font-medium text-sm">{product.product_name_ar || product.product_name}</p>

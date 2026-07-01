@@ -92,7 +92,7 @@ export default function ProductCategorySelector({ merchantId, selectedIds, onCha
               }`}
             >
               {cat.image_url && (
-                <img src={cat.image_url} alt="" className="h-4 w-4 rounded object-cover" loading="lazy" decoding="async" />
+                <img src={cat.image_url} alt="" className="h-4 w-4 rounded object-cover" />
               )}
               {cat.name_ar}
               {hasSubs && <ChevronDown className={`h-3 w-3 transition-transform ${isSelected ? "rotate-180" : ""}`} />}
@@ -123,7 +123,7 @@ export default function ProductCategorySelector({ merchantId, selectedIds, onCha
                   }`}
                 >
                   {sub.image_url && (
-                    <img src={sub.image_url} alt="" className="h-3.5 w-3.5 rounded object-cover" loading="lazy" decoding="async" />
+                    <img src={sub.image_url} alt="" className="h-3.5 w-3.5 rounded object-cover" />
                   )}
                   {sub.name_ar}
                   {isSubSelected && <Check className="h-2.5 w-2.5" />}

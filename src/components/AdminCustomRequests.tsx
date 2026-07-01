@@ -370,7 +370,8 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
                   <img 
                     src={selectedRequest.image_url} 
                     alt="صورة المنتج"
-                    className="w-full h-64 object-cover rounded-lg mt-2" loading="lazy" decoding="async" />
+                    className="w-full h-64 object-cover rounded-lg mt-2"
+                  />
                 </div>
               )}
               
@@ -503,7 +504,8 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
                             <img 
                               src={color.image_url} 
                               alt={color.name}
-                              className="w-12 h-12 object-cover rounded" loading="lazy" decoding="async" />
+                              className="w-12 h-12 object-cover rounded"
+                            />
                           )}
                           <div className="flex-1">
                             <p className="font-medium">{color.name}</p>

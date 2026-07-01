@@ -314,7 +314,7 @@ export default function AdminDeliveredOrders() {
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 {order.product_image && (
-                                  <img src={order.product_image} alt="" className="w-8 h-8 rounded object-cover" loading="lazy" decoding="async" />
+                                  <img src={order.product_image} alt="" className="w-8 h-8 rounded object-cover" />
                                 )}
                                 <span className="text-sm line-clamp-1 max-w-[200px]">{order.product_name}</span>
                               </div>

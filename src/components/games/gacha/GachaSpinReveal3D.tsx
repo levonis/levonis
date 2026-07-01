@@ -306,7 +306,7 @@ export default function GachaSpinReveal3D({ results, onDone, onSpinAgain }: Prop
             }}
           >
             {current.prize_image_url ? (
-              <img src={current.prize_image_url} alt={current.prize_name_ar} className="w-18 h-18 object-contain drop-shadow-2xl" loading="lazy" decoding="async" />
+              <img src={current.prize_image_url} alt={current.prize_name_ar} className="w-18 h-18 object-contain drop-shadow-2xl" />
             ) : (
               <span className="text-5xl">{PRIZE_EMOJI[current.prize_type] || "🎁"}</span>
             )}

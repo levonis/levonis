@@ -12,8 +12,6 @@ import { ShoppingBag, Gift, Loader2, Wallet, Info, Package, Ticket, History } fr
 import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 import { toast } from "sonner";
 import ProductWithGiftCard from "@/components/ProductWithGiftCard";
-import { useInfiniteReveal } from "@/hooks/useInfiniteReveal";
-
 
 interface ProductBasedCompetition {
   id: string;
@@ -320,15 +318,20 @@ export default function ProductShop() {
             </CardContent>
           </Card>
         ) : (
-          <ProductShopGrid
-            products={products ?? []}
-            productNotes={productNotes}
-            setProductNotes={setProductNotes}
-            handlePurchaseClick={handlePurchaseClick}
-            isPurchasing={purchaseMutation.isPending}
-            user={user}
-            walletBalance={wallet?.balance || 0}
-          />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {products?.map((product) => (
+              <ProductWithGiftCard
+                key={product.id}
+                competition={product}
+                onPurchase={() => handlePurchaseClick(product)}
+                isPurchasing={purchaseMutation.isPending}
+                isAuthenticated={!!user}
+                walletBalance={wallet?.balance || 0}
+                notes={productNotes[product.id] || ''}
+                onNotesChange={(notes) => setProductNotes(prev => ({ ...prev, [product.id]: notes }))}
+              />
+            ))}
+          </div>
         )}
       </main>
 
@@ -336,49 +339,3 @@ export default function ProductShop() {
     </div>
   );
 }
-
-function ProductShopGrid({
-  products,
-  productNotes,
-  setProductNotes,
-  handlePurchaseClick,
-  isPurchasing,
-  user,
-  walletBalance,
-}: {
-  products: ProductBasedCompetition[];
-  productNotes: Record<string, string>;
-  setProductNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  handlePurchaseClick: (product: ProductBasedCompetition) => void;
-  isPurchasing: boolean;
-  user: unknown;
-  walletBalance: number;
-}) {
-  const { visible, sentinelRef, hasMore } = useInfiniteReveal(products.length, 16, 16);
-  const items = products.slice(0, visible);
-  return (
-    <>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {items.map((product) => (
-          <div key={product.id} className="cv-auto">
-            <ProductWithGiftCard
-              competition={product}
-              onPurchase={() => handlePurchaseClick(product)}
-              isPurchasing={isPurchasing}
-              isAuthenticated={!!user}
-              walletBalance={walletBalance}
-              notes={productNotes[product.id] || ''}
-              onNotesChange={(notes) => setProductNotes((prev) => ({ ...prev, [product.id]: notes }))}
-            />
-          </div>
-        ))}
-      </div>
-      {hasMore && (
-        <div ref={sentinelRef} className="py-6 flex justify-center">
-          <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-        </div>
-      )}
-    </>
-  );
-}
-

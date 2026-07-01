@@ -40,7 +40,7 @@ export default function ProductContextBar({
       {/* Image */}
       {imageUrl && (
         <div className="shrink-0 h-10 w-10 rounded-lg overflow-hidden border border-border/50">
-          <img src={imageUrl} alt={title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
+          <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ interface ProductOfferCardProps {
   walletBalance: number;
 }
 
-function ProductOfferCard({
+export default function ProductOfferCard({
   offer,
   onPurchase,
   isPurchasing,
@@ -152,5 +152,3 @@ function ProductOfferCard({
     </Card>
   );
 }
-
-export default memo(ProductOfferCard);

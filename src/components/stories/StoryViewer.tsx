@@ -196,7 +196,7 @@ export default function StoryViewer({ sections, initialSectionIndex, onClose }: 
             {/* Section thumbnail */}
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/30 bg-muted flex-shrink-0">
               {currentSection.thumbnail_url ? (
-                <img src={currentSection.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                <img src={currentSection.thumbnail_url} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
                   {currentSection.title_ar.charAt(0)}

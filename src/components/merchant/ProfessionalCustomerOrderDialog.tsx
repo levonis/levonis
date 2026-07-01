@@ -186,7 +186,7 @@ export default function ProfessionalCustomerOrderDialog({
           {product && (
             <div className="flex gap-2.5 p-2.5 rounded-xl bg-muted/30 border border-border/50">
               {mainImage && (
-                <img src={mainImage} alt="" className="w-12 h-12 rounded-lg object-cover" loading="lazy" decoding="async" />
+                <img src={mainImage} alt="" className="w-12 h-12 rounded-lg object-cover" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-xs truncate">{product.title}</p>

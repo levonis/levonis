@@ -542,7 +542,7 @@ function RatingCard({
             <div className="flex gap-1.5 mt-2 flex-wrap">
               {rating.image_urls.map((url, i) => (
                 <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                  <img src={url} alt="" className="w-14 h-14 rounded-md object-cover border border-border hover:opacity-80 transition" loading="lazy" decoding="async" />
+                  <img src={url} alt="" className="w-14 h-14 rounded-md object-cover border border-border hover:opacity-80 transition" />
                 </a>
               ))}
             </div>

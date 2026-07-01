@@ -134,7 +134,8 @@ const MyCustomRequests = () => {
                       <img 
                         src={request.image_url}
                         alt={request.product_name}
-                        className="w-full h-40 object-cover rounded-lg" loading="lazy" decoding="async" />
+                        className="w-full h-40 object-cover rounded-lg"
+                      />
                     )}
 
                     {request.description && (

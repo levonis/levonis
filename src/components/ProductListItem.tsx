@@ -6,7 +6,7 @@ import { formatPrice } from '@/lib/utils';
 import { resizeSupabaseImage } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { memo, useState } from 'react';
+import { useState } from 'react';
 
 interface ProductListItemProps {
   id: string;
@@ -181,4 +181,4 @@ const ProductListItem = ({
   );
 };
 
-export default memo(ProductListItem);
+export default ProductListItem;

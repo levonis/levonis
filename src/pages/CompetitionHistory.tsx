@@ -280,7 +280,8 @@ export default function CompetitionHistory() {
                               <img 
                                 src={winner.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${winner.username}`}
                                 alt="الفائز"
-                                className="h-10 w-10 rounded-full border-2 border-yellow-500" loading="lazy" decoding="async" />
+                                className="h-10 w-10 rounded-full border-2 border-yellow-500"
+                              />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-sm truncate">

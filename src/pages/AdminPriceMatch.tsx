@@ -115,7 +115,7 @@ const AdminPriceMatch = () => {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {req.products?.image_url && (
-                    <img src={req.products.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" loading="lazy" decoding="async" />
+                    <img src={req.products.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{req.products?.name_ar || 'منتج محذوف'}</p>
@@ -219,7 +219,7 @@ const AdminPriceMatch = () => {
       {/* Image Modal */}
       <Dialog open={!!imageModal} onOpenChange={() => setImageModal(null)}>
         <DialogContent className="max-w-lg p-2">
-          {imageModal && <img src={imageModal} alt="Price proof" className="w-full rounded-lg" loading="lazy" decoding="async" />}
+          {imageModal && <img src={imageModal} alt="Price proof" className="w-full rounded-lg" />}
         </DialogContent>
       </Dialog>
     </AdminLayout>

@@ -441,7 +441,7 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
                           setProductSearch('');
                         }}
                       >
-                        {p.image_url && <img src={p.image_url} className="w-8 h-8 rounded object-cover" alt="" loading="lazy" decoding="async" />}
+                        {p.image_url && <img src={p.image_url} className="w-8 h-8 rounded object-cover" alt="" />}
                         <span>{p.name_ar}</span>
                         {p._type === 'bundle' && <Badge variant="outline" className="text-[10px]">بندل</Badge>}
                       </button>

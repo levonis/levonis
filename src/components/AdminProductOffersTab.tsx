@@ -499,7 +499,8 @@ export default function AdminProductOffersTab() {
                         <img 
                           src={offer.image_url} 
                           alt={offer.title_ar}
-                          className="w-20 h-20 object-cover rounded-lg" loading="lazy" decoding="async" />
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -618,7 +619,7 @@ export default function AdminProductOffersTab() {
                       <div key={item.offer.id} className="p-4 hover:bg-muted/50">
                         <div className="flex items-center gap-4">
                           {item.offer.image_url && (
-                            <img src={item.offer.image_url} alt="" className="w-12 h-12 object-cover rounded" loading="lazy" decoding="async" />
+                            <img src={item.offer.image_url} alt="" className="w-12 h-12 object-cover rounded" />
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{item.offer.title_ar}</p>
@@ -757,7 +758,8 @@ export default function AdminProductOffersTab() {
                         <img
                           src={url}
                           alt={`صورة ${index + 1}`}
-                          className="w-full h-full object-cover rounded-lg border" loading="lazy" decoding="async" />
+                          className="w-full h-full object-cover rounded-lg border"
+                        />
                         <button
                           type="button"
                           onClick={() => removeImage(index)}

@@ -211,7 +211,7 @@ export default function AdminWishes() {
                 <input ref={editFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleEditImageSelect(e.target.files[0])} />
                 {editImagePreview ? (
                   <div className="relative rounded-xl overflow-hidden border border-border/50 group">
-                    <img src={editImagePreview} alt="" className="w-full aspect-video object-cover" loading="lazy" decoding="async" />
+                    <img src={editImagePreview} alt="" className="w-full aspect-video object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                       <button onClick={() => editFileRef.current?.click()} className="p-2 rounded-full bg-card/80 text-foreground hover:bg-card transition-colors">
                         <Camera className="w-5 h-5" />
@@ -325,7 +325,7 @@ function WishAdminCard({ wish, onApprove, onReject, onEdit, onFulfill, isPending
     <div className={`p-4 rounded-xl border bg-card/50 ${isFulfilled ? 'border-emerald-500/30' : 'border-border/50'}`}>
       <div className="flex gap-3">
         {wish.image_url && (
-          <img src={wish.image_url} alt="" className="w-14 h-14 rounded-lg object-cover border border-border/30" loading="lazy" decoding="async" />
+          <img src={wish.image_url} alt="" className="w-14 h-14 rounded-lg object-cover border border-border/30" />
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">

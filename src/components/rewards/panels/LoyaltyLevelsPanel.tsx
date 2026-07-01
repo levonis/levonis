@@ -452,7 +452,7 @@ export default function LoyaltyLevelsPanel() {
                       style={{ backgroundColor: level.color + '20', color: level.color }}
                     >
                       {isVipPlus ? (
-                        <img src="/frames/levo-vip-badge.png" alt="VIP" className="w-7 h-7 object-contain" loading="lazy" decoding="async" />
+                        <img src="/frames/levo-vip-badge.png" alt="VIP" className="w-7 h-7 object-contain" />
                       ) : (
                         <CreditCard className="h-5 w-5" />
                       )}

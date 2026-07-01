@@ -270,24 +270,6 @@
     scrollbar-gutter: stable;
   }
 
-  /* content-visibility: skip layout/paint for off-screen rows/cards. Cheapest
-   * "virtualization" available — no JS, no layout risk. Use on repeated
-   * children of long vertical lists (messages, notifications, orders rows).
-   * `contain-intrinsic-size` reserves space so scrollbar length is stable. */
-  .cv-auto {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 220px;
-  }
-  .cv-auto-sm {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 96px;
-  }
-  .cv-auto-lg {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 360px;
-  }
-
-
   /* ---- Glassmorphism skeleton (loading placeholder) ---- */
   .skeleton-glass {
     position: relative;

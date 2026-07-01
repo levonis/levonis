@@ -370,7 +370,8 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                         <img 
                           src={product.image_url} 
                           alt={product.name_ar}
-                          className="w-10 h-10 object-cover rounded" loading="lazy" decoding="async" />
+                          className="w-10 h-10 object-cover rounded"
+                        />
                       )}
                       <div className="flex-1">
                         <p className="font-medium">{product.name_ar}</p>
@@ -395,7 +396,8 @@ const AdminCreateOrderDialog = ({ open, onOpenChange }: AdminCreateOrderDialogPr
                         <img 
                           src={item.image_url} 
                           alt={item.product_name_ar}
-                          className="w-12 h-12 object-cover rounded" loading="lazy" decoding="async" />
+                          className="w-12 h-12 object-cover rounded"
+                        />
                       )}
                       <div className="flex-1 space-y-2">
                         <p className="font-medium text-sm">{item.product_name_ar}</p>

@@ -132,7 +132,8 @@ export default function ProductDetailSheet({
                     <img
                       src={images[activeMediaIndex]}
                       alt={product.title}
-                      className="w-full h-full object-contain" loading="lazy" decoding="async" />
+                      className="w-full h-full object-contain"
+                    />
                   )}
                 </AspectRatio>
 
@@ -196,7 +197,7 @@ export default function ProductDetailSheet({
                         activeMediaIndex === i ? "border-primary" : "border-transparent opacity-60"
                       }`}
                     >
-                      <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      <img src={url} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                   {hasVideo && (

@@ -180,7 +180,7 @@ export default function MyGamePrizes({ onBack }: Props) {
                 <div key={prize.id} className={`rounded-xl p-4 border transition-all ${prize.is_delivered ? 'bg-muted/10 border-border' : 'bg-primary/5 border-primary/20'}`}>
                   <div className="flex items-start gap-3">
                     {prize.prize_image_url ? (
-                      <img src={prize.prize_image_url} alt="" className="w-12 h-12 rounded-lg object-cover border border-border" loading="lazy" decoding="async" />
+                      <img src={prize.prize_image_url} alt="" className="w-12 h-12 rounded-lg object-cover border border-border" />
                     ) : (
                       <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                         <Trophy className="h-6 w-6 text-primary" />

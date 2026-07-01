@@ -467,12 +467,12 @@ const OrderDetail = () => {
                         <>
                           {imageUrl && (
                             <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-border/30 shadow-sm">
-                              <img src={imageUrl} alt={productName} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                              <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
                             </div>
                           )}
                           {item.color_image_url && (
                             <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-primary/30 shadow-sm">
-                              <img src={item.color_image_url} alt={`لون ${item.selected_color}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                              <img src={item.color_image_url} alt={`لون ${item.selected_color}`} className="w-full h-full object-cover" />
                             </div>
                           )}
                         </>
@@ -696,7 +696,7 @@ const OrderDetail = () => {
                 <div className="grid grid-cols-3 gap-2">
                   {order.admin_images.map((imageUrl: string, index: number) => (
                     <a key={index} href={imageUrl} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-xl overflow-hidden border border-border/30 hover:border-primary/40 transition-colors shadow-sm">
-                      <img src={imageUrl} alt={`#${index + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      <img src={imageUrl} alt={`#${index + 1}`} className="w-full h-full object-cover" />
                     </a>
                   ))}
                 </div>

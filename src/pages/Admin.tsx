@@ -3192,7 +3192,7 @@ const Admin = () => {
                                       : 'border-border hover:border-primary/50'
                                   } ${draggedImageIndex === index ? 'opacity-50 scale-95' : ''}`}
                                 >
-                                  <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" loading="lazy" decoding="async" />
+                                  <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
                                   
                                   {/* Drag handle indicator */}
                                   <div className="absolute bottom-1 left-1 bg-background/80 text-muted-foreground p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
@@ -3346,7 +3346,7 @@ const Admin = () => {
                                       : 'border-border hover:border-primary/50'
                                   } ${draggedImageIndex === index ? 'opacity-50 scale-95' : ''}`}
                                 >
-                                  <img src={img} alt={`صورة جديدة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" loading="lazy" decoding="async" />
+                                  <img src={img} alt={`صورة جديدة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
 
                                   {/* Drag handle indicator */}
                                   <div className="absolute bottom-1 left-1 bg-background/80 text-muted-foreground p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
@@ -3699,7 +3699,7 @@ const Admin = () => {
                                 </div>
                                 {option.image_url && (
                                   <div className="mt-2 relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                                    <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                    <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" />
                                   </div>
                                 )}
                                 <p className="text-xs text-muted-foreground">
@@ -3918,7 +3918,7 @@ const Admin = () => {
                                   </div>
                                   {color.image_url && (
                                     <div className="mt-2 relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                                      <img src={color.image_url} alt={color.name_ar} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                      <img src={color.image_url} alt={color.name_ar} className="w-full h-full object-cover" />
                                     </div>
                                   )}
                                    <p className="text-xs text-muted-foreground">
@@ -4336,7 +4336,8 @@ const Admin = () => {
                             <img 
                               src={product.image_url} 
                               alt={product.name_ar}
-                              className="w-12 h-12 object-cover rounded-lg" loading="lazy" decoding="async" />
+                              className="w-12 h-12 object-cover rounded-lg"
+                            />
                           )}
                         </TableCell>
                          <TableCell>
@@ -4692,7 +4693,7 @@ const Admin = () => {
                             {categoryMediaType === 'video' ? (
                               <video src={categoryMediaUrl} className="w-full h-full object-cover" muted autoPlay loop playsInline />
                             ) : (
-                              <img src={categoryMediaUrl} alt="preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                              <img src={categoryMediaUrl} alt="preview" className="w-full h-full object-cover" />
                             )}
                           </div>
                           <Button

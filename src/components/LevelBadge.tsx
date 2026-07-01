@@ -14,7 +14,7 @@ const getLevelIcon = (levelKey: string, size: number, isVipPlus?: boolean) => {
   const iconProps = { size, className: "inline" };
   
   if (isVipPlus) {
-    return <img src="/frames/levo-vip-badge.png" alt="VIP+" width={size} height={size} className="inline" loading="lazy" decoding="async" />;
+    return <img src="/frames/levo-vip-badge.png" alt="VIP+" width={size} height={size} className="inline" />;
   }
   
   switch (levelKey) {

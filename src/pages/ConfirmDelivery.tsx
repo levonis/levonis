@@ -343,7 +343,7 @@ const ConfirmDelivery = () => {
                         <CardContent className="py-4">
                           <div className="flex items-center gap-4">
                             {imageUrl ? (
-                              <img src={imageUrl} alt={item.product_name_ar} className="w-14 h-14 object-cover rounded-xl border border-border/50 bg-muted" loading="lazy" decoding="async" />
+                              <img src={imageUrl} alt={item.product_name_ar} className="w-14 h-14 object-cover rounded-xl border border-border/50 bg-muted" />
                             ) : (
                               <div className="w-14 h-14 bg-muted/50 rounded-xl flex items-center justify-center">
                                 <Package className="h-6 w-6 text-muted-foreground" />
@@ -372,7 +372,7 @@ const ConfirmDelivery = () => {
                         <CardContent className="py-4">
                           <div className="flex items-center gap-4">
                             {imageUrl ? (
-                              <img src={imageUrl} alt={productName} className="w-14 h-14 object-cover rounded-xl border border-border/50" loading="lazy" decoding="async" />
+                              <img src={imageUrl} alt={productName} className="w-14 h-14 object-cover rounded-xl border border-border/50" />
                             ) : (
                               <div className="w-14 h-14 bg-muted/50 rounded-xl flex items-center justify-center">
                                 <Package className="h-6 w-6 text-muted-foreground" />
@@ -462,7 +462,7 @@ const ConfirmDelivery = () => {
                       {/* Product header */}
                       <div className="flex items-center gap-3">
                         {imageUrl ? (
-                          <img src={imageUrl} alt={item.product_name_ar} className="w-14 h-14 object-cover rounded-xl border border-border/50 bg-muted" loading="lazy" decoding="async" />
+                          <img src={imageUrl} alt={item.product_name_ar} className="w-14 h-14 object-cover rounded-xl border border-border/50 bg-muted" />
                         ) : (
                           <div className="w-14 h-14 bg-muted/50 rounded-xl flex items-center justify-center">
                             <Package className="h-6 w-6 text-muted-foreground" />
@@ -546,7 +546,7 @@ const ConfirmDelivery = () => {
                                     <Video className="h-6 w-6 text-muted-foreground" />
                                   </div>
                                 ) : (
-                                  <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                  <img src={url} alt="" className="w-full h-full object-cover" />
                                 )}
                                 <button
                                   onClick={() => removeMedia(item.id, idx)}

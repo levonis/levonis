@@ -243,7 +243,7 @@ export default function AdminReelsManager() {
                   {siteProducts?.map(p => (
                     <SelectItem key={p.id} value={p.id}>
                       <div className="flex items-center gap-2">
-                        {p.image_url && <img src={p.image_url} alt="" className="w-6 h-6 rounded object-cover" loading="lazy" decoding="async" />}
+                        {p.image_url && <img src={p.image_url} alt="" className="w-6 h-6 rounded object-cover" />}
                         <span className="truncate">{p.name_ar}</span>
                         {p.price && <span className="text-xs text-muted-foreground">{p.price.toLocaleString()} د.ع</span>}
                       </div>
@@ -277,7 +277,7 @@ function ReelsGrid({ reels, onDelete, onStatusChange, formatCount }: {
         return (
           <div key={reel.id} className="relative rounded-xl overflow-hidden bg-muted group aspect-[9/16]">
             {reel.thumbnail_url ? (
-              <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+              <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover" />
             ) : (
               <video src={reel.video_url} className="w-full h-full object-cover" muted preload="metadata" />
             )}

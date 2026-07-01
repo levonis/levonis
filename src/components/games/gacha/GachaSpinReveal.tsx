@@ -197,7 +197,7 @@ export default function GachaSpinReveal({ results, onDone, onSpinAgain }: Props)
                     }}
                   >
                     {current.prize_image_url ? (
-                      <img src={current.prize_image_url} alt={current.prize_name_ar} className="w-20 h-20 object-contain drop-shadow-2xl" loading="lazy" decoding="async" />
+                      <img src={current.prize_image_url} alt={current.prize_name_ar} className="w-20 h-20 object-contain drop-shadow-2xl" />
                     ) : (
                       <span className="text-5xl drop-shadow-2xl">{PRIZE_EMOJI[current.prize_type] || "🎁"}</span>
                     )}
@@ -234,7 +234,7 @@ export default function GachaSpinReveal({ results, onDone, onSpinAgain }: Props)
                   }}
                 >
                   {current.prize_image_url ? (
-                    <img src={current.prize_image_url} alt={current.prize_name_ar} className="w-24 h-24 object-contain drop-shadow-2xl" loading="lazy" decoding="async" />
+                    <img src={current.prize_image_url} alt={current.prize_name_ar} className="w-24 h-24 object-contain drop-shadow-2xl" />
                   ) : (
                     <span className="text-6xl drop-shadow-2xl">{PRIZE_EMOJI[current.prize_type] || "🎁"}</span>
                   )}

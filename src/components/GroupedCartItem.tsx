@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2, Package, Gift, ShieldCheck, Info } from 'lucide-react';
@@ -112,7 +112,8 @@ const GroupedCartItem = ({
             <img 
               src={displayImage}
               alt={product.name_ar || ''}
-              className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40" loading="lazy" decoding="async" />
+              className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40"
+            />
           </Link>
         )}
         
@@ -315,4 +316,4 @@ const GroupedCartItem = ({
   );
 };
 
-export default memo(GroupedCartItem);
+export default GroupedCartItem;

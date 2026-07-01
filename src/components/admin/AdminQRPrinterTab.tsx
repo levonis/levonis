@@ -336,7 +336,7 @@ const AdminQRPrinterTab = () => {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {printer.image_url ? (
-                        <img src={printer.image_url} className="w-8 h-8 rounded object-cover" alt="" loading="lazy" decoding="async" />
+                        <img src={printer.image_url} className="w-8 h-8 rounded object-cover" alt="" />
                       ) : (
                         <Printer className="w-5 h-5 text-muted-foreground" />
                       )}
@@ -456,7 +456,7 @@ const AdminQRPrinterTab = () => {
               />
               {imagePreview ? (
                 <div className="relative w-full">
-                  <img src={imagePreview} alt="معاينة" className="w-full h-32 object-contain rounded-lg border bg-muted" loading="lazy" decoding="async" />
+                  <img src={imagePreview} alt="معاينة" className="w-full h-32 object-contain rounded-lg border bg-muted" />
                   <Button
                     type="button"
                     variant="destructive"

@@ -63,7 +63,7 @@ export default function AssistanceCompetitions() {
               <div className="flex items-start gap-3">
                 {c.prize_image_url ? (
                   <div className="w-16 h-16 rounded-lg border border-border/30 bg-background overflow-hidden shrink-0">
-                    <img src={c.prize_image_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    <img src={c.prize_image_url} alt="" className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <div className={`w-16 h-16 ${glassIcon}`}>

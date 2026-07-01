@@ -296,7 +296,7 @@ export default function CommunityProductDetailModal({
                         <div className="absolute inset-0 bg-black/30 flex items-center justify-center"><Play className="h-3 w-3 text-white fill-white" /></div>
                       </>
                     ) : (
-                      <img src={media.url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      <img src={media.url} alt="" className="w-full h-full object-cover" />
                     )}
                   </button>
                 ))}
@@ -404,7 +404,7 @@ export default function CommunityProductDetailModal({
                         <button key={p.id} onClick={() => { setActiveMediaIndex(0); navigate(`/store/${p.merchant_id}?product=${p.id}`); onOpenChange(false); }}
                           className="rounded-md border border-border/40 bg-muted/20 overflow-hidden hover:border-primary/40 transition-colors">
                           <div className="aspect-square bg-muted/30">
-                            {p.image_urls?.[0] ? <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : <div className="w-full h-full flex items-center justify-center"><Package className="h-4 w-4 text-muted-foreground/30" /></div>}
+                            {p.image_urls?.[0] ? <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="h-4 w-4 text-muted-foreground/30" /></div>}
                           </div>
                           <div className="p-1">
                             <p className="text-[9px] font-medium line-clamp-1">{p.title}</p>
@@ -425,7 +425,7 @@ export default function CommunityProductDetailModal({
                         <button key={p.id} onClick={() => { navigate(`/store/${p.merchant_id}?product=${p.id}`); onOpenChange(false); }}
                           className="rounded-md border border-border/40 bg-muted/20 overflow-hidden hover:border-primary/40 transition-colors">
                           <div className="aspect-square bg-muted/30">
-                            {p.image_urls?.[0] ? <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : <div className="w-full h-full flex items-center justify-center"><Package className="h-4 w-4 text-muted-foreground/30" /></div>}
+                            {p.image_urls?.[0] ? <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="h-4 w-4 text-muted-foreground/30" /></div>}
                           </div>
                           <div className="p-1">
                             <p className="text-[9px] font-medium line-clamp-1">{p.title}</p>
@@ -470,7 +470,7 @@ export default function CommunityProductDetailModal({
             <X className="h-3.5 w-3.5 text-white" />
           </button>
           {activeMedia?.type === 'image' && (
-            <img src={activeMedia.url} alt={product.title} className="w-full h-full object-contain" loading="lazy" decoding="async" />
+            <img src={activeMedia.url} alt={product.title} className="w-full h-full object-contain" />
           )}
         </DialogContent>
       </Dialog>

@@ -346,7 +346,7 @@ export default function Wishes() {
                 <div className="flex gap-3">
                   {myWish.image_url && (
                     <div className="shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden border border-border/40">
-                      <img src={myWish.image_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      <img src={myWish.image_url} alt="" className="w-full h-full object-cover" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -677,7 +677,7 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop, t, dateLocale 
             {profile && (
               <div className="flex items-center gap-1.5 mb-2">
                 {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover border border-border/30" loading="lazy" decoding="async" />
+                  <img src={profile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover border border-border/30" />
                 ) : (
                   <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
                     <User className="w-2.5 h-2.5 text-primary/50" />
@@ -804,7 +804,7 @@ function WishFormDialog({ dir, t, title, setTitle, description, setDescription, 
           />
           {imagePreview ? (
             <div className="relative rounded-xl overflow-hidden border border-border/40 group">
-              <img src={imagePreview} alt="" className="w-full aspect-[16/10] object-cover" loading="lazy" decoding="async" />
+              <img src={imagePreview} alt="" className="w-full aspect-[16/10] object-cover" />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                 <button onClick={() => fileRef.current?.click()} className="w-10 h-10 rounded-xl bg-card/90 text-foreground hover:bg-card flex items-center justify-center transition-colors">
                   <Camera className="w-5 h-5" />

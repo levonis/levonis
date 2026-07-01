@@ -241,7 +241,7 @@ const BundleDetail = () => {
         {/* Main Image */}
         {activeImage && (
           <div className="relative mt-3 rounded-2xl overflow-hidden border border-white/15 dark:border-white/10 shadow-[0_8px_32px_-8px_hsl(var(--primary)/0.25)]">
-            <img src={activeImage} alt={pickI18n(bundle as any, 'title', language)} className="w-full aspect-square object-cover" loading="lazy" decoding="async" />
+            <img src={activeImage} alt={pickI18n(bundle as any, 'title', language)} className="w-full aspect-square object-cover" />
             {bundle.isOutOfStock && (
               <div className="absolute inset-0 bg-background/50 backdrop-blur-md flex items-center justify-center">
                 <div className="px-4 py-1.5 rounded-xl bg-destructive/85 backdrop-blur-md border border-destructive-foreground/20 text-destructive-foreground text-sm font-bold shadow-lg">انتهى العرض</div>
@@ -279,7 +279,7 @@ const BundleDetail = () => {
                       : 'border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] opacity-80 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover pointer-events-none" draggable={false} loading="lazy" decoding="async" />
+                  <img src={img} alt="" className="w-full h-full object-cover pointer-events-none" draggable={false} />
                 </button>
               );
             })}
@@ -358,7 +358,7 @@ const BundleDetail = () => {
                     className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.1)] hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300"
                   >
                   {itemImage && (
-                    <img src={itemImage} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-white/20 dark:border-white/10" loading="lazy" decoding="async" />
+                    <img src={itemImage} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-white/20 dark:border-white/10" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-foreground truncate">{productName}</p>
@@ -401,7 +401,7 @@ const BundleDetail = () => {
                 >
                   {itemImage && (
                     <div className="h-[80px] overflow-hidden relative">
-                      <img src={itemImage} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none" draggable={false} loading="lazy" decoding="async" />
+                      <img src={itemImage} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none" draggable={false} />
                       <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-background/30 to-transparent" />
                     </div>
                   )}

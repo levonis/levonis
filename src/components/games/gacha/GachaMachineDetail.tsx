@@ -196,7 +196,7 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
             {guaranteedRules.map((rule: any) => (
               <div key={rule.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-amber-500/20">
                 {rule.reward_image_url ? (
-                  <img src={rule.reward_image_url} className="w-10 h-10 rounded-lg object-cover" alt="" loading="lazy" decoding="async" />
+                  <img src={rule.reward_image_url} className="w-10 h-10 rounded-lg object-cover" alt="" />
                 ) : (
                   <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-lg">🎁</div>
                 )}
@@ -232,7 +232,7 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
               return (
                 <div key={prize.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-card/50 border border-border/20">
                   {prize.prize_image_url ? (
-                    <img src={prize.prize_image_url} className="w-8 h-8 rounded object-cover" alt="" loading="lazy" decoding="async" />
+                    <img src={prize.prize_image_url} className="w-8 h-8 rounded object-cover" alt="" />
                   ) : (
                     <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-sm">
                       {prize.prize_type === "doll" ? "🧸" : prize.prize_type === "coupon" ? "🎟️" : prize.prize_type === "points" ? "⭐" : "💡"}

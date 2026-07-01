@@ -760,7 +760,7 @@ export default function DailyTasksPanel() {
               />
               {proofImagePreview ? (
                 <div className="relative rounded-lg overflow-hidden border">
-                  <img src={proofImagePreview} alt={t('dt_proof_alt')} className="w-full max-h-48 object-contain bg-muted/20" loading="lazy" decoding="async" />
+                  <img src={proofImagePreview} alt={t('dt_proof_alt')} className="w-full max-h-48 object-contain bg-muted/20" />
                   <Button
                     size="icon"
                     variant="destructive"

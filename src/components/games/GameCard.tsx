@@ -26,7 +26,7 @@ export default function GameCard({ game, onPlay, onClickSound, disabled, startin
         startingSoon && "opacity-80 border-primary/40 bg-primary/5"
       )}>
         {game.image ? (
-          <img src={game.image} alt={game.title} className="w-12 h-12 object-cover rounded mb-2 opacity-40 shrink-0" loading="lazy" decoding="async" />
+          <img src={game.image} alt={game.title} className="w-12 h-12 object-cover rounded mb-2 opacity-40 shrink-0" />
         ) : (
           <Lock className="h-8 w-8 text-muted-foreground/40 mb-3" />
         )}
@@ -86,7 +86,7 @@ export default function GameCard({ game, onPlay, onClickSound, disabled, startin
       {/* Game Image */}
       <div className="w-16 h-16 flex items-center justify-center mb-3 transition-transform duration-300 pixel-frame-inset group-hover:scale-110 group-hover:rotate-2 overflow-hidden rounded">
         {game.image ? (
-          <img src={game.image} alt={game.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+          <img src={game.image} alt={game.title} className="w-full h-full object-cover" />
         ) : (
           <span className="text-3xl">{game.icon}</span>
         )}
