@@ -23,7 +23,7 @@ interface ProductOfferCardProps {
   walletBalance: number;
 }
 
-export default function ProductOfferCard({
+function ProductOfferCard({
   offer,
   onPurchase,
   isPurchasing,
