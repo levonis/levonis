@@ -1152,7 +1152,7 @@ const ProductDetail = () => {
                               </div>
                               <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
                                 <div className="min-w-0">
-                                  <span className="font-bold text-xs block truncate">{option.name_ar}</span>
+                                  <span className="font-bold text-xs block truncate">{translateShippingOption(option.name_ar, t)}</span>
                                   {option.description && <span className="text-[9px] text-muted-foreground block truncate">{option.description}</span>}
                                 </div>
                                 {option.price_adjustment > 0 ? (
