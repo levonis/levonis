@@ -869,7 +869,7 @@ export default function AdminShippingSettings() {
           <GlassCardHeader
             icon={<Plane className="h-5 w-5 text-white" />}
             iconBg="bg-gradient-to-br from-orange-500 to-amber-500"
-            title="الجوي - الصين"
+            title="السريع - الصين"
             subtitle={settings.air_use_volumetric_weight >= 1 ? "بالوزن الحجمي أو الفعلي (الأكبر)" : "بالوزن الفعلي فقط"}
           />
 
