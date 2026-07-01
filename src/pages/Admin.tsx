@@ -2071,9 +2071,9 @@ const Admin = () => {
 
           // Recalculate shipping options with rounded prices (for multi-mode pre-order)
           const activeShipping: Array<{ key: string; name_ar: string; price: number }> = [];
-          if (hasSea && values.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن بحري', price: values.sea_price });
-          if (hasAir && values.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن جوي', price: values.air_price });
-          if (hasLand && values.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن بري', price: values.land_price });
+          if (hasSea && values.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن اقتصادي', price: values.sea_price });
+          if (hasAir && values.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن سريع', price: values.air_price });
+          if (hasLand && values.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن قياسي', price: values.land_price });
           if (activeShipping.length >= 2) {
             const basePreOrderPrice = Math.min(...activeShipping.map((s) => s.price));
             values.pre_order_shipping_options = activeShipping.map((s) => ({
