@@ -675,7 +675,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
               <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Ship className="h-3 w-3" />
-                  <span>الشحن البحري - أبعاد القطعة (سم) لحساب CBM</span>
+                  <span>الشحن الاقتصادي - أبعاد القطعة (سم) لحساب CBM</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
