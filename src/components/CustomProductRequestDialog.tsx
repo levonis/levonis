@@ -280,14 +280,14 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
                       <SelectItem value="sea">
                         <span className="flex items-center gap-2">
                           <Ship className="h-4 w-4" />
-                          شحن بحري
+                          شحن اقتصادي
                         </span>
                       </SelectItem>
                     )}
                     <SelectItem value="air">
                       <span className="flex items-center gap-2">
                         <Plane className="h-4 w-4" />
-                        شحن جوي
+                        شحن سريع
                       </span>
                     </SelectItem>
                   </SelectContent>

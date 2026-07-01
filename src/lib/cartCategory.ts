@@ -18,8 +18,8 @@ export const CART_CATEGORY_LABELS_AR: Record<CartCategory, string> = {
   bundle: 'البندل',
   community: 'طلبات المجتمع',
   direct: 'البيع المباشر',
-  preorder_air: 'الحجز المسبق - شحن جوي',
-  preorder_sea: 'الحجز المسبق - شحن بحري',
+  preorder_air: 'الحجز المسبق - شحن سريع',
+  preorder_sea: 'الحجز المسبق - شحن اقتصادي',
   preorder_other: 'الحجز المسبق',
 };
 
