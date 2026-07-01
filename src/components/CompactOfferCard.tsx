@@ -18,7 +18,7 @@ interface CompactOfferCardProps {
   onClick: () => void;
 }
 
-export default function CompactOfferCard({
+function CompactOfferCard({
   offer,
   onClick,
 }: CompactOfferCardProps) {
