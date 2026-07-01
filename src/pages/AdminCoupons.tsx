@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Plus, Pencil, Trash2, Ticket, Copy, Tag, Percent, Calendar } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Ticket, Copy, Tag, Percent, Calendar, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminEmptyState, AdminLoading } from '@/components/admin/AdminLayout';
@@ -29,6 +29,7 @@ const AdminCoupons = () => {
     max_uses: null as number | null,
     expires_at: '',
     active: true,
+    applicable_delivery_method: '' as string,
   });
 
   useEffect(() => {
