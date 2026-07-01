@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Plus, Pencil, Trash2, Ticket, Copy, Tag, Percent, Calendar } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Ticket, Copy, Tag, Percent, Calendar, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminEmptyState, AdminLoading } from '@/components/admin/AdminLayout';
@@ -29,6 +29,7 @@ const AdminCoupons = () => {
     max_uses: null as number | null,
     expires_at: '',
     active: true,
+    applicable_delivery_method: '' as string,
   });
 
   useEffect(() => {
@@ -114,15 +115,29 @@ const AdminCoupons = () => {
     },
   });
 
+  const { data: deliveryMethods = [] } = useQuery({
+    queryKey: ['coupon-delivery-methods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('delivery_methods')
+        .select('method_key, name_ar')
+        .eq('is_active', true)
+        .order('display_order');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!isAdmin,
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.code.trim()) {
       toast.error('يجب إدخال رمز الكوبون');
       return;
     }
 
-    if (formData.discount_value <= 0) {
+    if (formData.discount_type !== 'free_shipping' && formData.discount_value <= 0) {
       toast.error('يجب أن تكون قيمة الخصم أكبر من صفر');
       return;
     }
@@ -132,11 +147,21 @@ const AdminCoupons = () => {
       return;
     }
 
-    const submitData = {
-      ...formData,
+    if (formData.discount_type === 'free_shipping' && !formData.applicable_delivery_method) {
+      toast.error('يجب اختيار نوع التوصيل المستهدف');
+      return;
+    }
+
+    const submitData: any = {
       code: formData.code.toUpperCase().trim(),
-      expires_at: formData.expires_at || null,
+      discount_type: formData.discount_type,
+      discount_value: formData.discount_type === 'free_shipping' ? 0 : formData.discount_value,
+      min_purchase_amount: formData.min_purchase_amount,
       max_uses: formData.max_uses || null,
+      expires_at: formData.expires_at || null,
+      active: formData.active,
+      applicable_delivery_method:
+        formData.discount_type === 'free_shipping' ? formData.applicable_delivery_method : null,
     };
 
     if (editing) {
@@ -156,6 +181,7 @@ const AdminCoupons = () => {
       max_uses: coupon.max_uses,
       expires_at: coupon.expires_at ? new Date(coupon.expires_at).toISOString().slice(0, 16) : '',
       active: coupon.active,
+      applicable_delivery_method: coupon.applicable_delivery_method || '',
     });
     setDialogOpen(true);
   };
@@ -169,6 +195,7 @@ const AdminCoupons = () => {
       max_uses: null,
       expires_at: '',
       active: true,
+      applicable_delivery_method: '',
     });
     setEditing(null);
   };
@@ -247,23 +274,46 @@ const AdminCoupons = () => {
                     <SelectContent>
                       <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
                       <SelectItem value="fixed">مبلغ ثابت</SelectItem>
+                      <SelectItem value="free_shipping">توصيل مجاني</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="admin-form-group">
-                  <Label className="admin-form-label">قيمة الخصم</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.discount_value}
-                    onChange={(e) => setFormData({ ...formData, discount_value: parseFloat(e.target.value) || 0 })}
-                    className="admin-input"
-                    required
-                  />
-                </div>
+                {formData.discount_type !== 'free_shipping' && (
+                  <div className="admin-form-group">
+                    <Label className="admin-form-label">قيمة الخصم</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.discount_value}
+                      onChange={(e) => setFormData({ ...formData, discount_value: parseFloat(e.target.value) || 0 })}
+                      className="admin-input"
+                      required
+                    />
+                  </div>
+                )}
               </div>
+
+              {formData.discount_type === 'free_shipping' && (
+                <div className="admin-form-group">
+                  <Label className="admin-form-label">نوع التوصيل المستهدف</Label>
+                  <Select
+                    value={formData.applicable_delivery_method}
+                    onValueChange={(value) => setFormData({ ...formData, applicable_delivery_method: value })}
+                  >
+                    <SelectTrigger className="admin-select">
+                      <SelectValue placeholder="اختر نوع التوصيل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deliveryMethods.map((m: any) => (
+                        <SelectItem key={m.method_key} value={m.method_key}>{m.name_ar}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="admin-form-hint">الكوبون يعمل فقط مع هذا النوع من التوصيل</p>
+                </div>
+              )}
 
               <div className="admin-form-row-2">
                 <div className="admin-form-group">
@@ -409,12 +459,23 @@ const AdminCoupons = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="font-semibold">
-                              {coupon.discount_type === 'percentage' 
-                                ? `${coupon.discount_value}%`
-                                : `${coupon.discount_value.toLocaleString()} د.ع`
-                              }
-                            </span>
+                            {coupon.discount_type === 'free_shipping' ? (
+                              <Badge className="admin-badge admin-badge-success gap-1">
+                                <Truck className="h-3 w-3" />
+                                توصيل مجاني
+                                {coupon.applicable_delivery_method && (
+                                  <span className="opacity-80">
+                                    — {(deliveryMethods.find((m: any) => m.method_key === coupon.applicable_delivery_method) as any)?.name_ar || coupon.applicable_delivery_method}
+                                  </span>
+                                )}
+                              </Badge>
+                            ) : (
+                              <span className="font-semibold">
+                                {coupon.discount_type === 'percentage'
+                                  ? `${coupon.discount_value}%`
+                                  : `${coupon.discount_value.toLocaleString()} د.ع`}
+                              </span>
+                            )}
                             {coupon.min_purchase_amount > 0 && (
                               <span className="text-xs text-muted-foreground block">
                                 حد أدنى: {coupon.min_purchase_amount.toLocaleString()}

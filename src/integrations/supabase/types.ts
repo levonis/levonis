@@ -2439,6 +2439,7 @@ export type Database = {
       coupons: {
         Row: {
           active: boolean
+          applicable_delivery_method: string | null
           code: string
           created_at: string
           current_uses: number | null
@@ -2452,6 +2453,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          applicable_delivery_method?: string | null
           code: string
           created_at?: string
           current_uses?: number | null
@@ -2465,6 +2467,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          applicable_delivery_method?: string | null
           code?: string
           created_at?: string
           current_uses?: number | null
