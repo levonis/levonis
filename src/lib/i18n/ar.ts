@@ -2102,6 +2102,7 @@ export const ar: TranslationKeys = {
   // Cart shipping option labels
   shipping_opt_air: 'سريع',
   shipping_opt_sea: 'اقتصادي',
+  shipping_opt_land: 'قياسي',
   shipping_opt_direct: 'مباشر',
   shipping_opt_preorder: 'طلب مسبق',
 
