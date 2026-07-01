@@ -928,7 +928,7 @@ export default function AdminShippingSettings() {
           <GlassCardHeader
             icon={<Navigation className="h-5 w-5 text-white" />}
             iconBg="bg-gradient-to-br from-amber-600 to-orange-700"
-            title="الشحن البري"
+            title="الشحن القياسي"
             subtitle="بالوزن الفعلي فقط — بدون وزن حجمي"
           />
           <div className="px-5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
