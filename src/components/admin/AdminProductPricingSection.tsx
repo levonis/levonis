@@ -675,7 +675,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
               <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Ship className="h-3 w-3" />
-                  <span>الشحن الاقتصادي - أبعاد القطعة (سم) لحساب CBM</span>
+                  <span>الشحن البحري - أبعاد القطعة (سم) لحساب CBM</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
@@ -696,7 +696,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                 </div>
                 {isAdmin && (
                   <div className="space-y-2">
-                    <Label htmlFor="commission_sea_iqd">العمولة - اقتصادي (د.ع)</Label>
+                    <Label htmlFor="commission_sea_iqd">العمولة - بحري (د.ع)</Label>
                     <Input id="commission_sea_iqd" type="number" min="0"
                       value={commissionSeaIqd || ''} onChange={(e) => setCommissionSeaIqd(Number(e.target.value))} placeholder="0" />
                   </div>
@@ -709,7 +709,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
               <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Plane className="h-3 w-3" />
-                  <span>الشحن السريع</span>
+                  <span>الشحن الجوي</span>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="weight_kg">الوزن (كغ) *</Label>
@@ -731,7 +731,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                 )}
                 {isAdmin && (
                   <div className="space-y-2">
-                    <Label htmlFor="commission_air_iqd">العمولة - سريع (د.ع)</Label>
+                    <Label htmlFor="commission_air_iqd">العمولة - جوي (د.ع)</Label>
                     <Input id="commission_air_iqd" type="number" min="0"
                       value={commissionAirIqd || ''} onChange={(e) => setCommissionAirIqd(Number(e.target.value))} placeholder="0" />
                   </div>
@@ -744,7 +744,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
               <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <MapPin className="h-3 w-3" />
-                  <span>الشحن القياسي — يعتمد على الوزن الفعلي فقط</span>
+                  <span>الشحن البري — يعتمد على الوزن الفعلي فقط</span>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="weight_kg_land">الوزن (كغ) *</Label>

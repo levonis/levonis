@@ -2113,7 +2113,6 @@ export type TranslationKeys = {
   // Cart shipping option labels (per-product shipping mode under product name)
   shipping_opt_air: string;
   shipping_opt_sea: string;
-  shipping_opt_land: string;
   shipping_opt_direct: string;
   shipping_opt_preorder: string;
 

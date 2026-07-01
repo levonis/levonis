@@ -144,7 +144,7 @@ export const calculateShippingCost = (
       shippingCost: 0,
       commission: 0,
       totalCost: 0,
-      notes: ['الشحن الاقتصادي متاح فقط من الصين'],
+      notes: ['الشحن البحري متاح فقط من الصين'],
       breakdown: [],
     };
   }
@@ -160,7 +160,7 @@ export const calculateShippingCost = (
       shippingCost = cbm * settings.sea_cbm_price;
       
       breakdown.push({ label: 'الحجم CBM', value: cbm.toFixed(4) });
-      breakdown.push({ label: 'تكلفة الشحن الاقتصادي', value: Math.round(shippingCost) });
+      breakdown.push({ label: 'تكلفة الشحن البحري', value: Math.round(shippingCost) });
     }
     notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
   } else if (shippingType === 'air') {
@@ -191,7 +191,7 @@ export const calculateShippingCost = (
         breakdown.push({ label: 'الوزن مع التغليف', value: `${weightWithSafety.toFixed(2)} كغ` });
 
         shippingCost = weightWithSafety * settings.air_china_volumetric_price;
-        breakdown.push({ label: 'تكلفة الشحن السريع', value: Math.round(shippingCost) });
+        breakdown.push({ label: 'تكلفة الشحن الجوي', value: Math.round(shippingCost) });
       }
 
       notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
@@ -205,9 +205,9 @@ export const calculateShippingCost = (
       shippingCost = usd * settings.usd_to_iqd_rate;
       breakdown.push({ label: 'الوزن الفعلي', value: `${weight.toFixed(2)} كغ` });
       breakdown.push({ label: 'السعر/كغ', value: `${settings.land_price_per_kg_usd}$ × ${settings.usd_to_iqd_rate.toLocaleString()}` });
-      breakdown.push({ label: 'تكلفة الشحن القياسي', value: Math.round(shippingCost) });
+      breakdown.push({ label: 'تكلفة الشحن البري', value: Math.round(shippingCost) });
     } else {
-      notes.push('الشحن القياسي يحتاج الوزن الفعلي للقطعة');
+      notes.push('الشحن البري يحتاج الوزن الفعلي للقطعة');
     }
     notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
   }

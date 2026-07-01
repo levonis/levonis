@@ -738,9 +738,9 @@ export default function AdminShippingSettings() {
 
       // Pre-order shipping options (multi-mode)
       const activeShipping: Array<{ key: string; name_ar: string; price: number }> = [];
-      if (hasSea && updates.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن اقتصادي', price: updates.sea_price });
-      if (hasAir && updates.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن سريع', price: updates.air_price });
-      if (hasLand && updates.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن قياسي', price: updates.land_price });
+      if (hasSea && updates.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن بحري', price: updates.sea_price });
+      if (hasAir && updates.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن جوي', price: updates.air_price });
+      if (hasLand && updates.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن بري', price: updates.land_price });
       if (activeShipping.length >= 2) {
         const basePreOrderPrice = Math.min(...activeShipping.map((s) => s.price));
         updates.pre_order_shipping_options = activeShipping.map((s) => ({
@@ -839,7 +839,7 @@ export default function AdminShippingSettings() {
             <GlassCardHeader
               icon={<Ship className="h-5 w-5 text-white" />}
               iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-              title="الشحن الاقتصادي"
+              title="الشحن البحري"
               subtitle="من الصين - بالمتر المكعب"
             />
             <div className="px-5 pb-5 grid grid-cols-2 gap-4">
@@ -869,7 +869,7 @@ export default function AdminShippingSettings() {
           <GlassCardHeader
             icon={<Plane className="h-5 w-5 text-white" />}
             iconBg="bg-gradient-to-br from-orange-500 to-amber-500"
-            title="السريع - الصين"
+            title="الجوي - الصين"
             subtitle={settings.air_use_volumetric_weight >= 1 ? "بالوزن الحجمي أو الفعلي (الأكبر)" : "بالوزن الفعلي فقط"}
           />
 
@@ -928,7 +928,7 @@ export default function AdminShippingSettings() {
           <GlassCardHeader
             icon={<Navigation className="h-5 w-5 text-white" />}
             iconBg="bg-gradient-to-br from-amber-600 to-orange-700"
-            title="الشحن القياسي"
+            title="الشحن البري"
             subtitle="بالوزن الفعلي فقط — بدون وزن حجمي"
           />
           <div className="px-5 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -943,7 +943,7 @@ export default function AdminShippingSettings() {
           </div>
           <div className="mx-5 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <p className="text-[10px] text-amber-200/80">
-              <strong>ملاحظة:</strong> يُحسب الشحن القياسي على الوزن الفعلي فقط (بدون وزن حجمي ولا هامش تغليف).
+              <strong>ملاحظة:</strong> يُحسب الشحن البري على الوزن الفعلي فقط (بدون وزن حجمي ولا هامش تغليف).
             </p>
           </div>
         </GlassCard>
