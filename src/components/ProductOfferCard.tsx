@@ -152,3 +152,5 @@ function ProductOfferCard({
     </Card>
   );
 }
+
+export default memo(ProductOfferCard);
