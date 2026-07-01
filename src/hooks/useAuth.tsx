@@ -108,16 +108,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       setIsAdmin(false);
       setIsAssistant(false);
       // Clear all local storage auth data first for reliability on Android/Chrome
-      const keysToRemove = Object.keys(localStorage).filter(k => 
+      const keysToRemove = Object.keys(localStorage).filter(k =>
         k.startsWith('sb-') || k.includes('supabase')
       );
       keysToRemove.forEach(k => localStorage.removeItem(k));
-      
+
       await supabase.auth.signOut({ scope: 'local' });
     } catch (error) {
       console.error('Sign out error:', error);
@@ -127,10 +127,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       navigate('/');
     }
-  };
+  }, [navigate]);
+
+  // Memoize the context value so consumers don't re-render on unrelated
+  // parent updates. Only changes when one of the underlying fields changes.
+  const value = useMemo(
+    () => ({
+      user,
+      session,
+      loading,
+      isAdmin,
+      isAssistant,
+      isAdminOrAssistant: isAdmin || isAssistant,
+      signOut,
+    }),
+    [user, session, loading, isAdmin, isAssistant, signOut],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isAssistant, isAdminOrAssistant: isAdmin || isAssistant, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
