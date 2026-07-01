@@ -274,23 +274,46 @@ const AdminCoupons = () => {
                     <SelectContent>
                       <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
                       <SelectItem value="fixed">مبلغ ثابت</SelectItem>
+                      <SelectItem value="free_shipping">توصيل مجاني</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="admin-form-group">
-                  <Label className="admin-form-label">قيمة الخصم</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.discount_value}
-                    onChange={(e) => setFormData({ ...formData, discount_value: parseFloat(e.target.value) || 0 })}
-                    className="admin-input"
-                    required
-                  />
-                </div>
+                {formData.discount_type !== 'free_shipping' && (
+                  <div className="admin-form-group">
+                    <Label className="admin-form-label">قيمة الخصم</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.discount_value}
+                      onChange={(e) => setFormData({ ...formData, discount_value: parseFloat(e.target.value) || 0 })}
+                      className="admin-input"
+                      required
+                    />
+                  </div>
+                )}
               </div>
+
+              {formData.discount_type === 'free_shipping' && (
+                <div className="admin-form-group">
+                  <Label className="admin-form-label">نوع التوصيل المستهدف</Label>
+                  <Select
+                    value={formData.applicable_delivery_method}
+                    onValueChange={(value) => setFormData({ ...formData, applicable_delivery_method: value })}
+                  >
+                    <SelectTrigger className="admin-select">
+                      <SelectValue placeholder="اختر نوع التوصيل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deliveryMethods.map((m: any) => (
+                        <SelectItem key={m.method_key} value={m.method_key}>{m.name_ar}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="admin-form-hint">الكوبون يعمل فقط مع هذا النوع من التوصيل</p>
+                </div>
+              )}
 
               <div className="admin-form-row-2">
                 <div className="admin-form-group">
