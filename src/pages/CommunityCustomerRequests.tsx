@@ -301,7 +301,7 @@ export default function CommunityCustomerRequests() {
                       {/* Thumbnail */}
                       {mainImage && (
                         <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0">
-                          <img src={mainImage} alt="" className="w-full h-full object-cover" />
+                          <img src={mainImage} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         </div>
                       )}
 
@@ -548,7 +548,7 @@ export default function CommunityCustomerRequests() {
               return previewImage ? (
                 <div className="px-5 pt-4">
                   <div className="relative rounded-xl overflow-hidden border border-border/40 bg-muted/30">
-                    <img src={previewImage} alt="صورة الطلب" className="w-full h-32 object-cover" />
+                    <img src={previewImage} alt="صورة الطلب" className="w-full h-32 object-cover" loading="lazy" decoding="async" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     <div className="absolute bottom-2 right-2">
                       <Badge variant="outline" className="text-[8px] bg-black/40 text-white border-white/20 backdrop-blur-sm">

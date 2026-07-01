@@ -276,7 +276,7 @@ const PublicProfile = () => {
           {/* Cover Image */}
           <div className="relative h-28 overflow-hidden">
             {coverUrl ? (
-              <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+              <img src={coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
             ) : (
               <div className="w-full h-full bg-gradient-to-bl from-primary/20 via-primary/10 to-accent/5" />
             )}

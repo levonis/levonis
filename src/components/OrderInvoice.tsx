@@ -180,8 +180,7 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
                 style={{
                   width: config.header.logoWidth || "120px",
                   height: "auto",
-                }}
-              />
+                }} loading="lazy" decoding="async" />
             </div>
           )}
           <h1 className="font-bold mb-2">{config.header.title}</h1>
@@ -256,8 +255,7 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
                     maxWidth: '100%',
                     height: 'auto',
                     borderRadius: '4px'
-                  }}
-                />
+                  }} loading="lazy" decoding="async" />
               </div>
             </div>
           )}
@@ -332,8 +330,7 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
               <img
                 src={order.serial_number_image_url}
                 alt="Serial Number"
-                className="max-w-md rounded-lg border"
-              />
+                className="max-w-md rounded-lg border" loading="lazy" decoding="async" />
             </div>
           )}
         </div>
@@ -608,8 +605,7 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
               style={{
                 width: config.signature.width || "150px",
                 height: "auto",
-              }}
-            />
+              }} loading="lazy" decoding="async" />
             <p className="mt-2 font-bold">{config.signature.label}</p>
             {config.signature.labelEn && (
               <p className="text-sm opacity-70">{config.signature.labelEn}</p>

@@ -652,7 +652,7 @@ export default function CommunityMerchantStore() {
                 {selectedProduct.image_urls && selectedProduct.image_urls.length > 0 ? (
                   <div className="relative">
                     <AspectRatio ratio={4/3}>
-                      <img src={selectedProduct.image_urls[selectedProduct.primary_image_index] || selectedProduct.image_urls[0]} alt={selectedProduct.title} className="w-full h-full object-cover" />
+                      <img src={selectedProduct.image_urls[selectedProduct.primary_image_index] || selectedProduct.image_urls[0]} alt={selectedProduct.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     </AspectRatio>
                     {/* Badges overlay */}
                     <div className="absolute top-3 right-3 flex gap-1.5">
@@ -663,7 +663,7 @@ export default function CommunityMerchantStore() {
                     {selectedProduct.image_urls.length > 1 && (
                       <div className="absolute bottom-3 left-3 right-3 flex gap-1.5 overflow-x-auto">
                         {selectedProduct.image_urls.map((url, i) => (
-                          <img key={i} src={url} className={`h-10 w-10 rounded-lg object-cover border-2 ${i === selectedProduct.primary_image_index ? "border-primary" : "border-white/30"}`} />
+                          <img key={i} src={url} className={`h-10 w-10 rounded-lg object-cover border-2 ${i === selectedProduct.primary_image_index ? "border-primary" : "border-white/30"}`} loading="lazy" decoding="async" />
                         ))}
                       </div>
                     )}

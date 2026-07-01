@@ -2758,7 +2758,7 @@ const Cart = () => {
                         <div className="flex gap-2.5 sm:gap-4">
                           {bundle.image_url && (
                             <Link to="/bundles" className="flex-shrink-0">
-                              <img src={bundle.image_url} alt={bundle.title_ar} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-primary/30" />
+                              <img src={bundle.image_url} alt={bundle.title_ar} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-primary/30" loading="lazy" decoding="async" />
                             </Link>
                           )}
                           <div className="flex-1 min-w-0">
@@ -2823,7 +2823,7 @@ const Cart = () => {
                         <div className="flex gap-2.5 sm:gap-4">
                           {offerInfo?.image_url && (
                             <div className="flex-shrink-0">
-                              <img src={offerInfo.image_url} alt={offerInfo?.title_ar || ''} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-amber-500/30" />
+                              <img src={offerInfo.image_url} alt={offerInfo?.title_ar || ''} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-amber-500/30" loading="lazy" decoding="async" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -2926,8 +2926,7 @@ const Cart = () => {
                               <img 
                                 src={(item as any).option_image_url || (item as any).color_image_url || (item.products?.images && item.products.images[0]) || item.products?.image_url || item.custom_product_requests?.image_url || ''}
                                 alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
-                                className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40"
-                              />
+                                className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40" loading="lazy" decoding="async" />
                             </Link>
                           )}
                           

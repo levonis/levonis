@@ -183,7 +183,7 @@ export default function MerchantProductMediaUpload({
         <div className="mt-2 grid grid-cols-3 gap-2">
            {imageUrls.map((url, idx) => (
              <div key={`img-${idx}-${url.slice(-10)}`} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
-               <img src={url} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
+               <img src={url} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
 
                {/* Primary badge */}
                {primaryImageIndex === idx && (

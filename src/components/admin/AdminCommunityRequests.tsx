@@ -445,8 +445,7 @@ export default function AdminCommunityRequests() {
                         <img
                           src={request.images?.[0] || request.image_url || ""}
                           alt="صورة"
-                          className="h-full w-full object-cover"
-                        />
+                          className="h-full w-full object-cover" loading="lazy" decoding="async" />
                       </div>
                     )}
                   </div>
@@ -542,7 +541,7 @@ export default function AdminCommunityRequests() {
                         rel="noreferrer"
                         className="h-20 w-20 rounded-lg overflow-hidden border hover:opacity-80 transition-opacity"
                       >
-                        <img src={url || ""} alt={`صورة ${i + 1}`} className="h-full w-full object-cover" />
+                        <img src={url || ""} alt={`صورة ${i + 1}`} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                       </a>
                     ))}
                     {selectedRequest.video_url && (

@@ -73,7 +73,7 @@ function ImageUploader({ imageUrl, onImageChange }: { imageUrl: string; onImageC
     return (
       <div className="relative group w-full">
         <div className="relative w-full h-28 rounded-lg border border-border/50 overflow-hidden bg-muted/10">
-          <img src={imageUrl} alt="" className="w-full h-full object-contain" />
+          <img src={imageUrl} alt="" className="w-full h-full object-contain" loading="lazy" decoding="async" />
           <button
             onClick={() => onImageChange("")}
             className="absolute top-1 right-1 p-1 rounded-full bg-destructive/80 text-white opacity-0 group-hover:opacity-100 transition-opacity"
@@ -186,7 +186,7 @@ function ProductVariantSelector({
                     />
                   )}
                   {colorImage && !colorHex && (
-                    <img src={colorImage} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
+                    <img src={colorImage} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" loading="lazy" decoding="async" />
                   )}
                   <span>{colorName}</span>
                 </button>
@@ -216,7 +216,7 @@ function ProductVariantSelector({
                   }`}
                 >
                   {opt.image_url && (
-                    <img src={opt.image_url} alt="" className="w-5 h-5 rounded object-contain shrink-0" />
+                    <img src={opt.image_url} alt="" className="w-5 h-5 rounded object-contain shrink-0" loading="lazy" decoding="async" />
                   )}
                   <span>{opt.name_ar || opt.name}</span>
                   {opt.price_adjustment ? (
@@ -255,7 +255,7 @@ function ProductSearch({ selectedId, onSelect }: { selectedId: string; onSelect:
     return (
       <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
         {selected.image_url ? (
-          <img src={selected.image_url} alt="" className="w-10 h-10 rounded object-contain bg-white" />
+          <img src={selected.image_url} alt="" className="w-10 h-10 rounded object-contain bg-white" loading="lazy" decoding="async" />
         ) : (
           <div className="w-10 h-10 rounded bg-muted/20 flex items-center justify-center"><Package className="h-4 w-4" /></div>
         )}
@@ -293,7 +293,7 @@ function ProductSearch({ selectedId, onSelect }: { selectedId: string; onSelect:
                 className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-right"
               >
                 {p.image_url ? (
-                  <img src={p.image_url} alt="" className="w-8 h-8 rounded object-contain bg-white shrink-0" />
+                  <img src={p.image_url} alt="" className="w-8 h-8 rounded object-contain bg-white shrink-0" loading="lazy" decoding="async" />
                 ) : (
                   <div className="w-8 h-8 rounded bg-muted/20 flex items-center justify-center shrink-0"><Package className="h-3 w-3" /></div>
                 )}
@@ -381,7 +381,7 @@ function ReelPreview({ rewards }: { rewards: any[] }) {
               }}
             >
               {r.image_url ? (
-                <img src={r.image_url} alt="" className="w-8 h-8 object-contain mb-0.5" />
+                <img src={r.image_url} alt="" className="w-8 h-8 object-contain mb-0.5" loading="lazy" decoding="async" />
               ) : (
                 <div className="w-8 h-8 rounded bg-muted/20 flex items-center justify-center text-sm mb-0.5">🎁</div>
               )}
@@ -853,8 +853,7 @@ export default function MysteryCaseTab() {
                         src={r.image_url}
                         alt=""
                         className="w-10 h-10 rounded-lg object-contain border"
-                        style={{ borderColor: `${rarity.color}44` }}
-                      />
+                        style={{ borderColor: `${rarity.color}44` }} loading="lazy" decoding="async" />
                     ) : (
                       <div
                         className="w-10 h-10 rounded-lg flex items-center justify-center text-sm border"

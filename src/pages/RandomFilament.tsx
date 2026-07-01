@@ -585,7 +585,7 @@ function EligibleProductsDialog({
           {(items || []).map((p: any) => (
             <div key={p.id} className="flex items-center gap-3 rounded-lg border p-2 bg-card/60">
               {p.image_url ? (
-                <img src={p.image_url} alt="" className="size-12 rounded object-cover shrink-0" />
+                <img src={p.image_url} alt="" className="size-12 rounded object-cover shrink-0" loading="lazy" decoding="async" />
               ) : (
                 <div className="size-12 rounded bg-muted shrink-0" />
               )}

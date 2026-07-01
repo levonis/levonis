@@ -209,7 +209,7 @@ function ApprovalCard({ approval, userName, taskName, taskPoints, onApprove, onR
         {approval.proof_url && (
           <div className="rounded-lg overflow-hidden border bg-muted/20">
             <a href={approval.proof_url} target="_blank" rel="noopener noreferrer">
-              <img src={approval.proof_url} alt="صورة الإثبات" className="w-full max-h-48 object-contain" />
+              <img src={approval.proof_url} alt="صورة الإثبات" className="w-full max-h-48 object-contain" loading="lazy" decoding="async" />
             </a>
             <p className="text-[10px] text-muted-foreground text-center py-1">اضغط لفتح الصورة</p>
           </div>

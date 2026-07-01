@@ -140,7 +140,7 @@ export default function MyLevelPrizes() {
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             {prize.image_url ? (
-              <img src={prize.image_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
+              <img src={prize.image_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" loading="lazy" decoding="async" />
             ) : (
               <div className="w-16 h-16 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
                 <Icon className="h-7 w-7 text-amber-600" />

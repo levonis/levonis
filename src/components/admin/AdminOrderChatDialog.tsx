@@ -782,7 +782,7 @@ export default function AdminOrderChatDialog({
                                   ) : (
                                     <ImageLightbox src={msg.image_url} alt="صورة">
                                       {(openLb) => (
-                                        <img src={msg.image_url!} alt="صورة" className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity" onClick={openLb} onLoad={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
+                                        <img src={msg.image_url!} alt="صورة" className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity" onClick={openLb} onLoad={() = loading="lazy" decoding="async"> { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
                                       )}
                                     </ImageLightbox>
                                   )
@@ -804,7 +804,7 @@ export default function AdminOrderChatDialog({
                           {/* Shimmer animation */}
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
                           {uploadingMessage.previewUrl && uploadingMessage.type === 'image' && (
-                            <img src={uploadingMessage.previewUrl} alt="uploading" className="max-w-full rounded-lg mb-2 opacity-60" />
+                            <img src={uploadingMessage.previewUrl} alt="uploading" className="max-w-full rounded-lg mb-2 opacity-60" loading="lazy" decoding="async" />
                           )}
                           {uploadingMessage.previewUrl && uploadingMessage.type === 'video' && (
                             <video src={uploadingMessage.previewUrl} className="max-w-full rounded-lg mb-2 opacity-60" muted />

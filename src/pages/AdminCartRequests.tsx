@@ -266,8 +266,7 @@ export default function AdminCartRequests() {
                       <img
                         src={request.user?.avatar_url || '/placeholder.svg'}
                         alt={request.user?.full_name || 'مستخدم'}
-                        className="h-10 w-10 rounded-full object-cover"
-                      />
+                        className="h-10 w-10 rounded-full object-cover" loading="lazy" decoding="async" />
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-sm">
@@ -349,8 +348,7 @@ export default function AdminCartRequests() {
                 <img
                   src={selectedRequest.user?.avatar_url || '/placeholder.svg'}
                   alt=""
-                  className="h-10 w-10 rounded-full object-cover"
-                />
+                  className="h-10 w-10 rounded-full object-cover" loading="lazy" decoding="async" />
                 <div>
                   <p className="font-medium text-sm">{selectedRequest.user?.full_name || 'مستخدم'}</p>
                   <p className="text-xs text-muted-foreground">@{selectedRequest.user?.username || 'N/A'}</p>
@@ -387,7 +385,7 @@ export default function AdminCartRequests() {
                   {selectedRequest.cart_items?.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-lg border">
                       {item.image_url && (
-                        <img src={item.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                        <img src={item.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" loading="lazy" decoding="async" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.name_ar || item.product_name || 'منتج'}</p>

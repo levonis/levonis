@@ -284,7 +284,7 @@ export default function AdminOfferPurchases() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {purchase.product_offers?.image_url && (
-                                <img src={purchase.product_offers.image_url} alt="" className="w-10 h-10 rounded object-cover" />
+                                <img src={purchase.product_offers.image_url} alt="" className="w-10 h-10 rounded object-cover" loading="lazy" decoding="async" />
                               )}
                               <span className="text-sm font-medium">{purchase.product_offers?.title_ar}</span>
                             </div>
@@ -337,7 +337,7 @@ export default function AdminOfferPurchases() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                   {selectedPurchase.product_offers?.image_url && (
-                    <img src={selectedPurchase.product_offers.image_url} alt="" className="w-16 h-16 rounded object-cover" />
+                    <img src={selectedPurchase.product_offers.image_url} alt="" className="w-16 h-16 rounded object-cover" loading="lazy" decoding="async" />
                   )}
                   <div>
                     <p className="font-medium">{selectedPurchase.product_offers?.title_ar}</p>

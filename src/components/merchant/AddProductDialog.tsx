@@ -329,7 +329,7 @@ export default function AddProductDialog({
                         }`}
                       >
                         {media.type === "image" ? (
-                          <img src={media.url} alt="" className="h-full w-full object-cover" />
+                          <img src={media.url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                         ) : (
                           <video src={media.url} className="h-full w-full object-cover" muted />
                         )}

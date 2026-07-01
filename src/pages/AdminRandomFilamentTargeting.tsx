@@ -487,7 +487,7 @@ function ProductRow({
         </button>
 
         {product.image_url ? (
-          <img src={product.image_url} alt="" className="size-10 rounded object-cover shrink-0" />
+          <img src={product.image_url} alt="" className="size-10 rounded object-cover shrink-0" loading="lazy" decoding="async" />
         ) : (
           <div className="size-10 rounded bg-muted shrink-0" />
         )}

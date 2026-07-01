@@ -101,7 +101,7 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
 
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center text-center gap-6">
         <div className="w-24 h-24 rounded-3xl flex items-center justify-center p-3 bg-white/5 backdrop-blur-xl border border-white/15 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5),inset_0_1px_0_0_hsl(0_0%_100%/0.15)]">
-          <img src={levonisLogo} alt="Levonis" className="h-full w-full object-contain" />
+          <img src={levonisLogo} alt="Levonis" className="h-full w-full object-contain" loading="lazy" decoding="async" />
         </div>
 
         <div className="space-y-2" lang={language} dir={dir}>

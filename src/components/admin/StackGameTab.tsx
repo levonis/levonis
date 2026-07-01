@@ -106,7 +106,7 @@ function ProductPicker({
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2 bg-muted/30 rounded-md p-2 text-xs">
-          {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" />}
+          {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" loading="lazy" decoding="async" />}
           <div className="flex-1 min-w-0">
             <div className="truncate text-foreground font-medium">{selected.name_ar}</div>
             <div className="text-muted-foreground">{getStockDisplay(selected, options)}</div>
@@ -240,7 +240,7 @@ function ProductPicker({
             }}
             className="flex items-center gap-2 w-full text-right p-2 rounded-md hover:bg-muted/50 transition-colors text-xs"
           >
-            {p.image_url && <img src={p.image_url} className="h-7 w-7 rounded object-cover shrink-0" />}
+            {p.image_url && <img src={p.image_url} className="h-7 w-7 rounded object-cover shrink-0" loading="lazy" decoding="async" />}
             <div className="flex-1 min-w-0">
               <div className="truncate text-foreground">{p.name_ar}</div>
               <div className="text-muted-foreground text-[10px]">{getStockDisplay(p)}</div>

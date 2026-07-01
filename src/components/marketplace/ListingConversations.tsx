@@ -1472,8 +1472,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       <img 
                                         src={convEntryContext.imageUrl} 
                                         alt="" 
-                                        className="h-full w-full object-cover" 
-                                      />
+                                        className="h-full w-full object-cover" loading="lazy" decoding="async" />
                                     ) : (
                                       <Package className="h-4 w-4 text-muted-foreground" />
                                     )}
@@ -1986,8 +1985,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                               src={msg.image_url} 
                                               alt="" 
                                               className="rounded-lg max-w-full max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
-                                              onClick={open}
-                                            />
+                                              onClick={open} loading="lazy" decoding="async" />
                                           </div>
                                         )}
                                       </ImageLightbox>
@@ -2364,8 +2362,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   <img
                     src={adminCartRequest.user?.avatar_url || '/placeholder.svg'}
                     alt=""
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
+                    className="h-8 w-8 rounded-full object-cover" loading="lazy" decoding="async" />
                   <span className="text-sm font-medium">{adminCartRequest.user?.full_name || 'مستخدم'}</span>
                   <Badge variant="outline" className="mr-auto text-xs">
                     {adminCartRequest.status === 'pending' ? 'قيد المراجعة' : adminCartRequest.status === 'adjusted' ? 'تم التعديل' : adminCartRequest.status}
@@ -2387,7 +2384,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       const currentPrice = existingPrices[idx] ?? item.price ?? 0;
                       return (
                         <div key={idx} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg text-xs">
-                          {item.image_url && <img src={item.image_url} alt="" className="h-8 w-8 rounded object-cover" />}
+                          {item.image_url && <img src={item.image_url} alt="" className="h-8 w-8 rounded object-cover" loading="lazy" decoding="async" />}
                           <div className="flex-1 min-w-0">
                             <span className="block truncate">{item.name_ar || item.product_name || 'منتج'}</span>
                             <span className="text-muted-foreground">×{item.quantity}</span>

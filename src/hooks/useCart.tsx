@@ -1,5 +1,5 @@
 // Strict TypeScript — keep CartItem typing tight; do not add @ts-nocheck.
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -1268,28 +1268,53 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const cartSaleType = deriveCartSaleType(items);
 
 
+  // Memoize the context value so consumers only re-render when one of the
+  // underlying fields actually changes. Without this, every parent render
+  // (Auth/Language/Island updates) forced a fresh object identity and cascaded
+  // re-renders through the entire component tree.
+  const value = useMemo(
+    () => ({
+      items,
+      loading,
+      itemCount,
+      total,
+      pendingCartRequest,
+      cartSaleType,
+      addToCart,
+      forceAddToCart,
+      addBundleToCart,
+      addCustomRequestToCart,
+      addOfferPurchaseToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      refreshCart: refreshAll,
+      deleteCartRequest,
+      checkAndWarnCartRequest,
+    }),
+    [
+      items,
+      loading,
+      itemCount,
+      total,
+      pendingCartRequest,
+      cartSaleType,
+      addToCart,
+      forceAddToCart,
+      addBundleToCart,
+      addCustomRequestToCart,
+      addOfferPurchaseToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      refreshAll,
+      deleteCartRequest,
+      checkAndWarnCartRequest,
+    ],
+  );
+
   return (
-    <CartContext.Provider
-      value={{
-        items,
-        loading,
-        itemCount,
-        total,
-        pendingCartRequest,
-        cartSaleType,
-        addToCart,
-        forceAddToCart,
-        addBundleToCart,
-        addCustomRequestToCart,
-        addOfferPurchaseToCart,
-        updateQuantity,
-        removeFromCart,
-        clearCart,
-        refreshCart: refreshAll,
-        deleteCartRequest,
-        checkAndWarnCartRequest,
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

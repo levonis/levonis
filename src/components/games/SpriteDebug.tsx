@@ -38,7 +38,7 @@ function SheetViewer({ name, src }: { name: string; src: string }) {
           });
         }}
       >
-        <img src={src} style={{ imageRendering: "pixelated", display: "block", width: dims.w * 3, height: dims.h * 3 }} />
+        <img src={src} style={{ imageRendering: "pixelated", display: "block", width: dims.w * 3, height: dims.h * 3 }} loading="lazy" decoding="async" />
       </div>
     </div>
   );

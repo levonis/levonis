@@ -316,7 +316,7 @@ export default function ChatInputBar({
           {/* Image */}
           {contextBar.imageUrl && (
             <div className="shrink-0 h-10 w-10 rounded-lg overflow-hidden border border-border/50">
-              <img src={contextBar.imageUrl} alt={contextBar.title} className="h-full w-full object-cover" />
+              <img src={contextBar.imageUrl} alt={contextBar.title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
             </div>
           )}
 

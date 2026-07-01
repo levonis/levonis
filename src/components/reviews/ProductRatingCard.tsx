@@ -93,8 +93,7 @@ export default function ProductRatingCard({
                 <img
                   src={imageUrl}
                   alt={productName}
-                  className="w-full h-full object-cover"
-                />
+                  className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg">
                 <Star className="h-3 w-3 text-primary-foreground fill-primary-foreground" />
@@ -225,7 +224,7 @@ export default function ProductRatingCard({
           <div className="flex gap-2 flex-wrap animate-fade-in">
             {imagePreviews.map((url, i) => (
               <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-border/50 shadow-md group">
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 <button
                   type="button"
                   onClick={() => removeImage(i)}
