@@ -459,12 +459,23 @@ const AdminCoupons = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="font-semibold">
-                              {coupon.discount_type === 'percentage' 
-                                ? `${coupon.discount_value}%`
-                                : `${coupon.discount_value.toLocaleString()} د.ع`
-                              }
-                            </span>
+                            {coupon.discount_type === 'free_shipping' ? (
+                              <Badge className="admin-badge admin-badge-success gap-1">
+                                <Truck className="h-3 w-3" />
+                                توصيل مجاني
+                                {coupon.applicable_delivery_method && (
+                                  <span className="opacity-80">
+                                    — {(deliveryMethods.find((m: any) => m.method_key === coupon.applicable_delivery_method) as any)?.name_ar || coupon.applicable_delivery_method}
+                                  </span>
+                                )}
+                              </Badge>
+                            ) : (
+                              <span className="font-semibold">
+                                {coupon.discount_type === 'percentage'
+                                  ? `${coupon.discount_value}%`
+                                  : `${coupon.discount_value.toLocaleString()} د.ع`}
+                              </span>
+                            )}
                             {coupon.min_purchase_amount > 0 && (
                               <span className="text-xs text-muted-foreground block">
                                 حد أدنى: {coupon.min_purchase_amount.toLocaleString()}
