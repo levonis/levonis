@@ -1363,10 +1363,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               key={conv.id}
                               onClick={() => setSelectedConversation(conv.id)}
                               className={cn(
-                                "w-full p-3 flex gap-3 glass-row-hover transition-colors border-b border-white/10 dark:border-white/5",
+                                "w-full p-3 flex gap-3 glass-row-hover transition-colors border-b border-white/10 dark:border-white/5 cv-auto-sm",
                                 isActive && "glass-row-active"
                               )}
                             >
+
                                {/* Avatar - Dual avatar for disputes (admin view) */}
                                <div className="relative flex-shrink-0">
                                  {conv.status === 'disputed' && isAdmin ? (
