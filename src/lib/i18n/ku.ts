@@ -2102,6 +2102,7 @@ export const ku: TranslationKeys = {
   // Cart shipping option labels
   shipping_opt_air: 'خێرا',
   shipping_opt_sea: 'ئابووری',
+  shipping_opt_land: 'ستاندارد',
   shipping_opt_direct: 'ڕاستەوخۆ',
   shipping_opt_preorder: 'پێش-داواکاری',
 

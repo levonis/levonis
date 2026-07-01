@@ -2102,6 +2102,7 @@ export const en: TranslationKeys = {
   // Cart shipping option labels
   shipping_opt_air: 'Express',
   shipping_opt_sea: 'Economy',
+  shipping_opt_land: 'Standard',
   shipping_opt_direct: 'Direct',
   shipping_opt_preorder: 'Pre-order',
 
