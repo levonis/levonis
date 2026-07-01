@@ -315,4 +315,4 @@ const GroupedCartItem = ({
   );
 };
 
-export default GroupedCartItem;
+export default memo(GroupedCartItem);

@@ -181,4 +181,4 @@ const ProductListItem = ({
   );
 };
 
-export default ProductListItem;
+export default memo(ProductListItem);
