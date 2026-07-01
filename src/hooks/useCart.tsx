@@ -642,16 +642,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       fetchCart();
     };
 
-    const channels = productIds.map((pid) =>
-      supabase
-        .channel(`cart-product-${user.id}-${pid}`)
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${pid}` },
-          handleChange
-        )
-        .subscribe()
-    );
+    // Single channel with one binding per product id → 1 websocket instead of N.
+    let ch = supabase.channel(`cart-products-${user.id}`);
+    productIds.forEach((pid) => {
+      ch = ch.on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${pid}` },
+        handleChange
+      );
+    });
+    const channel = ch.subscribe();
+
 
     const onVisibility = () => {
       if (!document.hidden && pendingRefresh) {
