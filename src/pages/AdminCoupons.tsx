@@ -115,15 +115,29 @@ const AdminCoupons = () => {
     },
   });
 
+  const { data: deliveryMethods = [] } = useQuery({
+    queryKey: ['coupon-delivery-methods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('delivery_methods')
+        .select('method_key, name_ar')
+        .eq('is_active', true)
+        .order('display_order');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!isAdmin,
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.code.trim()) {
       toast.error('يجب إدخال رمز الكوبون');
       return;
     }
 
-    if (formData.discount_value <= 0) {
+    if (formData.discount_type !== 'free_shipping' && formData.discount_value <= 0) {
       toast.error('يجب أن تكون قيمة الخصم أكبر من صفر');
       return;
     }
@@ -133,11 +147,21 @@ const AdminCoupons = () => {
       return;
     }
 
-    const submitData = {
-      ...formData,
+    if (formData.discount_type === 'free_shipping' && !formData.applicable_delivery_method) {
+      toast.error('يجب اختيار نوع التوصيل المستهدف');
+      return;
+    }
+
+    const submitData: any = {
       code: formData.code.toUpperCase().trim(),
-      expires_at: formData.expires_at || null,
+      discount_type: formData.discount_type,
+      discount_value: formData.discount_type === 'free_shipping' ? 0 : formData.discount_value,
+      min_purchase_amount: formData.min_purchase_amount,
       max_uses: formData.max_uses || null,
+      expires_at: formData.expires_at || null,
+      active: formData.active,
+      applicable_delivery_method:
+        formData.discount_type === 'free_shipping' ? formData.applicable_delivery_method : null,
     };
 
     if (editing) {
@@ -157,6 +181,7 @@ const AdminCoupons = () => {
       max_uses: coupon.max_uses,
       expires_at: coupon.expires_at ? new Date(coupon.expires_at).toISOString().slice(0, 16) : '',
       active: coupon.active,
+      applicable_delivery_method: coupon.applicable_delivery_method || '',
     });
     setDialogOpen(true);
   };
@@ -170,6 +195,7 @@ const AdminCoupons = () => {
       max_uses: null,
       expires_at: '',
       active: true,
+      applicable_delivery_method: '',
     });
     setEditing(null);
   };
