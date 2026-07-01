@@ -998,10 +998,7 @@ const Cart = () => {
   const referralRemainingForFreeDelivery = appliedReferral
     ? Math.max(0, referralMinOrder - total)
     : 0;
-  const couponFreeShippingApplied = !!(appliedCoupon
-    && appliedCoupon.discount_type === 'free_shipping'
-    && (!appliedCoupon.applicable_delivery_method || appliedCoupon.applicable_delivery_method === selectedDeliveryMethod));
-  const deliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied || couponFreeShippingApplied) ? 0 : rawDeliveryFee;
+  const deliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
 
   
   // Referral commission per unit — added to the buyer's final price (paid to VIP+ owner)
@@ -1012,7 +1009,7 @@ const Cart = () => {
   // Calculate discount
   const calculateDiscount = () => {
     if (!appliedCoupon) return 0;
-    if (appliedCoupon.discount_type === 'free_shipping') return 0;
+    
     if (appliedCoupon.discount_type === 'percentage') {
       return (total * appliedCoupon.discount_value) / 100;
     }
@@ -1247,7 +1244,7 @@ const Cart = () => {
         return;
       }
 
-      const couponResult = result as { valid: boolean; error?: string; id?: string; code?: string; discount_type?: string; discount_value?: number; min_purchase_amount?: number; applicable_delivery_method?: string | null; rate_limited?: boolean };
+      const couponResult = result as { valid: boolean; error?: string; id?: string; code?: string; discount_type?: string; discount_value?: number; min_purchase_amount?: number; rate_limited?: boolean };
 
       if (!couponResult.valid) {
         toast({
@@ -1268,33 +1265,17 @@ const Cart = () => {
         return;
       }
 
-      // Free-shipping coupon: require matching delivery method
-      if (couponResult.discount_type === 'free_shipping' && couponResult.applicable_delivery_method) {
-        if (selectedDeliveryMethod !== couponResult.applicable_delivery_method) {
-          const methodName = (deliveryMethods as any[]).find((m: any) => m.method_key === couponResult.applicable_delivery_method)?.name_ar || couponResult.applicable_delivery_method;
-          toast({
-            title: 'الكوبون غير مطابق لنوع التوصيل',
-            description: `هذا الكوبون صالح فقط لنوع التوصيل: ${methodName}`,
-            variant: 'destructive',
-          });
-          return;
-        }
-      }
-
       setAppliedCoupon({
         id: couponResult.id,
         code: couponResult.code,
         discount_type: couponResult.discount_type,
         discount_value: couponResult.discount_value,
         min_purchase_amount: couponResult.min_purchase_amount,
-        applicable_delivery_method: couponResult.applicable_delivery_method || null,
       });
-
+      
       toast({
         title: t('cart_coupon_applied'),
-        description: couponResult.discount_type === 'free_shipping'
-          ? 'توصيل مجاني'
-          : `${couponResult.discount_type === 'percentage' ? `${couponResult.discount_value}%` : `${formatPrice(couponResult.discount_value || 0)} ${t('common_iqd_full')}`}`,
+        description: `${couponResult.discount_type === 'percentage' ? `${couponResult.discount_value}%` : `${formatPrice(couponResult.discount_value || 0)} ${t('common_iqd_full')}`}`,
       });
     } catch (error) {
       console.error('Error applying coupon:', error);
