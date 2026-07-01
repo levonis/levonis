@@ -226,7 +226,7 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
                       src={order.serial_number_image_url} 
                       alt="Serial Number" 
                       className="max-w-[200px] rounded-lg border border-border/50 shadow-sm hover:scale-105 transition-transform cursor-pointer"
-                      onClick={() = loading="lazy" decoding="async"> window.open(order.serial_number_image_url!, '_blank')}
+                      onClick={() => window.open(order.serial_number_image_url!, '_blank')}
                     />
                   </div>
                 )}

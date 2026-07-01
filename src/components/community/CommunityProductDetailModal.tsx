@@ -239,7 +239,7 @@ export default function CommunityProductDetailModal({
                   {activeMedia.type === 'video' ? (
                     <video src={activeMedia.url} controls className="w-full h-full object-contain bg-black" preload="metadata" />
                   ) : (
-                    <img src={activeMedia.url} alt={product.title} className="w-full h-full object-contain bg-muted/10 cursor-zoom-in" onClick={() = loading="lazy" decoding="async"> setFullscreenImage(true)} />
+                    <img src={activeMedia.url} alt={product.title} className="w-full h-full object-contain bg-muted/10 cursor-zoom-in" onClick={() => setFullscreenImage(true)} />
                   )}
                   
                   {mediaItems.length > 1 && (
