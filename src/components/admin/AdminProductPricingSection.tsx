@@ -696,7 +696,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                 </div>
                 {isAdmin && (
                   <div className="space-y-2">
-                    <Label htmlFor="commission_sea_iqd">العمولة - بحري (د.ع)</Label>
+                    <Label htmlFor="commission_sea_iqd">العمولة - اقتصادي (د.ع)</Label>
                     <Input id="commission_sea_iqd" type="number" min="0"
                       value={commissionSeaIqd || ''} onChange={(e) => setCommissionSeaIqd(Number(e.target.value))} placeholder="0" />
                   </div>
