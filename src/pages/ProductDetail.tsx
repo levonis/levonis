@@ -38,6 +38,7 @@ import SEO from '@/components/SEO';
 import { productLd, breadcrumbLd } from '@/lib/seo/structured';
 import ProductAIContent from '@/components/ProductAIContent';
 import { buildAIContentForLd, normalizeAIContent } from '@/lib/aiContent';
+import { translateShippingOption } from '@/lib/shippingLabel';
 
 // Dynamic icon map for features
 const FEATURE_ICONS: Record<string, any> = {
