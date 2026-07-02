@@ -163,6 +163,7 @@ const AdminCoupons = () => {
       active: formData.active,
       applicable_delivery_method:
         formData.discount_type === 'free_shipping' ? formData.applicable_delivery_method : null,
+      applies_to_levo_card_only: formData.applies_to_levo_card_only,
     };
 
     if (editing) {
@@ -183,6 +184,7 @@ const AdminCoupons = () => {
       expires_at: coupon.expires_at ? new Date(coupon.expires_at).toISOString().slice(0, 16) : '',
       active: coupon.active,
       applicable_delivery_method: coupon.applicable_delivery_method || '',
+      applies_to_levo_card_only: !!coupon.applies_to_levo_card_only,
     });
     setDialogOpen(true);
   };
@@ -197,6 +199,7 @@ const AdminCoupons = () => {
       expires_at: '',
       active: true,
       applicable_delivery_method: '',
+      applies_to_levo_card_only: false,
     });
     setEditing(null);
   };
