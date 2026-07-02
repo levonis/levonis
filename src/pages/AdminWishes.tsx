@@ -72,7 +72,7 @@ export default function AdminWishes() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
-      const { error } = await supabase.from("wishes").update(updates).eq("id", id);
+      const { error } = await supabase.from("wishes").update(updates as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

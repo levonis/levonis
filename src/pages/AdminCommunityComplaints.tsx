@@ -88,7 +88,7 @@ function ComplaintsContent() {
       
       const { error } = await supabase
         .from("community_complaints")
-        .update(updateData)
+        .update(updateData as any)
         .eq("id", id);
       if (error) throw error;
     },

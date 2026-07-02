@@ -81,7 +81,7 @@ const NotificationSettings = () => {
     if (!user?.id) return;
     const { error } = await supabase
       .from('profiles')
-      .update({ [column]: prefs as any })
+      .update({ [column]: prefs } as any)
       .eq('id', user.id);
     if (error) {
       toast.error('حدث خطأ في حفظ الإعدادات');

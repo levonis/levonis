@@ -421,7 +421,7 @@ export default function AllCompetitionsPanel() {
           const currentCount = result.team === 'A' ? (comp.team_a_count || 0) : (comp.team_b_count || 0);
           await supabase
             .from('competitions')
-            .update({ [updateField]: currentCount + 1 })
+            .update({ [updateField]: currentCount + 1 } as any)
             .eq('id', comp.id);
         }
 
