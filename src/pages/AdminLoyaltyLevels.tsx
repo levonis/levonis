@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminCardHeader, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 import LoyaltyCardPreview from "@/components/admin/LoyaltyCardPreview";
-import { CreateBatchButton, ImportBatchesButton, LoyaltyCodeBatchesList } from "./AdminLoyaltyCardCodes";
+// Old loyalty code batches replaced by Levo Physical Cards (/admin/levo-cards)
 import { History, Ticket } from "lucide-react";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 
@@ -1474,36 +1474,19 @@ export default function AdminLoyaltyLevels() {
               </Button>
               <Button
                 size="sm"
-                variant="outline"
-                onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
+                onClick={() => navigate(`${ADMIN_BASE_PATH}/levo-cards`)}
               >
-                <History className="h-4 w-4 ml-1" /> سجل الاستخدام
+                <CreditCard className="h-4 w-4 ml-1" /> إدارة بطاقات ليفو الفيزيائية
               </Button>
-              <ImportBatchesButton
-                cards={(levels || []).map((l: any) => ({
-                  id: l.id,
-                  name_ar: l.name_ar,
-                  name_en: l.name_en,
-                  duration_days: l.duration_days,
-                }))}
-                onCreated={() => queryClient.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
-              />
-              <CreateBatchButton
-                cards={(levels || []).map((l: any) => ({
-                  id: l.id,
-                  name_ar: l.name_ar,
-                  name_en: l.name_en,
-                  duration_days: l.duration_days,
-                }))}
-                open={createBatchOpen}
-                onOpenChange={setCreateBatchOpen}
-                onCreated={() => queryClient.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
-              />
             </div>
           </div>
           <AdminCard hover={false}>
             <AdminCardContent>
-              <LoyaltyCodeBatchesList showHeader={false} />
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                تم استبدال نظام الأكواد القديم ببطاقات ليفو الفيزيائية.
+                <br />
+                استخدم زر "إدارة بطاقات ليفو الفيزيائية" أعلاه لتوليد وإدارة البطاقات.
+              </div>
             </AdminCardContent>
           </AdminCard>
         </TabsContent>
