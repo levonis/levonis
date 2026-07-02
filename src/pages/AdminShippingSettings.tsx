@@ -571,7 +571,7 @@ function DeliveryMethodsManager() {
 
   const updateMethod = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
-      const { error } = await supabase.from("delivery_methods").update(updates).eq("id", id);
+      const { error } = await supabase.from("delivery_methods").update(updates as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

@@ -5614,8 +5614,13 @@ export type Database = {
           card_number_last4: string
           created_at: string
           created_by: string | null
+          failed_attempts: number
           id: string
+          locked_until: string | null
+          nfc_token: string | null
           notes: string | null
+          pin_hash: string | null
+          qr_token: string | null
           status: string
           updated_at: string
         }
@@ -5625,8 +5630,13 @@ export type Database = {
           card_number_last4: string
           created_at?: string
           created_by?: string | null
+          failed_attempts?: number
           id?: string
+          locked_until?: string | null
+          nfc_token?: string | null
           notes?: string | null
+          pin_hash?: string | null
+          qr_token?: string | null
           status?: string
           updated_at?: string
         }
@@ -5636,8 +5646,13 @@ export type Database = {
           card_number_last4?: string
           created_at?: string
           created_by?: string | null
+          failed_attempts?: number
           id?: string
+          locked_until?: string | null
+          nfc_token?: string | null
           notes?: string | null
+          pin_hash?: string | null
+          qr_token?: string | null
           status?: string
           updated_at?: string
         }
@@ -9758,6 +9773,7 @@ export type Database = {
           images: string[] | null
           in_stock: boolean | null
           is_pricing_updated: boolean | null
+          is_system_reserved: boolean
           land_price: number | null
           last_price_update: string | null
           length_cm: number | null
@@ -9837,6 +9853,7 @@ export type Database = {
           images?: string[] | null
           in_stock?: boolean | null
           is_pricing_updated?: boolean | null
+          is_system_reserved?: boolean
           land_price?: number | null
           last_price_update?: string | null
           length_cm?: number | null
@@ -9916,6 +9933,7 @@ export type Database = {
           images?: string[] | null
           in_stock?: boolean | null
           is_pricing_updated?: boolean | null
+          is_system_reserved?: boolean
           land_price?: number | null
           last_price_update?: string | null
           length_cm?: number | null
@@ -14595,6 +14613,7 @@ export type Database = {
           images: string[] | null
           in_stock: boolean | null
           is_pricing_updated: boolean | null
+          is_system_reserved: boolean
           land_price: number | null
           last_price_update: string | null
           length_cm: number | null
@@ -15276,6 +15295,8 @@ export type Database = {
       generate_cart_code: { Args: never; Returns: string }
       generate_conversation_code: { Args: never; Returns: string }
       generate_levo_card_number: { Args: never; Returns: string }
+      generate_levo_pin: { Args: never; Returns: string }
+      generate_levo_token: { Args: never; Returns: string }
       generate_listing_code: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_referral_code:
@@ -15332,6 +15353,7 @@ export type Database = {
         }[]
       }
       get_internal_http_secret: { Args: { p_purpose: string }; Returns: string }
+      get_levo_card_product_id: { Args: never; Returns: string }
       get_merchant_debt: {
         Args: { p_merchant_user_id: string }
         Returns: number
@@ -15496,7 +15518,15 @@ export type Database = {
         }
         Returns: boolean
       }
-      levo_activate_card: { Args: { p_card_number: string }; Returns: Json }
+      levo_activate_card: {
+        Args: {
+          p_card_number?: string
+          p_nfc_token?: string
+          p_pin?: string
+          p_qr_token?: string
+        }
+        Returns: Json
+      }
       levo_release_card: { Args: { p_assignment_id: string }; Returns: Json }
       levo_subscribe_card: {
         Args: {
@@ -15802,7 +15832,7 @@ export type Database = {
       }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }
       validate_coupon_with_rate_limit: {
-        Args: { coupon_code: string }
+        Args: { coupon_code: string; p_cart_product_ids?: string[] }
         Returns: Json
       }
       verify_printer_serial: {

@@ -30,6 +30,7 @@ const AdminCoupons = () => {
     expires_at: '',
     active: true,
     applicable_delivery_method: '' as string,
+    applies_to_levo_card_only: false,
   });
 
   useEffect(() => {
@@ -162,6 +163,7 @@ const AdminCoupons = () => {
       active: formData.active,
       applicable_delivery_method:
         formData.discount_type === 'free_shipping' ? formData.applicable_delivery_method : null,
+      applies_to_levo_card_only: formData.applies_to_levo_card_only,
     };
 
     if (editing) {
@@ -182,6 +184,7 @@ const AdminCoupons = () => {
       expires_at: coupon.expires_at ? new Date(coupon.expires_at).toISOString().slice(0, 16) : '',
       active: coupon.active,
       applicable_delivery_method: coupon.applicable_delivery_method || '',
+      applies_to_levo_card_only: !!coupon.applies_to_levo_card_only,
     });
     setDialogOpen(true);
   };
@@ -196,6 +199,7 @@ const AdminCoupons = () => {
       expires_at: '',
       active: true,
       applicable_delivery_method: '',
+      applies_to_levo_card_only: false,
     });
     setEditing(null);
   };
@@ -359,6 +363,20 @@ const AdminCoupons = () => {
                   onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
                 />
                 <Label htmlFor="active" className="text-sm font-medium cursor-pointer">فعال</Label>
+              </div>
+
+              <div className="flex items-center gap-3 py-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3">
+                <Switch
+                  id="levo_only"
+                  checked={formData.applies_to_levo_card_only}
+                  onCheckedChange={(checked) => setFormData({ ...formData, applies_to_levo_card_only: checked })}
+                />
+                <Label htmlFor="levo_only" className="text-sm font-medium cursor-pointer flex-1">
+                  حصري لبطاقة ليفو الفيزيائية
+                  <p className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                    يعمل فقط عندما تحتوي السلة على منتج بطاقة ليفو فقط (بدون منتجات أخرى).
+                  </p>
+                </Label>
               </div>
 
               <Button

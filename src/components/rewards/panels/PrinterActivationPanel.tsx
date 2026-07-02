@@ -102,7 +102,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
 
       const { error: updateError } = await supabase
         .from('store_printers')
-        .update(updatePayload)
+        .update(updatePayload as any)
         .eq('id', printerData.id);
 
       if (updateError) throw updateError;

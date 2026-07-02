@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Plus, CreditCard, Search, Download, Loader2, Trash2, Unlink, User, History, Copy } from 'lucide-react';
+import { ArrowRight, Plus, CreditCard, Search, Download, Loader2, Trash2, Unlink, User, History, Copy, Printer, X } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { ADMIN_BASE_PATH } from '@/config/adminConfig';
 
@@ -60,6 +61,8 @@ export default function AdminLevoCards() {
     return Array.from(g.entries());
   }, [filtered]);
 
+  const [lastBatch, setLastBatch] = useState<any[] | null>(null);
+
   const createBatch = useMutation({
     mutationFn: async () => {
       const { data, error } = await (supabase as any).rpc('admin_generate_levo_cards', {
@@ -69,8 +72,9 @@ export default function AdminLevoCards() {
       if (!data?.success) throw new Error(data?.error);
       return data;
     },
-    onSuccess: (d) => {
+    onSuccess: (d: any) => {
       toast.success(`تم إنشاء ${d.count} بطاقة`);
+      setLastBatch(d.cards || []);
       setCreateOpen(false);
       qc.invalidateQueries({ queryKey: ['admin-levo-cards'] });
     },
@@ -211,8 +215,65 @@ export default function AdminLevoCards() {
         {detailNumber && (
           <CardDetailDialog cardNumber={detailNumber} onClose={() => setDetailNumber(null)} />
         )}
+        {lastBatch && (
+          <BatchRevealDialog cards={lastBatch} onClose={() => setLastBatch(null)} />
+        )}
       </div>
     </div>
+  );
+}
+
+function BatchRevealDialog({ cards, onClose }: { cards: any[]; onClose: () => void }) {
+  const exportCsv = () => {
+    const rows = ['card_number,pin,qr_token,nfc_token'].concat(
+      cards.map(c => `${c.card_number},${c.pin},${c.qr_token},${c.nfc_token}`)
+    );
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `levo-batch-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+  const doPrint = () => window.print();
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="!overflow-hidden !max-h-none max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>بيانات الدفعة الجديدة ({cards.length} بطاقة)</span>
+            <Button size="icon" variant="ghost" onClick={onClose}><X className="h-4 w-4" /></Button>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+          ⚠️ احفظ هذه البيانات الآن — لن تظهر مرة أخرى. الرمز السري (PIN) ورموز QR/NFC لا يمكن استرجاعها لاحقًا.
+        </div>
+        <div className="flex gap-2 py-2 print:hidden">
+          <Button size="sm" onClick={exportCsv}><Download className="h-3 w-3 ml-1" /> CSV كامل</Button>
+          <Button size="sm" variant="outline" onClick={doPrint}><Printer className="h-3 w-3 ml-1" /> طباعة</Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[70vh] print:max-h-none">
+          {cards.map((c) => (
+            <div key={c.id} className="border rounded-lg p-3 bg-background break-inside-avoid">
+              <div className="flex items-center gap-3">
+                <div className="bg-white p-1 rounded">
+                  <QRCodeSVG value={c.qr_token} size={80} />
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <code className="font-mono text-xs tracking-widest">
+                    {c.card_number.replace(/(.{4})/g, '$1 ').trim()}
+                  </code>
+                  <div className="mt-1 text-xs">
+                    <span className="text-muted-foreground">PIN: </span>
+                    <span className="font-mono font-bold tracking-widest">{c.pin}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">NFC: {c.nfc_token}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

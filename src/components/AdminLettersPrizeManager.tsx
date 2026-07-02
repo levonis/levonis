@@ -140,7 +140,7 @@ export default function AdminLettersPrizeManager({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Coupon> }) => {
       const { error } = await supabase
         .from('letter_prize_coupons')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id);
       if (error) throw error;
     },

@@ -3,19 +3,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CreditCard, Loader2, CheckCircle2, XCircle, QrCode, Radio, Camera, Upload } from 'lucide-react';
+import { CreditCard, Loader2, CheckCircle2, XCircle, QrCode, Radio, Upload, KeyRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
 type ErrorKey =
-  | 'unauthenticated' | 'invalid_length' | 'not_found' | 'revoked'
-  | 'card_in_use' | 'user_has_card' | 'unknown';
+  | 'unauthenticated' | 'invalid_length' | 'invalid_pin' | 'locked'
+  | 'not_found' | 'revoked' | 'card_in_use' | 'user_has_card' | 'unknown';
 
 const ERR: Record<ErrorKey, { title: string; desc: string }> = {
   unauthenticated: { title: 'يرجى تسجيل الدخول', desc: 'سجّل الدخول لتفعيل بطاقتك.' },
   invalid_length:  { title: 'رقم غير صحيح', desc: 'رقم البطاقة يجب أن يتكوّن من 16 خانة رقمية.' },
-  not_found:       { title: 'البطاقة غير موجودة', desc: 'تأكد من الرقم أو تواصل مع الدعم.' },
+  invalid_pin:     { title: 'PIN غير صحيح', desc: 'الرمز السري 4 أرقام مطبوعة مع البطاقة.' },
+  locked:          { title: 'تم قفل البطاقة مؤقتًا', desc: 'تجاوزت عدد المحاولات. حاول بعد 15 دقيقة.' },
+  not_found:       { title: 'البطاقة غير موجودة', desc: 'تأكد من الرقم/الرمز أو تواصل مع الدعم.' },
   revoked:         { title: 'البطاقة ملغاة', desc: 'هذه البطاقة تم إلغاؤها من الإدارة.' },
   card_in_use:     { title: 'البطاقة مربوطة بحساب آخر', desc: 'يجب حذفها من الحساب الأول قبل تفعيلها هنا.' },
   user_has_card:   { title: 'لديك بطاقة ليفو فعلاً', desc: 'يحق لكل مستخدم بطاقة ليفو واحدة. احذف الحالية أولاً.' },
@@ -27,9 +29,34 @@ const formatCardNumber = (raw: string) => {
   return digits.replace(/(.{4})/g, '$1 ').trim();
 };
 
+// QR/NFC data may be the raw token (LVQR-… / LVNF-…), a full URL wrapping it,
+// or the 16-digit number as a fallback.
+type ScannedPayload =
+  | { kind: 'qr'; token: string }
+  | { kind: 'nfc'; token: string }
+  | { kind: 'card'; number: string };
+
+const extractScan = (raw: string): ScannedPayload | null => {
+  const s = (raw || '').trim();
+  const qrMatch = s.match(/LVQR-[A-Za-z0-9+/=_-]{20,}/);
+  if (qrMatch) return { kind: 'qr', token: qrMatch[0] };
+  const nfcMatch = s.match(/LVNF-[A-Za-z0-9+/=_-]{20,}/);
+  if (nfcMatch) return { kind: 'nfc', token: nfcMatch[0] };
+  const digits = s.replace(/\D/g, '');
+  if (digits.length === 16) return { kind: 'card', number: digits };
+  try {
+    const url = new URL(s);
+    const c = url.searchParams.get('card') || url.searchParams.get('c');
+    if (c && c.replace(/\D/g, '').length === 16) return { kind: 'card', number: c.replace(/\D/g, '') };
+  } catch {}
+  return null;
+};
+
 export default function LevoCardActivator() {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
+  const [pin, setPin] = useState('');
+  const [scannedToken, setScannedToken] = useState<{ kind: 'qr' | 'nfc'; token: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errKey, setErrKey] = useState<ErrorKey | null>(null);
   const [success, setSuccess] = useState(false);
@@ -44,24 +71,28 @@ export default function LevoCardActivator() {
 
   useEffect(() => {
     if (!open) {
-      stopScanner();
-      stopNfc();
-      setValue('');
-      setErrKey(null);
-      setSuccess(false);
+      stopScanner(); stopNfc();
+      setValue(''); setPin(''); setScannedToken(null);
+      setErrKey(null); setSuccess(false);
     }
   }, [open]);
 
   const digitsOnly = value.replace(/\D/g, '');
+  const canSubmit = pin.length === 4 && (scannedToken !== null || digitsOnly.length === 16);
 
-  const submit = async (numberOverride?: string) => {
-    const num = (numberOverride ?? digitsOnly).replace(/\D/g, '');
-    setErrKey(null);
-    setSuccess(false);
-    if (num.length !== 16) { setErrKey('invalid_length'); return; }
+  const submit = async () => {
+    setErrKey(null); setSuccess(false);
+    if (pin.length !== 4) { setErrKey('invalid_pin'); return; }
+    const payload: any = { p_pin: pin };
+    if (scannedToken?.kind === 'qr') payload.p_qr_token = scannedToken.token;
+    else if (scannedToken?.kind === 'nfc') payload.p_nfc_token = scannedToken.token;
+    else {
+      if (digitsOnly.length !== 16) { setErrKey('invalid_length'); return; }
+      payload.p_card_number = digitsOnly;
+    }
     setSubmitting(true);
     try {
-      const { data, error } = await (supabase as any).rpc('levo_activate_card', { p_card_number: num });
+      const { data, error } = await (supabase as any).rpc('levo_activate_card', payload);
       if (error) throw error;
       if (data?.success) {
         setSuccess(true);
@@ -76,27 +107,19 @@ export default function LevoCardActivator() {
     } catch (e: any) {
       setErrKey('unknown');
       toast.error(e?.message || 'فشل التفعيل');
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
-  const extractCardFromScan = (raw: string): string | null => {
-    const digits = raw.replace(/\D/g, '');
-    if (digits.length === 16) return digits;
-    try {
-      const url = new URL(raw);
-      const c = url.searchParams.get('card') || url.searchParams.get('c');
-      if (c && c.replace(/\D/g, '').length === 16) return c.replace(/\D/g, '');
-      const pathDigits = url.pathname.replace(/\D/g, '');
-      if (pathDigits.length === 16) return pathDigits;
-    } catch {}
-    return null;
+  const applyScan = (raw: string) => {
+    const p = extractScan(raw);
+    if (!p) { toast.error('محتوى غير صالح'); return; }
+    if (p.kind === 'card') { setValue(formatCardNumber(p.number)); setScannedToken(null); }
+    else { setScannedToken({ kind: p.kind, token: p.token }); setValue(''); }
+    toast.success('تم القراءة — أدخل PIN لإتمام التفعيل');
   };
 
   const startScanner = async () => {
-    stopNfc();
-    setScannerActive(true);
+    stopNfc(); setScannerActive(true);
     await new Promise(r => setTimeout(r, 100));
     try {
       const { Html5Qrcode } = await import('html5-qrcode');
@@ -105,50 +128,32 @@ export default function LevoCardActivator() {
       await scanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 240, height: 240 } },
-        (decoded) => {
-          const num = extractCardFromScan(decoded);
-          if (num) {
-            setValue(formatCardNumber(num));
-            stopScanner();
-            submit(num);
-          }
-        },
+        (decoded) => { applyScan(decoded); stopScanner(); },
         () => {}
       );
-    } catch (e: any) {
-      toast.error('تعذّر فتح الكاميرا');
-      setScannerActive(false);
-    }
+    } catch { toast.error('تعذّر فتح الكاميرا'); setScannerActive(false); }
   };
 
   const stopScanner = async () => {
-    if (scannerRef.current) {
-      try { await scannerRef.current.stop(); } catch {}
-      scannerRef.current = null;
-    }
+    if (scannerRef.current) { try { await scannerRef.current.stop(); } catch {} scannerRef.current = null; }
     setScannerActive(false);
   };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]; if (!file) return;
     try {
       const { Html5Qrcode } = await import('html5-qrcode');
       const s = new Html5Qrcode('levo-qr-file');
       const result = await s.scanFile(file, true);
-      const num = extractCardFromScan(result);
-      if (num) { setValue(formatCardNumber(num)); submit(num); }
-      else toast.error('الصورة لا تحتوي رقم بطاقة صالح');
+      applyScan(result);
     } catch { toast.error('فشل قراءة الصورة'); }
     if (fileRef.current) fileRef.current.value = '';
   };
 
   const startNfc = async () => {
     if (!nfcSupported) { toast.error('جهازك لا يدعم NFC'); return; }
-    stopScanner();
-    setNfcActive(true);
+    stopScanner(); setNfcActive(true);
     try {
-      // @ts-ignore
       const reader = new (window as any).NDEFReader();
       const ctrl = new AbortController();
       nfcAbortRef.current = ctrl;
@@ -156,15 +161,12 @@ export default function LevoCardActivator() {
       reader.onreading = (ev: any) => {
         for (const record of ev.message.records) {
           const raw = record.data ? new TextDecoder().decode(record.data) : '';
-          const num = extractCardFromScan(raw) || extractCardFromScan(ev.serialNumber || '');
-          if (num) { setValue(formatCardNumber(num)); stopNfc(); submit(num); return; }
+          const p = extractScan(raw) || extractScan(ev.serialNumber || '');
+          if (p) { applyScan(raw || ev.serialNumber || ''); stopNfc(); return; }
         }
       };
       toast.info('قرّب البطاقة من الهاتف');
-    } catch (e: any) {
-      toast.error(e?.message || 'فشل تشغيل NFC');
-      setNfcActive(false);
-    }
+    } catch (e: any) { toast.error(e?.message || 'فشل تشغيل NFC'); setNfcActive(false); }
   };
 
   const stopNfc = () => {
@@ -183,7 +185,7 @@ export default function LevoCardActivator() {
               </div>
               <div className="text-right">
                 <p className="font-medium">تفعيل بطاقة ليفو</p>
-                <p className="text-xs text-muted-foreground">إدخال رقم / مسح QR / NFC</p>
+                <p className="text-xs text-muted-foreground">رقم + PIN، أو QR + PIN، أو NFC + PIN</p>
               </div>
             </div>
             <Button size="sm" variant="outline">تفعيل</Button>
@@ -194,73 +196,73 @@ export default function LevoCardActivator() {
         <DialogHeader><DialogTitle>تفعيل بطاقة ليفو</DialogTitle></DialogHeader>
         <div className="space-y-3 overflow-y-auto max-h-[75vh] px-1">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            أدخل رقم البطاقة (16 خانة)، أو امسح رمز QR الموجود على البطاقة، أو قرّبها من الهاتف عبر NFC.
+            أدخل الرقم (16 خانة) أو امسح QR أو قرّب NFC، ثم أدخل رمز PIN المكوّن من 4 أرقام المطبوع على البطاقة.
           </p>
 
-          <Input
-            value={value}
-            onChange={e => { setValue(formatCardNumber(e.target.value)); if (errKey || success) { setErrKey(null); setSuccess(false); } }}
-            placeholder="1234 5678 9012 3456"
-            inputMode="numeric"
-            className={`font-mono tracking-widest text-center text-lg ${errKey ? 'border-destructive' : ''}`}
-            disabled={submitting || success}
-            onKeyDown={e => { if (e.key === 'Enter' && !submitting) submit(); }}
-          />
+          {scannedToken ? (
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 flex items-center justify-between text-sm">
+              <span>تم قراءة {scannedToken.kind === 'qr' ? 'رمز QR' : 'شريحة NFC'} بنجاح</span>
+              <Button size="sm" variant="ghost" onClick={() => setScannedToken(null)}>مسح</Button>
+            </div>
+          ) : (
+            <Input
+              value={value}
+              onChange={e => { setValue(formatCardNumber(e.target.value)); if (errKey || success) { setErrKey(null); setSuccess(false); } }}
+              placeholder="1234 5678 9012 3456"
+              inputMode="numeric"
+              className={`font-mono tracking-widest text-center text-lg ${errKey === 'invalid_length' ? 'border-destructive' : ''}`}
+              disabled={submitting || success}
+            />
+          )}
 
           <div className="grid grid-cols-3 gap-2">
-            <Button
-              type="button" variant="outline" size="sm"
-              onClick={scannerActive ? stopScanner : startScanner}
-              disabled={submitting || success}
-              className="text-xs"
-            >
-              <QrCode className="h-4 w-4 ml-1" />
-              {scannerActive ? 'إيقاف' : 'مسح QR'}
+            <Button type="button" variant="outline" size="sm" onClick={scannerActive ? stopScanner : startScanner}
+              disabled={submitting || success} className="text-xs">
+              <QrCode className="h-4 w-4 ml-1" />{scannerActive ? 'إيقاف' : 'مسح QR'}
             </Button>
-            <Button
-              type="button" variant="outline" size="sm"
-              onClick={() => fileRef.current?.click()}
-              disabled={submitting || success}
-              className="text-xs"
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}
+              disabled={submitting || success} className="text-xs">
               <Upload className="h-4 w-4 ml-1" /> صورة
             </Button>
-            <Button
-              type="button" variant="outline" size="sm"
-              onClick={nfcActive ? stopNfc : startNfc}
-              disabled={submitting || success || !nfcSupported}
-              className="text-xs"
-              title={nfcSupported ? 'قرّب البطاقة' : 'الجهاز لا يدعم NFC'}
-            >
-              <Radio className="h-4 w-4 ml-1" />
-              {nfcActive ? 'إيقاف' : 'NFC'}
+            <Button type="button" variant="outline" size="sm" onClick={nfcActive ? stopNfc : startNfc}
+              disabled={submitting || success || !nfcSupported} className="text-xs"
+              title={nfcSupported ? 'قرّب البطاقة' : 'الجهاز لا يدعم NFC'}>
+              <Radio className="h-4 w-4 ml-1" />{nfcActive ? 'إيقاف' : 'NFC'}
             </Button>
           </div>
 
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFile} />
           <div id="levo-qr-file" style={{ display: 'none' }} />
-
-          {scannerActive && (
-            <div className="rounded-lg overflow-hidden border">
-              <div id="levo-qr-scanner" style={{ width: '100%' }} />
-            </div>
-          )}
+          {scannerActive && (<div className="rounded-lg overflow-hidden border"><div id="levo-qr-scanner" style={{ width: '100%' }} /></div>)}
           {nfcActive && (
             <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 flex items-center gap-2 text-sm">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              قرّب البطاقة من الهاتف الآن…
+              <Loader2 className="h-4 w-4 animate-spin text-primary" /> قرّب البطاقة من الهاتف الآن…
             </div>
           )}
+
+          {/* PIN — always required */}
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground flex items-center gap-1">
+              <KeyRound className="h-3.5 w-3.5" /> رمز PIN (4 أرقام)
+            </label>
+            <Input
+              value={pin}
+              onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 4)); if (errKey === 'invalid_pin') setErrKey(null); }}
+              placeholder="••••"
+              inputMode="numeric"
+              maxLength={4}
+              className={`font-mono tracking-[0.6em] text-center text-lg ${errKey === 'invalid_pin' ? 'border-destructive' : ''}`}
+              disabled={submitting || success}
+              onKeyDown={e => { if (e.key === 'Enter' && canSubmit && !submitting) submit(); }}
+            />
+          </div>
 
           {success && (
             <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                تم تفعيل البطاقة بنجاح
-              </p>
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">تم تفعيل البطاقة بنجاح</p>
             </div>
           )}
-
           {errKey && !success && (
             <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 flex items-start gap-2">
               <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
@@ -271,11 +273,7 @@ export default function LevoCardActivator() {
             </div>
           )}
 
-          <Button
-            className="w-full"
-            onClick={() => submit()}
-            disabled={submitting || success || digitsOnly.length !== 16}
-          >
+          <Button className="w-full" onClick={submit} disabled={submitting || success || !canSubmit}>
             {submitting ? (<><Loader2 className="h-4 w-4 animate-spin ml-2" /> جاري التفعيل…</>)
              : success ? (<><CheckCircle2 className="h-4 w-4 ml-2" /> تم التفعيل</>)
              : 'تفعيل البطاقة'}
