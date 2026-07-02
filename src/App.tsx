@@ -186,6 +186,7 @@ import PrefetchOnHover from "@/components/PrefetchOnHover";
 import ViewTransitions from "@/components/ViewTransitions";
 import ImageQualityBoost from "@/components/ImageQualityBoost";
 import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
+import ChunkReloadBoundary from "@/components/ChunkReloadBoundary";
 
 function RouteSuspenseFallback() {
   return <RouteAwareSkeleton />;
@@ -293,6 +294,7 @@ function AppContent() {
         className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
       >
         <Suspense fallback={<RouteSuspenseFallback />}>
+          <ChunkReloadBoundary fallback={<RouteSuspenseFallback />}>
           <PageFade>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -473,6 +475,7 @@ function AppContent() {
             <Route path="*" element={<NotFound />} />
           </Routes>
           </PageFade>
+          </ChunkReloadBoundary>
         </Suspense>
       </main>
       {/* Bottom/Side Navigation Bar */}
