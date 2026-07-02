@@ -77,7 +77,7 @@ export default function CustomerRequestCard({
       <div className="flex gap-3 p-3">
         <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted/30 shrink-0 relative border border-border/30">
           {mainImage ? (
-            <img src={mainImage} alt="" className="w-full h-full object-cover" />
+            <img src={mainImage} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted/50 to-muted">
               <Package className="h-6 w-6 text-muted-foreground/30" />

@@ -1,34 +1,82 @@
-# حذف شاشة التحميل الأولية بالكامل
+# الخطة
 
-الشاشة الخضراء التي تراها في الصورة هي خلفية `html, body` الخضراء + عنصر `#initial-loader` المضمَّن في `index.html`. سأحذف الفكرة كاملة.
+## 1) إعادة لون الأيقونات للزيتوني (Primary Gold)
 
-## التغييرات في `index.html`
+المشكلة: كثير من الأيقونات تستخدم `text-foreground` أو اللون الافتراضي (currentColor موروث من نص أسود) فتظهر سوداء بدلاً من الذهبي/الزيتوني للعلامة.
 
-1. **خلفية html/body**: تغيير `background-color: hsl(160, 38%, 22%)` (الأخضر) إلى `#000000` (أسود) ليطابق `AppBackground.tsx` الفعلي للتطبيق — بدون أي وميض أخضر.
+- الحل بدون كسر الحيادية:
+  - إضافة قاعدة Tailwind ذكية في `src/index.css` تجعل الأيقونات ذات دور دلالي (رأس البطاقة، الشارات، أزرار الأيقونة، أيقونة الحقل، AdminCard/AdminStatCard icon) ترث `hsl(var(--primary))`.
+  - تعديل `AdminLayout` (AdminCard/AdminStatCard/AdminEmptyState) لتمرير `text-primary` افتراضياً على `icon` prop.
+  - تعديل عناصر التنقل والـHeaders (AppNavBar، PageHeader، Dialog Titles، Card Titles) لاستخدام `text-primary` بدل `text-foreground` عندما تكون الأيقونة زخرفية.
+  - استثناء واضح: أيقونات تحمل لوناً برامجياً (Telegram `#0088cc`، حالة نجاح/تحذير/خطر) تبقى كما هي.
 
-2. **حذف CSS الخاص بالـ loader** (الأسطر ~195–216):
-   - `#initial-loader { ... }`
-   - `#initial-loader.show`, `#initial-loader.fade-out`
-   - `#il-recover { ... }`, `#il-recover p`, `#il-recover button`, `#il-recover button:active`
+## 2) Skeleton مطابقة للمحتوى الفعلي
 
-3. **حذف HTML markup** (الأسطر 274–279):
-   ```html
-   <div id="initial-loader">
-     <div id="il-recover">...</div>
-   </div>
-   ```
+بدلاً من الشيمر العام، سنبني skeletons "route-aware" مطابقة تماماً للتخطيط النهائي (نفس الأبعاد، الفواصل، الشبكات) لتجنّب أي Layout Shift.
 
-4. **تبسيط سكربت `showRecovery`** (السطر ~382): إزالة الإشارات إلى `initial-loader` و `il-recover` (تصبح no-op لأن العناصر محذوفة)، مع إبقاء `__levoMounted` و `__levoRecover` (يستدعيهما كود آخر).
+- إنشاء `src/components/skeletons/` يحتوي على skeleton مخصّص لكل صفحة رئيسية:
+  - `HomeSkeleton` — Hero + Banners + Sections grid.
+  - `SearchResultsSkeleton` — نفس شبكة SearchResults (2/3/4/5 أعمدة حسب breakpoint) + 18 بطاقة.
+  - `ProductShopSkeleton` — نفس بطاقة ProductShop.
+  - `ProductDetailsSkeleton` — صورة + سعر + خيارات + أزرار.
+  - `CartSkeleton` — قائمة عناصر + ملخّص.
+  - `AdminTableSkeleton` — رأس + صفوف جدول مطابقة لأعمدة الصفحة.
+  - `RewardsHubSkeleton`, `NotificationsSkeleton`, `ProfileSkeleton`.
+- استبدال `RouteAwareSkeleton` الحالي ليختار skeleton الصحيح حسب `pathname`.
+- إبقاء جميع البطاقات تستخدم `Skeleton` من shadcn (glass-shimmer الحالي) لتحافظ على الهوية.
+- الفائدة: صفر Layout Shift + إحساس تحميل حقيقي.
 
-5. **theme-color**: تغيير `#234d3f` إلى `#000000` ليطابق ثيم التطبيق الحقيقي ويمنع شريط المتصفح الأخضر.
+## 3) كوبون توصيل مجاني في إدارة الكوبونات
 
-6. **manifest.json**: تغيير `background_color` و `theme_color` من `#234d3f` إلى `#000000`.
+### تعديلات قاعدة البيانات (migration)
+- توسيع CHECK على `coupons.discount_type` ليشمل قيمة جديدة: `free_shipping`.
+- إضافة أعمدة:
+  - `applicable_delivery_method text` (nullable، مفتاح مثل `standard` / `express` / `personal` / `pickup` — nullable يعني "أي نوع").
+- تعديل RPC `validate_coupon_with_rate_limit` ليعيد الحقلين الجديدين ضمن الاستجابة.
 
-## ما سيبقى كما هو
-- مُبلّغ أخطاء الـ chunks (`__levoReportError`)
-- مستمع `levo:mounted`
-- `__levoRecover` (للاستخدام اليدوي إن لزم)
-- Service worker و Meta Pixel وغيرها
+### تعديلات AdminCoupons UI
+- إضافة الخيار "توصيل مجاني" في `discount_type` Select.
+- عند اختياره:
+  - يختفي حقل `discount_value` (أو يُضبط تلقائياً على 0).
+  - يظهر Select إلزامي لنوع التوصيل يقرأ من جدول `delivery_methods` (يشمل خيار "أي نوع" اختياري بحسب رغبتك — سنعتمد إلزامي مثلما طلبت).
+  - يبقى `min_purchase_amount`, `max_uses`, `expires_at` كما هي.
+- في الجدول: بادج جديد أخضر "توصيل مجاني — [اسم النوع]".
 
-## النتيجة المتوقعة
-خلفية سوداء فقط في أول ثوانٍ التحميل قبل ظهور React، بدون أي مستطيل أخضر، بدون أي UI تحميل أو "إعادة المحاولة".
+### تعديلات Cart
+- عند تطبيق كوبون بنوع `free_shipping`:
+  - إن كان `selectedDeliveryMethod !== coupon.applicable_delivery_method`: رفض مع toast:
+    `الكوبون صالح فقط لنوع التوصيل: [اسم النوع]`.
+  - إن تطابق: يُصفَّر رسم التوصيل ويظهر سطر في الملخّص "توصيل مجاني (كوبون)".
+- عند تغيير المستخدم نوع التوصيل بعد التطبيق: إعادة تحقق تلقائي؛ إن لم يعد مطابقاً يُزال الكوبون تلقائياً مع toast تنبيه.
+- عند تجاوز `min_purchase_amount` نزولاً: تحقق موجود، سنكرّره للنوع الجديد.
+
+## تفاصيل تقنية
+
+```sql
+-- migration
+ALTER TABLE public.coupons
+  DROP CONSTRAINT coupons_discount_type_check,
+  ADD CONSTRAINT coupons_discount_type_check
+    CHECK (discount_type IN ('percentage','fixed','free_shipping'));
+
+ALTER TABLE public.coupons
+  ADD COLUMN applicable_delivery_method text;
+
+-- تحديث الـ RPC ليُرجع applicable_delivery_method
+CREATE OR REPLACE FUNCTION public.validate_coupon_with_rate_limit(...) ...
+-- تُضاف: 'applicable_delivery_method', coupon_record.applicable_delivery_method
+```
+
+### ملفات ستُعدَّل
+- `src/index.css` (قاعدة لون الأيقونات)
+- `src/components/admin/AdminLayout.tsx` (icon prop → text-primary)
+- `src/components/skeletons/*` (جديد)
+- `src/components/RouteAwareSkeleton.tsx` (توجيه)
+- `src/pages/AdminCoupons.tsx` (نوع free_shipping + delivery method Select + بادج)
+- `src/pages/Cart.tsx` (منطق التطبيق والرفض/الإزالة التلقائية)
+- Migration جديد للكوبون
+
+## نطاق مقصود بعدم اللمس
+- ألوان أيقونات ذات معنى (Telegram, warning, success, danger).
+- أنواع الكوبونات الحالية (percentage/fixed) تبقى كما هي 100%.
+- Phase 4/5 السابقة (Infinite Scroll، Realtime consolidation) لا تُمس.

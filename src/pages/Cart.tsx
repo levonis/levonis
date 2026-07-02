@@ -998,7 +998,10 @@ const Cart = () => {
   const referralRemainingForFreeDelivery = appliedReferral
     ? Math.max(0, referralMinOrder - total)
     : 0;
-  const deliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
+  const couponFreeShippingApplied = !!(appliedCoupon
+    && appliedCoupon.discount_type === 'free_shipping'
+    && (!appliedCoupon.applicable_delivery_method || appliedCoupon.applicable_delivery_method === selectedDeliveryMethod));
+  const deliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied || couponFreeShippingApplied) ? 0 : rawDeliveryFee;
 
   
   // Referral commission per unit — added to the buyer's final price (paid to VIP+ owner)
@@ -1009,7 +1012,7 @@ const Cart = () => {
   // Calculate discount
   const calculateDiscount = () => {
     if (!appliedCoupon) return 0;
-    
+    if (appliedCoupon.discount_type === 'free_shipping') return 0;
     if (appliedCoupon.discount_type === 'percentage') {
       return (total * appliedCoupon.discount_value) / 100;
     }
@@ -1244,7 +1247,7 @@ const Cart = () => {
         return;
       }
 
-      const couponResult = result as { valid: boolean; error?: string; id?: string; code?: string; discount_type?: string; discount_value?: number; min_purchase_amount?: number; rate_limited?: boolean };
+      const couponResult = result as { valid: boolean; error?: string; id?: string; code?: string; discount_type?: string; discount_value?: number; min_purchase_amount?: number; applicable_delivery_method?: string | null; rate_limited?: boolean };
 
       if (!couponResult.valid) {
         toast({
@@ -1265,17 +1268,33 @@ const Cart = () => {
         return;
       }
 
+      // Free-shipping coupon: require matching delivery method
+      if (couponResult.discount_type === 'free_shipping' && couponResult.applicable_delivery_method) {
+        if (selectedDeliveryMethod !== couponResult.applicable_delivery_method) {
+          const methodName = (deliveryMethods as any[]).find((m: any) => m.method_key === couponResult.applicable_delivery_method)?.name_ar || couponResult.applicable_delivery_method;
+          toast({
+            title: 'الكوبون غير مطابق لنوع التوصيل',
+            description: `هذا الكوبون صالح فقط لنوع التوصيل: ${methodName}`,
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
       setAppliedCoupon({
         id: couponResult.id,
         code: couponResult.code,
         discount_type: couponResult.discount_type,
         discount_value: couponResult.discount_value,
         min_purchase_amount: couponResult.min_purchase_amount,
+        applicable_delivery_method: couponResult.applicable_delivery_method || null,
       });
-      
+
       toast({
         title: t('cart_coupon_applied'),
-        description: `${couponResult.discount_type === 'percentage' ? `${couponResult.discount_value}%` : `${formatPrice(couponResult.discount_value || 0)} ${t('common_iqd_full')}`}`,
+        description: couponResult.discount_type === 'free_shipping'
+          ? 'توصيل مجاني'
+          : `${couponResult.discount_type === 'percentage' ? `${couponResult.discount_value}%` : `${formatPrice(couponResult.discount_value || 0)} ${t('common_iqd_full')}`}`,
       });
     } catch (error) {
       console.error('Error applying coupon:', error);
@@ -2758,7 +2777,7 @@ const Cart = () => {
                         <div className="flex gap-2.5 sm:gap-4">
                           {bundle.image_url && (
                             <Link to="/bundles" className="flex-shrink-0">
-                              <img src={bundle.image_url} alt={bundle.title_ar} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-primary/30" />
+                              <img src={bundle.image_url} alt={bundle.title_ar} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-primary/30" loading="lazy" decoding="async" />
                             </Link>
                           )}
                           <div className="flex-1 min-w-0">
@@ -2823,7 +2842,7 @@ const Cart = () => {
                         <div className="flex gap-2.5 sm:gap-4">
                           {offerInfo?.image_url && (
                             <div className="flex-shrink-0">
-                              <img src={offerInfo.image_url} alt={offerInfo?.title_ar || ''} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-amber-500/30" />
+                              <img src={offerInfo.image_url} alt={offerInfo?.title_ar || ''} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-amber-500/30" loading="lazy" decoding="async" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -2926,8 +2945,7 @@ const Cart = () => {
                               <img 
                                 src={(item as any).option_image_url || (item as any).color_image_url || (item.products?.images && item.products.images[0]) || item.products?.image_url || item.custom_product_requests?.image_url || ''}
                                 alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
-                                className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40"
-                              />
+                                className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40" loading="lazy" decoding="async" />
                             </Link>
                           )}
                           

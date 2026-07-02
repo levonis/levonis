@@ -245,7 +245,7 @@ export default function MerchantReelUpload({ merchantId, children }: MerchantRee
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-2">
                       {p.image_urls?.[0] && (
-                        <img src={p.image_urls[0]} alt="" className="w-6 h-6 rounded object-cover" />
+                        <img src={p.image_urls[0]} alt="" className="w-6 h-6 rounded object-cover" loading="lazy" decoding="async" />
                       )}
                       <span className="truncate">{p.title}</span>
                       {p.price_iqd && <span className="text-xs text-muted-foreground">{p.price_iqd.toLocaleString()} د.ع</span>}

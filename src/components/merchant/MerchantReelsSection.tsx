@@ -53,7 +53,7 @@ export default function MerchantReelsSection({ merchantId }: MerchantReelsSectio
                 onClick={() => setShowReelsViewer(true)}
               >
                 {reel.thumbnail_url ? (
-                  <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                  <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <video src={reel.video_url} className="w-full h-full object-cover" muted preload="metadata" />
                 )}

@@ -1,13 +1,21 @@
 import { useEffect } from "react";
+import { warmRouteFor } from "@/lib/routePrefetch";
 
 /**
- * Global prefetch-on-hover/focus for internal links. Adds a one-shot
- * <link rel="prefetch"> for the destination HTML so the next navigation
- * feels instant. Cheap, safe, and best-effort (silently ignored on failure).
+ * Global prefetch-on-hover/focus for internal links.
+ *
+ * Two-layer warm-up:
+ *  1. HTML document prefetch via <link rel="prefetch"> — helps SW/HTTP cache.
+ *  2. Route JS-chunk warm-up by invoking the same dynamic import() factory
+ *     React.lazy uses in App.tsx. Vite/browser dedupe the module fetch, so
+ *     when the user actually navigates the chunk is already parsed and the
+ *     Suspense fallback usually never flashes.
+ *
+ * Best-effort — silently ignored on failure.
  */
 const prefetched = new Set<string>();
 
-function prefetch(href: string) {
+function prefetchDoc(href: string) {
   if (prefetched.has(href)) return;
   prefetched.add(href);
   try {
@@ -29,7 +37,10 @@ export default function PrefetchOnHover() {
       const href = a.getAttribute("href");
       if (!href || !href.startsWith("/")) return;
       if (a.target === "_blank") return;
-      prefetch(href);
+      // Extract pathname without query/hash for route matching.
+      const pathname = href.split("#")[0].split("?")[0];
+      prefetchDoc(href);
+      warmRouteFor(pathname);
     };
     document.addEventListener("mouseover", handler, { passive: true });
     document.addEventListener("focusin", handler, { passive: true });

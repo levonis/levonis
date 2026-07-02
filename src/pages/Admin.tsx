@@ -1970,9 +1970,9 @@ const Admin = () => {
 
           // Auto-populate pre_order_shipping_options when multiple shipping modes are active
           const activeShippingPrices: Array<{ key: string; name_ar: string; price: number }> = [];
-          if (hasSea && values.sea_price) activeShippingPrices.push({ key: 'sea', name_ar: 'شحن بحري', price: values.sea_price });
-          if (hasAir && values.air_price) activeShippingPrices.push({ key: 'air', name_ar: 'شحن جوي', price: values.air_price });
-          if (hasLand && values.land_price) activeShippingPrices.push({ key: 'land', name_ar: 'شحن بري', price: values.land_price });
+          if (hasSea && values.sea_price) activeShippingPrices.push({ key: 'sea', name_ar: 'شحن اقتصادي', price: values.sea_price });
+          if (hasAir && values.air_price) activeShippingPrices.push({ key: 'air', name_ar: 'شحن سريع', price: values.air_price });
+          if (hasLand && values.land_price) activeShippingPrices.push({ key: 'land', name_ar: 'شحن قياسي', price: values.land_price });
           if (activeShippingPrices.length >= 2) {
             const basePreOrderPrice = Math.min(...activeShippingPrices.map((s) => s.price));
             values.pre_order_shipping_options = activeShippingPrices.map((s) => ({
@@ -2071,9 +2071,9 @@ const Admin = () => {
 
           // Recalculate shipping options with rounded prices (for multi-mode pre-order)
           const activeShipping: Array<{ key: string; name_ar: string; price: number }> = [];
-          if (hasSea && values.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن بحري', price: values.sea_price });
-          if (hasAir && values.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن جوي', price: values.air_price });
-          if (hasLand && values.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن بري', price: values.land_price });
+          if (hasSea && values.sea_price) activeShipping.push({ key: 'sea', name_ar: 'شحن اقتصادي', price: values.sea_price });
+          if (hasAir && values.air_price) activeShipping.push({ key: 'air', name_ar: 'شحن سريع', price: values.air_price });
+          if (hasLand && values.land_price) activeShipping.push({ key: 'land', name_ar: 'شحن قياسي', price: values.land_price });
           if (activeShipping.length >= 2) {
             const basePreOrderPrice = Math.min(...activeShipping.map((s) => s.price));
             values.pre_order_shipping_options = activeShipping.map((s) => ({
@@ -3192,7 +3192,7 @@ const Admin = () => {
                                       : 'border-border hover:border-primary/50'
                                   } ${draggedImageIndex === index ? 'opacity-50 scale-95' : ''}`}
                                 >
-                                  <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
+                                  <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" loading="lazy" decoding="async" />
                                   
                                   {/* Drag handle indicator */}
                                   <div className="absolute bottom-1 left-1 bg-background/80 text-muted-foreground p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
@@ -3346,7 +3346,7 @@ const Admin = () => {
                                       : 'border-border hover:border-primary/50'
                                   } ${draggedImageIndex === index ? 'opacity-50 scale-95' : ''}`}
                                 >
-                                  <img src={img} alt={`صورة جديدة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
+                                  <img src={img} alt={`صورة جديدة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" loading="lazy" decoding="async" />
 
                                   {/* Drag handle indicator */}
                                   <div className="absolute bottom-1 left-1 bg-background/80 text-muted-foreground p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
@@ -3699,7 +3699,7 @@ const Admin = () => {
                                 </div>
                                 {option.image_url && (
                                   <div className="mt-2 relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                                    <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" />
+                                    <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                   </div>
                                 )}
                                 <p className="text-xs text-muted-foreground">
@@ -3918,7 +3918,7 @@ const Admin = () => {
                                   </div>
                                   {color.image_url && (
                                     <div className="mt-2 relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                                      <img src={color.image_url} alt={color.name_ar} className="w-full h-full object-cover" />
+                                      <img src={color.image_url} alt={color.name_ar} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                     </div>
                                   )}
                                    <p className="text-xs text-muted-foreground">
@@ -4336,8 +4336,7 @@ const Admin = () => {
                             <img 
                               src={product.image_url} 
                               alt={product.name_ar}
-                              className="w-12 h-12 object-cover rounded-lg"
-                            />
+                              className="w-12 h-12 object-cover rounded-lg" loading="lazy" decoding="async" />
                           )}
                         </TableCell>
                          <TableCell>
@@ -4693,7 +4692,7 @@ const Admin = () => {
                             {categoryMediaType === 'video' ? (
                               <video src={categoryMediaUrl} className="w-full h-full object-cover" muted autoPlay loop playsInline />
                             ) : (
-                              <img src={categoryMediaUrl} alt="preview" className="w-full h-full object-cover" />
+                              <img src={categoryMediaUrl} alt="preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                             )}
                           </div>
                           <Button

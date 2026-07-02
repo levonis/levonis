@@ -224,8 +224,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
                   <img 
                     src={selectedRequest.image_url} 
                     alt="صورة المنتج"
-                    className="w-full h-64 object-cover rounded-lg mt-2"
-                  />
+                    className="w-full h-64 object-cover rounded-lg mt-2" loading="lazy" decoding="async" />
                 </div>
               )}
               

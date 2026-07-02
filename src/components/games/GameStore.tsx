@@ -162,7 +162,7 @@ export default function GameStore({ onBack }: { onBack: () => void }) {
               return (
                 <div key={reward.id} className="pixel-frame p-4 flex items-center gap-3">
                   {reward.image_url ? (
-                    <img src={reward.image_url} alt="" className="w-12 h-12 rounded object-cover" />
+                    <img src={reward.image_url} alt="" className="w-12 h-12 rounded object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <div className="w-12 h-12 rounded bg-primary/10 flex items-center justify-center">
                       {reward.reward_type === "tickets" ? (

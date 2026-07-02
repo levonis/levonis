@@ -1,5 +1,5 @@
 // Strict TypeScript — keep CartItem typing tight; do not add @ts-nocheck.
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -642,16 +642,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       fetchCart();
     };
 
-    const channels = productIds.map((pid) =>
-      supabase
-        .channel(`cart-product-${user.id}-${pid}`)
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${pid}` },
-          handleChange
-        )
-        .subscribe()
-    );
+    // Single channel with one binding per product id → 1 websocket instead of N.
+    let ch = supabase.channel(`cart-products-${user.id}`);
+    productIds.forEach((pid) => {
+      ch = ch.on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${pid}` },
+        handleChange
+      );
+    });
+    const channel = ch.subscribe();
+
 
     const onVisibility = () => {
       if (!document.hidden && pendingRefresh) {
@@ -663,7 +664,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
-      channels.forEach((ch) => supabase.removeChannel(ch));
+      supabase.removeChannel(channel);
     };
   }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart, queryClient]);
 
@@ -1268,28 +1269,53 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const cartSaleType = deriveCartSaleType(items);
 
 
+  // Memoize the context value so consumers only re-render when one of the
+  // underlying fields actually changes. Without this, every parent render
+  // (Auth/Language/Island updates) forced a fresh object identity and cascaded
+  // re-renders through the entire component tree.
+  const value = useMemo(
+    () => ({
+      items,
+      loading,
+      itemCount,
+      total,
+      pendingCartRequest,
+      cartSaleType,
+      addToCart,
+      forceAddToCart,
+      addBundleToCart,
+      addCustomRequestToCart,
+      addOfferPurchaseToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      refreshCart: refreshAll,
+      deleteCartRequest,
+      checkAndWarnCartRequest,
+    }),
+    [
+      items,
+      loading,
+      itemCount,
+      total,
+      pendingCartRequest,
+      cartSaleType,
+      addToCart,
+      forceAddToCart,
+      addBundleToCart,
+      addCustomRequestToCart,
+      addOfferPurchaseToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      refreshAll,
+      deleteCartRequest,
+      checkAndWarnCartRequest,
+    ],
+  );
+
   return (
-    <CartContext.Provider
-      value={{
-        items,
-        loading,
-        itemCount,
-        total,
-        pendingCartRequest,
-        cartSaleType,
-        addToCart,
-        forceAddToCart,
-        addBundleToCart,
-        addCustomRequestToCart,
-        addOfferPurchaseToCart,
-        updateQuantity,
-        removeFromCart,
-        clearCart,
-        refreshCart: refreshAll,
-        deleteCartRequest,
-        checkAndWarnCartRequest,
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

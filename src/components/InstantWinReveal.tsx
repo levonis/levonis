@@ -150,8 +150,7 @@ export default function InstantWinReveal({
                         <img 
                           src={prize.image_url} 
                           alt={prize.name_ar} 
-                          className="w-24 h-24 mx-auto object-cover rounded-xl shadow-lg"
-                        />
+                          className="w-24 h-24 mx-auto object-cover rounded-xl shadow-lg" loading="lazy" decoding="async" />
                       )}
                       <h3 className="text-xl font-bold">{prize.name_ar}</h3>
                       {prize.value && (

@@ -177,7 +177,7 @@ function ProductSearchDropdown({
     return (
       <div className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.06] border border-white/10">
         {selectedProduct.image_url &&
-        <img src={selectedProduct.image_url} alt="" className="w-7 h-7 rounded-lg object-cover border border-white/10" />
+        <img src={selectedProduct.image_url} alt="" className="w-7 h-7 rounded-lg object-cover border border-white/10" loading="lazy" decoding="async" />
         }
         <span className="flex-1 text-xs text-white/80 truncate">{selectedProduct.name_ar}</span>
         <button onClick={() => {onSelect({ id: '' });setQuery('');}} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
@@ -219,7 +219,7 @@ function ProductSearchDropdown({
               className="w-full flex items-center gap-3 p-2.5 hover:bg-white/[0.06] transition-all text-right group/item">
               
                   {p.image_url ?
-              <img src={p.image_url} alt="" className="w-8 h-8 rounded-lg object-cover border border-white/10 group-hover/item:border-cyan-500/30 transition-colors" /> :
+              <img src={p.image_url} alt="" className="w-8 h-8 rounded-lg object-cover border border-white/10 group-hover/item:border-cyan-500/30 transition-colors" loading="lazy" decoding="async" /> :
 
               <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-center">
                       <Package className="h-3.5 w-3.5 text-white/20" />
@@ -1335,7 +1335,7 @@ export default function AdminInventory() {
                     lowStockProducts.slice(0, 10).map((p) =>
                     <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/20 transition-all">
                           <div className="flex items-center gap-3">
-                            {p.image_url && <img src={p.image_url} className="w-8 h-8 rounded-lg object-cover" alt="" />}
+                            {p.image_url && <img src={p.image_url} className="w-8 h-8 rounded-lg object-cover" alt="" loading="lazy" decoding="async" />}
                             <span className="text-xs text-white/60 truncate max-w-[140px]">{p.name_ar}</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1873,7 +1873,7 @@ export default function AdminInventory() {
                           <TableRow key={p.id} className="border-white/[0.04] hover:bg-white/[0.02] transition-colors">
                               <TableCell>
                                 <div className="flex items-center gap-3">
-                                  {p.image_url && <img src={p.image_url} className="w-9 h-9 rounded-lg object-cover border border-white/10" alt="" />}
+                                  {p.image_url && <img src={p.image_url} className="w-9 h-9 rounded-lg object-cover border border-white/10" alt="" loading="lazy" decoding="async" />}
                                   <span className="text-xs text-white/75 truncate max-w-[180px]">{p.name_ar}</span>
                                 </div>
                               </TableCell>

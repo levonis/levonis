@@ -480,7 +480,7 @@ export default function AdminProductOffers() {
                 {/* Image */}
                 <div className="relative aspect-square bg-muted">
                   {offer.image_url ? (
-                    <img src={offer.image_url} alt={offer.title_ar} className="w-full h-full object-cover" />
+                    <img src={offer.image_url} alt={offer.title_ar} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Package className="h-10 w-10 text-muted-foreground/30" />
@@ -755,7 +755,7 @@ export default function AdminProductOffers() {
                   <div className="flex flex-wrap gap-2 mt-2">
                     {formData.images.map((url, index) => (
                       <div key={index} className="relative w-16 h-16 group">
-                        <img src={url} alt="" className="w-full h-full object-cover rounded-lg border" />
+                        <img src={url} alt="" className="w-full h-full object-cover rounded-lg border" loading="lazy" decoding="async" />
                         <button
                           type="button"
                           onClick={() => removeImage(index)}

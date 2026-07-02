@@ -248,6 +248,22 @@
     font-weight: 900;
   }
 
+  /* Restore the olive/gold brand color on decorative icons inside titles,
+     card headers, and dialog headers. Colored/state icons already carry an
+     explicit text-* utility so they override this via specificity. */
+  h1 > svg:not([class*="text-"]),
+  h2 > svg:not([class*="text-"]),
+  h3 > svg:not([class*="text-"]),
+  h1 > span > svg:not([class*="text-"]),
+  h2 > span > svg:not([class*="text-"]),
+  h3 > span > svg:not([class*="text-"]),
+  .admin-card-title > svg:not([class*="text-"]),
+  .admin-card-title > span > svg:not([class*="text-"]),
+  [data-slot="dialog-title"] > svg:not([class*="text-"]),
+  [data-slot="card-title"] > svg:not([class*="text-"]) {
+    color: hsl(var(--primary));
+  }
+
   /* Letter-spacing for Latin scripts only — breaks Arabic/Kurdish letter joining */
   html[lang="en"] h1,
   html[lang="en"] h2,
@@ -269,6 +285,24 @@
   .scrollbar-stable {
     scrollbar-gutter: stable;
   }
+
+  /* content-visibility: skip layout/paint for off-screen rows/cards. Cheapest
+   * "virtualization" available — no JS, no layout risk. Use on repeated
+   * children of long vertical lists (messages, notifications, orders rows).
+   * `contain-intrinsic-size` reserves space so scrollbar length is stable. */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 220px;
+  }
+  .cv-auto-sm {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 96px;
+  }
+  .cv-auto-lg {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 360px;
+  }
+
 
   /* ---- Glassmorphism skeleton (loading placeholder) ---- */
   .skeleton-glass {

@@ -197,7 +197,7 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
                   </Label>
                   {imagePreview ? (
                     <div className="relative w-full h-36 rounded-xl overflow-hidden border border-border/30">
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       <button
                         onClick={() => { setImageFile(null); setImagePreview(null); }}
                         className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 shadow-lg"

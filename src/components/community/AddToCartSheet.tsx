@@ -309,7 +309,7 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
               {/* Product summary */}
               <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30">
                 {mainImage && (
-                  <img src={mainImage} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                  <img src={mainImage} alt="" className="h-12 w-12 rounded-lg object-cover" loading="lazy" decoding="async" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold line-clamp-1">{product.title}</p>

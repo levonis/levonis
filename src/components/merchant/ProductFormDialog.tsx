@@ -265,7 +265,7 @@ export default function ProductFormDialog({
                     <div className="flex items-center gap-2">
                       {color.image_url ? (
                         <div className="relative h-12 w-12 rounded-lg border overflow-hidden">
-                          <img src={color.image_url} alt="" className="h-full w-full object-cover" />
+                          <img src={color.image_url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                           <button onClick={() => updateColor(idx, "image_url", null)} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                             <X className="h-3 w-3 text-white" />
                           </button>
@@ -306,7 +306,7 @@ export default function ProductFormDialog({
                     <div className="flex items-center gap-2">
                       {opt.image_url ? (
                         <div className="relative h-12 w-12 rounded-lg border overflow-hidden">
-                          <img src={opt.image_url} alt="" className="h-full w-full object-cover" />
+                          <img src={opt.image_url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                           <button onClick={() => updateOption(idx, "image_url", null)} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                             <X className="h-3 w-3 text-white" />
                           </button>

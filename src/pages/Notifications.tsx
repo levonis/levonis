@@ -190,7 +190,9 @@ const Notifications = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.3) }}
                 layout
+                className="cv-auto"
               >
+
                 <GlassCard
                   className={`p-4 transition-all duration-300 ${
                     !notification.read

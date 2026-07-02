@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Gift, ShoppingCart } from "lucide-react";
@@ -18,7 +18,7 @@ interface CompactOfferCardProps {
   onClick: () => void;
 }
 
-export default function CompactOfferCard({
+function CompactOfferCard({
   offer,
   onClick,
 }: CompactOfferCardProps) {
@@ -94,3 +94,5 @@ export default function CompactOfferCard({
     </Card>
   );
 }
+
+export default memo(CompactOfferCard);

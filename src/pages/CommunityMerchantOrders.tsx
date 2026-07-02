@@ -346,7 +346,7 @@ export default function CommunityMerchantOrders() {
                     {/* Image */}
                     {mainImage && (
                       <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
-                        <img src={mainImage} alt="" className="w-full h-full object-cover" />
+                        <img src={mainImage} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       </div>
                     )}
 

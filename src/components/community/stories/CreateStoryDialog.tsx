@@ -112,7 +112,7 @@ export default function CreateStoryDialog({ open, onOpenChange, onCreated }: Pro
                 {file?.type.startsWith('video/') ? (
                   <video src={preview} className="w-full h-full object-cover" muted autoPlay loop playsInline />
                 ) : (
-                  <img src={preview} className="w-full h-full object-cover" alt="" />
+                  <img src={preview} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                 )}
                 <button
                   onClick={() => { setFile(null); setPreview(null); }}
