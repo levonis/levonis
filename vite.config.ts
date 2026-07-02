@@ -34,7 +34,10 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('three') || id.includes('@react-three')) return 'three';
           if (id.includes('framer-motion')) return 'framer';
           if (id.includes('mapbox-gl')) return 'mapbox';
-          if (id.includes('recharts') || id.includes('d3-')) return 'charts';
+          // Keep Recharts/D3 in the general vendor graph. Splitting them into a
+          // standalone manual chunk caused a production TDZ crash on Safari/iPad
+          // ("Cannot access 'A' before initialization") before React mounted.
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor';
           if (id.includes('html2canvas') || id.includes('jspdf') || id.includes('react-to-pdf')) return 'pdf';
           if (id.includes('html5-qrcode') || id.includes('qrcode.react')) return 'qr';
           if (id.includes('@supabase')) return 'supabase';
