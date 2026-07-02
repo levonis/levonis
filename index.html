@@ -246,7 +246,7 @@
          at FCP (~1.5s on mobile) instead of waiting for React hydration (~7s).
          The H1 below mirrors the size/weight/text of the real homepage hero in
          src/pages/Home.tsx, so the LCP candidate doesn't flip after hydration. -->
-    <div id="root"></div>
+      <div id="root"><div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;background:#234d3f;color:#c7b46c;font-family:'Cairo','Cairo Fallback',Arial,sans-serif"><div><h1 style="margin:0 0 10px;font-size:32px;line-height:1.2;font-weight:900">LEVONIS</h1><p style="margin:0;font-size:15px;color:#efe6c9">جاري تحميل المتجر...</p></div></div></div>
     <script>
       // ===== Chunk error reporter — POSTs to Supabase chunk_load_errors table =====
       (function () {
