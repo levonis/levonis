@@ -60,6 +60,8 @@ export default function AdminLevoCards() {
     return Array.from(g.entries());
   }, [filtered]);
 
+  const [lastBatch, setLastBatch] = useState<any[] | null>(null);
+
   const createBatch = useMutation({
     mutationFn: async () => {
       const { data, error } = await (supabase as any).rpc('admin_generate_levo_cards', {
@@ -69,8 +71,9 @@ export default function AdminLevoCards() {
       if (!data?.success) throw new Error(data?.error);
       return data;
     },
-    onSuccess: (d) => {
+    onSuccess: (d: any) => {
       toast.success(`تم إنشاء ${d.count} بطاقة`);
+      setLastBatch(d.cards || []);
       setCreateOpen(false);
       qc.invalidateQueries({ queryKey: ['admin-levo-cards'] });
     },
