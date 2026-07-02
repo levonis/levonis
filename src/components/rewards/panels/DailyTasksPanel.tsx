@@ -816,7 +816,7 @@ function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; revi
       const { error: reviewError } = await supabase.from('reviews').insert({
         user_id: user.id, product_id: item.product_id, order_item_id: item.id,
         rating, comment, is_verified_purchase: true, points_awarded: reviewPoints,
-      });
+      } as any);
       if (reviewError) throw reviewError;
 
       // Server-validated award
