@@ -2440,6 +2440,7 @@ export type Database = {
         Row: {
           active: boolean
           applicable_delivery_method: string | null
+          applies_to_levo_card_only: boolean
           code: string
           created_at: string
           current_uses: number | null
@@ -2454,6 +2455,7 @@ export type Database = {
         Insert: {
           active?: boolean
           applicable_delivery_method?: string | null
+          applies_to_levo_card_only?: boolean
           code: string
           created_at?: string
           current_uses?: number | null
@@ -2468,6 +2470,7 @@ export type Database = {
         Update: {
           active?: boolean
           applicable_delivery_method?: string | null
+          applies_to_levo_card_only?: boolean
           code?: string
           created_at?: string
           current_uses?: number | null
@@ -3075,6 +3078,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          levo_physical_card_product_id: string | null
           setting_key: string
           setting_value: Json
           updated_at: string
@@ -3082,6 +3086,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          levo_physical_card_product_id?: string | null
           setting_key: string
           setting_value: Json
           updated_at?: string
@@ -3089,6 +3094,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          levo_physical_card_product_id?: string | null
           setting_key?: string
           setting_value?: Json
           updated_at?: string
@@ -5437,6 +5443,206 @@ export type Database = {
           },
         ]
       }
+      levo_card_assignments: {
+        Row: {
+          assigned_at: string
+          card_id: string
+          created_at: string
+          id: string
+          release_reason: string | null
+          released_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          card_id: string
+          created_at?: string
+          id?: string
+          release_reason?: string | null
+          released_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          card_id?: string
+          created_at?: string
+          id?: string
+          release_reason?: string | null
+          released_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "levo_card_assignments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "levo_physical_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      levo_card_subscription_history: {
+        Row: {
+          action: string
+          created_at: string
+          credit_applied: number | null
+          days_remaining: number | null
+          days_used: number | null
+          difference_paid: number | null
+          id: string
+          new_plan_id: string | null
+          new_subscription_id: string | null
+          previous_plan_id: string | null
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          credit_applied?: number | null
+          days_remaining?: number | null
+          days_used?: number | null
+          difference_paid?: number | null
+          id?: string
+          new_plan_id?: string | null
+          new_subscription_id?: string | null
+          previous_plan_id?: string | null
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          credit_applied?: number | null
+          days_remaining?: number | null
+          days_used?: number | null
+          difference_paid?: number | null
+          id?: string
+          new_plan_id?: string | null
+          new_subscription_id?: string | null
+          previous_plan_id?: string | null
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "levo_card_subscription_history_new_subscription_id_fkey"
+            columns: ["new_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "levo_card_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "levo_card_subscription_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "levo_card_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      levo_card_subscriptions: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          membership_card_id: string
+          notes: string | null
+          paid_amount: number
+          payment_method: string | null
+          source_order_id: string | null
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          membership_card_id: string
+          notes?: string | null
+          paid_amount?: number
+          payment_method?: string | null
+          source_order_id?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          membership_card_id?: string
+          notes?: string | null
+          paid_amount?: number
+          payment_method?: string | null
+          source_order_id?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "levo_card_subscriptions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "levo_card_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "levo_card_subscriptions_membership_card_id_fkey"
+            columns: ["membership_card_id"]
+            isOneToOne: false
+            referencedRelation: "membership_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      levo_physical_cards: {
+        Row: {
+          batch_label: string | null
+          card_number: string
+          card_number_last4: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          batch_label?: string | null
+          card_number: string
+          card_number_last4: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_label?: string | null
+          card_number?: string
+          card_number_last4?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       listing_conversations: {
         Row: {
           admin_joined: boolean | null
@@ -5625,71 +5831,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      loyalty_card_codes: {
-        Row: {
-          batch_id: string
-          batch_label: string | null
-          card_id: string
-          code: string
-          code_expires_at: string
-          created_at: string
-          created_by: string | null
-          duration_days: number
-          id: string
-          redeemed_at: string | null
-          redeemed_by_user_id: string | null
-          redeemed_user_printer_id: string | null
-          requires_active_warranty: boolean
-          status: string
-          updated_at: string
-          valid_from: string | null
-        }
-        Insert: {
-          batch_id: string
-          batch_label?: string | null
-          card_id: string
-          code: string
-          code_expires_at: string
-          created_at?: string
-          created_by?: string | null
-          duration_days: number
-          id?: string
-          redeemed_at?: string | null
-          redeemed_by_user_id?: string | null
-          redeemed_user_printer_id?: string | null
-          requires_active_warranty?: boolean
-          status?: string
-          updated_at?: string
-          valid_from?: string | null
-        }
-        Update: {
-          batch_id?: string
-          batch_label?: string | null
-          card_id?: string
-          code?: string
-          code_expires_at?: string
-          created_at?: string
-          created_by?: string | null
-          duration_days?: number
-          id?: string
-          redeemed_at?: string | null
-          redeemed_by_user_id?: string | null
-          redeemed_user_printer_id?: string | null
-          requires_active_warranty?: boolean
-          status?: string
-          updated_at?: string
-          valid_from?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "loyalty_card_codes_card_id_fkey"
-            columns: ["card_id"]
-            isOneToOne: false
-            referencedRelation: "membership_cards"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       loyalty_free_shipping_usage: {
         Row: {
@@ -14607,10 +14748,19 @@ export type Database = {
         }[]
       }
       admin_create_product: { Args: { _values: Json }; Returns: string }
+      admin_delete_levo_card: { Args: { p_card_id: string }; Returns: Json }
       admin_delete_order: { Args: { _order_id: string }; Returns: undefined }
       admin_delete_product: {
         Args: { _product_id: string }
         Returns: undefined
+      }
+      admin_generate_levo_cards: {
+        Args: { p_batch_label: string; p_count: number }
+        Returns: Json
+      }
+      admin_get_levo_card_details: {
+        Args: { p_card_number: string }
+        Returns: Json
       }
       admin_get_order_items_full: {
         Args: { p_order_ids: string[] }
@@ -14776,6 +14926,10 @@ export type Database = {
           cost_price: number
           original_price_usd: number
         }[]
+      }
+      admin_release_levo_card: {
+        Args: { p_assignment_id: string }
+        Returns: Json
       }
       admin_remove_assistant: { Args: { _user_id: string }; Returns: undefined }
       admin_sync_product_options: {
@@ -14965,30 +15119,6 @@ export type Database = {
         Args: { points_amount: number }
         Returns: Json
       }
-      create_loyalty_code_batch:
-        | {
-            Args: {
-              p_batch_label?: string
-              p_card_id: string
-              p_code_expires_at: string
-              p_duration_days: number
-              p_quantity: number
-              p_requires_active_warranty?: boolean
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_batch_label?: string
-              p_card_id: string
-              p_code_expires_at: string
-              p_duration_days: number
-              p_quantity: number
-              p_requires_active_warranty?: boolean
-              p_valid_from?: string
-            }
-            Returns: Json
-          }
       create_notification_if_not_exists: {
         Args: {
           p_is_general?: boolean
@@ -15132,8 +15262,6 @@ export type Database = {
         Args: { comp_id: string }
         Returns: Json
       }
-      expire_loyalty_card_codes: { Args: never; Returns: undefined }
-      expire_loyalty_codes_and_cards: { Args: never; Returns: undefined }
       finalize_and_reveal_rf_for_order:
         | { Args: { p_order_id: string }; Returns: undefined }
         | {
@@ -15147,8 +15275,8 @@ export type Database = {
       }
       generate_cart_code: { Args: never; Returns: string }
       generate_conversation_code: { Args: never; Returns: string }
+      generate_levo_card_number: { Args: never; Returns: string }
       generate_listing_code: { Args: never; Returns: string }
-      generate_loyalty_code: { Args: { p_length?: number }; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_referral_code:
         | { Args: never; Returns: string }
@@ -15368,6 +15496,30 @@ export type Database = {
         }
         Returns: boolean
       }
+      levo_activate_card: { Args: { p_card_number: string }; Returns: Json }
+      levo_release_card: { Args: { p_assignment_id: string }; Returns: Json }
+      levo_subscribe_card: {
+        Args: {
+          p_amount: number
+          p_assignment_id: string
+          p_membership_card_id: string
+          p_payment_method: string
+        }
+        Returns: Json
+      }
+      levo_upgrade_quote: {
+        Args: { p_assignment_id: string; p_new_plan_id: string }
+        Returns: Json
+      }
+      levo_upgrade_subscription: {
+        Args: {
+          p_amount_paid: number
+          p_assignment_id: string
+          p_new_plan_id: string
+          p_payment_method: string
+        }
+        Returns: Json
+      }
       link_random_filament_to_order: {
         Args: { p_order_id: string }
         Returns: undefined
@@ -15407,6 +15559,7 @@ export type Database = {
         }
         Returns: number
       }
+      normalize_levo_card_number: { Args: { p_input: string }; Returns: string }
       normalize_store_slug: { Args: { input: string }; Returns: string }
       normalize_text_key: { Args: { p_text: string }; Returns: string }
       notify_card_cycle_rollovers: { Args: never; Returns: number }
@@ -15512,7 +15665,6 @@ export type Database = {
         Args: { p_competition_id: string; p_word: string }
         Returns: Json
       }
-      redeem_loyalty_card_code: { Args: { p_code: string }; Returns: Json }
       redeem_points_store_product: {
         Args: { p_product_id: string }
         Returns: Json
