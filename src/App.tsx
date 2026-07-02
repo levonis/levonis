@@ -164,7 +164,7 @@ const ActivatePrinter = lazy(() => import("./pages/ActivatePrinter"));
 const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
 const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
 
-const AdminLoyaltyCodeRedemptions = lazy(() => import("./pages/AdminLoyaltyCodeRedemptions"));
+const AdminLevoCards = lazy(() => import("./pages/AdminLevoCards"));
 const AdminUserCardCycles = lazy(() => import("./pages/AdminUserCardCycles"));
 const AdminProtectionPlanBenefits = lazy(() => import("./pages/AdminProtectionPlanBenefits"));
 const AdminChunkErrors = lazy(() => import("./pages/AdminChunkErrors"));
@@ -451,8 +451,9 @@ function AppContent() {
             <Route path="/competitions" element={<Navigate to="/rewards" replace />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path={`${ADMIN_BASE_PATH}/printer-protection`} element={<AdminRoute><AdminPrinterProtection /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/loyalty-card-codes`} element={<Navigate to={`${ADMIN_BASE_PATH}/loyalty-levels`} replace />} />
-            <Route path={`${ADMIN_BASE_PATH}/loyalty-code-redemptions`} element={<AdminRoute><AdminLoyaltyCodeRedemptions /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/loyalty-card-codes`} element={<Navigate to={`${ADMIN_BASE_PATH}/levo-cards`} replace />} />
+            <Route path={`${ADMIN_BASE_PATH}/loyalty-code-redemptions`} element={<Navigate to={`${ADMIN_BASE_PATH}/levo-cards`} replace />} />
+            <Route path={`${ADMIN_BASE_PATH}/levo-cards`} element={<AdminRoute><AdminLevoCards /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/user-card-cycles`} element={<AdminRoute><AdminUserCardCycles /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/protection-plan-benefits`} element={<AdminRoute><AdminProtectionPlanBenefits /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/chunk-errors`} element={<AdminRoute><AdminChunkErrors /></AdminRoute>} />
