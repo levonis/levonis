@@ -186,6 +186,7 @@ import PrefetchOnHover from "@/components/PrefetchOnHover";
 import ViewTransitions from "@/components/ViewTransitions";
 import ImageQualityBoost from "@/components/ImageQualityBoost";
 import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
+import ChunkReloadBoundary from "@/components/ChunkReloadBoundary";
 
 function RouteSuspenseFallback() {
   return <RouteAwareSkeleton />;
