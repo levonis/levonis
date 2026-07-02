@@ -475,6 +475,7 @@ function AppContent() {
             <Route path="*" element={<NotFound />} />
           </Routes>
           </PageFade>
+          </ChunkReloadBoundary>
         </Suspense>
       </main>
       {/* Bottom/Side Navigation Bar */}
