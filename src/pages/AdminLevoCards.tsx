@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Plus, CreditCard, Search, Download, Loader2, Trash2, Unlink, User, History, Copy } from 'lucide-react';
+import { ArrowRight, Plus, CreditCard, Search, Download, Loader2, Trash2, Unlink, User, History, Copy, Printer, X } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { ADMIN_BASE_PATH } from '@/config/adminConfig';
 
