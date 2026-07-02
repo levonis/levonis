@@ -365,6 +365,20 @@ const AdminCoupons = () => {
                 <Label htmlFor="active" className="text-sm font-medium cursor-pointer">فعال</Label>
               </div>
 
+              <div className="flex items-center gap-3 py-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3">
+                <Switch
+                  id="levo_only"
+                  checked={formData.applies_to_levo_card_only}
+                  onCheckedChange={(checked) => setFormData({ ...formData, applies_to_levo_card_only: checked })}
+                />
+                <Label htmlFor="levo_only" className="text-sm font-medium cursor-pointer flex-1">
+                  حصري لبطاقة ليفو الفيزيائية
+                  <p className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                    يعمل فقط عندما تحتوي السلة على منتج بطاقة ليفو فقط (بدون منتجات أخرى).
+                  </p>
+                </Label>
+              </div>
+
               <Button
                 type="submit"
                 className="admin-btn-primary w-full"
