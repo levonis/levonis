@@ -30,6 +30,7 @@ const AdminCoupons = () => {
     expires_at: '',
     active: true,
     applicable_delivery_method: '' as string,
+    applies_to_levo_card_only: false,
   });
 
   useEffect(() => {
