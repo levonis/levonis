@@ -1236,7 +1236,7 @@ const Cart = () => {
 
       // 2) Fall back to standard coupon validation
       const { data: result, error } = await supabase
-        .rpc('validate_coupon_with_rate_limit', { coupon_code: codeTrim.toUpperCase() });
+        .rpc('validate_coupon_with_rate_limit', { coupon_code: codeTrim.toUpperCase(), p_cart_product_ids: (cartItems || []).map((i: any) => i.product_id).filter(Boolean) } as any);
 
       if (error) {
         toast({
