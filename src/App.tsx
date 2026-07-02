@@ -294,6 +294,7 @@ function AppContent() {
         className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
       >
         <Suspense fallback={<RouteSuspenseFallback />}>
+          <ChunkReloadBoundary fallback={<RouteSuspenseFallback />}>
           <PageFade>
           <Routes>
             <Route path="/" element={<Home />} />
