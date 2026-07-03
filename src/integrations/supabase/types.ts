@@ -5620,6 +5620,7 @@ export type Database = {
           nfc_token: string | null
           notes: string | null
           pin_hash: string | null
+          pin_plaintext: string | null
           qr_token: string | null
           status: string
           updated_at: string
@@ -5636,6 +5637,7 @@ export type Database = {
           nfc_token?: string | null
           notes?: string | null
           pin_hash?: string | null
+          pin_plaintext?: string | null
           qr_token?: string | null
           status?: string
           updated_at?: string
@@ -5652,6 +5654,7 @@ export type Database = {
           nfc_token?: string | null
           notes?: string | null
           pin_hash?: string | null
+          pin_plaintext?: string | null
           qr_token?: string | null
           status?: string
           updated_at?: string
@@ -14951,12 +14954,27 @@ export type Database = {
         Returns: Json
       }
       admin_remove_assistant: { Args: { _user_id: string }; Returns: undefined }
+      admin_reveal_levo_batch: {
+        Args: { p_batch_label: string }
+        Returns: Json
+      }
+      admin_reveal_levo_card: { Args: { p_card_id: string }; Returns: Json }
       admin_sync_product_options: {
         Args: { _options: Json; _product_id: string }
         Returns: undefined
       }
       admin_update_level_prize_claim: {
         Args: { p_claim_id: string; p_new_status: string; p_notes?: string }
+        Returns: Json
+      }
+      admin_update_levo_card_product: {
+        Args: {
+          p_description_ar?: string
+          p_name_ar?: string
+          p_name_en?: string
+          p_name_ku?: string
+          p_price: number
+        }
         Returns: Json
       }
       admin_update_order: {
