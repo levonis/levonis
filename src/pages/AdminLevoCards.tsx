@@ -256,6 +256,12 @@ export default function AdminLevoCards() {
         {lastBatch && (
           <BatchRevealDialog cards={lastBatch} onClose={() => setLastBatch(null)} />
         )}
+        {revealCards && (
+          <BatchRevealDialog cards={revealCards} onClose={() => setRevealCards(null)} />
+        )}
+        {productOpen && (
+          <ProductSettingsDialog onClose={() => setProductOpen(false)} />
+        )}
       </div>
     </div>
   );
