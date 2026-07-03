@@ -61,21 +61,10 @@ const BannerImage = memo(({
     [src, width, quality]
   );
 
-  // Preload the AVIF variant of the first banner (browser falls back to WebP if unsupported).
-  useEffect(() => {
-    if (isFirst && typeof window !== 'undefined') {
-      const existingPreload = document.querySelector(`link[href="${avifSrc}"]`);
-      if (!existingPreload) {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'image';
-        link.href = avifSrc;
-        link.type = 'image/avif';
-        link.fetchPriority = 'high';
-        document.head.appendChild(link);
-      }
-    }
-  }, [avifSrc, isFirst]);
+  // NOTE: LCP preload is emitted from index.html's inline banner-fetch script
+  // (matches format=avif, quality=62, width=800 exactly). We no longer emit a
+  // runtime <link rel=preload> here — doing both caused a triple-download.
+
 
   return (
     <picture>
