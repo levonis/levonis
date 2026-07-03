@@ -368,6 +368,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             link_direct_commission_to_cod,
             has_pre_order,
             personal_delivery_cost,
+            is_system_reserved,
             categories!products_category_id_fkey (
               id,
               name_ar,
