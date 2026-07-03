@@ -204,13 +204,13 @@ const GroupedCartItem = ({
                   <div className="flex items-center justify-between">
                     {!isLocked ? (
                       <div className="flex items-center gap-1 bg-background rounded border border-border/40">
-                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t('cart_decrease_qty')} className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
                           disabled={item.quantity <= 1}>
                           <Minus className="h-2.5 w-2.5" />
                         </Button>
                         <AnimatedQuantity value={item.quantity} className="w-5 text-center font-bold text-[11px]" />
-                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t('cart_increase_qty')} className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}
                           disabled={item.quantity >= 50}>
                           <Plus className="h-2.5 w-2.5" />
