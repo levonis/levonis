@@ -1087,6 +1087,7 @@ export const en: TranslationKeys = {
   cart_iqd_short: 'IQD',
   cart_total_label: 'Total:',
   cart_remove_aria: 'Remove item',
+  a11y_skip_to_main: 'Skip to main content',
   cart_gift_free_badge: '🎁 Free gift',
   cart_gift_free: 'Free',
   cart_max_bundles: 'Max: {max} bundles',

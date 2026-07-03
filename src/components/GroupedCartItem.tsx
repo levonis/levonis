@@ -169,7 +169,7 @@ const GroupedCartItem = ({
                   {isItemOOS && (
                     <div className="flex items-center justify-between gap-1 mb-1 p-1 rounded bg-destructive/10">
                       <span className="text-[10px] font-bold text-destructive">⚠️ انتهى من المخزون</span>
-                      <Button size="icon" variant="ghost" className="h-5 w-5 text-destructive" onClick={() => handleRemove(item.id)}>
+                      <Button size="icon" variant="ghost" aria-label={t('cart_remove_aria')} className="h-5 w-5 text-destructive" onClick={() => handleRemove(item.id)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
@@ -204,13 +204,13 @@ const GroupedCartItem = ({
                   <div className="flex items-center justify-between">
                     {!isLocked ? (
                       <div className="flex items-center gap-1 bg-background rounded border border-border/40">
-                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t('cart_decrease_qty')} className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
                           disabled={item.quantity <= 1}>
                           <Minus className="h-2.5 w-2.5" />
                         </Button>
                         <AnimatedQuantity value={item.quantity} className="w-5 text-center font-bold text-[11px]" />
-                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t('cart_increase_qty')} className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}
                           disabled={item.quantity >= 50}>
                           <Plus className="h-2.5 w-2.5" />
@@ -227,7 +227,7 @@ const GroupedCartItem = ({
                         </span>
                       )}
                       {!isLocked && (
-                        <Button type="button" size="icon" variant="ghost"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t('cart_remove_aria')}
                           className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 touch-manipulation active:scale-75 transition-transform"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemove(item.id); }}>
                           <Trash2 className="h-3 w-3" />
@@ -259,7 +259,7 @@ const GroupedCartItem = ({
                       <span className="text-[11px] font-black text-primary">
                         {formatPrice(addon.price_iqd * item.quantity)} د.ع
                       </span>
-                      <Button type="button" size="icon" variant="ghost" disabled={isRemovingInsurance}
+                      <Button type="button" size="icon" variant="ghost" aria-label={t('cart_remove_aria')} disabled={isRemovingInsurance}
                         className="text-destructive hover:bg-destructive/10 h-6 w-6"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeInsurance(item.id); }}>
                         <Trash2 className="h-3 w-3" />

@@ -9,6 +9,7 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import LanguageProvider from "@/components/LanguageProvider";
+import { useLanguage } from "@/lib/i18n";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import { CartProvider } from "@/hooks/useCart";
 import AdminRoute from "@/components/AdminRoute";
@@ -203,6 +204,7 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { visible: islandVisible } = useIsland();
+  const { t } = useLanguage();
   const [mountedSearch, setMountedSearch] = useState(false);
   useEffect(() => {
     const ric = (window as any).requestIdleCallback as
@@ -290,7 +292,14 @@ function AppContent() {
           </Suspense>
         </ProfileExpansionShell>
       )}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-primary-foreground focus:shadow-lg"
+      >
+        {t('a11y_skip_to_main')}
+      </a>
       <main
+        id="main-content"
         style={{ paddingTop: mainPaddingTop }}
         className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
       >
