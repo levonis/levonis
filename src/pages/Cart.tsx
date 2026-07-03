@@ -3068,6 +3068,7 @@ const Cart = () => {
                                   type="button"
                                   size="icon"
                                   variant="ghost"
+                                  aria-label={t('cart_decrease_qty')}
                                   className="h-7 w-7 touch-manipulation active:scale-90 transition-transform"
                                   onClick={(e) => {
                                     e.preventDefault();
@@ -3083,6 +3084,7 @@ const Cart = () => {
                                   type="button"
                                   size="icon"
                                   variant="ghost"
+                                  aria-label={t('cart_increase_qty')}
                                   className="h-7 w-7 touch-manipulation active:scale-90 transition-transform"
                                   disabled={item.quantity >= 50}
                                   onClick={(e) => {
