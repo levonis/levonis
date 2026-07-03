@@ -9,6 +9,7 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import LanguageProvider from "@/components/LanguageProvider";
+import { useLanguage } from "@/lib/i18n";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import { CartProvider } from "@/hooks/useCart";
 import AdminRoute from "@/components/AdminRoute";
