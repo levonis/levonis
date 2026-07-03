@@ -5484,6 +5484,72 @@ export type Database = {
           },
         ]
       }
+      levo_card_orders: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          assigned_card_id: string | null
+          birth_date: string
+          created_at: string
+          email: string
+          full_name_triple: string
+          id: string
+          order_id: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_card_id?: string | null
+          birth_date: string
+          created_at?: string
+          email: string
+          full_name_triple: string
+          id?: string
+          order_id?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_card_id?: string | null
+          birth_date?: string
+          created_at?: string
+          email?: string
+          full_name_triple?: string
+          id?: string
+          order_id?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "levo_card_orders_assigned_card_id_fkey"
+            columns: ["assigned_card_id"]
+            isOneToOne: false
+            referencedRelation: "levo_physical_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "levo_card_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       levo_card_subscription_history: {
         Row: {
           action: string
@@ -14988,6 +15054,10 @@ export type Database = {
         Args: { p_buyer_user_id: string; p_code: string }
         Returns: Json
       }
+      approve_levo_card_order: {
+        Args: { p_admin_notes?: string; p_request_id: string }
+        Returns: Json
+      }
       approve_price_protection_claim: {
         Args: {
           p_admin_notes?: string
@@ -15026,6 +15096,10 @@ export type Database = {
       calculate_user_level: { Args: { points: number }; Returns: string }
       can_access_stl_library: { Args: { _uid: string }; Returns: boolean }
       can_read_print_file: { Args: { object_name: string }; Returns: boolean }
+      cancel_levo_card_request: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
       cancel_order: {
         Args: { p_cancelled_by?: string; p_order_id: string }
         Returns: Json
@@ -15734,6 +15808,10 @@ export type Database = {
         Args: { p_serial_number: string; p_user_id: string }
         Returns: string
       }
+      reject_levo_card_order: {
+        Args: { p_reason: string; p_request_id: string }
+        Returns: Json
+      }
       reject_price_protection_claim: {
         Args: { p_claim_id: string; p_reason: string }
         Returns: Json
@@ -15793,6 +15871,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      submit_levo_card_request: {
+        Args: { p_birth_date: string; p_email: string; p_full_name: string }
+        Returns: Json
       }
       submit_stack_game_score: {
         Args: { _session_id: string }
