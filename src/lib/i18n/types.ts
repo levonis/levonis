@@ -1090,6 +1090,7 @@ export type TranslationKeys = {
   cart_iqd_short: string;
   cart_total_label: string;
   cart_remove_aria: string;
+  a11y_skip_to_main: string;
   cart_gift_free_badge: string;
   cart_gift_free: string;
   cart_max_bundles: string;
