@@ -228,6 +228,9 @@ export default function AdminLevoCards() {
                       }`}>
                         {c.status === 'assigned' ? 'مفعّلة' : c.status === 'revoked' ? 'ملغاة' : 'متاحة'}
                       </Badge>
+                      <Button size="sm" variant="ghost" title="عرض PIN و QR" onClick={() => revealSingle(c.id)} disabled={revealLoading}>
+                        <Eye className="h-3 w-3" />
+                      </Button>
                       {c.status === 'assigned' && (
                         <Button size="sm" variant="outline" onClick={() => setDetailNumber(c.card_number)}>
                           <User className="h-3 w-3 ml-1" /> المالك
