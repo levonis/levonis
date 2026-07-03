@@ -187,6 +187,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
         )}
 
         {user && <LevoCardManager />}
+        {user && <OrderLevoCardCta />}
         {user && <LevoCardActivator />}
 
         {user && (
