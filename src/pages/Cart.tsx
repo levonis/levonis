@@ -1450,6 +1450,24 @@ const Cart = () => {
       return;
     }
 
+    // Levo card: block mixing + require form confirmation
+    if (hasLevoMixed) {
+      toast({
+        title: 'لا يمكن دمج بطاقة ليفو',
+        description: 'بطاقة ليفو الفيزيائية يجب أن تكون وحدها في السلة. أزل المنتجات الأخرى أولاً.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (hasLevoCard && !levoFormConfirmed) {
+      toast({
+        title: 'أكمل بيانات طلب البطاقة',
+        description: 'يجب تعبئة الاسم الثلاثي وتاريخ الميلاد والإيميل وتأكيدها قبل الدفع.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Block mixing different cart categories (direct, preorder air/sea, community,
     // bundles, offers, random filament, gifts). All 8 are mutually exclusive.
     {
