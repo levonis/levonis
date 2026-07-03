@@ -1087,6 +1087,7 @@ export const ar: TranslationKeys = {
   cart_iqd_short: 'د.ع',
   cart_total_label: 'المجموع:',
   cart_remove_aria: 'حذف المنتج',
+  a11y_skip_to_main: 'تخطي إلى المحتوى الرئيسي',
   cart_gift_free_badge: '🎁 هدية مجانية',
   cart_gift_free: 'مجاناً',
   cart_max_bundles: 'الحد الأقصى: {max} باقة',
