@@ -259,7 +259,7 @@ const GroupedCartItem = ({
                       <span className="text-[11px] font-black text-primary">
                         {formatPrice(addon.price_iqd * item.quantity)} د.ع
                       </span>
-                      <Button type="button" size="icon" variant="ghost" disabled={isRemovingInsurance}
+                      <Button type="button" size="icon" variant="ghost" aria-label={t('cart_remove_aria')} disabled={isRemovingInsurance}
                         className="text-destructive hover:bg-destructive/10 h-6 w-6"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeInsurance(item.id); }}>
                         <Trash2 className="h-3 w-3" />
