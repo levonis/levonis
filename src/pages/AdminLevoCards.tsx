@@ -278,37 +278,89 @@ function BatchRevealDialog({ cards, onClose }: { cards: any[]; onClose: () => vo
     a.href = url; a.download = `levo-batch-${Date.now()}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
-  const doPrint = () => window.print();
+
+  const doPrint = async () => {
+    // Serialize each QR SVG for the print window
+    const items = cards.map((c) => {
+      const svgEl = document.getElementById(`qr-${c.id}`);
+      const qrSvg = svgEl ? svgEl.outerHTML : '';
+      const num = String(c.card_number || '').replace(/(.{4})/g, '$1 ').trim();
+      return `
+        <div class="card">
+          <div class="qr">${qrSvg}</div>
+          <div class="info">
+            <div class="brand">LEVO</div>
+            <div class="num">${num}</div>
+            <div class="row"><span class="k">PIN</span><span class="v">${c.pin || '—'}</span></div>
+            <div class="nfc">NFC: ${c.nfc_token || ''}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"/>
+      <title>بطاقات ليفو</title>
+      <style>
+        @page { size: A4; margin: 10mm; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, "Segoe UI", Tahoma, Arial, sans-serif; margin: 0; padding: 8px; color: #111; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+        .card {
+          border: 1.5px solid #111; border-radius: 10px; padding: 8px;
+          display: flex; align-items: center; gap: 10px;
+          height: 55mm; break-inside: avoid; page-break-inside: avoid;
+          background: linear-gradient(135deg, #f8fafc, #eef2ff);
+        }
+        .qr { background:#fff; padding:4px; border-radius:6px; flex: 0 0 auto; }
+        .qr svg { display:block; width: 40mm; height: 40mm; }
+        .info { flex: 1; min-width: 0; }
+        .brand { font-weight: 800; font-size: 14px; letter-spacing: 2px; color:#4338ca; }
+        .num { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+               font-size: 14px; letter-spacing: 3px; margin-top: 4px; word-break: keep-all; }
+        .row { margin-top: 6px; display:flex; justify-content: space-between; align-items:center;
+               background:#111; color:#fff; padding: 4px 8px; border-radius: 6px; }
+        .k { font-size: 10px; opacity: .75; }
+        .v { font-family: ui-monospace, Menlo, monospace; font-weight: 800; letter-spacing: 4px; font-size: 14px; }
+        .nfc { margin-top: 4px; font-size: 8px; color:#555; word-break: break-all; }
+      </style></head><body>
+      <div class="grid">${items}</div>
+      <script>window.onload = () => { setTimeout(() => { window.print(); }, 300); };<\/script>
+      </body></html>`;
+
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (!w) { toast.error('امنع المتصفح النوافذ المنبثقة أولاً'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="!overflow-hidden !max-h-none max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>بيانات الدفعة الجديدة ({cards.length} بطاقة)</span>
+            <span>بيانات البطاقات ({cards.length})</span>
             <Button size="icon" variant="ghost" onClick={onClose}><X className="h-4 w-4" /></Button>
           </DialogTitle>
         </DialogHeader>
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
-          ⚠️ احفظ هذه البيانات الآن — لن تظهر مرة أخرى. الرمز السري (PIN) ورموز QR/NFC لا يمكن استرجاعها لاحقًا.
+          ⚠️ هذه بيانات حساسة — الرمز السري (PIN) ورموز QR/NFC مخصصة للأدمن فقط.
         </div>
-        <div className="flex gap-2 py-2 print:hidden">
+        <div className="flex gap-2 py-2">
           <Button size="sm" onClick={exportCsv}><Download className="h-3 w-3 ml-1" /> CSV كامل</Button>
           <Button size="sm" variant="outline" onClick={doPrint}><Printer className="h-3 w-3 ml-1" /> طباعة</Button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[70vh] print:max-h-none">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[70vh]">
           {cards.map((c) => (
-            <div key={c.id} className="border rounded-lg p-3 bg-background break-inside-avoid">
+            <div key={c.id} className="border rounded-lg p-3 bg-background">
               <div className="flex items-center gap-3">
                 <div className="bg-white p-1 rounded">
-                  <QRCodeSVG value={c.qr_token} size={80} />
+                  <QRCodeSVG id={`qr-${c.id}`} value={c.qr_token || ''} size={80} />
                 </div>
                 <div className="flex-1 min-w-0 text-right">
                   <code className="font-mono text-xs tracking-widest">
-                    {c.card_number.replace(/(.{4})/g, '$1 ').trim()}
+                    {String(c.card_number || '').replace(/(.{4})/g, '$1 ').trim()}
                   </code>
                   <div className="mt-1 text-xs">
                     <span className="text-muted-foreground">PIN: </span>
-                    <span className="font-mono font-bold tracking-widest">{c.pin}</span>
+                    <span className="font-mono font-bold tracking-widest">{c.pin || '—'}</span>
                   </div>
                   <div className="text-[10px] text-muted-foreground truncate mt-0.5">NFC: {c.nfc_token}</div>
                 </div>
@@ -320,6 +372,109 @@ function BatchRevealDialog({ cards, onClose }: { cards: any[]; onClose: () => vo
     </Dialog>
   );
 }
+
+function ProductSettingsDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ['levo-card-product-admin'],
+    queryFn: async () => {
+      const { data: idRes } = await (supabase as any).rpc('get_levo_card_product_id');
+      const productId = idRes as string;
+      if (!productId) return null;
+      const { data } = await supabase
+        .from('products')
+        .select('id, name_ar, name_en, name_ku, description_ar, price, image_url')
+        .eq('id', productId)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  const [price, setPrice] = useState<string>('');
+  const [nameAr, setNameAr] = useState('');
+  const [nameEn, setNameEn] = useState('');
+  const [nameKu, setNameKu] = useState('');
+  const [descAr, setDescAr] = useState('');
+  const [initialized, setInitialized] = useState(false);
+
+  if (data && !initialized) {
+    setPrice(String(data.price ?? ''));
+    setNameAr(data.name_ar || '');
+    setNameEn(data.name_en || '');
+    setNameKu(data.name_ku || '');
+    setDescAr(data.description_ar || '');
+    setInitialized(true);
+  }
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const p = Number(price);
+      if (!Number.isFinite(p) || p < 0) throw new Error('سعر غير صالح');
+      const { data: res, error } = await (supabase as any).rpc('admin_update_levo_card_product', {
+        p_price: p,
+        p_name_ar: nameAr || null,
+        p_name_en: nameEn || null,
+        p_name_ku: nameKu || null,
+        p_description_ar: descAr || null,
+      });
+      if (error) throw error;
+      if (!res?.success) throw new Error(res?.error);
+    },
+    onSuccess: () => {
+      toast.success('تم حفظ إعدادات منتج البطاقة');
+      qc.invalidateQueries({ queryKey: ['levo-card-product'] });
+      qc.invalidateQueries({ queryKey: ['levo-card-product-admin'] });
+      onClose();
+    },
+    onError: (e: any) => toast.error(e?.message || 'فشل الحفظ'),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="!overflow-hidden !max-h-none max-w-md">
+        <DialogHeader>
+          <DialogTitle>إعدادات منتج البطاقة الفيزيائية</DialogTitle>
+        </DialogHeader>
+        {isLoading || !data ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        ) : (
+          <div className="space-y-3 overflow-y-auto max-h-[70vh]">
+            <div>
+              <Label className="text-xs">السعر (د.ع)</Label>
+              <Input type="number" min={0} value={price} onChange={e => setPrice(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">الاسم (عربي)</Label>
+              <Input value={nameAr} onChange={e => setNameAr(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">الاسم (English)</Label>
+              <Input value={nameEn} onChange={e => setNameEn(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">الاسم (کوردی)</Label>
+              <Input value={nameKu} onChange={e => setNameKu(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">الوصف (عربي)</Label>
+              <Input value={descAr} onChange={e => setDescAr(e.target.value)} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              هذا منتج نظام محجوز ولا يمكن حذفه. يظهر للمستخدمين بسعر ثابت وتُشحن البطاقة كأي منتج آخر.
+            </p>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>إلغاء</Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending || isLoading}>
+            {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'حفظ'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function CardDetailDialog({ cardNumber, onClose }: { cardNumber: string; onClose: () => void }) {
   const qc = useQueryClient();
