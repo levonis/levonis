@@ -13,6 +13,7 @@ import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import LevoCardActivator from "@/components/rewards/LevoCardActivator";
 import LevoCardManager from "@/components/rewards/LevoCardManager";
+import OrderLevoCardCta from "@/components/rewards/OrderLevoCardCta";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
 import { useNumberFormat } from "@/lib/i18n/numberFormat";
