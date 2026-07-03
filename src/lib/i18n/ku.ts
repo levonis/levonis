@@ -1087,6 +1087,7 @@ export const ku: TranslationKeys = {
   cart_iqd_short: 'د.ع',
   cart_total_label: 'کۆی گشتی:',
   cart_remove_aria: 'لابردنی بەرهەم',
+  a11y_skip_to_main: 'بازدان بۆ ناوەڕۆکی سەرەکی',
   cart_gift_free_badge: '🎁 دیاری بەخۆڕایی',
   cart_gift_free: 'بەخۆڕایی',
   cart_max_bundles: 'زۆرترین: {max} باکس',
