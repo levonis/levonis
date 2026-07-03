@@ -156,6 +156,10 @@ export async function exportDraftToPDF(draft: DraftExportData) {
   document.body.appendChild(container);
 
   try {
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
@@ -173,6 +177,7 @@ export async function exportDraftToPDF(draft: DraftExportData) {
       unit: 'mm',
       format: 'a4',
     });
+
 
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
