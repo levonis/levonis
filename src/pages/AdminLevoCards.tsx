@@ -146,6 +146,9 @@ export default function AdminLevoCards() {
             <CreditCard className="h-4 w-4" /> إدارة بطاقات ليفو
           </h1>
           <div className="flex gap-1">
+            <Button size="sm" variant="outline" onClick={() => setProductOpen(true)}>
+              <Settings className="h-3 w-3 ml-1" /> منتج البطاقة
+            </Button>
             <Button size="sm" variant="outline" onClick={exportCsv}>
               <Download className="h-3 w-3 ml-1" /> CSV
             </Button>
