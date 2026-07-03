@@ -4115,7 +4115,7 @@ const Cart = () => {
                   className="w-full mb-3 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
                   size="lg"
                   onClick={handleCheckoutClick}
-                  disabled={isCheckingOut || isDirectSaleProcessing || (!isDirectSaleCart && !hasEnoughBalance) || !termsAccepted || hasOutOfStockItems}
+                  disabled={isCheckingOut || isDirectSaleProcessing || (!isDirectSaleCart && !hasEnoughBalance) || !termsAccepted || hasOutOfStockItems || hasLevoMixed || (hasLevoCard && !levoFormConfirmed)}
                 >
                   {isCheckingOut || isDirectSaleProcessing ? (
                     <>
