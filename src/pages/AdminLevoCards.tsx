@@ -197,9 +197,14 @@ export default function AdminLevoCards() {
         ) : (
           grouped.map(([label, arr]) => (
             <Card key={label} className="overflow-hidden">
-              <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
-                <div className="text-sm font-semibold">{label}</div>
-                <Badge variant="outline" className="text-[10px]">{arr.length} بطاقة</Badge>
+              <div className="p-3 border-b bg-muted/30 flex items-center justify-between gap-2">
+                <div className="text-sm font-semibold truncate">{label}</div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px]">{arr.length} بطاقة</Badge>
+                  <Button size="sm" variant="outline" onClick={() => revealBatch(label)} disabled={revealLoading}>
+                    <Printer className="h-3 w-3 ml-1" /> عرض/طباعة الأسرار
+                  </Button>
+                </div>
               </div>
               <div className="divide-y">
                 {arr.map(c => (
