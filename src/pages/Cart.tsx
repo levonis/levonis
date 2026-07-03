@@ -2878,7 +2878,7 @@ const Cart = () => {
                                   <Package className="h-2.5 w-2.5" /> {t('cart_storage_badge')}
                                 </span>
                               </div>
-                              <Button type="button" size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0" onClick={handleAnimatedRemove}>
+                              <Button type="button" size="icon" variant="ghost" aria-label={t('cart_remove_aria')} className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0" onClick={handleAnimatedRemove}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
