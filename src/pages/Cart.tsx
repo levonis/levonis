@@ -2813,7 +2813,7 @@ const Cart = () => {
                                   <Package className="h-2.5 w-2.5" /> {t('cart_bundle_badge')}
                                 </span>
                               </div>
-                              <Button type="button" size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0" onClick={handleAnimatedRemove}>
+                              <Button type="button" size="icon" variant="ghost" aria-label={t('cart_remove_aria')} className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0" onClick={handleAnimatedRemove}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -2822,11 +2822,11 @@ const Cart = () => {
                                 <AnimatedPrice value={bundlePrice} formatFn={formatPrice} /> <span className="text-[10px] font-normal text-muted-foreground">{t('cart_iqd_short')}</span>
                               </span>
                               <div className="flex items-center gap-1 bg-muted/30 rounded-lg border border-border/40">
-                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>
+                                <Button type="button" size="icon" variant="ghost" aria-label={t('cart_decrease_qty')} className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>
                                   <Minus className="h-3 w-3" />
                                 </Button>
                                 <AnimatedQuantity value={item.quantity} className="w-6 text-center font-bold text-xs" />
-                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)} disabled={item.quantity >= effectiveMax}>
+                                <Button type="button" size="icon" variant="ghost" aria-label={t('cart_increase_qty')} className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)} disabled={item.quantity >= effectiveMax}>
                                   <Plus className="h-3 w-3" />
                                 </Button>
                               </div>
