@@ -165,6 +165,7 @@ const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
 const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
 
 const AdminLevoCards = lazy(() => import("./pages/AdminLevoCards"));
+const AdminLevoCardOrders = lazy(() => import("./pages/AdminLevoCardOrders"));
 const AdminUserCardCycles = lazy(() => import("./pages/AdminUserCardCycles"));
 const AdminProtectionPlanBenefits = lazy(() => import("./pages/AdminProtectionPlanBenefits"));
 const AdminChunkErrors = lazy(() => import("./pages/AdminChunkErrors"));
@@ -454,6 +455,8 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/loyalty-card-codes`} element={<Navigate to={`${ADMIN_BASE_PATH}/levo-cards`} replace />} />
             <Route path={`${ADMIN_BASE_PATH}/loyalty-code-redemptions`} element={<Navigate to={`${ADMIN_BASE_PATH}/levo-cards`} replace />} />
             <Route path={`${ADMIN_BASE_PATH}/levo-cards`} element={<AdminRoute><AdminLevoCards /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/levo-card-orders`} element={<AdminRoute><AdminLevoCardOrders /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/loyalty/card-orders`} element={<Navigate to={`${ADMIN_BASE_PATH}/levo-card-orders`} replace />} />
             <Route path={`${ADMIN_BASE_PATH}/user-card-cycles`} element={<AdminRoute><AdminUserCardCycles /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/protection-plan-benefits`} element={<AdminRoute><AdminProtectionPlanBenefits /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/chunk-errors`} element={<AdminRoute><AdminChunkErrors /></AdminRoute>} />

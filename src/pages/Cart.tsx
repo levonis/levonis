@@ -38,6 +38,8 @@ import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
+import LevoCardOrderForm from '@/components/rewards/LevoCardOrderForm';
+import { cartHasLevoCard, cartHasLevoCardWithOther } from '@/lib/isLevoCardCart';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { getGuardedCartItemPrice, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
@@ -49,6 +51,9 @@ import WavyColors from "@/components/WavyColors";
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart, cartSaleType } = useCart();
+  const [levoFormConfirmed, setLevoFormConfirmed] = useState(false);
+  const hasLevoCard = cartHasLevoCard(items);
+  const hasLevoMixed = cartHasLevoCardWithOther(items);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -1441,6 +1446,24 @@ const Cart = () => {
         title: t('cart_terms_required_title'),
         description: t('cart_terms_required_desc'),
         variant: "destructive",
+      });
+      return;
+    }
+
+    // Levo card: block mixing + require form confirmation
+    if (hasLevoMixed) {
+      toast({
+        title: 'لا يمكن دمج بطاقة ليفو',
+        description: 'بطاقة ليفو الفيزيائية يجب أن تكون وحدها في السلة. أزل المنتجات الأخرى أولاً.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (hasLevoCard && !levoFormConfirmed) {
+      toast({
+        title: 'أكمل بيانات طلب البطاقة',
+        description: 'يجب تعبئة الاسم الثلاثي وتاريخ الميلاد والإيميل وتأكيدها قبل الدفع.',
+        variant: 'destructive',
       });
       return;
     }
@@ -3116,6 +3139,15 @@ const Cart = () => {
               {/* Cart Upsell Offers */}
               <CartUpsellOffers />
 
+              {hasLevoCard && (
+                <LevoCardOrderForm onConfirmedChange={setLevoFormConfirmed} />
+              )}
+              {hasLevoMixed && (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  ⚠️ لا يمكن دمج بطاقة ليفو الفيزيائية مع منتجات أخرى. يرجى إزالة المنتجات الأخرى من السلة لإتمام طلب البطاقة.
+                </div>
+              )}
+
               {/* Cart Actions */}
               <div className="flex gap-2">
                 <Button
@@ -4083,7 +4115,7 @@ const Cart = () => {
                   className="w-full mb-3 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
                   size="lg"
                   onClick={handleCheckoutClick}
-                  disabled={isCheckingOut || isDirectSaleProcessing || (!isDirectSaleCart && !hasEnoughBalance) || !termsAccepted || hasOutOfStockItems}
+                  disabled={isCheckingOut || isDirectSaleProcessing || (!isDirectSaleCart && !hasEnoughBalance) || !termsAccepted || hasOutOfStockItems || hasLevoMixed || (hasLevoCard && !levoFormConfirmed)}
                 >
                   {isCheckingOut || isDirectSaleProcessing ? (
                     <>
