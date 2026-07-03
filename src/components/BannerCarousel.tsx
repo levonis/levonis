@@ -61,21 +61,10 @@ const BannerImage = memo(({
     [src, width, quality]
   );
 
-  // Preload the AVIF variant of the first banner (browser falls back to WebP if unsupported).
-  useEffect(() => {
-    if (isFirst && typeof window !== 'undefined') {
-      const existingPreload = document.querySelector(`link[href="${avifSrc}"]`);
-      if (!existingPreload) {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'image';
-        link.href = avifSrc;
-        link.type = 'image/avif';
-        link.fetchPriority = 'high';
-        document.head.appendChild(link);
-      }
-    }
-  }, [avifSrc, isFirst]);
+  // NOTE: LCP preload is emitted from index.html's inline banner-fetch script
+  // (matches format=avif, quality=62, width=800 exactly). We no longer emit a
+  // runtime <link rel=preload> here — doing both caused a triple-download.
+
 
   return (
     <picture>
@@ -133,9 +122,18 @@ const BannerCarousel = memo(() => {
       if (error) throw error;
       return data as Banner[];
     },
+    // Hydrate from the inline preload in index.html so the LCP path avoids
+    // a second network round-trip. See index.html <script> that stashes
+    // window.__levoBanners.
+    initialData: () => {
+      if (typeof window === 'undefined') return undefined;
+      const cached = (window as any).__levoBanners;
+      return Array.isArray(cached) && cached.length ? (cached as Banner[]) : undefined;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes - match other queries
   });
+
 
   // Auto-play is driven entirely by the golden border animation's onAnimationEnd
   // (see SVG below). This guarantees the counter and slide transition are perfectly

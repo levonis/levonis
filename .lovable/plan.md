@@ -1,123 +1,143 @@
-## نظرة عامة
+# خطة إصلاح تقرير التدقيق الكامل (12 بند)
 
-بناء تدفق كامل لطلب بطاقة ليفو الفيزيائية: منع الخلط مع منتجات أخرى، جمع بيانات المستخدم في السلة، إرسال الطلب للأدمن، وعند الموافقة تخصيص أول بطاقة متاحة تلقائيًا + إنشاء فاتورة + إرسال البيانات كاملة عبر الإيميل.
-
----
-
-## 1) قاعدة البيانات
-
-**Migration جديد يضيف:**
-
-- جدول `levo_card_orders`:
-  - `id, user_id, order_id (nullable, يُملأ عند الدفع), status ('pending_payment' | 'paid_pending_approval' | 'approved' | 'rejected')`
-  - `full_name_triple TEXT` (الاسم الثلاثي)
-  - `birth_date DATE`
-  - `email TEXT`
-  - `assigned_card_id UUID` (يُملأ عند الموافقة)
-  - `admin_notes TEXT, rejection_reason TEXT`
-  - `approved_at, approved_by, created_at, updated_at`
-  - RLS: مالك يقرأ/ينشئ الخاص به فقط، أدمن يقرأ/يعدل الكل
-  - GRANT authenticated + service_role
-
-- RPC `submit_levo_card_order(p_full_name, p_birth_date, p_email)`:
-  - يتحقق أن السلة تحتوي فقط منتج البطاقة الفيزيائية
-  - يُنشئ سجل بحالة `pending_payment` مرتبط بالمستخدم
-  - يُرجع `order_id` للربط عند الـ checkout
-
-- RPC `approve_levo_card_order(p_order_id, p_admin_notes)`:
-  - `SECURITY DEFINER`، أدمن فقط
-  - يُقفل أول `levo_physical_cards` بحالة `available` (`FOR UPDATE SKIP LOCKED`)
-  - يستدعي منطق تخصيص البطاقة الموجود (نفس منطق `levo_activate_card` لكن يدويًا من الأدمن)
-  - يُنشئ سجل في `saved_invoices` تلقائيًا
-  - يستدعي edge function `send-levo-card-email` لإرسال البيانات
-  - يُحدّث الحالة إلى `approved`
-
-- RPC `reject_levo_card_order(p_order_id, p_reason)` مع استرداد المبلغ للمحفظة
-
-- Trigger على `orders` عند الدفع: يُحدّث `levo_card_orders.status → 'paid_pending_approval'` وربط `order_id`
+سنعمل على مراحل. كل مرحلة قابلة للنشر بمفردها ونقيس الأثر قبل الانتقال للتالية.
 
 ---
 
-## 2) Edge Function
+## المرحلة 1 — مكاسب الأداء السريعة (يوم واحد)
 
-**`send-levo-card-email`** جديدة:
-- تستخدم `send-transactional-email` الحالية مع قالب جديد `levo-card-activation`
-- المدخلات: `card_number, pin_plaintext, qr_token, nfc_token, user_name, expiry_date`
-- القالب يعرض: رقم البطاقة، PIN، QR كصورة (data URL)، NFC token، تعليمات التفعيل
+### 1.1 تفكيك vendor mega-chunk (§3.1) — أكبر مكسب
+**الملف:** `vite.config.ts`
+- استثناء المكتبات الثقيلة اللازلي-فقط من `manualChunks` (إرجاع `undefined`) حتى يضعها Rollup داخل الـ chunks غير المتزامنة التي تستوردها:
+  - `three`, `three-stdlib`, `three-mesh-bvh`, `@react-three/*`
+  - `jspdf`, `html2canvas`, `html5-qrcode`
+  - `recharts`, `d3-*`
+  - `react-image-crop`, `embla-carousel*`, `qrcode.react`
+- الإبقاء على `react-vendor` كما هو للمكتبات الأساسية.
+- **اختبار:** `npx vite-bundle-visualizer` للتأكد أن `three` ظهر فقط في chunks الألعاب/STL. ثم اختبار المستخدم على iOS Safari قبل النشر (لتفادي مشكلة TDZ السابقة).
 
-**قالب جديد** في `supabase/functions/_shared/transactional-email-templates/levo-card-activation.tsx`
+### 1.2 إصلاح تحميل صورة LCP مزدوج (§3.2)
+**الملفات:** `index.html`, `src/components/banner/BannerImage.tsx` (أو ما يعادله)
+- الحل البسيط الآمن: توحيد ثوابت الصورة بين preload في `index.html` و `<picture>` في المكوّن — نفس `format=avif, quality=62, width=800`.
+- ترميز URL للـ REST prefetch بنفس طريقة `URLSearchParams` (نستخدم `encodeURIComponent` على مكوّنات `or=(...)`)
+- حذف `<link rel=preload>` runtime المكرّر داخل `BannerImage`.
+- إذا احتجنا AVIF+WebP: نعتمد AVIF فقط للـ preload (95% من المتصفحات).
 
----
-
-## 3) واجهة المستخدم
-
-### أ. صفحة منتج البطاقة / زر "اطلب بطاقتك"
-- `OrderLevoCardCta.tsx` الموجود: قبل إضافة البطاقة للسلة، يتحقق أن السلة فارغة تمامًا
-- إذا كانت هناك منتجات: **حوار تحذير** "لا يمكن إضافة البطاقة مع منتجات أخرى" مع زرين: (تفريغ السلة والمتابعة) أو (إلغاء)
-
-### ب. في السلة (Cart.tsx)
-- كشف أن السلة تحتوي منتج البطاقة → عرض بطاقة "بيانات طلب البطاقة" (`LevoCardOrderForm.tsx` جديد)
-- الحقول:
-  - **الاسم الثلاثي** (3 حقول: الأول، الأب، الجد) — إلزامي، تُدمج
-  - **تاريخ الميلاد** — Date picker إلزامي
-  - **الإيميل** — إلزامي (prefill من `auth.user.email`)
-- Validation بـ Zod (اسم كل جزء ≥ 2 حروف، عمر ≥ 10 سنوات)
-- Checkbox: "أؤكد صحة البيانات — لا يمكن التعديل بعد الدفع"
-- زر الـ Checkout معطّل حتى تُملأ البيانات وتُؤكّد
-- عند الـ checkout يُستدعى `submit_levo_card_order` قبل إنشاء الـ order
-
-### ج. حماية الخلط (CartContext)
-- قاعدة مطلقة في `addToCart`: إذا كان المنتج المُضاف هو منتج البطاقة الفيزيائية → السلة يجب أن تكون فارغة، والعكس صحيح (لا يُسمح بإضافة منتج آخر لسلة فيها بطاقة). تندمج مع منطق `mutually-exclusive-categories` الحالي كفئة جديدة `levo_physical_card`.
-
-### د. صفحة "بطاقاتي" (CardsSection)
-- إذا كان للمستخدم طلب `pending_payment` / `paid_pending_approval` → بطاقة حالة "طلبك قيد المراجعة"
-- إذا `rejected` → عرض السبب مع زر إعادة الطلب
+### 1.3 حذف الأوزان الميتة (§4.1)
+- إزالة تبعيات `mapbox-gl` و `fflate` من `package.json` (غير مستوردة).
+- حذف مجلد `src/assets/fonts/` (TTFs غير مستعملة).
+- حذف ملفات Cairo woff2 غير المستعملة من `public/fonts/` (الإبقاء على 400/700/900 فقط).
+- حذف lockfiles إضافية والإبقاء على `bun.lock` فقط (المشروع يستخدم bun).
+- تحويل sprites الألعاب من PNG إلى WebP باستخدام `sharp` (يبقى داخل chunks الألعاب اللازلي).
 
 ---
 
-## 4) لوحة الأدمن — قسم جديد في الولاء
+## المرحلة 2 — قابلية التوسّع والاستعلامات (1-2 يوم)
 
-**صفحة جديدة `AdminLevoCardOrders.tsx`** في مسار `${ADMIN_BASE_PATH}/loyalty/card-orders`:
+### 2.1 pagination للمنتجات (§3.3)
+**الملفات:** `src/pages/CategoryDetail.tsx`, `src/pages/ProductShop.tsx`, `src/pages/SearchResults.tsx`
+- استبدال `useQuery` بـ `useInfiniteQuery` مع `.range(page*24, page*24+23)`.
+- `IntersectionObserver` sentinel لتحميل الصفحة التالية تلقائياً (استخدام نمط `ProgressiveSection` الموجود).
 
-- Tabs: قيد المراجعة / موافَق / مرفوض
-- كل صف يعرض:
-  - اسم المستخدم + إيميل الحساب
-  - **بيانات الطلب**: الاسم الثلاثي، تاريخ الميلاد، الإيميل المُدخل
-  - حالة الدفع + رقم الطلب المرتبط
-  - أزرار: **موافقة** (تستدعي `approve_levo_card_order` → تعرض toast بالبطاقة المُخصصة) / **رفض** (dialog لسبب الرفض)
-- إضافة كارت اختصار في صفحة إدارة الولاء الرئيسية
+### 2.2 تقليل `select('*')` (§4.2)
+- الأولوية: `BannerCarousel` (LCP)، ثم جميع استعلامات القوائم فوق الطيّ.
+- تحديد أعمدة صريحة (`id, name_ar/en/ku, price, image_url, ...`).
+- 273 موقع — نعالج الحرج فقط في هذه المرحلة (~30 استعلام رئيسي).
 
-**تسجيل الصفحة** في `App.tsx` + إضافة رابط في قائمة أدمن الولاء الحالية.
-
----
-
-## 5) ملفات ستُنشأ / تُعدّل
-
-**جديد:**
-- `supabase/migrations/{ts}_levo_card_orders.sql`
-- `supabase/functions/send-levo-card-email/index.ts`
-- `supabase/functions/_shared/transactional-email-templates/levo-card-activation.tsx` + تسجيل في registry
-- `src/components/rewards/LevoCardOrderForm.tsx`
-- `src/pages/AdminLevoCardOrders.tsx`
-
-**تعديل:**
-- `src/components/rewards/OrderLevoCardCta.tsx` — تحقق السلة الفارغة + حوار التحذير
-- `src/context/CartContext.tsx` (أو ما يعادله) — قاعدة الحصرية
-- `src/pages/Cart.tsx` — عرض النموذج + منع checkout حتى الاكتمال
-- `src/components/rewards/CardsSection.tsx` — عرض حالة الطلب
-- `src/App.tsx` — تسجيل route الأدمن الجديد
-- صفحة أدمن الولاء الرئيسية — رابط للقسم الجديد
+### 2.3 dynamic-import لـ `draftExport.ts` (§4.3)
+- تحويل `import jsPDF from 'jspdf'` إلى `const { default: jsPDF } = await import('jspdf')` داخل الدالة المستخدمة.
 
 ---
 
-## 6) قرارات مُثبَّتة (من الإجابات)
+## المرحلة 3 — الأمان (نصف يوم)
 
-- الدفع أولاً ثم موافقة الأدمن → الحالة تنتقل تلقائيًا عبر trigger على `orders`
-- تخصيص تلقائي لأول بطاقة `available` عند الموافقة
-- الإيميل يحتوي: رقم البطاقة الكامل + PIN + QR + NFC
-- بيانات الطلب (اسم ثلاثي، تاريخ ميلاد، إيميل) تُحفظ في `levo_card_orders` فقط ولا تُغيّر `profiles`
+### 3.1 CSP و .env (§3.4)
+**الملف:** `index.html`, `.gitignore`
+- إزالة `'unsafe-eval'` من CSP بعد التأكد من عدم حاجة Meta Pixel/Lovable tagger له في الإنتاج.
+- إضافة `.env` إلى `.gitignore` وإنشاء `.env.example`.
+- (لا نلمس Anon key — عام بالتصميم عندما تكون RLS محكمة).
 
-## 7) خارج النطاق
+---
 
-- لا تعديل على `membership_cards` أو أسعار البطاقة (تُدار من الشاشة الحالية)
-- لا تغيير على منطق `validate_coupon_with_rate_limit` الحالي
+## المرحلة 4 — تجربة الاستخدام المتكررة (يوم + رولّ آوت مرحلي)
+
+### 4.1 Service Worker جديد بـ Workbox (§4.6)
+- تثبيت `vite-plugin-pwa` مع `generateSW`.
+- `NetworkFirst` للـ navigations (يمنع stale-screen).
+- `CacheFirst` للأصول ذات hashes والخطوط.
+- إبقاء kill-switch script الحالي دورة إصدار واحدة ثم إزالته.
+- **الإلزامات المهمة:** يسجّل SW فقط في الإنتاج، ليس في preview/iframe/dev (وفقاً لدليل PWA).
+
+---
+
+## المرحلة 5 — SEO والوصولية (يومان)
+
+### 5.1 OG server-rendered (§4.7)
+- توصيل edge function `product-og` الموجودة بطبقة CDN routing:
+  - crawler user-agents لمسارات `/product/:slug`, `/category/:slug`, `/s/:slug` تحصل على HTML بـ OG tags مضمّنة.
+- توجيه `robots.txt` إلى edge function `sitemap` بدلاً من `public/sitemap.xml` الثابت.
+
+### 5.2 تحسينات a11y (§6)
+- إضافة `eslint-plugin-jsx-a11y` + إصلاح تحذيراته آلياً حيث أمكن.
+- `alt` لكل `<img>` (product name أو `""` للزخرفية).
+- `aria-label` لكل button icon-only.
+- pause-on-focus + `prefers-reduced-motion` في `BannerCarousel` و framer-motion (wrapper واحد).
+
+---
+
+## المرحلة 6 — الصيانة وأداء الجداول الكبيرة (2-3 أيام)
+
+### 6.1 تقسيم الملفات الضخمة (§4.5)
+- `src/pages/Admin.tsx` (4,947 سطر): كل tab في مكوّن منفصل lazy-imported.
+- `src/pages/Cart.tsx` (4,294 سطر): استخراج AddressSection, PaymentSection, CouponLogic, SummarySection.
+- `src/hooks/useCart.tsx`: استخراج pure functions إلى `src/lib/`.
+
+### 6.2 Virtualization للقوائم الطويلة (§4.4)
+- تثبيت `@tanstack/react-virtual`.
+- تطبيق على: `AdminOrders.tsx`, `AdminInventory.tsx`, chat messages, notifications, product grids.
+
+---
+
+## المرحلة 7 — اختبارات دخانية (يومان)
+
+### 7.1 Playwright smoke tests (§7)
+- 5 تدفقات حرجة:
+  1. تصفّح → منتج → إضافة للسلة → checkout
+  2. تسجيل الدخول
+  3. تتبع الطلب
+  4. شحن المحفظة
+  5. إتمام طلب من الأدمن
+
+---
+
+## قرارات مهمة
+
+- **iOS Safari:** ستختبر بنفسك بعد المرحلة 1 قبل النشر (كما أكدت).
+- **SW rollout:** مرحلي — نبقي kill-switch دورة واحدة قبل الاعتماد الكامل.
+- **select('*'):** نعالج الحرج فقط الآن (~30 استعلام)؛ الباقي ندرجه في backlog تدريجي.
+- **squash migrations:** خارج النطاق الآن (764 migration) — نتعامل مع db lint فقط للجداول الحساسة (wallet/orders/cards).
+
+---
+
+## ملفات ستُعدَّل أو تُنشأ (المرحلة 1 فقط للبدء)
+
+**مُعدَّلة:**
+- `vite.config.ts` — manualChunks
+- `index.html` — preload URL + CSP + REST encoding
+- `src/components/banner/BannerImage.tsx` — إزالة runtime preload
+- `package.json` — حذف mapbox-gl, fflate
+- `.gitignore` — إضافة .env
+
+**محذوفة:**
+- `src/assets/fonts/*.ttf`
+- `public/fonts/cairo-{200,300,500,600,800}.woff2`
+- `bun.lockb`, `package-lock.json` (الإبقاء على `bun.lock`)
+
+**جديدة:**
+- `.env.example`
+
+---
+
+## البدء
+
+سأنفّذ **المرحلة 1** كاملة في الجولة الأولى بعد الموافقة (أكبر أثر، أقل مخاطرة، قابلة للاختبار فوراً على iOS). بعدها ننتقل للمرحلة 2 إلخ. هل تريد تعديل الترتيب أو استبعاد بند؟

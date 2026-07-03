@@ -14,7 +14,7 @@
     <!-- Security: enforced via <meta> because Lovable hosting does not honor
          public/_headers. HSTS/X-Frame-Options/COOP require real HTTP headers
          and are configured at the CDN/infra layer. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://ai.gateway.lovable.dev https://*.lovable.app https://*.lovable.dev https://*.lovableproject.com https://cdn.gpteng.co https://connect.facebook.net https://www.googletagmanager.com https://challenges.cloudflare.com https://telegram.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https://challenges.cloudflare.com https://www.facebook.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://ai.gateway.lovable.dev https://*.lovable.app https://*.lovable.dev https://*.lovableproject.com https://cdn.gpteng.co https://connect.facebook.net https://www.googletagmanager.com https://challenges.cloudflare.com https://telegram.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https://challenges.cloudflare.com https://www.facebook.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     
     <!-- Preconnect to backend (used immediately after mount for auth/data) -->
@@ -30,11 +30,15 @@
       (function() {
         try {
           var now = new Date().toISOString();
-          var url = 'https://sajlfpygebpqwzpotrsg.supabase.co/rest/v1/banners'
-            + '?select=*&is_active=eq.true'
-            + '&or=(start_date.is.null,start_date.lte.' + now + ')'
-            + '&or=(end_date.is.null,end_date.gte.' + now + ')'
-            + '&order=display_order.asc';
+          // Build the URL exactly the way supabase-js does (URLSearchParams-style
+          // percent-encoding) so the HTTP cache hit matches when React re-fetches.
+          var qs = new URLSearchParams();
+          qs.set('select', '*');
+          qs.set('is_active', 'eq.true');
+          qs.append('or', '(start_date.is.null,start_date.lte.' + now + ')');
+          qs.append('or', '(end_date.is.null,end_date.gte.' + now + ')');
+          qs.set('order', 'display_order.asc');
+          var url = 'https://sajlfpygebpqwzpotrsg.supabase.co/rest/v1/banners?' + qs.toString();
           var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhamxmcHlnZWJwcXd6cG90cnNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTgwNjMsImV4cCI6MjA3NzY3NDA2M30.s4OmffUCWqYJqxo--zH7RjRXZ_CoUYEkoSKWW50CSGg';
           fetch(url, {
             headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' },
@@ -43,46 +47,37 @@
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (banners) {
               if (!banners || !banners.length) return;
-              // Find the first banner with an image — that's the LCP element.
+              // Stash so React can hydrate the query cache with initialData and
+              // avoid a second network round-trip entirely.
+              try { window.__levoBanners = banners; } catch (e) {}
               var first = null;
               for (var i = 0; i < banners.length; i++) {
                 if (banners[i] && banners[i].image_url) { first = banners[i]; break; }
               }
               if (!first) return;
               var src = first.image_url;
-              // Match EXACTLY the URL the React component will request, otherwise
-              // the browser treats the preload as unused and re-downloads. The
-              // BannerImage component uses width=800 for the first/LCP banner
-              // (mobile-sized) and width=1200 for the rest. Use the smaller, mobile-
-              // optimized variant here since the preload only matters for the LCP.
-              // Use screen.width instead of window.innerWidth — the latter forces a
-              // synchronous layout this early in page load (large LH "forced reflow" hit).
-              var sw = (window.screen && window.screen.width) || 800;
-              // Mobile uses width=800; desktop uses width=900 (matches BannerImage's
-              // non-first slides which never become LCP). Keep 800 to match React.
-              var w = 800;
-              // Build URL identical to resizeSupabaseImage(src, 800, 70):
-              // params order: width, quality, resize, format=webp
+              // MUST match BannerImage exactly: format=avif, quality=62, width=800.
+              // BannerImage builds its URL via resizeSupabaseImage (URLSearchParams),
+              // so mirror that ordering: width -> quality -> resize -> format.
               if (src.indexOf('/storage/v1/object/public/') !== -1 || src.indexOf('/storage/v1/render/image/public/') !== -1) {
                 var base = src.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
                 var qIdx = base.indexOf('?');
-                var path = qIdx === -1 ? base : base.slice(0, qIdx);
+                var pathPart = qIdx === -1 ? base : base.slice(0, qIdx);
                 var existingQs = qIdx === -1 ? '' : base.slice(qIdx + 1);
-                // Strip any pre-existing width/quality/resize/format params to mirror resizeSupabaseImage
-                var kept = existingQs ? existingQs.split('&').filter(function (p) {
-                  var k = p.split('=')[0];
-                  return k && k !== 'width' && k !== 'height' && k !== 'quality' && k !== 'resize' && k !== 'format';
-                }) : [];
-                kept.push('width=' + w);
-                kept.push('quality=60');
-                kept.push('resize=contain');
-                kept.push('format=webp');
-                src = path + '?' + kept.join('&');
+                var params = new URLSearchParams(existingQs);
+                params.delete('width'); params.delete('height');
+                params.delete('quality'); params.delete('resize'); params.delete('format');
+                params.set('width', '800');
+                params.set('quality', '62');
+                params.set('resize', 'contain');
+                params.set('format', 'avif');
+                src = pathPart + '?' + params.toString();
               }
               var link = document.createElement('link');
               link.rel = 'preload';
               link.as = 'image';
               link.href = src;
+              link.type = 'image/avif';
               link.setAttribute('fetchpriority', 'high');
               document.head.appendChild(link);
             })
@@ -90,6 +85,7 @@
         } catch (e) {}
       })();
     </script>
+
 
     <!-- Preload ONLY the LCP-critical font weight (Cairo 400 = body text).
          Cairo 700/900 are headings that appear after FCP and load via the

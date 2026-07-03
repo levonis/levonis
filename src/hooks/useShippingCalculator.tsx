@@ -68,8 +68,11 @@ export const useShippingSettings = () => {
   // invalidate all queries that derive prices from them so product cards,
   // cart totals, and detail pages refresh immediately.
   useEffect(() => {
+    // Unique channel name per hook instance — supabase-js reuses channels by
+    // name and throws "cannot add postgres_changes callbacks after subscribe()"
+    // when multiple components mount the same channel name concurrently.
     const channel = supabase
-      .channel('shipping-settings-sync')
+      .channel(`shipping-settings-sync-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'shipping_settings' },
@@ -84,6 +87,7 @@ export const useShippingSettings = () => {
       supabase.removeChannel(channel);
     };
   }, [qc]);
+
 
   return useQuery({
     queryKey: SHIPPING_QUERY_KEY,
