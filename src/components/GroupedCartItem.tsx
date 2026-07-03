@@ -169,7 +169,7 @@ const GroupedCartItem = ({
                   {isItemOOS && (
                     <div className="flex items-center justify-between gap-1 mb-1 p-1 rounded bg-destructive/10">
                       <span className="text-[10px] font-bold text-destructive">⚠️ انتهى من المخزون</span>
-                      <Button size="icon" variant="ghost" className="h-5 w-5 text-destructive" onClick={() => handleRemove(item.id)}>
+                      <Button size="icon" variant="ghost" aria-label={t('cart_remove_aria')} className="h-5 w-5 text-destructive" onClick={() => handleRemove(item.id)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
