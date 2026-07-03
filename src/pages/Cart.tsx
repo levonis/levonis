@@ -51,6 +51,9 @@ import WavyColors from "@/components/WavyColors";
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart, cartSaleType } = useCart();
+  const [levoFormConfirmed, setLevoFormConfirmed] = useState(false);
+  const hasLevoCard = cartHasLevoCard(items);
+  const hasLevoMixed = cartHasLevoCardWithOther(items);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -3117,6 +3120,15 @@ const Cart = () => {
 
               {/* Cart Upsell Offers */}
               <CartUpsellOffers />
+
+              {hasLevoCard && (
+                <LevoCardOrderForm onConfirmedChange={setLevoFormConfirmed} />
+              )}
+              {hasLevoMixed && (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  ⚠️ لا يمكن دمج بطاقة ليفو الفيزيائية مع منتجات أخرى. يرجى إزالة المنتجات الأخرى من السلة لإتمام طلب البطاقة.
+                </div>
+              )}
 
               {/* Cart Actions */}
               <div className="flex gap-2">
