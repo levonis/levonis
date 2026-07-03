@@ -1,8 +1,9 @@
 /**
  * Export financial drafts as PDF, Excel (CSV), or Word (HTML-based .doc)
  */
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// Heavy libs (jspdf ~350KB, html2canvas ~200KB) are dynamic-imported inside
+// exportDraftToPDF so the admin drafts page opens fast.
+
 
 type ColType = 'text' | 'date' | 'number' | 'quantity';
 
