@@ -227,7 +227,7 @@ const GroupedCartItem = ({
                         </span>
                       )}
                       {!isLocked && (
-                        <Button type="button" size="icon" variant="ghost"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t('cart_remove_aria')}
                           className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 touch-manipulation active:scale-75 transition-transform"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemove(item.id); }}>
                           <Trash2 className="h-3 w-3" />
