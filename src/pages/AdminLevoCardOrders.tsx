@@ -73,13 +73,13 @@ export default function AdminLevoCardOrders() {
               .in('id', orderIds)
           : Promise.resolve({ data: [] }),
       ]);
-      const pmap = new Map((profs || []).map((p: any) => [p.id, p]));
-      const omap = new Map((ords || []).map((o: any) => [o.id, o]));
+      const pmap = new Map<string, any>((profs || []).map((p: any) => [p.id, p]));
+      const omap = new Map<string, any>((ords || []).map((o: any) => [o.id, o]));
       return list.map((r) => ({
         ...r,
-        profiles: pmap.get(r.user_id) || null,
-        orders: r.order_id ? omap.get(r.order_id) || null : null,
-      }));
+        profiles: (pmap.get(r.user_id) as any) || null,
+        orders: r.order_id ? ((omap.get(r.order_id) as any) || null) : null,
+      })) as Row[];
     },
     staleTime: 15_000,
   });
