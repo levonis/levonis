@@ -203,6 +203,7 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { visible: islandVisible } = useIsland();
+  const { t } = useLanguage();
   const [mountedSearch, setMountedSearch] = useState(false);
   useEffect(() => {
     const ric = (window as any).requestIdleCallback as
