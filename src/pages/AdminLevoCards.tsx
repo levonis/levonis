@@ -28,6 +28,33 @@ export default function AdminLevoCards() {
   const [search, setSearch] = useState('');
   const [detailNumber, setDetailNumber] = useState<string | null>(null);
   const [showNumbers, setShowNumbers] = useState<Record<string, boolean>>({});
+  const [productOpen, setProductOpen] = useState(false);
+  const [revealCards, setRevealCards] = useState<any[] | null>(null);
+  const [revealLoading, setRevealLoading] = useState(false);
+
+  const revealBatch = async (label: string) => {
+    setRevealLoading(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('admin_reveal_levo_batch', {
+        p_batch_label: label === '—' ? null : label,
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error);
+      setRevealCards(data.cards || []);
+    } catch (e: any) { toast.error(e?.message || 'فشل جلب الأسرار'); }
+    finally { setRevealLoading(false); }
+  };
+
+  const revealSingle = async (id: string) => {
+    setRevealLoading(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('admin_reveal_levo_card', { p_card_id: id });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error);
+      setRevealCards([data.card]);
+    } catch (e: any) { toast.error(e?.message || 'فشل جلب البيانات'); }
+    finally { setRevealLoading(false); }
+  };
 
   const { data: cards, isLoading } = useQuery<CardRow[]>({
     queryKey: ['admin-levo-cards'],
