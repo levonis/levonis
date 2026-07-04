@@ -38,6 +38,8 @@ export default function LevoCardManager() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [upgradeQuote, setUpgradeQuote] = useState<any>(null);
+  const [durationOpen, setDurationOpen] = useState(false);
+  const [durationPlan, setDurationPlan] = useState<Plan | null>(null);
 
   const { data: myCard, isLoading } = useQuery({
     queryKey: ['levo-card-my', user?.id],
