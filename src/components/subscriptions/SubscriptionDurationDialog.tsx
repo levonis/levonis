@@ -160,7 +160,7 @@ export default function SubscriptionDurationDialog({
                       {selected && <Check className="h-3 w-3 text-primary-foreground" />}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold text-sm">{localizedLabel(tier, lang, durationDefault(tier.duration_months))}</div>
+                      <div className="font-bold text-sm">{localizedLabel(tier, language, durationDefault(tier.duration_months))}</div>
                       {tier.discount_percentage > 0 && (
                         <div className="text-[11px] text-emerald-600 font-semibold">
                           {t('sub_save_percent').replace('{percent}', String(tier.discount_percentage))}
