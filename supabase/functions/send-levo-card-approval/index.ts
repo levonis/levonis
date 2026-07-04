@@ -54,14 +54,8 @@ const buildHtml = (p: Payload) => {
 <p style="color:#b8b08f;font-size:13px;margin:0 0 10px;">امسح رمز QR للتفعيل السريع</p>
 <img src="${qrImg}" alt="QR" width="220" height="220" style="border-radius:12px;background:#fff;padding:8px;"/>
 </td></tr>
-<tr><td style="padding:0 40px 20px;">
-<div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:15px;text-align:center;">
-<p style="color:#93c5fd;font-size:12px;margin:0 0 6px;">رمز NFC</p>
-<p style="color:#dbeafe;font-size:12px;margin:0;font-family:monospace;word-break:break-all;">${p.nfc_token}</p>
-</div>
-</td></tr>
 <tr><td style="padding:0 40px 30px;text-align:center;">
-<a href="${appUrl}/rewards" style="display:inline-block;background:#d4af37;color:#0d2b24;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;">فعّل بطاقتي الآن</a>
+<a href="${activateUrl}" style="display:inline-block;background:#d4af37;color:#0d2b24;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;">فعّل بطاقتي الآن</a>
 </td></tr>
 <tr><td style="background:#0b3028;padding:20px 40px;text-align:center;border-top:1px solid rgba(212,175,55,.15);">
 <p style="color:#b8b08f;font-size:11px;margin:0;">LEVONIS © ${new Date().getFullYear()} — رسالة تلقائية، لا ترد عليها</p>
