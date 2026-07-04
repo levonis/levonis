@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Levonis <no-reply@levonis.lovable.app>",
+        from: "Levonis <onboarding@resend.dev>",
         to: [body.recipient_email],
         subject: "🎉 بطاقة ليفو الفيزيائية جاهزة للتفعيل",
         html: buildHtml(body),
