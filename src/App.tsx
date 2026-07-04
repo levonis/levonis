@@ -1,5 +1,5 @@
 // App component - main application entry point - v11 (premium loading)
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
