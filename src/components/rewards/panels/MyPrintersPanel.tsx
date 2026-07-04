@@ -107,8 +107,16 @@ export default function MyPrintersPanel() {
         const isExpired = !!expiryDate && expiryDate.getTime() <= Date.now();
         const showExpiredBanner = isExpired && !activeSub;
 
+        const linkedCard = printer.linked_card as any;
+        const cardActive = !!linkedCard?.is_active && (!linkedCard?.expires_at || new Date(linkedCard.expires_at).getTime() > Date.now());
+        const graceUntil = printer.card_link_grace_until ? new Date(printer.card_link_grace_until) : null;
+        const inGrace = !cardActive && !!graceUntil && graceUntil.getTime() > Date.now();
+        const graceDays = inGrace ? Math.max(1, Math.ceil((graceUntil!.getTime() - Date.now()) / 86400000)) : 0;
+        const cardBlocked = !cardActive; // features gated
+
         return (
-          <Card key={printer.id} className={showExpiredBanner ? 'border-destructive/40' : undefined}>
+          <Card key={printer.id} className={showExpiredBanner || cardBlocked ? 'border-destructive/40' : undefined}>
+
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
