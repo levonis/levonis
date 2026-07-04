@@ -378,6 +378,26 @@ export default function AdminLevoCardOrders() {
                       المستخدم لم يُتم الدفع بعد. لا يمكن الموافقة حتى تنتقل الحالة إلى "مدفوع".
                     </div>
                   )}
+
+                  {row.status === 'approved' && row.assigned_card_id && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setResendFor(row);
+                        setResendEmail(row.email || '');
+                      }}
+                      disabled={busyId === row.id}
+                    >
+                      {busyId === row.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 ml-1" /> إعادة إرسال بيانات البطاقة
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))
