@@ -15015,6 +15015,10 @@ export type Database = {
           original_price_usd: number
         }[]
       }
+      admin_regen_levo_card_secrets: {
+        Args: { p_card_id: string }
+        Returns: Json
+      }
       admin_release_levo_card: {
         Args: { p_assignment_id: string }
         Returns: Json
