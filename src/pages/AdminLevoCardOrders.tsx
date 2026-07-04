@@ -13,8 +13,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { CreditCard, Check, X, Loader2, Mail, Calendar, User, Package } from 'lucide-react';
+import { CreditCard, Check, X, Loader2, Mail, Calendar, User, Package, Pencil, Send } from 'lucide-react';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Status = 'paid_pending_approval' | 'pending_payment' | 'approved' | 'rejected' | 'cancelled';
 
@@ -41,6 +44,82 @@ export default function AdminLevoCardOrders() {
   const [rejectFor, setRejectFor] = useState<Row | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editEmailFor, setEditEmailFor] = useState<Row | null>(null);
+  const [emailDraft, setEmailDraft] = useState('');
+  const [resendFor, setResendFor] = useState<Row | null>(null);
+  const [resendEmail, setResendEmail] = useState('');
+
+  const saveEmail = async () => {
+    if (!editEmailFor) return;
+    const email = emailDraft.trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) {
+      toast.error('صيغة البريد غير صحيحة');
+      return;
+    }
+    setBusyId(editEmailFor.id);
+    try {
+      const { error } = await (supabase as any)
+        .from('levo_card_orders')
+        .update({ email, updated_at: new Date().toISOString() })
+        .eq('id', editEmailFor.id);
+      if (error) throw error;
+      toast.success('تم تحديث البريد');
+      setEditEmailFor(null);
+      qc.invalidateQueries({ queryKey: ['admin-levo-orders'] });
+    } catch (e: any) {
+      toast.error(e?.message || 'فشل التحديث');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doResend = async () => {
+    if (!resendFor) return;
+    const email = resendEmail.trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) {
+      toast.error('صيغة البريد غير صحيحة');
+      return;
+    }
+    setBusyId(resendFor.id);
+    try {
+      // Update email if changed
+      if (email !== resendFor.email) {
+        const { error: uErr } = await (supabase as any)
+          .from('levo_card_orders')
+          .update({ email, updated_at: new Date().toISOString() })
+          .eq('id', resendFor.id);
+        if (uErr) throw uErr;
+      }
+      // Fetch card details
+      if (!resendFor.assigned_card_id) throw new Error('لا توجد بطاقة مرتبطة بالطلب');
+      const { data: card, error: cErr } = await (supabase as any)
+        .from('levo_physical_cards')
+        .select('card_number, pin_plaintext, qr_token, nfc_token')
+        .eq('id', resendFor.assigned_card_id)
+        .maybeSingle();
+      if (cErr) throw cErr;
+      if (!card) throw new Error('البطاقة غير موجودة');
+
+      const { error: eErr } = await supabase.functions.invoke('send-levo-card-approval', {
+        body: {
+          recipient_email: email,
+          full_name: resendFor.full_name_triple,
+          card_number: card.card_number,
+          pin: card.pin_plaintext,
+          qr_token: card.qr_token,
+          nfc_token: card.nfc_token,
+        },
+      });
+      if (eErr) throw eErr;
+      toast.success('تم إعادة إرسال البريد بنجاح');
+      setResendFor(null);
+      qc.invalidateQueries({ queryKey: ['admin-levo-orders'] });
+    } catch (e: any) {
+      toast.error(e?.message || 'فشل إعادة الإرسال');
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const statusFilter =
     tab === 'pending' ? ['paid_pending_approval', 'pending_payment'] :
@@ -219,8 +298,21 @@ export default function AdminLevoCardOrders() {
                       <div className="font-medium">{row.birth_date}</div>
                     </div>
                     <div className="sm:col-span-2">
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Mail className="h-3 w-3" /> البريد الإلكتروني
+                      <div className="text-xs text-muted-foreground flex items-center gap-1 justify-between">
+                        <span className="flex items-center gap-1">
+                          <Mail className="h-3 w-3" /> البريد الإلكتروني
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => {
+                            setEditEmailFor(row);
+                            setEmailDraft(row.email || '');
+                          }}
+                        >
+                          <Pencil className="h-3 w-3 ml-1" /> تعديل
+                        </Button>
                       </div>
                       <div className="font-medium ltr:text-left" dir="ltr">{row.email}</div>
                     </div>
@@ -286,6 +378,26 @@ export default function AdminLevoCardOrders() {
                       المستخدم لم يُتم الدفع بعد. لا يمكن الموافقة حتى تنتقل الحالة إلى "مدفوع".
                     </div>
                   )}
+
+                  {row.status === 'approved' && row.assigned_card_id && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setResendFor(row);
+                        setResendEmail(row.email || '');
+                      }}
+                      disabled={busyId === row.id}
+                    >
+                      {busyId === row.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 ml-1" /> إعادة إرسال بيانات البطاقة
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))
@@ -319,6 +431,65 @@ export default function AdminLevoCardOrders() {
               disabled={!rejectReason.trim() || !!busyId}
             >
               {busyId ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تأكيد الرفض'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit email */}
+      <Dialog open={!!editEmailFor} onOpenChange={(o) => !o && setEditEmailFor(null)}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تعديل البريد الإلكتروني</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">
+              البريد الجديد الذي سترسل إليه بيانات البطاقة:
+            </label>
+            <Input
+              type="email"
+              dir="ltr"
+              value={emailDraft}
+              onChange={(e) => setEmailDraft(e.target.value)}
+              placeholder="user@example.com"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditEmailFor(null)}>إلغاء</Button>
+            <Button onClick={saveEmail} disabled={!!busyId}>
+              {busyId ? <Loader2 className="h-4 w-4 animate-spin" /> : 'حفظ'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resend approval email */}
+      <Dialog open={!!resendFor} onOpenChange={(o) => !o && setResendFor(null)}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إعادة إرسال بيانات البطاقة</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">
+              يمكنك تعديل البريد قبل الإرسال إذا كان المستخدم قد أدخله خطأً:
+            </label>
+            <Input
+              type="email"
+              dir="ltr"
+              value={resendEmail}
+              onChange={(e) => setResendEmail(e.target.value)}
+              placeholder="user@example.com"
+            />
+            <p className="text-xs text-amber-600">
+              سيتم إرسال رقم البطاقة والـ PIN ورموز QR/NFC إلى هذا البريد.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResendFor(null)}>إلغاء</Button>
+            <Button onClick={doResend} disabled={!!busyId}>
+              {busyId ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <><Send className="h-4 w-4 ml-1" /> إرسال</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
