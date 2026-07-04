@@ -23,7 +23,8 @@ const buildHtml = (p: Payload) => {
     p.qr_token,
   )}`;
   const grouped = p.card_number.replace(/(.{4})/g, "$1 ").trim();
-  const appUrl = "https://levonis.lovable.app";
+  const appUrl = "https://levonisiq.com";
+  const activateUrl = `${appUrl}/rewards?activate=${encodeURIComponent(p.card_number)}&token=${encodeURIComponent(p.qr_token)}`;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>بطاقة ليفو</title></head>
 <body style="margin:0;padding:0;background:#0d2b24;font-family:'Cairo',Arial,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0d2b24;padding:20px 0;">
