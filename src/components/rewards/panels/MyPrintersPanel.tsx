@@ -16,6 +16,7 @@ export default function MyPrintersPanel() {
   const { t } = useLanguage();
   const { fmt } = useNumberFormat();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const { data: printers, isLoading } = useQuery({
     queryKey: ['my-printers-panel', user?.id],
@@ -25,6 +26,9 @@ export default function MyPrintersPanel() {
         .from('user_printers')
         .select(`
           *,
+          linked_card_id,
+          card_link_grace_until,
+          linked_card:linked_card_id(id, is_active, expires_at, membership_cards:card_id(name_ar)),
           store_printers:store_printer_id(model_name_ar, serial_number, image_url, expiry_date, activation_date),
           printer_subscriptions(
             id, 
@@ -40,6 +44,22 @@ export default function MyPrintersPanel() {
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
+  });
+
+  const relink = useMutation({
+    mutationFn: async (printerId: string) => {
+      const { error } = await supabase.rpc('relink_printer_to_active_card' as any, { _printer_id: printerId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم ربط الطابعة ببطاقتك النشطة');
+      qc.invalidateQueries({ queryKey: ['my-printers-panel', user?.id] });
+    },
+    onError: (e: any) => {
+      const msg = e?.message || '';
+      if (msg.includes('no_active_card')) toast.error('لا توجد بطاقة ليفو نشطة في حسابك');
+      else toast.error('تعذّر ربط الطابعة');
+    },
   });
 
   if (!user) {
