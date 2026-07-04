@@ -266,7 +266,7 @@ export default function LevoCardManager() {
             {(subscription ? upgradablePlans : subscribablePlans).map(plan => (
               <button
                 key={plan.id}
-                onClick={() => subscription ? openUpgrade(plan.id) : subscribe(plan.id, plan.wallet_price || 0)}
+                onClick={() => subscription ? openUpgrade(plan.id) : openDurationDialog(plan)}
                 disabled={busy}
                 className="w-full text-right p-3 rounded-lg border hover:bg-muted/40 transition-colors flex items-center justify-between"
               >
