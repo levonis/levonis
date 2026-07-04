@@ -435,6 +435,65 @@ export default function AdminLevoCardOrders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit email */}
+      <Dialog open={!!editEmailFor} onOpenChange={(o) => !o && setEditEmailFor(null)}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تعديل البريد الإلكتروني</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">
+              البريد الجديد الذي سترسل إليه بيانات البطاقة:
+            </label>
+            <Input
+              type="email"
+              dir="ltr"
+              value={emailDraft}
+              onChange={(e) => setEmailDraft(e.target.value)}
+              placeholder="user@example.com"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditEmailFor(null)}>إلغاء</Button>
+            <Button onClick={saveEmail} disabled={!!busyId}>
+              {busyId ? <Loader2 className="h-4 w-4 animate-spin" /> : 'حفظ'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resend approval email */}
+      <Dialog open={!!resendFor} onOpenChange={(o) => !o && setResendFor(null)}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إعادة إرسال بيانات البطاقة</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">
+              يمكنك تعديل البريد قبل الإرسال إذا كان المستخدم قد أدخله خطأً:
+            </label>
+            <Input
+              type="email"
+              dir="ltr"
+              value={resendEmail}
+              onChange={(e) => setResendEmail(e.target.value)}
+              placeholder="user@example.com"
+            />
+            <p className="text-xs text-amber-600">
+              سيتم إرسال رقم البطاقة والـ PIN ورموز QR/NFC إلى هذا البريد.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResendFor(null)}>إلغاء</Button>
+            <Button onClick={doResend} disabled={!!busyId}>
+              {busyId ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <><Send className="h-4 w-4 ml-1" /> إرسال</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
