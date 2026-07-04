@@ -46,7 +46,7 @@ export default function SubscriptionDurationDialog({
   onConfirm,
   confirming = false,
 }: Props) {
-  const { t, lang } = useLanguage();
+  const { t, language } = useLanguage();
   const { fmt } = useNumberFormat();
   const { user } = useAuth();
   const { data: tiers, isLoading } = useSubscriptionTiers(targetType);
