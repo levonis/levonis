@@ -145,15 +145,22 @@ export default function RedeemPointsPanel() {
           });
         if (couponError) throw couponError;
       } else if (selectedOption === 'tickets') {
-        const { error: ticketError } = await supabase.rpc('add_user_tickets', {
-          p_user_id: user.id,
-          p_amount: value,
-          p_source: 'points_redemption'
+        const desc = t('rp_redeem_description')
+          .replace('{points}', String(points))
+          .replace('{value}', fmt(value))
+          .replace('{unit}', getUnitLabel(selectedOption));
+        const { data, error: ticketError } = await supabase.rpc('redeem_points_for_tickets' as any, {
+          p_points: points,
+          p_tickets: Math.floor(value),
+          p_description: desc,
         });
         if (ticketError) throw ticketError;
+        const res = data as { success?: boolean; error?: string } | null;
+        if (!res?.success) throw new Error(res?.error || 'redemption_failed');
+        return; // tickets path handles points + log atomically
       }
 
-      // Deduct points
+      // Deduct points (wallet/coupon paths)
       const { error: pointsError } = await supabase.rpc('deduct_user_points', {
         p_user_id: user.id,
         p_amount: points,

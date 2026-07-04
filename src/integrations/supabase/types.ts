@@ -2574,6 +2574,8 @@ export type Database = {
           claimed_at: string
           id: string
           milestone_id: string
+          redeemed: boolean
+          redeemed_at: string | null
           session_id: string | null
           user_id: string
         }
@@ -2581,6 +2583,8 @@ export type Database = {
           claimed_at?: string
           id?: string
           milestone_id: string
+          redeemed?: boolean
+          redeemed_at?: string | null
           session_id?: string | null
           user_id: string
         }
@@ -2588,6 +2592,8 @@ export type Database = {
           claimed_at?: string
           id?: string
           milestone_id?: string
+          redeemed?: boolean
+          redeemed_at?: string | null
           session_id?: string | null
           user_id?: string
         }
@@ -5018,6 +5024,8 @@ export type Database = {
           created_at: string
           id: string
           milestone_id: string
+          redeemed: boolean
+          redeemed_at: string | null
           session_id: string | null
           user_id: string
         }
@@ -5025,6 +5033,8 @@ export type Database = {
           created_at?: string
           id?: string
           milestone_id: string
+          redeemed?: boolean
+          redeemed_at?: string | null
           session_id?: string | null
           user_id: string
         }
@@ -5032,6 +5042,8 @@ export type Database = {
           created_at?: string
           id?: string
           milestone_id?: string
+          redeemed?: boolean
+          redeemed_at?: string | null
           session_id?: string | null
           user_id?: string
         }
@@ -6411,7 +6423,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "merchant_ad_bookings_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_ad_bookings_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_applications_owner_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_ad_slots: {
         Row: {
@@ -15802,6 +15829,10 @@ export type Database = {
       purchase_competition_ticket:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
+      purchase_game_store_reward: {
+        Args: { p_reward_id: string }
+        Returns: Json
+      }
       purchase_printer_subscription: {
         Args: {
           p_current_sub_id?: string
@@ -15873,6 +15904,10 @@ export type Database = {
       }
       redeem_letters_prize: {
         Args: { p_competition_id: string; p_word: string }
+        Returns: Json
+      }
+      redeem_points_for_tickets: {
+        Args: { p_description?: string; p_points: number; p_tickets: number }
         Returns: Json
       }
       redeem_points_store_product: {
