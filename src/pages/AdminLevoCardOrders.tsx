@@ -298,8 +298,21 @@ export default function AdminLevoCardOrders() {
                       <div className="font-medium">{row.birth_date}</div>
                     </div>
                     <div className="sm:col-span-2">
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Mail className="h-3 w-3" /> البريد الإلكتروني
+                      <div className="text-xs text-muted-foreground flex items-center gap-1 justify-between">
+                        <span className="flex items-center gap-1">
+                          <Mail className="h-3 w-3" /> البريد الإلكتروني
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => {
+                            setEditEmailFor(row);
+                            setEmailDraft(row.email || '');
+                          }}
+                        >
+                          <Pencil className="h-3 w-3 ml-1" /> تعديل
+                        </Button>
                       </div>
                       <div className="font-medium ltr:text-left" dir="ltr">{row.email}</div>
                     </div>
