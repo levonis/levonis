@@ -70,6 +70,7 @@ const AdminOrders = lazyWithRetry(() => import("./pages/AdminOrders"));
 const AdminPointsSettings = lazyWithRetry(() => import("./pages/AdminPointsSettings"));
 const AdminChats = lazyWithRetry(() => import("./pages/AdminChats"));
 const AdminLoyaltyLevels = lazyWithRetry(() => import("./pages/AdminLoyaltyLevels"));
+const AdminSubscriptionTiers = lazyWithRetry(() => import("./pages/AdminSubscriptionTiers"));
 const AdminDefaultSettings = lazyWithRetry(() => import("./pages/AdminDefaultSettings"));
 const AdminWallet = lazyWithRetry(() => import("./pages/AdminWallet"));
 const AdminWalletSettings = lazyWithRetry(() => import("./pages/AdminWalletSettings"));
