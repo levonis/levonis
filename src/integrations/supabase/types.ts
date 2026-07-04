@@ -12835,8 +12835,10 @@ export type Database = {
       }
       user_printers: {
         Row: {
+          card_link_grace_until: string | null
           created_at: string | null
           id: string
+          linked_card_id: string | null
           notes: string | null
           store_printer_id: string
           updated_at: string | null
@@ -12847,8 +12849,10 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          card_link_grace_until?: string | null
           created_at?: string | null
           id?: string
+          linked_card_id?: string | null
           notes?: string | null
           store_printer_id: string
           updated_at?: string | null
@@ -12859,8 +12863,10 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          card_link_grace_until?: string | null
           created_at?: string | null
           id?: string
+          linked_card_id?: string | null
           notes?: string | null
           store_printer_id?: string
           updated_at?: string | null
@@ -12871,6 +12877,13 @@ export type Database = {
           verified_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "user_printers_linked_card_id_fkey"
+            columns: ["linked_card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_printers_store_printer_id_fkey"
             columns: ["store_printer_id"]
@@ -15819,6 +15832,10 @@ export type Database = {
       reject_price_protection_claim: {
         Args: { p_claim_id: string; p_reason: string }
         Returns: Json
+      }
+      relink_printer_to_active_card: {
+        Args: { _printer_id: string }
+        Returns: string
       }
       request_cancel_random_filament_order: {
         Args: { p_order_id: string }
