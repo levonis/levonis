@@ -1,13 +1,13 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Printer, Settings, ShieldCheck, Wrench, AlertTriangle, Shield } from "lucide-react";
+import { Printer, Settings, ShieldCheck, Wrench, AlertTriangle, Shield, Link2, Link2Off, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/lib/i18n";
 import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
@@ -16,6 +16,7 @@ export default function MyPrintersPanel() {
   const { t } = useLanguage();
   const { fmt } = useNumberFormat();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const { data: printers, isLoading } = useQuery({
     queryKey: ['my-printers-panel', user?.id],
@@ -25,6 +26,9 @@ export default function MyPrintersPanel() {
         .from('user_printers')
         .select(`
           *,
+          linked_card_id,
+          card_link_grace_until,
+          linked_card:linked_card_id(id, is_active, expires_at, membership_cards:card_id(name_ar)),
           store_printers:store_printer_id(model_name_ar, serial_number, image_url, expiry_date, activation_date),
           printer_subscriptions(
             id, 
@@ -40,6 +44,22 @@ export default function MyPrintersPanel() {
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
+  });
+
+  const relink = useMutation({
+    mutationFn: async (printerId: string) => {
+      const { error } = await supabase.rpc('relink_printer_to_active_card' as any, { _printer_id: printerId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم ربط الطابعة ببطاقتك النشطة');
+      qc.invalidateQueries({ queryKey: ['my-printers-panel', user?.id] });
+    },
+    onError: (e: any) => {
+      const msg = e?.message || '';
+      if (msg.includes('no_active_card')) toast.error('لا توجد بطاقة ليفو نشطة في حسابك');
+      else toast.error('تعذّر ربط الطابعة');
+    },
   });
 
   if (!user) {
@@ -87,8 +107,16 @@ export default function MyPrintersPanel() {
         const isExpired = !!expiryDate && expiryDate.getTime() <= Date.now();
         const showExpiredBanner = isExpired && !activeSub;
 
+        const linkedCard = printer.linked_card as any;
+        const cardActive = !!linkedCard?.is_active && (!linkedCard?.expires_at || new Date(linkedCard.expires_at).getTime() > Date.now());
+        const graceUntil = printer.card_link_grace_until ? new Date(printer.card_link_grace_until) : null;
+        const inGrace = !cardActive && !!graceUntil && graceUntil.getTime() > Date.now();
+        const graceDays = inGrace ? Math.max(1, Math.ceil((graceUntil!.getTime() - Date.now()) / 86400000)) : 0;
+        const cardBlocked = !cardActive; // features gated
+
         return (
-          <Card key={printer.id} className={showExpiredBanner ? 'border-destructive/40' : undefined}>
+          <Card key={printer.id} className={showExpiredBanner || cardBlocked ? 'border-destructive/40' : undefined}>
+
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -127,6 +155,49 @@ export default function MyPrintersPanel() {
                       </p>
                     </div>
                   )}
+
+                  {/* Levo card link status */}
+                  {cardActive ? (
+                    <div className="mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20 flex items-center gap-2">
+                      <Link2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="text-[11px] text-foreground">
+                        مرتبطة ببطاقة: <span className="font-bold">{(linkedCard?.membership_cards as any)?.name_ar || 'ليفو'}</span>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className={`mt-2 p-3 rounded-lg space-y-2 ${inGrace ? 'bg-amber-500/10 border border-amber-500/40' : 'bg-destructive/10 border border-destructive/40'}`}>
+                      <div className="flex items-start gap-2">
+                        <Link2Off className={`h-4 w-4 shrink-0 mt-0.5 ${inGrace ? 'text-amber-600' : 'text-destructive'}`} />
+                        <div className="flex-1">
+                          <p className={`text-xs font-bold ${inGrace ? 'text-amber-700 dark:text-amber-300' : 'text-destructive'}`}>
+                            {inGrace ? `تحتاج بطاقة ليفو لتفعيل الضمان والتأمين (متبقي ${graceDays} يوم)` : 'الطابعة غير مرتبطة ببطاقة ليفو نشطة'}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                            الضمان وخطط التأمين متوقفة حتى تربط الطابعة ببطاقة ليفو فعّالة في حسابك.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 h-8 text-[11px]"
+                          disabled={relink.isPending}
+                          onClick={() => relink.mutate(printer.id)}
+                        >
+                          <Link2 className="h-3.5 w-3.5 ml-1" />
+                          ربط ببطاقتي النشطة
+                        </Button>
+                        <Link to="/membership-cards" className="flex-1">
+                          <Button size="sm" className="w-full h-8 text-[11px]">
+                            <Sparkles className="h-3.5 w-3.5 ml-1" />
+                            احصل على بطاقة
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
 
                   {showExpiredBanner && (
                     <div className="mt-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
