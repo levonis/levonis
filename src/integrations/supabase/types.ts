@@ -15906,6 +15906,10 @@ export type Database = {
         Args: { p_competition_id: string; p_word: string }
         Returns: Json
       }
+      redeem_points_for_tickets: {
+        Args: { p_description?: string; p_points: number; p_tickets: number }
+        Returns: Json
+      }
       redeem_points_store_product: {
         Args: { p_product_id: string }
         Returns: Json
