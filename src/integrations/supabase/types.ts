@@ -15703,15 +15703,17 @@ export type Database = {
       normalize_text_key: { Args: { p_text: string }; Returns: string }
       notify_card_cycle_rollovers: { Args: never; Returns: number }
       notify_draw_happening: { Args: { comp_id: string }; Returns: undefined }
-      pay_order_from_wallet: {
-        Args: {
-          p_amount: number
-          p_order_id: string
-          p_order_number: string
-          p_user_id: string
-        }
-        Returns: string
-      }
+      pay_order_from_wallet:
+        | { Args: { p_amount: number; p_order_id: string }; Returns: undefined }
+        | {
+            Args: {
+              p_amount: number
+              p_order_id: string
+              p_order_number: string
+              p_user_id: string
+            }
+            Returns: string
+          }
       process_stripe_wallet_deposit: {
         Args: {
           p_amount: number
