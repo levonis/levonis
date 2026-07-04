@@ -107,7 +107,7 @@ export default function LevoCardManager() {
     finally { setBusy(false); }
   };
 
-  const subscribe = async (planId: string, price: number) => {
+  const subscribe = async (planId: string, price: number, durationMonths: number, discountPercent: number) => {
     setBusy(true);
     try {
       const { data, error } = await (supabase as any).rpc('levo_subscribe_card', {
@@ -115,15 +115,24 @@ export default function LevoCardManager() {
         p_membership_card_id: planId,
         p_payment_method: 'wallet',
         p_amount: price,
+        p_duration_months: durationMonths,
+        p_discount_percentage: discountPercent,
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'failed');
       toast.success('تم تفعيل الاشتراك');
       setSubOpen(false);
+      setDurationOpen(false);
+      setDurationPlan(null);
       qc.invalidateQueries({ queryKey: ['levo-card-my'] });
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
     } catch (e: any) { toast.error(e?.message || 'فشل الاشتراك'); }
     finally { setBusy(false); }
+  };
+
+  const openDurationDialog = (plan: Plan) => {
+    setDurationPlan(plan);
+    setDurationOpen(true);
   };
 
   const openUpgrade = async (planId: string) => {
