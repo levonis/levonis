@@ -1,13 +1,13 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Printer, Settings, ShieldCheck, Wrench, AlertTriangle, Shield } from "lucide-react";
+import { Printer, Settings, ShieldCheck, Wrench, AlertTriangle, Shield, Link2, Link2Off, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/lib/i18n";
 import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
