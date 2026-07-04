@@ -13,8 +13,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { CreditCard, Check, X, Loader2, Mail, Calendar, User, Package } from 'lucide-react';
+import { CreditCard, Check, X, Loader2, Mail, Calendar, User, Package, Pencil, Send } from 'lucide-react';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Status = 'paid_pending_approval' | 'pending_payment' | 'approved' | 'rejected' | 'cancelled';
 
