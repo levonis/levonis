@@ -83,29 +83,14 @@ export default function GameStore({ onBack }: { onBack: () => void }) {
 
     setBuying(reward.id);
     try {
-      // Deduct points
-      const { error: deductError } = await supabase.rpc("deduct_user_points", {
-        p_user_id: user.id,
-        p_amount: reward.points_cost,
-        p_source: "game_store",
-        p_description: `متجر الألعاب: ${reward.title_ar}`,
+      const { data, error } = await supabase.rpc("purchase_game_store_reward" as any, {
+        p_reward_id: reward.id,
       });
-      if (deductError) throw deductError;
-
-      // If reward is tickets, add them
-      if (reward.reward_type === "tickets" && reward.reward_value > 0) {
-        await supabase.rpc("add_user_tickets", {
-          p_user_id: user.id,
-          p_amount: reward.reward_value,
-        });
+      if (error) throw error;
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        throw new Error(result?.error || "purchase_failed");
       }
-
-      // Record purchase
-      await supabase.from("game_store_purchases").insert({
-        user_id: user.id,
-        reward_id: reward.id,
-        points_spent: reward.points_cost,
-      });
 
       queryClient.invalidateQueries({ queryKey: ["user-points-game"] });
       queryClient.invalidateQueries({ queryKey: ["user-tickets-game"] });
