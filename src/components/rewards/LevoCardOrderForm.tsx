@@ -162,7 +162,7 @@ export default function LevoCardOrderForm({ onConfirmedChange }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">تاريخ الميلاد</Label>
               <Input
@@ -183,7 +183,7 @@ export default function LevoCardOrderForm({ onConfirmedChange }: Props) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="mt-1"
+                className="mt-1 w-full min-w-0"
               />
             </div>
           </div>
