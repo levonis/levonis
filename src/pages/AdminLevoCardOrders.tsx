@@ -100,14 +100,33 @@ export default function AdminLevoCardOrders() {
       if (cErr) throw cErr;
       if (!card) throw new Error('البطاقة غير موجودة');
 
+      let card_number = card.card_number;
+      let pin = card.pin_plaintext;
+      let qr_token = card.qr_token;
+      let nfc_token = card.nfc_token;
+
+      // If any secret is missing (cleared post-assignment), regenerate them
+      if (!pin || !qr_token || !nfc_token) {
+        const { data: regen, error: rErr } = await (supabase as any).rpc(
+          'admin_regen_levo_card_secrets',
+          { p_card_id: resendFor.assigned_card_id },
+        );
+        if (rErr) throw rErr;
+        if (!regen?.success) throw new Error(regen?.error || 'regen_failed');
+        card_number = regen.card_number;
+        pin = regen.pin;
+        qr_token = regen.qr_token;
+        nfc_token = regen.nfc_token;
+      }
+
       const { error: eErr } = await supabase.functions.invoke('send-levo-card-approval', {
         body: {
           recipient_email: email,
           full_name: resendFor.full_name_triple,
-          card_number: card.card_number,
-          pin: card.pin_plaintext,
-          qr_token: card.qr_token,
-          nfc_token: card.nfc_token,
+          card_number,
+          pin,
+          qr_token,
+          nfc_token,
         },
       });
       if (eErr) throw eErr;
