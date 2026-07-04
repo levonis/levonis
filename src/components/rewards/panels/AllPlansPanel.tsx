@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +9,16 @@ import { Shield, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
 import { useNumberFormat } from "@/lib/i18n/numberFormat";
+import SubscriptionDurationDialog from "@/components/subscriptions/SubscriptionDurationDialog";
 
 export default function AllPlansPanel() {
   const { t } = useLanguage();
   const { fmt } = useNumberFormat();
+  const qc = useQueryClient();
+  const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
   const { data: plans, isLoading } = useQuery({
     queryKey: ['all-protection-plans-panel'],
     queryFn: async () => {
@@ -45,6 +52,38 @@ export default function AllPlansPanel() {
       </Card>
     );
   }
+
+  const openSubscribe = (plan: any) => {
+    setSelectedPlan(plan);
+    setDialogOpen(true);
+  };
+
+  const handleConfirm = async ({ tier, quote, user_printer_id }: any) => {
+    if (!selectedPlan || !user_printer_id) {
+      toast.error(t('sub_no_printers'));
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('subscribe_protection_plan', {
+        p_plan_id: selectedPlan.id,
+        p_user_printer_id: user_printer_id,
+        p_duration_months: tier.duration_months,
+        p_expected_total: quote.final,
+        p_discount_percentage: tier.discount_percentage,
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'failed');
+      toast.success(t('sub_success'));
+      setDialogOpen(false);
+      setSelectedPlan(null);
+      qc.invalidateQueries({ queryKey: ['active-subscription-benefits'] });
+    } catch (e: any) {
+      toast.error(e?.message || t('sub_error'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -80,7 +119,6 @@ export default function AllPlansPanel() {
               </p>
             )}
 
-            {/* Features */}
             {plan.features && Array.isArray(plan.features) && (
               <div className="space-y-1.5 mb-4">
                 {(plan.features as string[]).slice(0, 4).map((feature, idx) => (
@@ -92,15 +130,28 @@ export default function AllPlansPanel() {
               </div>
             )}
 
-            <Button 
+            <Button
               className="w-full"
-              onClick={() => toast.info(t('ap_subscribe_form'))}
+              onClick={() => openSubscribe(plan)}
             >
               {t('ap_subscribe_now')}
             </Button>
           </CardContent>
         </Card>
       ))}
+
+      {selectedPlan && (
+        <SubscriptionDurationDialog
+          open={dialogOpen}
+          onOpenChange={(v) => { setDialogOpen(v); if (!v) setSelectedPlan(null); }}
+          targetType="protection_plan"
+          title={selectedPlan.name_ar}
+          monthlyPrice={Number(selectedPlan.monthly_price) || 0}
+          requirePrinter
+          confirming={busy}
+          onConfirm={handleConfirm}
+        />
+      )}
     </div>
   );
 }
