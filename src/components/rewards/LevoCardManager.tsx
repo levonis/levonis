@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { CreditCard, Trash2, Eye, EyeOff, ArrowUpCircle, Loader2, Calendar, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNumberFormat } from '@/lib/i18n/numberFormat';
+import SubscriptionDurationDialog from '@/components/subscriptions/SubscriptionDurationDialog';
 
 interface Assignment {
   id: string; card_id: string; user_id: string;
