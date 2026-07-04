@@ -183,7 +183,7 @@ export default function LevoCardOrderForm({ onConfirmedChange }: Props) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="mt-1"
+                className="mt-1 w-full min-w-0"
               />
             </div>
           </div>
