@@ -317,6 +317,21 @@ export default function LevoCardManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Duration selection dialog (initial subscription) */}
+      {durationPlan && (
+        <SubscriptionDurationDialog
+          open={durationOpen}
+          onOpenChange={(v) => { setDurationOpen(v); if (!v) setDurationPlan(null); }}
+          targetType="card"
+          title={durationPlan.name_ar}
+          monthlyPrice={durationPlan.wallet_price || 0}
+          confirming={busy}
+          onConfirm={async ({ tier, quote }) => {
+            await subscribe(durationPlan.id, quote.final, tier.duration_months, tier.discount_percentage);
+          }}
+        />
+      )}
     </>
   );
 }
