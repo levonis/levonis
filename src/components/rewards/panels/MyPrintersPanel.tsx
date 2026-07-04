@@ -156,6 +156,49 @@ export default function MyPrintersPanel() {
                     </div>
                   )}
 
+                  {/* Levo card link status */}
+                  {cardActive ? (
+                    <div className="mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20 flex items-center gap-2">
+                      <Link2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="text-[11px] text-foreground">
+                        مرتبطة ببطاقة: <span className="font-bold">{(linkedCard?.membership_cards as any)?.name_ar || 'ليفو'}</span>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className={`mt-2 p-3 rounded-lg space-y-2 ${inGrace ? 'bg-amber-500/10 border border-amber-500/40' : 'bg-destructive/10 border border-destructive/40'}`}>
+                      <div className="flex items-start gap-2">
+                        <Link2Off className={`h-4 w-4 shrink-0 mt-0.5 ${inGrace ? 'text-amber-600' : 'text-destructive'}`} />
+                        <div className="flex-1">
+                          <p className={`text-xs font-bold ${inGrace ? 'text-amber-700 dark:text-amber-300' : 'text-destructive'}`}>
+                            {inGrace ? `تحتاج بطاقة ليفو لتفعيل الضمان والتأمين (متبقي ${graceDays} يوم)` : 'الطابعة غير مرتبطة ببطاقة ليفو نشطة'}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                            الضمان وخطط التأمين متوقفة حتى تربط الطابعة ببطاقة ليفو فعّالة في حسابك.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 h-8 text-[11px]"
+                          disabled={relink.isPending}
+                          onClick={() => relink.mutate(printer.id)}
+                        >
+                          <Link2 className="h-3.5 w-3.5 ml-1" />
+                          ربط ببطاقتي النشطة
+                        </Button>
+                        <Link to="/membership-cards" className="flex-1">
+                          <Button size="sm" className="w-full h-8 text-[11px]">
+                            <Sparkles className="h-3.5 w-3.5 ml-1" />
+                            احصل على بطاقة
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+
                   {showExpiredBanner && (
                     <div className="mt-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
                       <p className="text-xs text-foreground leading-relaxed">
