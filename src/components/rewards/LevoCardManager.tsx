@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { CreditCard, Trash2, Eye, EyeOff, ArrowUpCircle, Loader2, Calendar, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNumberFormat } from '@/lib/i18n/numberFormat';
+import SubscriptionDurationDialog from '@/components/subscriptions/SubscriptionDurationDialog';
 
 interface Assignment {
   id: string; card_id: string; user_id: string;
@@ -37,6 +38,8 @@ export default function LevoCardManager() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [upgradeQuote, setUpgradeQuote] = useState<any>(null);
+  const [durationOpen, setDurationOpen] = useState(false);
+  const [durationPlan, setDurationPlan] = useState<Plan | null>(null);
 
   const { data: myCard, isLoading } = useQuery({
     queryKey: ['levo-card-my', user?.id],
@@ -104,7 +107,7 @@ export default function LevoCardManager() {
     finally { setBusy(false); }
   };
 
-  const subscribe = async (planId: string, price: number) => {
+  const subscribe = async (planId: string, price: number, durationMonths: number, discountPercent: number) => {
     setBusy(true);
     try {
       const { data, error } = await (supabase as any).rpc('levo_subscribe_card', {
@@ -112,15 +115,24 @@ export default function LevoCardManager() {
         p_membership_card_id: planId,
         p_payment_method: 'wallet',
         p_amount: price,
+        p_duration_months: durationMonths,
+        p_discount_percentage: discountPercent,
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'failed');
       toast.success('تم تفعيل الاشتراك');
       setSubOpen(false);
+      setDurationOpen(false);
+      setDurationPlan(null);
       qc.invalidateQueries({ queryKey: ['levo-card-my'] });
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
     } catch (e: any) { toast.error(e?.message || 'فشل الاشتراك'); }
     finally { setBusy(false); }
+  };
+
+  const openDurationDialog = (plan: Plan) => {
+    setDurationPlan(plan);
+    setDurationOpen(true);
   };
 
   const openUpgrade = async (planId: string) => {
@@ -254,7 +266,7 @@ export default function LevoCardManager() {
             {(subscription ? upgradablePlans : subscribablePlans).map(plan => (
               <button
                 key={plan.id}
-                onClick={() => subscription ? openUpgrade(plan.id) : subscribe(plan.id, plan.wallet_price || 0)}
+                onClick={() => subscription ? openUpgrade(plan.id) : openDurationDialog(plan)}
                 disabled={busy}
                 className="w-full text-right p-3 rounded-lg border hover:bg-muted/40 transition-colors flex items-center justify-between"
               >
@@ -305,6 +317,21 @@ export default function LevoCardManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Duration selection dialog (initial subscription) */}
+      {durationPlan && (
+        <SubscriptionDurationDialog
+          open={durationOpen}
+          onOpenChange={(v) => { setDurationOpen(v); if (!v) setDurationPlan(null); }}
+          targetType="card"
+          title={durationPlan.name_ar}
+          monthlyPrice={durationPlan.wallet_price || 0}
+          confirming={busy}
+          onConfirm={async ({ tier, quote }) => {
+            await subscribe(durationPlan.id, quote.final, tier.duration_months, tier.discount_percentage);
+          }}
+        />
+      )}
     </>
   );
 }

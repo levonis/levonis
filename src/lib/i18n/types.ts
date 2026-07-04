@@ -2406,5 +2406,34 @@ export type TranslationKeys = {
   insurance_addon_tab: string;
   insurance_admin_tab: string;
   insurance_select_printer: string;
+
+  // Subscription duration tiers
+  sub_choose_duration: string;
+  sub_duration_1m: string;
+  sub_duration_3m: string;
+  sub_duration_6m: string;
+  sub_duration_12m: string;
+  sub_month_short: string;
+  sub_months_short: string;
+  sub_save_percent: string;
+  sub_most_popular: string;
+  sub_best_value: string;
+  sub_total: string;
+  sub_original: string;
+  sub_per_month_effective: string;
+  sub_confirm: string;
+  sub_confirming: string;
+  sub_no_tiers: string;
+  sub_select_printer: string;
+  sub_no_printers: string;
+  sub_success: string;
+  sub_error: string;
+  sub_admin_title: string;
+  sub_admin_desc: string;
+  sub_admin_cards_tab: string;
+  sub_admin_plans_tab: string;
+  sub_admin_discount: string;
+  sub_admin_active: string;
+  sub_admin_save: string;
 };
 

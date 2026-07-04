@@ -5614,6 +5614,8 @@ export type Database = {
         Row: {
           assignment_id: string
           created_at: string
+          discount_percentage_applied: number
+          duration_months: number
           expires_at: string
           id: string
           membership_card_id: string
@@ -5629,6 +5631,8 @@ export type Database = {
         Insert: {
           assignment_id: string
           created_at?: string
+          discount_percentage_applied?: number
+          duration_months?: number
           expires_at: string
           id?: string
           membership_card_id: string
@@ -5644,6 +5648,8 @@ export type Database = {
         Update: {
           assignment_id?: string
           created_at?: string
+          discount_percentage_applied?: number
+          duration_months?: number
           expires_at?: string
           id?: string
           membership_card_id?: string
@@ -9249,6 +9255,8 @@ export type Database = {
           auto_renew: boolean | null
           cancelled_at: string | null
           created_at: string | null
+          discount_percentage_applied: number
+          duration_months: number
           end_date: string | null
           id: string
           last_service_request_reset: string | null
@@ -9263,6 +9271,7 @@ export type Database = {
           status:
             | Database["public"]["Enums"]["printer_subscription_status"]
             | null
+          total_paid: number
           updated_at: string | null
           used_days: number | null
           user_id: string
@@ -9274,6 +9283,8 @@ export type Database = {
           auto_renew?: boolean | null
           cancelled_at?: string | null
           created_at?: string | null
+          discount_percentage_applied?: number
+          duration_months?: number
           end_date?: string | null
           id?: string
           last_service_request_reset?: string | null
@@ -9288,6 +9299,7 @@ export type Database = {
           status?:
             | Database["public"]["Enums"]["printer_subscription_status"]
             | null
+          total_paid?: number
           updated_at?: string | null
           used_days?: number | null
           user_id: string
@@ -9299,6 +9311,8 @@ export type Database = {
           auto_renew?: boolean | null
           cancelled_at?: string | null
           created_at?: string | null
+          discount_percentage_applied?: number
+          duration_months?: number
           end_date?: string | null
           id?: string
           last_service_request_reset?: string | null
@@ -9313,6 +9327,7 @@ export type Database = {
           status?:
             | Database["public"]["Enums"]["printer_subscription_status"]
             | null
+          total_paid?: number
           updated_at?: string | null
           used_days?: number | null
           user_id?: string
@@ -12281,6 +12296,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_duration_tiers: {
+        Row: {
+          created_at: string
+          discount_percentage: number
+          display_order: number
+          duration_months: number
+          id: string
+          is_active: boolean
+          label_ar: string | null
+          label_en: string | null
+          label_ku: string | null
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percentage?: number
+          display_order?: number
+          duration_months: number
+          id?: string
+          is_active?: boolean
+          label_ar?: string | null
+          label_en?: string | null
+          label_ku?: string | null
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_percentage?: number
+          display_order?: number
+          duration_months?: number
+          id?: string
+          is_active?: boolean
+          label_ar?: string | null
+          label_en?: string | null
+          label_ku?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       subscription_payments: {
         Row: {
@@ -15637,15 +15694,27 @@ export type Database = {
         Returns: Json
       }
       levo_release_card: { Args: { p_assignment_id: string }; Returns: Json }
-      levo_subscribe_card: {
-        Args: {
-          p_amount: number
-          p_assignment_id: string
-          p_membership_card_id: string
-          p_payment_method: string
-        }
-        Returns: Json
-      }
+      levo_subscribe_card:
+        | {
+            Args: {
+              p_amount: number
+              p_assignment_id: string
+              p_membership_card_id: string
+              p_payment_method: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_assignment_id: string
+              p_discount_percentage?: number
+              p_duration_months?: number
+              p_membership_card_id: string
+              p_payment_method: string
+            }
+            Returns: Json
+          }
       levo_upgrade_quote: {
         Args: { p_assignment_id: string; p_new_plan_id: string }
         Returns: Json
@@ -15915,6 +15984,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      subscribe_protection_plan: {
+        Args: {
+          p_discount_percentage?: number
+          p_duration_months: number
+          p_expected_total: number
+          p_plan_id: string
+          p_user_printer_id: string
+        }
+        Returns: Json
       }
       toggle_reel_interaction: {
         Args: { p_reel_id: string; p_type: string; p_user_id: string }
