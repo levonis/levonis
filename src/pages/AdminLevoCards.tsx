@@ -145,7 +145,10 @@ export default function AdminLevoCards() {
           <h1 className="text-base font-bold flex items-center gap-2">
             <CreditCard className="h-4 w-4" /> إدارة بطاقات ليفو
           </h1>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
+            <Button size="sm" variant="secondary" onClick={() => navigate(`${ADMIN_BASE_PATH}/levo-card-orders`)}>
+              <CreditCard className="h-3 w-3 ml-1" /> طلبات المستخدمين
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setProductOpen(true)}>
               <Settings className="h-3 w-3 ml-1" /> منتج البطاقة
             </Button>
