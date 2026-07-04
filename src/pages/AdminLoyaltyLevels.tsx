@@ -1474,6 +1474,13 @@ export default function AdminLoyaltyLevels() {
               </Button>
               <Button
                 size="sm"
+                variant="secondary"
+                onClick={() => navigate(`${ADMIN_BASE_PATH}/levo-card-orders`)}
+              >
+                <CreditCard className="h-4 w-4 ml-1" /> طلبات بطاقات المستخدمين
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => navigate(`${ADMIN_BASE_PATH}/levo-cards`)}
               >
                 <CreditCard className="h-4 w-4 ml-1" /> إدارة بطاقات ليفو الفيزيائية
