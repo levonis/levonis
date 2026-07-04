@@ -69,6 +69,27 @@ export default function LevoCardActivator() {
 
   const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
 
+  // Auto-open + prefill when arriving from approval email link (/rewards?activate=<card>&token=<qr>)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const card = params.get('activate');
+    const token = params.get('token');
+    if (!card && !token) return;
+    setOpen(true);
+    if (token && /^LVQR-/.test(token)) {
+      setScannedToken({ kind: 'qr', token });
+    } else if (card) {
+      setValue(formatCardNumber(card));
+    }
+    // Clear the query so refresh doesn't re-trigger
+    params.delete('activate');
+    params.delete('token');
+    const qs = params.toString();
+    const newUrl = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+    window.history.replaceState({}, '', newUrl);
+  }, []);
+
   useEffect(() => {
     if (!open) {
       stopScanner(); stopNfc();
