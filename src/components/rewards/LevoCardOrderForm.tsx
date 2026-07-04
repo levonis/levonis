@@ -163,30 +163,35 @@ export default function LevoCardOrderForm({ onConfirmedChange }: Props) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">تاريخ الميلاد</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="levo-dob" className="text-xs mb-1">تاريخ الميلاد</Label>
               <Input
+                id="levo-dob"
                 type="date"
+                dir="ltr"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
+                placeholder="YYYY-MM-DD"
                 max={new Date(new Date().setFullYear(new Date().getFullYear() - 10))
                   .toISOString()
                   .slice(0, 10)}
-                className="mt-1"
+                className="w-full min-w-0 h-10 appearance-none"
               />
             </div>
-            <div>
-              <Label className="text-xs">البريد الإلكتروني</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="levo-email" className="text-xs mb-1">البريد الإلكتروني</Label>
               <Input
+                id="levo-email"
                 type="email"
                 dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="mt-1 w-full min-w-0"
+                className="w-full min-w-0 h-10 appearance-none"
               />
             </div>
           </div>
+
 
           <div className="space-y-2 pt-2">
             <label className="flex items-start gap-2 text-xs cursor-pointer">
