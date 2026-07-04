@@ -57,8 +57,12 @@ export function useCodDefaults() {
   const qc = useQueryClient();
 
   useEffect(() => {
+    // Unique channel name per hook instance — Supabase realtime forbids adding
+    // callbacks to a channel after subscribe(), which fires when the same
+    // channel name is reused across multiple mounted hook instances.
+    const channelName = `cod-defaults-sync-${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel('cod-defaults-sync')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
