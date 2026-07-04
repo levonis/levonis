@@ -140,11 +140,13 @@ Deno.serve(async (req) => {
     });
     const text = await emailRes.text();
     if (!emailRes.ok) {
+      console.error("Resend API error", emailRes.status, text, "to:", body.recipient_email);
       return new Response(
         JSON.stringify({ error: "email_failed", status: emailRes.status, detail: text }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+    console.log("Resend email sent", text);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
