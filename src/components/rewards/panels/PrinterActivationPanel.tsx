@@ -229,6 +229,27 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
     );
   }
 
+  if (!cardLoading && !activeLevoCard) {
+    return (
+      <Card className="border-primary/30">
+        <CardContent className="p-6 text-center space-y-3">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-7 w-7 text-primary" />
+          </div>
+          <h3 className="text-base font-bold">تفعيل الطابعة يتطلب بطاقة ليفو فعّالة</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            تفعيل السيريل نمبر، عرض الضمان، وخدمات التأمين — كلها ميزات حصرية لحاملي بطاقة ليفو (بلس / برو / التمت).
+          </p>
+          <Button onClick={() => navigate('/rewards?tab=cards')} className="mt-2">
+            <Sparkles className="h-4 w-4 ml-1" />
+            استعرض بطاقات ليفو
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
   const getWarrantyStatus = (expiryDate: string | null) => {
     if (!expiryDate) return { active: false, daysLeft: 0 };
     const expiry = new Date(expiryDate);
