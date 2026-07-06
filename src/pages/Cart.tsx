@@ -506,7 +506,8 @@ const Cart = () => {
     const optionId = (item as any).product_option_id;
 
     if (colors.length === 0) {
-      return product.direct_stock != null ? Math.max(0, Number(product.direct_stock)) : 0;
+      // Untracked stock (direct_stock IS NULL) → skip OOS check.
+      return product.direct_stock != null ? Math.max(0, Number(product.direct_stock)) : null;
     }
 
     if (selectedColor) {
@@ -519,22 +520,27 @@ const Cart = () => {
         return Object.values(stocks).reduce<number>((s, v: any) => s + Math.max(0, Number(v)), 0);
       }
       if (color.stock_quantity != null) return Math.max(0, Number(color.stock_quantity));
-      return 0;
+      // Color exists but no stock data → untracked, skip.
+      return null;
     }
 
-    // No color selected — sum all direct-sale-eligible colors
+    // No color selected — sum all direct-sale-eligible colors that have stock data.
     let total = 0;
+    let hasData = false;
     for (const c of colors) {
       if (c.available_for_direct_sale === false) continue;
       const stocks = c.option_stocks;
-      if (stocks && typeof stocks === 'object') {
+      if (stocks && typeof stocks === 'object' && Object.keys(stocks).length > 0) {
+        hasData = true;
         total += Object.values(stocks).reduce<number>((s, v: any) => s + Math.max(0, Number(v)), 0);
       } else if (c.stock_quantity != null) {
+        hasData = true;
         total += Math.max(0, Number(c.stock_quantity));
       }
     }
-    return total;
+    return hasData ? total : null;
   };
+
 
   const outOfStockItemIds = new Set<string>();
   const lowStockItems = new Map<string, number>(); // itemId → available
