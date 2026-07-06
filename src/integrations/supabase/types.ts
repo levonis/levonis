@@ -12581,6 +12581,192 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_in_eligible_printers: {
+        Row: {
+          base_trade_in_value: number
+          brand: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          max_operating_hours: number | null
+          notes: string | null
+          printer_model: string
+          updated_at: string
+        }
+        Insert: {
+          base_trade_in_value?: number
+          brand: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          max_operating_hours?: number | null
+          notes?: string | null
+          printer_model: string
+          updated_at?: string
+        }
+        Update: {
+          base_trade_in_value?: number
+          brand?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          max_operating_hours?: number | null
+          notes?: string | null
+          printer_model?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trade_in_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          eligible_printer_id: string | null
+          estimated_coupon_value: number
+          final_coupon_value: number | null
+          has_defects: boolean
+          has_original_box: boolean
+          has_receipt: boolean
+          has_scratches: boolean
+          id: string
+          issued_coupon_code: string | null
+          issued_coupon_id: string | null
+          notes: string | null
+          operating_hours: number
+          photos: Json
+          printer_brand: string | null
+          printer_model: string | null
+          purchase_source: string | null
+          receipt_image_url: string | null
+          rejection_reason: string | null
+          status: string
+          target_new_product_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          eligible_printer_id?: string | null
+          estimated_coupon_value?: number
+          final_coupon_value?: number | null
+          has_defects?: boolean
+          has_original_box?: boolean
+          has_receipt?: boolean
+          has_scratches?: boolean
+          id?: string
+          issued_coupon_code?: string | null
+          issued_coupon_id?: string | null
+          notes?: string | null
+          operating_hours?: number
+          photos?: Json
+          printer_brand?: string | null
+          printer_model?: string | null
+          purchase_source?: string | null
+          receipt_image_url?: string | null
+          rejection_reason?: string | null
+          status?: string
+          target_new_product_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          eligible_printer_id?: string | null
+          estimated_coupon_value?: number
+          final_coupon_value?: number | null
+          has_defects?: boolean
+          has_original_box?: boolean
+          has_receipt?: boolean
+          has_scratches?: boolean
+          id?: string
+          issued_coupon_code?: string | null
+          issued_coupon_id?: string | null
+          notes?: string | null
+          operating_hours?: number
+          photos?: Json
+          printer_brand?: string | null
+          printer_model?: string | null
+          purchase_source?: string | null
+          receipt_image_url?: string | null
+          rejection_reason?: string | null
+          status?: string
+          target_new_product_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_in_requests_eligible_printer_id_fkey"
+            columns: ["eligible_printer_id"]
+            isOneToOne: false
+            referencedRelation: "trade_in_eligible_printers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_in_requests_target_new_product_id_fkey"
+            columns: ["target_new_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_in_valuation_rules: {
+        Row: {
+          adjust_percent: number | null
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          label_ar: string
+          label_en: string | null
+          label_ku: string | null
+          max_hours: number | null
+          min_hours: number | null
+          multiplier_percent: number | null
+          rule_key: string
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          adjust_percent?: number | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label_ar: string
+          label_en?: string | null
+          label_ku?: string | null
+          max_hours?: number | null
+          min_hours?: number | null
+          multiplier_percent?: number | null
+          rule_key: string
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          adjust_percent?: number | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label_ar?: string
+          label_en?: string | null
+          label_ku?: string | null
+          max_hours?: number | null
+          min_hours?: number | null
+          multiplier_percent?: number | null
+          rule_key?: string
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_addresses: {
         Row: {
           additional_notes: string | null
@@ -12789,7 +12975,9 @@ export type Database = {
           expires_at: string | null
           id: string
           is_used: boolean
+          product_restriction_id: string | null
           source: string | null
+          trade_in_request_id: string | null
           used_at: string | null
           user_id: string
         }
@@ -12801,7 +12989,9 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_used?: boolean
+          product_restriction_id?: string | null
           source?: string | null
+          trade_in_request_id?: string | null
           used_at?: string | null
           user_id: string
         }
@@ -12813,11 +13003,28 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_used?: boolean
+          product_restriction_id?: string | null
           source?: string | null
+          trade_in_request_id?: string | null
           used_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_coupons_product_restriction_id_fkey"
+            columns: ["product_restriction_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_coupons_trade_in_request_id_fkey"
+            columns: ["trade_in_request_id"]
+            isOneToOne: false
+            referencedRelation: "trade_in_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_level_prize_claims: {
         Row: {
@@ -15091,6 +15298,18 @@ export type Database = {
         Args: { p_admin_note?: string; p_card_id: string; p_user_id: string }
         Returns: Json
       }
+      admin_issue_trade_in_coupon: {
+        Args: {
+          _admin_notes?: string
+          _final_value: number
+          _request_id: string
+          _valid_days?: number
+        }
+        Returns: {
+          coupon_code: string
+          coupon_id: string
+        }[]
+      }
       admin_list_assistants: {
         Args: never
         Returns: {
@@ -15473,6 +15692,17 @@ export type Database = {
       enter_mystery_box_competition: {
         Args: { comp_id: string }
         Returns: Json
+      }
+      estimate_trade_in_value: {
+        Args: {
+          _eligible_printer_id: string
+          _has_defects: boolean
+          _has_original_box: boolean
+          _has_receipt: boolean
+          _has_scratches: boolean
+          _operating_hours: number
+        }
+        Returns: number
       }
       finalize_and_reveal_rf_for_order:
         | { Args: { p_order_id: string }; Returns: undefined }
