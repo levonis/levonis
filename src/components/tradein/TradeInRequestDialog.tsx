@@ -66,10 +66,11 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
       hasReceipt,
       hasScratches,
       hasDefects,
+      hasAms,
       hoursTiers,
       conditionRules,
     });
-  }, [chosen, operatingHours, hasBox, hasReceipt, hasScratches, hasDefects, rules]);
+  }, [chosen, operatingHours, hasBox, hasReceipt, hasScratches, hasDefects, hasAms, rules]);
 
   const overHoursLimit = !!(chosen?.max_operating_hours && parseInt(operatingHours || "0", 10) > chosen.max_operating_hours);
 
