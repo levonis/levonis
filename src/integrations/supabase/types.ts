@@ -12627,6 +12627,7 @@ export type Database = {
           eligible_printer_id: string | null
           estimated_coupon_value: number
           final_coupon_value: number | null
+          has_ams: boolean
           has_defects: boolean
           has_original_box: boolean
           has_receipt: boolean
@@ -12653,6 +12654,7 @@ export type Database = {
           eligible_printer_id?: string | null
           estimated_coupon_value?: number
           final_coupon_value?: number | null
+          has_ams?: boolean
           has_defects?: boolean
           has_original_box?: boolean
           has_receipt?: boolean
@@ -12679,6 +12681,7 @@ export type Database = {
           eligible_printer_id?: string | null
           estimated_coupon_value?: number
           final_coupon_value?: number | null
+          has_ams?: boolean
           has_defects?: boolean
           has_original_box?: boolean
           has_receipt?: boolean
@@ -15693,17 +15696,30 @@ export type Database = {
         Args: { comp_id: string }
         Returns: Json
       }
-      estimate_trade_in_value: {
-        Args: {
-          _eligible_printer_id: string
-          _has_defects: boolean
-          _has_original_box: boolean
-          _has_receipt: boolean
-          _has_scratches: boolean
-          _operating_hours: number
-        }
-        Returns: number
-      }
+      estimate_trade_in_value:
+        | {
+            Args: {
+              _eligible_printer_id: string
+              _has_defects: boolean
+              _has_original_box: boolean
+              _has_receipt: boolean
+              _has_scratches: boolean
+              _operating_hours: number
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              _eligible_printer_id: string
+              _has_ams?: boolean
+              _has_defects: boolean
+              _has_original_box: boolean
+              _has_receipt: boolean
+              _has_scratches: boolean
+              _operating_hours: number
+            }
+            Returns: number
+          }
       finalize_and_reveal_rf_for_order:
         | { Args: { p_order_id: string }; Returns: undefined }
         | {
