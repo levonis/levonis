@@ -66,6 +66,13 @@ const Cart = () => {
   // Global COD defaults — shared hook with realtime sync.
   const { data: codDefaults } = useCodDefaults();
 
+  // Active Levo card — powers the COD commission discount benefit (Plus 50% / Pro 100%).
+  const { data: activeLevoCard } = useActiveLevoCard();
+  const codCommissionDiscountPct = Number(
+    (activeLevoCard?.membership_cards as any)?.cod_commission_discount_percentage || 0
+  );
+  const codCardName = (activeLevoCard?.membership_cards as any)?.name_ar as string | undefined;
+
   // Server-computed live direct-sale prices for COD-linked products.
   // Internal cost columns are hidden from clients (column-level RLS), so without
   // this map the cart would fall back to the stale stored `direct_sale_price`
