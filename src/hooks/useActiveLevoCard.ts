@@ -14,7 +14,7 @@ export function useActiveLevoCard() {
       const nowIso = new Date().toISOString();
       const { data, error } = await supabase
         .from('user_cards')
-        .select('id, card_id, expires_at, is_active, membership_cards:card_id(name_ar, name_en, name_ku)')
+        .select('id, card_id, expires_at, is_active, membership_cards:card_id(name_ar, name_en, name_ku, card_key, cod_commission_discount_percentage, is_vip_plus)')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
