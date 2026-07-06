@@ -46,6 +46,7 @@ export default function RandomFilament() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { refreshCart } = useCart();
+  const { data: activeCard, isLoading: cardLoading } = useActiveLevoCard();
   const [step, setStep] = useState<Step>("sale-type");
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
