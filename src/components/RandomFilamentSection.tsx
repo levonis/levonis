@@ -48,6 +48,7 @@ export default function RandomFilamentSection() {
     staleTime: 2 * 60 * 1000,
   });
 
+  if (!activeLevoCard) return null;
   if (!settings?.enabled || !settings?.category_ids?.length) return null;
 
   const startingPrice = stats?.minPrice;
