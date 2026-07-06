@@ -43,6 +43,7 @@ import { cartHasLevoCard, cartHasLevoCardWithOther } from '@/lib/isLevoCardCart'
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { getGuardedCartItemPrice, fetchLiveDirectSalePrices, fetchVariantDirectSalePrices, getCartItemVariantOverrideCostIqd } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
+import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
