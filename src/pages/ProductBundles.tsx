@@ -109,6 +109,11 @@ const ProductBundles = () => {
     refetchOnMount: 'always',
   });
 
+  // Gate: bundles are exclusive to active Levo card holders
+  if (!cardLoading && !activeCard) {
+    return <Navigate to="/rewards?tab=cards" replace state={{ lockedReason: 'bundles' }} />;
+  }
+
   return (
     <div className="min-h-screen bg-transparent" dir="rtl">
       <div className="container max-w-lg mx-auto px-3 pt-4 pb-24">
