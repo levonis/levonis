@@ -23,6 +23,7 @@ interface PrinterActivationPanelProps {
 export default function PrinterActivationPanel({ onActivated }: PrinterActivationPanelProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { data: activeLevoCard, isLoading: cardLoading } = useActiveLevoCard();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [serialInput, setSerialInput] = useState(searchParams.get('serial') || '');
