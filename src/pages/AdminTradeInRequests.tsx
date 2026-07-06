@@ -165,6 +165,7 @@ function RequestDetail({ req, onClose, onChanged }: { req: any; onClose: () => v
             <div>{req.has_receipt ? "✓" : "✗"} وصل شراء</div>
             <div>{req.has_scratches ? "⚠️" : "—"} خدوش</div>
             <div>{req.has_defects ? "⚠️" : "—"} عطل</div>
+            <div>{req.has_ams ? "✓" : "✗"} جهاز AMS</div>
           </div>
           {req.notes && <div className="text-xs bg-muted p-2 rounded">ملاحظات المستخدم: {req.notes}</div>}
 
