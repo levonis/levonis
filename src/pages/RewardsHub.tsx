@@ -137,6 +137,19 @@ export default function RewardsHub() {
 
       {/* Main Content Area - scrolls with the page */}
       <main className="flex-1 px-3 py-3">
+        {activeBanner && (
+          <Card className="mb-3 border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10">
+            <CardContent className="p-4 flex items-start gap-3">
+              <div className="p-2 rounded-full bg-primary/15 shrink-0">
+                <Lock className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{activeBanner.title}</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{activeBanner.desc}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         {/* Quick Actions Row - Horizontal Scroll */}
         <div className="mb-3">
           <QuickActionsBar onNavigate={handleQuickAction} />
