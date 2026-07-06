@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Dices, Sparkles, ArrowLeft, Wallet, ShieldAlert } from "lucide-react";
 import WavyColors from "@/components/WavyColors";
+import { useActiveLevoCard } from "@/hooks/useActiveLevoCard";
 
 export default function RandomFilamentSection() {
   const navigate = useNavigate();
+  const { data: activeLevoCard } = useActiveLevoCard();
 
   const { data: settings } = useQuery({
     queryKey: ["random-filament-settings-public"],
@@ -46,6 +48,7 @@ export default function RandomFilamentSection() {
     staleTime: 2 * 60 * 1000,
   });
 
+  if (!activeLevoCard) return null;
   if (!settings?.enabled || !settings?.category_ids?.length) return null;
 
   const startingPrice = stats?.minPrice;
