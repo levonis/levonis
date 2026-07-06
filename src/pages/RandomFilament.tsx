@@ -226,6 +226,13 @@ export default function RandomFilament() {
     );
   }
 
+  // Gate: random filament is exclusive to active Levo card holders
+  if (!cardLoading && !activeCard) {
+    return <Navigate to="/rewards?tab=cards" replace state={{ lockedReason: 'random_filament' }} />;
+  }
+
+
+
   if (settingsLoading || !settings) {
     return (
       <div className="container mx-auto px-4 py-10 text-center text-muted-foreground">
