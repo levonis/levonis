@@ -20,8 +20,26 @@ const validMainTabs: MainTabId[] = ['points', 'competitions', 'cards', 'insuranc
 export default function RewardsHub() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const lockedReason = (location.state as any)?.lockedReason as string | undefined;
   const { user } = useAuth();
   const { t, dir } = useLanguage();
+
+  const lockedBanners: Record<string, { title: string; desc: string }> = {
+    bundles: {
+      title: 'قسم البندل حصري لحاملي بطاقة ليفو',
+      desc: 'اشترك في إحدى بطاقات ليفو (بلس / برو / التمت) لفتح الوصول إلى حزم البندل الحصرية.',
+    },
+    random_filament: {
+      title: 'الفلمنت العشوائي حصري لحاملي بطاقة ليفو',
+      desc: 'يتطلب الوصول لهذا القسم بطاقة ليفو فعّالة. تفضّل بالاشتراك للاستمتاع بالمفاجآت.',
+    },
+    printer_activation: {
+      title: 'تفعيل الطابعة يتطلب بطاقة ليفو',
+      desc: 'تفعيل السيريل نمبر، الضمان، والتأمين — كلها ميزات حصرية لحاملي بطاقة ليفو.',
+    },
+  };
+  const activeBanner = lockedReason ? lockedBanners[lockedReason] : null;
 
   // Read tab from URL search params (e.g. /rewards?tab=competitions&sub=competitions)
   const urlTab = searchParams.get('tab') as MainTabId | null;
