@@ -4074,6 +4074,12 @@ const Cart = () => {
                             <span className="font-bold">+{formatPrice(codFee)} {t('cart_iqd_short')}</span>
                           </div>
                         )}
+                        {codCommissionDiscount > 0 && (
+                          <div className="flex justify-between items-center text-sm text-emerald-600 mb-2">
+                            <span>خصم عمولة الدفع عند الاستلام{codCardName ? ` (${codCardName})` : ''}</span>
+                            <span className="font-bold">-{formatPrice(codCommissionDiscount)} {t('cart_iqd_short')}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
                           <span>{t('cart_delivery')}</span>
                           <span className="font-bold">{formatPrice(deliveryFee)} {t('cart_iqd_short')}</span>
