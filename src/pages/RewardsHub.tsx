@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, LogIn } from "lucide-react";
+import { ArrowLeft, Sparkles, LogIn, Lock } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 
 import RewardsMainTabs, { MainTabId } from "@/components/rewards/RewardsMainTabs";
