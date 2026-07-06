@@ -49,6 +49,7 @@ const SALE_TYPE_KEYS: Record<string, 'sale_type_direct' | 'sale_type_preorder_ai
 
 const ProductBundles = () => {
   const { language, t } = useLanguage();
+  const { data: activeCard, isLoading: cardLoading } = useActiveLevoCard();
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
     queryFn: async () => {
