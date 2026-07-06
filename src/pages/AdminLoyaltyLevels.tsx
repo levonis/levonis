@@ -70,6 +70,7 @@ export default function AdminLoyaltyLevels() {
     profile_effects: { enabled: false, border_color: null as string | null, background_glow: false, avatar_frame: null as string | null },
     discount_applicable_category_ids: [] as string[],
     free_shipping_applicable_category_ids: [] as string[],
+    cod_commission_discount_percentage: 0,
   });
   const [benefits, setBenefits] = useState<Array<{ text_ar: string; text_en: string }>>([]);
 
