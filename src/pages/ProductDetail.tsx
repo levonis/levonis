@@ -39,6 +39,9 @@ import { productLd, breadcrumbLd } from '@/lib/seo/structured';
 import ProductAIContent from '@/components/ProductAIContent';
 import { buildAIContentForLd, normalizeAIContent } from '@/lib/aiContent';
 import { translateShippingOption } from '@/lib/shippingLabel';
+import TradeInRequestDialog from '@/components/tradein/TradeInRequestDialog';
+import { useEligiblePrinters } from '@/hooks/useTradeInEligibility';
+import { Recycle } from 'lucide-react';
 
 // Dynamic icon map for features
 const FEATURE_ICONS: Record<string, any> = {
@@ -92,6 +95,8 @@ const ProductDetail = () => {
   const [selectedSaleType, setSelectedSaleType] = useState<'direct' | 'preorder' | null>(null);
   const [userManuallySelected, setUserManuallySelected] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
+  const [showTradeInDialog, setShowTradeInDialog] = useState(false);
+  const { data: eligibleTradeInPrinters = [] } = useEligiblePrinters();
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
 
@@ -1374,6 +1379,33 @@ const ProductDetail = () => {
                   </AccordionItem>
                 )}
               </Accordion>
+
+              {/* Trade-In Banner */}
+              {eligibleTradeInPrinters.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowTradeInDialog(true)}
+                  className="w-full text-right rounded-2xl p-4 border border-emerald-500/30 bg-gradient-to-l from-emerald-500/10 via-green-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                      <Recycle className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">استبدل طابعتك القديمة واحصل على خصم</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">قدّم طابعتك القديمة للتقييم واحصل على كوبون خصم على شراء هذه الطابعة الجديدة</p>
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              <TradeInRequestDialog
+                open={showTradeInDialog}
+                onOpenChange={setShowTradeInDialog}
+                targetProductId={product.id}
+                targetProductName={localizedName || (product as any).name_ar}
+              />
+
 
               {/* Rewards */}
               {(Number((product as any).points_reward) > 0 || (Array.isArray((product as any).card_discounts) && (product as any).card_discounts.length > 0)) && allLoyaltyLevels && (

@@ -66,6 +66,8 @@ export const ADMIN_ROUTES = {
   randomFilament: `${ADMIN_BASE_PATH}/random-filament`,
   printMaterials: `${ADMIN_BASE_PATH}/print-materials`,
   assistants: `${ADMIN_BASE_PATH}/assistants`,
+  tradeInPrinters: `${ADMIN_BASE_PATH}/trade-in-printers`,
+  tradeInRequests: `${ADMIN_BASE_PATH}/trade-in-requests`,
 
 } as const;
 
