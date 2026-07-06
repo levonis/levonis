@@ -36,6 +36,7 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
   const [hasReceipt, setHasReceipt] = useState(false);
   const [hasScratches, setHasScratches] = useState(false);
   const [hasDefects, setHasDefects] = useState(false);
+  const [hasAms, setHasAms] = useState(false);
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
