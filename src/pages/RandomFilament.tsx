@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useOriginPoint } from "@/hooks/useOriginPoint";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLevoCard } from "@/hooks/useActiveLevoCard";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,6 +46,7 @@ export default function RandomFilament() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { refreshCart } = useCart();
+  const { data: activeCard, isLoading: cardLoading } = useActiveLevoCard();
   const [step, setStep] = useState<Step>("sale-type");
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -223,6 +225,13 @@ export default function RandomFilament() {
       </div>
     );
   }
+
+  // Gate: random filament is exclusive to active Levo card holders
+  if (!cardLoading && !activeCard) {
+    return <Navigate to="/rewards?tab=cards" replace state={{ lockedReason: 'random_filament' }} />;
+  }
+
+
 
   if (settingsLoading || !settings) {
     return (

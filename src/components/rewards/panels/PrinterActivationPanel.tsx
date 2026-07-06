@@ -13,6 +13,8 @@ import { QrCode, Printer, Shield, Calendar, Loader2, Camera, CheckCircle, AlertT
 import { addMonths, format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/lib/i18n';
+import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
+import { Sparkles } from 'lucide-react';
 
 interface PrinterActivationPanelProps {
   onActivated?: () => void;
@@ -21,6 +23,7 @@ interface PrinterActivationPanelProps {
 export default function PrinterActivationPanel({ onActivated }: PrinterActivationPanelProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { data: activeLevoCard, isLoading: cardLoading } = useActiveLevoCard();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [serialInput, setSerialInput] = useState(searchParams.get('serial') || '');
@@ -225,6 +228,27 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
       </Card>
     );
   }
+
+  if (!cardLoading && !activeLevoCard) {
+    return (
+      <Card className="border-primary/30">
+        <CardContent className="p-6 text-center space-y-3">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-7 w-7 text-primary" />
+          </div>
+          <h3 className="text-base font-bold">تفعيل الطابعة يتطلب بطاقة ليفو فعّالة</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            تفعيل السيريل نمبر، عرض الضمان، وخدمات التأمين — كلها ميزات حصرية لحاملي بطاقة ليفو (بلس / برو / التمت).
+          </p>
+          <Button onClick={() => navigate('/rewards?tab=cards')} className="mt-2">
+            <Sparkles className="h-4 w-4 ml-1" />
+            استعرض بطاقات ليفو
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   const getWarrantyStatus = (expiryDate: string | null) => {
     if (!expiryDate) return { active: false, daysLeft: 0 };

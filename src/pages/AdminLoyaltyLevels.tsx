@@ -70,6 +70,7 @@ export default function AdminLoyaltyLevels() {
     profile_effects: { enabled: false, border_color: null as string | null, background_glow: false, avatar_frame: null as string | null },
     discount_applicable_category_ids: [] as string[],
     free_shipping_applicable_category_ids: [] as string[],
+    cod_commission_discount_percentage: 0,
   });
   const [benefits, setBenefits] = useState<Array<{ text_ar: string; text_en: string }>>([]);
 
@@ -417,6 +418,7 @@ export default function AdminLoyaltyLevels() {
       profile_effects: { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
       discount_applicable_category_ids: [],
       free_shipping_applicable_category_ids: [],
+      cod_commission_discount_percentage: 0,
     });
     setBenefits([]);
     setEditingLevel(null);
@@ -470,6 +472,7 @@ export default function AdminLoyaltyLevels() {
       profile_effects: level.profile_effects || { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
       discount_applicable_category_ids: Array.isArray(level.discount_applicable_category_ids) ? level.discount_applicable_category_ids : [],
       free_shipping_applicable_category_ids: Array.isArray(level.free_shipping_applicable_category_ids) ? level.free_shipping_applicable_category_ids : [],
+      cod_commission_discount_percentage: Number(level.cod_commission_discount_percentage) || 0,
     });
     setBenefits(level.benefits || []);
     setDialogOpen(true);
@@ -917,6 +920,25 @@ export default function AdminLoyaltyLevels() {
                               <p className="text-[11px] text-muted-foreground mt-1">
                                 يظهر للمستخدمين: "خصم {formData.discount_percentage || 0}% مع بطاقة {formData.name_ar || '—'}"
                                 {(formData as any).discount_percentage_max_amount > 0 && ` بحد أقصى ${Number((formData as any).discount_percentage_max_amount).toLocaleString()} د.ع`}
+                              </p>
+                            </div>
+
+                            <div>
+                              <Label>خصم عمولة الدفع عند الاستلام (%)</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="1"
+                                value={formData.cod_commission_discount_percentage}
+                                onChange={(e) => setFormData({
+                                  ...formData,
+                                  cod_commission_discount_percentage: e.target.value === '' ? 0 : Math.max(0, Math.min(100, parseFloat(e.target.value))),
+                                })}
+                                placeholder="مثال: 50 أو 100"
+                              />
+                              <p className="text-[11px] text-muted-foreground mt-1">
+                                عند تفعيل COD، تُخصم هذه النسبة من عمولة الدفع عند الاستلام لحاملي البطاقة. (مثلاً 50 = نصف العمولة، 100 = عمولة مجانية).
                               </p>
                             </div>
 

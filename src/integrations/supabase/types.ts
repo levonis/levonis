@@ -6237,6 +6237,7 @@ export type Database = {
           card_color: string | null
           card_discounts_enabled: boolean
           card_key: string
+          cod_commission_discount_percentage: number
           color: string | null
           created_at: string
           description_ar: string | null
@@ -6285,6 +6286,7 @@ export type Database = {
           card_color?: string | null
           card_discounts_enabled?: boolean
           card_key: string
+          cod_commission_discount_percentage?: number
           color?: string | null
           created_at?: string
           description_ar?: string | null
@@ -6333,6 +6335,7 @@ export type Database = {
           card_color?: string | null
           card_discounts_enabled?: boolean
           card_key?: string
+          cod_commission_discount_percentage?: number
           color?: string | null
           created_at?: string
           description_ar?: string | null
@@ -12326,10 +12329,12 @@ export type Database = {
       }
       subscription_duration_tiers: {
         Row: {
+          card_id: string | null
           created_at: string
           discount_percentage: number
           display_order: number
           duration_months: number
+          fixed_price_iqd: number | null
           id: string
           is_active: boolean
           label_ar: string | null
@@ -12339,10 +12344,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          card_id?: string | null
           created_at?: string
           discount_percentage?: number
           display_order?: number
           duration_months: number
+          fixed_price_iqd?: number | null
           id?: string
           is_active?: boolean
           label_ar?: string | null
@@ -12352,10 +12359,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          card_id?: string | null
           created_at?: string
           discount_percentage?: number
           display_order?: number
           duration_months?: number
+          fixed_price_iqd?: number | null
           id?: string
           is_active?: boolean
           label_ar?: string | null
@@ -12364,7 +12373,15 @@ export type Database = {
           target_type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscription_duration_tiers_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "membership_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_payments: {
         Row: {

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, LogIn } from "lucide-react";
+import { ArrowLeft, Sparkles, LogIn, Lock } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 
 import RewardsMainTabs, { MainTabId } from "@/components/rewards/RewardsMainTabs";
@@ -20,8 +20,26 @@ const validMainTabs: MainTabId[] = ['points', 'competitions', 'cards', 'insuranc
 export default function RewardsHub() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const lockedReason = (location.state as any)?.lockedReason as string | undefined;
   const { user } = useAuth();
   const { t, dir } = useLanguage();
+
+  const lockedBanners: Record<string, { title: string; desc: string }> = {
+    bundles: {
+      title: 'قسم البندل حصري لحاملي بطاقة ليفو',
+      desc: 'اشترك في إحدى بطاقات ليفو (بلس / برو / التمت) لفتح الوصول إلى حزم البندل الحصرية.',
+    },
+    random_filament: {
+      title: 'الفلمنت العشوائي حصري لحاملي بطاقة ليفو',
+      desc: 'يتطلب الوصول لهذا القسم بطاقة ليفو فعّالة. تفضّل بالاشتراك للاستمتاع بالمفاجآت.',
+    },
+    printer_activation: {
+      title: 'تفعيل الطابعة يتطلب بطاقة ليفو',
+      desc: 'تفعيل السيريل نمبر، الضمان، والتأمين — كلها ميزات حصرية لحاملي بطاقة ليفو.',
+    },
+  };
+  const activeBanner = lockedReason ? lockedBanners[lockedReason] : null;
 
   // Read tab from URL search params (e.g. /rewards?tab=competitions&sub=competitions)
   const urlTab = searchParams.get('tab') as MainTabId | null;
@@ -119,6 +137,19 @@ export default function RewardsHub() {
 
       {/* Main Content Area - scrolls with the page */}
       <main className="flex-1 px-3 py-3">
+        {activeBanner && (
+          <Card className="mb-3 border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10">
+            <CardContent className="p-4 flex items-start gap-3">
+              <div className="p-2 rounded-full bg-primary/15 shrink-0">
+                <Lock className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{activeBanner.title}</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{activeBanner.desc}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         {/* Quick Actions Row - Horizontal Scroll */}
         <div className="mb-3">
           <QuickActionsBar onNavigate={handleQuickAction} />

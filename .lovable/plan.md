@@ -1,107 +1,103 @@
-## ميزة استبدال الطابعات القديمة (Trade-In)
 
-### نظرة عامة
-يقدم المستخدم طلب استبدال طابعته القديمة بطابعة جديدة من قائمة يحددها الأدمن. النظام يحسب كوبون خصم تلقائياً حسب حالة الطابعة، ثم يراجع الأدمن ويفحص فعلياً قبل إصدار الكوبون النهائي المرتبط بشراء طابعة جديدة محددة.
+## هدف التعديل
+جعل بطاقة ليفو النظام الأساسي لفتح كل الميزات مع إعادة تسمية البطاقات، تسعير ثابت للمدد، إضافة خصم عمولة COD، وقفل صفحات المحتوى الحصري.
 
-### قاعدة البيانات
+---
 
-**جدول `trade_in_eligible_printers`** — الطابعات المسموح باستبدالها (يديرها الأدمن):
-- `printer_model` (اسم موديل الطابعة القديمة)
-- `brand`, `base_trade_in_value` (القيمة الأساسية بالدينار)
-- `max_operating_hours` (بعدها يُرفض الطلب أو تنخفض القيمة كثيراً)
-- `is_active`
+## 1) قاعدة البيانات (migration واحدة)
 
-**جدول `trade_in_valuation_rules`** — عوامل الحساب التلقائي (يديرها الأدمن):
-- ساعات التشغيل: شرائح (0-500h = 100%, 500-1500 = 80%, ...)
-- حالة الكرتون الأصلي: +5%
-- خدوش/كسر: -10% إلى -30%
-- عطل/عيب: -20% إلى -50%
-- وجود وصل شراء: +5%
+### أ) إعادة تسمية البطاقات القائمة (UPDATE — لا يوجد فقدان بيانات للمشتركين)
+- `card_key='levo'` → name_ar = **ليفو بلس**، card_key = **levo_plus_new** (تجنب التصادم مؤقتاً)، wallet_price = 25000
+- `card_key='levo_plus'` → name_ar = **ليفو برو**، card_key = **levo_pro**، wallet_price = 45000
+- `card_key='levo_vip'` → name_ar = **ليفو التمت**، card_key = **levo_ultimate**، is_purchasable = false، is_vip_plus = true
+- ثم rename `levo_plus_new` → `levo_plus`
 
-**جدول `trade_in_requests`** — طلبات المستخدمين:
-- `user_id`, `eligible_printer_id`, `target_new_product_id` (الطابعة الجديدة المطلوبة)
-- بيانات الفحص: `operating_hours`, `printer_brand`, `printer_model`, `purchase_source`, `has_original_box`, `has_scratches`, `has_defects`, `notes`
-- `receipt_image_url`, `photos` (jsonb array من روابط الصور)
-- `estimated_coupon_value` (حساب تلقائي أولي)
-- `final_coupon_value` (بعد الفحص الفعلي)
-- `status` (`pending_review` | `approved_pending_inspection` | `inspection_scheduled` | `inspected_adjusted` | `coupon_issued` | `rejected` | `cancelled`)
-- `admin_notes`, `rejection_reason`, `issued_coupon_id`
-- RLS: المستخدم يرى/ينشئ طلباته فقط، الأدمن يدير الكل
+### ب) أعمدة جديدة على `membership_cards`
+- `cod_commission_discount_percentage` NUMERIC DEFAULT 0 (نسبة الخصم من عمولة الدفع عند الاستلام؛ 0-100)
+- تعيين القيم: بلس = 50، برو = 100، التمت = 100
 
-**Storage bucket**: `trade-in-uploads` (خاص، RLS scoped بـ `user_id/*`)
+### ج) عمود جديد على `subscription_duration_tiers`
+- `fixed_price_iqd` NUMERIC NULL (سعر نهائي ثابت لكل مدة/بطاقة عند وجوده يتجاوز نسبة الخصم)
+- `card_id` UUID NULL REFERENCES membership_cards(id) (لربط التسعير ببطاقة محددة، NULL = عام)
 
-### صيغة الحساب التلقائي (`src/lib/tradeInPricing.ts`)
-```
-base = eligible_printer.base_trade_in_value
-hoursMultiplier = getTierMultiplier(operating_hours)  // من valuation_rules
-conditionAdjust = box(+5%) + scratches(-X%) + defects(-Y%) + receipt(+5%)
-estimated = round(base × hoursMultiplier × (1 + conditionAdjust), 250 IQD)
-```
-تُعرض للمستخدم قبل الإرسال كتقدير غير نهائي.
+### د) صفوف tiers الجديدة (target_type='card')
+| البطاقة | 1 شهر | 3 أشهر | 6 أشهر | 12 شهر |
+|---|---|---|---|---|
+| ليفو بلس | 25,000 | 70,000 | 125,000 | 200,000 |
+| ليفو برو | 45,000 | 125,000 | 225,000 | 400,000 |
 
-### واجهة المستخدم
+- إدراج ٨ صفوف جديدة بـ `card_id` معيّن و`fixed_price_iqd`
+- تعطيل الصفوف العامة القديمة (`is_active=false`) لتفادي التعارض
 
-**1. صفحة تفاصيل الطابعة الجديدة (`ProductShop.tsx` أو مكوّن `ProductDetails`)**
-- بانر أخضر: "استبدل طابعتك القديمة واحصل على خصم" — يظهر فقط إذا كانت الطابعة الجديدة ضمن الفئات المدعومة
-- زر يفتح `TradeInRequestDialog`
+### هـ) تحديث RPC حساب سعر الاشتراك
+- `calculate_subscription_price` (إن وُجد) يبحث أولاً عن tier بـ card_id مطابق ثم fallback للعام؛ يستخدم `fixed_price_iqd` عند توفره.
 
-**2. `TradeInRequestDialog.tsx` — نموذج متعدد الخطوات:**
-- **الخطوة 1**: اختيار الطابعة القديمة من قائمة `trade_in_eligible_printers` (أو "غير موجودة" → رفض مبكر)
-- **الخطوة 2**: بيانات الطابعة (ساعات تشغيل، براند، موديل مُكتشف، مصدر الشراء)
-- **الخطوة 3**: الحالة (كرتون؟ خدوش؟ عطل؟ ملاحظات)
-- **الخطوة 4**: رفع الصور (4-6 صور شاملة + صورة وصل الشراء اختيارية)
-- **الخطوة 5**: عرض التقدير المحسوب تلقائياً + تنويه "القيمة النهائية تُحدد بعد الفحص الفعلي" + إرسال
+---
 
-**3. `MyTradeInRequests.tsx` — صفحة المستخدم لمتابعة طلباته:**
-- قائمة الطلبات مع الحالة والتقدير الأولي/النهائي
-- عند `coupon_issued`: زر "اذهب لشراء الطابعة" مع الكوبون معروضاً
+## 2) قفل الصفحات الحصرية
 
-**4. زر ثابت في `MyPrintersPanel.tsx`**: "استبدل هذه الطابعة" إذا كانت ضمن `trade_in_eligible_printers`
+### `src/pages/ProductBundles.tsx`
+- استدعاء `useActiveLevoCard`؛ إذا لا يوجد بطاقة فعّالة: إعادة توجيه (`Navigate`) إلى `/membership-cards` مع state يحمل reason='bundles_locked' لعرض بانر.
 
-### لوحة الإدارة
+### `src/pages/RandomFilament.tsx` (أو ما يقابلها)
+- نفس المنطق مع reason='random_filament_locked'.
 
-**`AdminTradeInPrinters.tsx`** (`/admin/trade-in-printers`)
-- CRUD للطابعات المؤهلة + قيمها الأساسية + max hours
-- تحرير شرائح ساعات التشغيل ونسب الحالة (verify-and-rollback)
+### `src/pages/MembershipCards.tsx`
+- قراءة location.state.reason وعرض بانر ملوّن أعلى الصفحة برسالة تشجيعية مناسبة (بندل / فلمنت عشوائي / تفعيل طابعة / تأمين).
 
-**`AdminTradeInRequests.tsx`** (`/admin/trade-in-requests`)
-- قائمة الطلبات مع فلترة بالحالة
-- تفاصيل الطلب: جميع الصور، البيانات، التقدير الأولي
-- إجراءات:
-  - **موافقة مبدئية** → status = `approved_pending_inspection` + رسالة للمستخدم مع تعليمات جلب الطابعة
-  - **تسجيل نتيجة الفحص الفعلي**: تعديل القيمة النهائية + ملاحظات → status = `inspected_adjusted`
-  - **إصدار الكوبون**: يولّد صف في `coupons` مربوط بـ `target_new_product_id` (product_id restriction، one-time use، expires 30 days) → status = `coupon_issued`، ويُخطر المستخدم
-  - **رفض** مع سبب
+### أقسام الصفحة الرئيسية
+- تبقى كما هي بعد آخر تحديث (مخفية بدون بطاقة فعّالة).
 
-### التكامل مع الكوبونات الحالية
-- الكوبون المُصدر يستخدم جدول `coupons` الحالي مع:
-  - `discount_type = 'fixed_iqd'`
-  - `discount_value = final_coupon_value`
-  - `product_restriction = target_new_product_id`
-  - `usage_limit = 1`, `user_id = requester`
-- عند الشراء، نظام الكوبونات يتحقق من المنتج تلقائياً
+---
 
-### الملفات
+## 3) خصم عمولة الدفع عند الاستلام (COD)
 
-**جديدة:**
-- migration واحدة تشمل: 3 جداول + Storage bucket + RLS + GRANTs + seed rules افتراضية
-- `src/lib/tradeInPricing.ts` + tests
-- `src/components/tradein/TradeInRequestDialog.tsx`
-- `src/pages/MyTradeInRequests.tsx`
-- `src/pages/AdminTradeInPrinters.tsx`
-- `src/pages/AdminTradeInRequests.tsx`
-- `src/hooks/useTradeInEligibility.ts`
+### `src/hooks/useCodDefaults.ts` أو hook جديد `useCardCodDiscount`
+- قراءة `cod_commission_discount_percentage` من بطاقة المستخدم الفعّالة عبر `useActiveLevoCard` (تحديث الاستعلام لجلب الحقل).
 
-**معدلة:**
-- `src/App.tsx` — routes الجديدة
-- `src/pages/ProductShop.tsx` (أو تفاصيل المنتج) — بانر Trade-In
-- `src/components/rewards/panels/MyPrintersPanel.tsx` — زر استبدال
-- `src/lib/i18n/{ar,en,ku}.ts` + `types.ts` — مفاتيح ترجمة
-- Admin Hub — روابط الصفحتين الجديدتين
+### `src/pages/Cart.tsx` + `src/lib/orderFinancials.ts`
+- عند حساب عمولة COD (المذكورة في memory `direct-sale-linked-to-cod`): طبّق الخصم = `commission * (1 - percentage/100)` وأظهر سطر "خصم عمولة COD (بطاقة ليفو برو)" في breakdown السلة.
 
-### التفاصيل التقنية
-- الصور تُرفع لـ `trade-in-uploads/{user_id}/{request_id}/*`
-- إشعارات: عند تغيير الحالة يُرسل notification للمستخدم
-- التقدير التلقائي محسوب عميلاً + سيرفراً (RPC `estimate_trade_in_value`) لمنع التلاعب
-- إصدار الكوبون عبر RPC `admin_issue_trade_in_coupon` (SECURITY DEFINER، admin-only) لضمان الاتساق
-- كل حقول الأسعار بالدينار العراقي، تقريب لأقرب 250 IQD
+### `src/pages/AdminMembershipCards.tsx` (لو موجودة، وإلا `AdminLoyaltyLevels` أو صفحة الإدارة المطابقة)
+- إضافة حقل input لتعديل النسبة من لوحة الأدمن.
+
+---
+
+## 4) التحقق من ربط باقي الميزات (لا تعديل مطلوب — فقط فحص)
+
+| الميزة | الحالة |
+|---|---|
+| تفعيل الطابعة بالسيريل | صفحة `/rewards?tab=insurance&sub=activate` — يجب إضافة `useActiveLevoCard` guard في `PrinterActivationPanel` مع بانر "يتطلب بطاقة ليفو" |
+| تفعيل التأمين | مربوط فعلياً في `AddInsuranceDialog` (`plan.requires_active_card`) ✓ |
+| تذاكر ألعاب يومية | مربوط بـ `useVipFreePlay` + `free_daily_games` ✓ (يحتاج التأكد أن ليفو بلس = 1، برو = 2، التمت = 5 وهذا مضبوط بالفعل) |
+| خصم 10٪ فلمنت | `discount_percentage` + `discount_applicable_category_ids` ✓ |
+| توصيل مجاني اعتيادي | `free_shipping` + `free_shipping_methods` ✓ |
+
+---
+
+## 5) الترجمات
+إضافة مفاتيح في `src/lib/i18n/ar.ts`, `en.ts`, `ku.ts`:
+- `bundles_locked_banner`, `random_filament_locked_banner`
+- `cod_commission_discount_label`
+- `printer_activation_requires_card`
+
+---
+
+## تفاصيل تقنية
+
+**قائمة الملفات:**
+- migration جديدة (rename + أعمدة + tiers + RPC)
+- `src/hooks/useActiveLevoCard.ts` (توسيع select ليشمل حقول COD والصلاحيات)
+- `src/pages/ProductBundles.tsx`, `src/pages/RandomFilament.tsx` (guards)
+- `src/pages/MembershipCards.tsx` (بانر التوجيه)
+- `src/pages/Cart.tsx` + `src/lib/orderFinancials.ts` (خصم COD)
+- `src/components/rewards/panels/PrinterActivationPanel.tsx` (guard + بانر)
+- `src/pages/AdminMembershipCards.tsx` أو ما يعادلها (حقل النسبة)
+- ملفات i18n الثلاثة
+
+**ملاحظة تنسيق البطاقات:**
+- سيتم إعادة استخدام السجلات القائمة عبر UPDATE فقط، بحيث اشتراكات المستخدمين النشطة في `user_cards` تبقى صالحة تلقائياً (لأن `card_id` FK لن يتغير).
+
+**عدم لمس:**
+- منطق الاشتراك في PriceProtection والخطط الأخرى (target_type='protection_plan') يبقى كما هو.
+- بطاقة `is_system_reserved` (الليفو الفيزيائية) لا علاقة لها بالخطط الرقمية — لا تُمَس.

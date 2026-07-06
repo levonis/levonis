@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Package, ArrowRight, Sparkles, Clock } from 'lucide-react';
 import { ListCardsSkeleton } from '@/components/ui/PageSkeletons';
 import { formatPrice } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
+import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
 
 // Compact countdown shown on bundle cards.
 // Renders D:H:M when > 1 day remains, otherwise H:M:S.
@@ -48,6 +49,7 @@ const SALE_TYPE_KEYS: Record<string, 'sale_type_direct' | 'sale_type_preorder_ai
 
 const ProductBundles = () => {
   const { language, t } = useLanguage();
+  const { data: activeCard, isLoading: cardLoading } = useActiveLevoCard();
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
     queryFn: async () => {
@@ -106,6 +108,11 @@ const ProductBundles = () => {
     staleTime: 0,
     refetchOnMount: 'always',
   });
+
+  // Gate: bundles are exclusive to active Levo card holders
+  if (!cardLoading && !activeCard) {
+    return <Navigate to="/rewards?tab=cards" replace state={{ lockedReason: 'bundles' }} />;
+  }
 
   return (
     <div className="min-h-screen bg-transparent" dir="rtl">
