@@ -95,6 +95,8 @@ const ProductDetail = () => {
   const [selectedSaleType, setSelectedSaleType] = useState<'direct' | 'preorder' | null>(null);
   const [userManuallySelected, setUserManuallySelected] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
+  const [showTradeInDialog, setShowTradeInDialog] = useState(false);
+  const { data: eligibleTradeInPrinters = [] } = useEligiblePrinters();
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
 
