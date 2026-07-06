@@ -39,6 +39,9 @@ import { productLd, breadcrumbLd } from '@/lib/seo/structured';
 import ProductAIContent from '@/components/ProductAIContent';
 import { buildAIContentForLd, normalizeAIContent } from '@/lib/aiContent';
 import { translateShippingOption } from '@/lib/shippingLabel';
+import TradeInRequestDialog from '@/components/tradein/TradeInRequestDialog';
+import { useEligiblePrinters } from '@/hooks/useTradeInEligibility';
+import { Recycle } from 'lucide-react';
 
 // Dynamic icon map for features
 const FEATURE_ICONS: Record<string, any> = {
