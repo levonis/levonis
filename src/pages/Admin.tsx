@@ -2535,6 +2535,8 @@ const Admin = () => {
                 { icon: Sparkles, title: 'فلمنت عشوائي', desc: 'إعدادات وحظر', path: ADMIN_ROUTES.randomFilament },
                 { icon: BadgeDollarSign, title: 'تسعير الطباعة 3D', desc: 'مواد ومحرك السعر', path: ADMIN_ROUTES.printMaterials },
                 { icon: ShieldCheck, title: 'المساعدون', desc: 'إدارة صلاحيات', path: ADMIN_ROUTES.assistants, adminOnly: true },
+                { icon: Package, title: 'طابعات الاستبدال', desc: 'موديلات مؤهلة', path: ADMIN_ROUTES.tradeInPrinters },
+                { icon: FileText, title: 'طلبات الاستبدال', desc: 'مراجعة وفحص', path: ADMIN_ROUTES.tradeInRequests },
               ] as Array<{ icon: any; title: string; desc: string; path?: string; action?: () => void; badge?: number; adminOnly?: boolean }>)
                 .filter((item) => !item.adminOnly || isAdmin)
                 .map((item, idx) => (
