@@ -923,6 +923,25 @@ export default function AdminLoyaltyLevels() {
                               </p>
                             </div>
 
+                            <div>
+                              <Label>خصم عمولة الدفع عند الاستلام (%)</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="1"
+                                value={formData.cod_commission_discount_percentage}
+                                onChange={(e) => setFormData({
+                                  ...formData,
+                                  cod_commission_discount_percentage: e.target.value === '' ? 0 : Math.max(0, Math.min(100, parseFloat(e.target.value))),
+                                })}
+                                placeholder="مثال: 50 أو 100"
+                              />
+                              <p className="text-[11px] text-muted-foreground mt-1">
+                                عند تفعيل COD، تُخصم هذه النسبة من عمولة الدفع عند الاستلام لحاملي البطاقة. (مثلاً 50 = نصف العمولة، 100 = عمولة مجانية).
+                              </p>
+                            </div>
+
                             <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
                               <Label className="text-sm font-semibold">الأقسام المشمولة بالخصم</Label>
                               <p className="text-[11px] text-muted-foreground mb-2">اتركه فارغًا ليشمل جميع الأقسام</p>
