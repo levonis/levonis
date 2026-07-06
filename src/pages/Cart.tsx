@@ -1121,7 +1121,7 @@ const Cart = () => {
   // حساب رسوم الدفع عند الاستلام لكل منتج
   // المنتجات المربوطة بـ link_direct_commission_to_cod: نستخدم نفس حساب سعر "البيع المباشر"
   // المعروض في صفحة المنتج لضمان تطابق الإجمالي. غير ذلك نستخدم شرائح cod_fee_value.
-  const codFee = useMemo(() => {
+  const codFeeRaw = useMemo(() => {
     if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
     const tiers = partialPaymentSettings?.fee_tiers || [];
     const fallbackCodType = (partialPaymentSettings?.cod_default_fee_type || codDefaults?.type || 'percentage') as 'percentage' | 'fixed';
@@ -1130,9 +1130,7 @@ const Cart = () => {
       const product = item.products;
       if (!product) return sum;
       const qty = item.quantity || 1;
-      const preorderUnitPrice = getCartItemPrice(item); // السعر الحالي للطلب المسبق (يشمل الخيار/اللون)
-      // إذا كان المنتج مربوطاً بنسبة COD العالمية، احسب فرق سعر البيع المباشر بنفس حارس السعر
-      // حتى تكون تكلفة الخيار/اللون بديلاً لتكلفة المنتج وليست إضافة عليها.
+      const preorderUnitPrice = getCartItemPrice(item);
       if (product.link_direct_commission_to_cod && codDefaults) {
         const directUnitPrice = getGuardedCartItemPrice(
           { ...item, sale_type: 'direct' } as any,
@@ -1144,11 +1142,8 @@ const Cart = () => {
         if (directUnitPrice > 0) {
           const feePerUnit = Math.max(0, directUnitPrice - preorderUnitPrice);
           if (feePerUnit > 0) return sum + (feePerUnit * qty);
-          // إذا كان سعر البيع المباشر المحسوب أقل من سعر الطلب الحالي بسبب خيار/حزمة،
-          // لا نلغي عمولة COD؛ نكمل للمسار الافتراضي ليحسبها من الشريحة المناسبة.
         }
       }
-      // المسار الافتراضي: شرائح COD المخصصة
       const lineTotal = preorderUnitPrice * qty;
       const tier = tiers.length > 0
         ? (tiers.find(t => lineTotal >= t.min_amount && lineTotal <= t.max_amount) || tiers[tiers.length - 1])
@@ -1163,6 +1158,13 @@ const Cart = () => {
       return sum + fee;
     }, 0);
   }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings, codDefaults, usdToIqd]);
+
+  // Levo card benefit: discount on COD commission (Plus = 50%, Pro/Ultimate = 100%).
+  const codCommissionDiscount = useMemo(() => {
+    if (!codFeeRaw || codCommissionDiscountPct <= 0) return 0;
+    return Math.min(codFeeRaw, Math.floor(codFeeRaw * codCommissionDiscountPct / 100));
+  }, [codFeeRaw, codCommissionDiscountPct]);
+  const codFee = Math.max(0, codFeeRaw - codCommissionDiscount);
 
   const isCodPayment = preOrderPaymentOption === 'cod' && showCodOption;
 
