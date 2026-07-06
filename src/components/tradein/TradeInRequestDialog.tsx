@@ -249,6 +249,10 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
                 <Checkbox checked={hasDefects} onCheckedChange={(v) => setHasDefects(!!v)} />
                 بها عطل أو عيب في التشغيل
               </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={hasAms} onCheckedChange={(v) => setHasAms(!!v)} />
+                تأتي مع جهاز AMS
+              </label>
               <div>
                 <Label>ملاحظات إضافية</Label>
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
