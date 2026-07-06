@@ -120,6 +120,7 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
         has_receipt: hasReceipt,
         has_scratches: hasScratches,
         has_defects: hasDefects,
+        has_ams: hasAms,
         notes: notes || null,
         receipt_image_url: receiptPath,
         photos: photoUrls,
