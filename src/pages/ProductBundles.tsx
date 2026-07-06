@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Package, ArrowRight, Sparkles, Clock } from 'lucide-react';
 import { ListCardsSkeleton } from '@/components/ui/PageSkeletons';
 import { formatPrice } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
+import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
 
 // Compact countdown shown on bundle cards.
 // Renders D:H:M when > 1 day remains, otherwise H:M:S.
