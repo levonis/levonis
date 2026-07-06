@@ -27,6 +27,7 @@ const BundlesSection = () => {
     refetchOnMount: 'always',
   });
 
+  if (!activeLevoCard) return null;
   if (!bundles || bundles.length === 0) return null;
 
   return (
