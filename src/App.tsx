@@ -71,6 +71,9 @@ const AdminPointsSettings = lazyWithRetry(() => import("./pages/AdminPointsSetti
 const AdminChats = lazyWithRetry(() => import("./pages/AdminChats"));
 const AdminLoyaltyLevels = lazyWithRetry(() => import("./pages/AdminLoyaltyLevels"));
 const AdminSubscriptionTiers = lazyWithRetry(() => import("./pages/AdminSubscriptionTiers"));
+const AdminTradeInPrinters = lazyWithRetry(() => import("./pages/AdminTradeInPrinters"));
+const AdminTradeInRequests = lazyWithRetry(() => import("./pages/AdminTradeInRequests"));
+const MyTradeInRequests = lazyWithRetry(() => import("./pages/MyTradeInRequests"));
 const AdminDefaultSettings = lazyWithRetry(() => import("./pages/AdminDefaultSettings"));
 const AdminWallet = lazyWithRetry(() => import("./pages/AdminWallet"));
 const AdminWalletSettings = lazyWithRetry(() => import("./pages/AdminWalletSettings"));
