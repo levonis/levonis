@@ -472,6 +472,7 @@ export default function AdminLoyaltyLevels() {
       profile_effects: level.profile_effects || { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
       discount_applicable_category_ids: Array.isArray(level.discount_applicable_category_ids) ? level.discount_applicable_category_ids : [],
       free_shipping_applicable_category_ids: Array.isArray(level.free_shipping_applicable_category_ids) ? level.free_shipping_applicable_category_ids : [],
+      cod_commission_discount_percentage: Number(level.cod_commission_discount_percentage) || 0,
     });
     setBenefits(level.benefits || []);
     setDialogOpen(true);
