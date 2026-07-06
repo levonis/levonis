@@ -357,6 +357,9 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/orders`} element={<AdminRoute><AdminOrders /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/points-settings`} element={<AdminRoute><AdminPointsSettings /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/subscription-tiers`} element={<AdminRoute><AdminSubscriptionTiers /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/trade-in-printers`} element={<AdminRoute><AdminTradeInPrinters /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/trade-in-requests`} element={<AdminRoute><AdminTradeInRequests /></AdminRoute>} />
+            <Route path="/my-trade-in-requests" element={<MyTradeInRequests />} />
             <Route path={`${ADMIN_BASE_PATH}/chats`} element={<AdminRoute><AdminChats /></AdminRoute>} />
 
             <Route path={`${ADMIN_BASE_PATH}/loyalty-levels`} element={<AdminRoute><AdminLoyaltyLevels /></AdminRoute>} />
