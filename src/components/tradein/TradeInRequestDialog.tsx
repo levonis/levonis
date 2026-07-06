@@ -36,6 +36,7 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
   const [hasReceipt, setHasReceipt] = useState(false);
   const [hasScratches, setHasScratches] = useState(false);
   const [hasDefects, setHasDefects] = useState(false);
+  const [hasAms, setHasAms] = useState(false);
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -65,17 +66,18 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
       hasReceipt,
       hasScratches,
       hasDefects,
+      hasAms,
       hoursTiers,
       conditionRules,
     });
-  }, [chosen, operatingHours, hasBox, hasReceipt, hasScratches, hasDefects, rules]);
+  }, [chosen, operatingHours, hasBox, hasReceipt, hasScratches, hasDefects, hasAms, rules]);
 
   const overHoursLimit = !!(chosen?.max_operating_hours && parseInt(operatingHours || "0", 10) > chosen.max_operating_hours);
 
   const reset = () => {
     setStep(1); setEligibleId(""); setOperatingHours(""); setBrand(""); setModel("");
     setPurchaseSource(""); setHasBox(false); setHasReceipt(false); setHasScratches(false);
-    setHasDefects(false); setNotes(""); setPhotos([]); setReceiptFile(null);
+    setHasDefects(false); setHasAms(false); setNotes(""); setPhotos([]); setReceiptFile(null);
   };
 
   const submit = useMutation({
@@ -118,6 +120,7 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
         has_receipt: hasReceipt,
         has_scratches: hasScratches,
         has_defects: hasDefects,
+        has_ams: hasAms,
         notes: notes || null,
         receipt_image_url: receiptPath,
         photos: photoUrls,
@@ -245,6 +248,10 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={hasDefects} onCheckedChange={(v) => setHasDefects(!!v)} />
                 بها عطل أو عيب في التشغيل
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={hasAms} onCheckedChange={(v) => setHasAms(!!v)} />
+                تأتي مع جهاز AMS
               </label>
               <div>
                 <Label>ملاحظات إضافية</Label>

@@ -21,6 +21,7 @@ export interface EstimateInput {
   hasReceipt: boolean;
   hasScratches: boolean;
   hasDefects: boolean;
+  hasAms?: boolean;
   hoursTiers: HoursTier[];
   conditionRules: ConditionRule[];
 }
@@ -50,7 +51,9 @@ export function estimateTradeInValue(input: EstimateInput): EstimateBreakdown {
     has_receipt: input.hasReceipt,
     has_scratches: input.hasScratches,
     has_defects: input.hasDefects,
+    has_ams: !!input.hasAms,
   };
+
   const adjust = input.conditionRules
     .filter((r) => flags[r.rule_key])
     .reduce((sum, r) => sum + (r.adjust_percent ?? 0), 0);
