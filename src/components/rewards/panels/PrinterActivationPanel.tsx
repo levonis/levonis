@@ -13,6 +13,8 @@ import { QrCode, Printer, Shield, Calendar, Loader2, Camera, CheckCircle, AlertT
 import { addMonths, format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/lib/i18n';
+import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
+import { Sparkles } from 'lucide-react';
 
 interface PrinterActivationPanelProps {
   onActivated?: () => void;
