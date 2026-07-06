@@ -77,7 +77,7 @@ export default function TradeInRequestDialog({ open, onOpenChange, targetProduct
   const reset = () => {
     setStep(1); setEligibleId(""); setOperatingHours(""); setBrand(""); setModel("");
     setPurchaseSource(""); setHasBox(false); setHasReceipt(false); setHasScratches(false);
-    setHasDefects(false); setNotes(""); setPhotos([]); setReceiptFile(null);
+    setHasDefects(false); setHasAms(false); setNotes(""); setPhotos([]); setReceiptFile(null);
   };
 
   const submit = useMutation({
