@@ -5714,7 +5714,6 @@ export type Database = {
           nfc_token: string | null
           notes: string | null
           pin_hash: string | null
-          pin_plaintext: string | null
           qr_token: string | null
           status: string
           updated_at: string
@@ -5731,7 +5730,6 @@ export type Database = {
           nfc_token?: string | null
           notes?: string | null
           pin_hash?: string | null
-          pin_plaintext?: string | null
           qr_token?: string | null
           status?: string
           updated_at?: string
@@ -5748,7 +5746,6 @@ export type Database = {
           nfc_token?: string | null
           notes?: string | null
           pin_hash?: string | null
-          pin_plaintext?: string | null
           qr_token?: string | null
           status?: string
           updated_at?: string
