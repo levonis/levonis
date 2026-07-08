@@ -20,9 +20,9 @@ import { organizationLd, websiteLd } from '@/lib/seo/structured';
 
 // Lazy-load only sections gated by ProgressiveSection (genuinely below-the-fold)
 const BundlesSection = lazy(() => import('@/components/BundlesSection'));
-// CommunitySection moved off the homepage to /community to reduce initial load.
 const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
 const RandomFilamentSection = lazy(() => import('@/components/RandomFilamentSection'));
+const LevoCardLockBanner = lazy(() => import('@/components/LevoCardLockBanner'));
 
 
 const MemoizedCategoryCard = memo(CategoryCard);
