@@ -85,7 +85,7 @@ export default function AdminDeliveredOrders() {
       // 2. Fetch delivered offer purchases
       const { data: offerPurchases } = await supabase
         .from("product_offer_purchases")
-        .select("*, product_offers(title_ar, image_url, points_reward)")
+        .select("*, product_offers(title_ar, image_url)")
         .eq("purchase_status", "delivered")
         .order("delivered_at", { ascending: false });
 
