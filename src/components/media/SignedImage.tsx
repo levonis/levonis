@@ -35,3 +35,25 @@ export const SignedLink = React.forwardRef<HTMLAnchorElement, LinkProps>(
   },
 );
 SignedLink.displayName = "SignedLink";
+
+type AudioProps = Omit<React.AudioHTMLAttributes<HTMLAudioElement>, "src"> & {
+  src?: string | null;
+};
+export const SignedAudio = React.forwardRef<HTMLAudioElement, AudioProps>(
+  ({ src, ...rest }, ref) => {
+    const signed = useSignedStorageUrl(src);
+    return <audio ref={ref} {...rest} src={signed ?? undefined} />;
+  },
+);
+SignedAudio.displayName = "SignedAudio";
+
+type VideoProps = Omit<React.VideoHTMLAttributes<HTMLVideoElement>, "src"> & {
+  src?: string | null;
+};
+export const SignedVideo = React.forwardRef<HTMLVideoElement, VideoProps>(
+  ({ src, ...rest }, ref) => {
+    const signed = useSignedStorageUrl(src);
+    return <video ref={ref} {...rest} src={signed ?? undefined} />;
+  },
+);
+SignedVideo.displayName = "SignedVideo";
