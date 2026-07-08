@@ -9,7 +9,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
-import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
+import { useOwnedLevoCard } from '@/hooks/useOwnedLevoCard';
 
 // Compact countdown shown on bundle cards.
 // Renders D:H:M when > 1 day remains, otherwise H:M:S.
@@ -49,7 +49,7 @@ const SALE_TYPE_KEYS: Record<string, 'sale_type_direct' | 'sale_type_preorder_ai
 
 const ProductBundles = () => {
   const { language, t } = useLanguage();
-  const { data: activeCard, isLoading: cardLoading } = useActiveLevoCard();
+  const { data: activeCard, isLoading: cardLoading } = useOwnedLevoCard();
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
     queryFn: async () => {
