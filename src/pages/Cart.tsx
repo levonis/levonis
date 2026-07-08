@@ -2186,6 +2186,22 @@ const Cart = () => {
 
       const deliveryFee = getDeliveryFee(selectedAddress.governorate);
 
+      // Guard: prevent redeeming more points than balance or than cart subtotal after other discounts
+      if (usePointsRedemption && pointsToRedeem > 0) {
+        if (pointsToRedeem > availablePoints) {
+          sonnerToast.error('لا يمكن استخدام نقاط أكثر من رصيدك', {
+            description: `رصيدك الحالي: ${availablePoints.toLocaleString()} نقطة`,
+          });
+          return;
+        }
+        if (pointsToRedeem > maxRedeemablePoints) {
+          sonnerToast.error('لا يمكن استخدام نقاط أكبر من قيمة السلة بعد الخصومات', {
+            description: `الحد الأقصى: ${maxRedeemablePoints.toLocaleString()} نقطة`,
+          });
+          return;
+        }
+      }
+
       // Create order in database with full address details
       const shippingAddressText = `${selectedAddress.governorate} - ${selectedAddress.area}${selectedAddress.neighborhood ? ` - ${selectedAddress.neighborhood}` : ''} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
       
