@@ -1619,7 +1619,7 @@ const Cart = () => {
         .maybeSingle();
 
       const selectedAddress = defaultAddress || addresses[0];
-      const deliveryFeeCalc = getDeliveryFee(selectedAddress.governorate);
+      const deliveryFeeCalc = couponFreeShippingApplied ? 0 : getDeliveryFee(selectedAddress.governorate);
 
       const { data: profileData } = await supabase
         .from('profiles')
