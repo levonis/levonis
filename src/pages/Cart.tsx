@@ -1082,8 +1082,15 @@ const Cart = () => {
   // Independent ledgers — both stack in the cart total.
   const warrantyDiscountAmount = (useHardwareOverCard && useWarrantyContrib) ? (warrantyBenefits?.totalDiscount || 0) : 0;
   const subscriptionDiscountAmount = (useHardwareOverCard && useSubscriptionContrib) ? (subscriptionBenefits?.totalDiscount || 0) : 0;
-  const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
-  
+  const subtotalBeforePoints = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
+
+  // Points redemption: 1 point = 1 IQD. Max = min(available, subtotalBeforePoints).
+  const maxRedeemablePoints = Math.max(0, Math.min(availablePoints, Math.floor(Math.max(0, subtotalBeforePoints))));
+  const effectivePointsToRedeem = usePointsRedemption ? Math.max(0, Math.min(pointsToRedeem, maxRedeemablePoints)) : 0;
+  const pointsDiscountAmount = effectivePointsToRedeem;
+
+  const subtotalAfterDiscount = Math.max(0, subtotalBeforePoints - pointsDiscountAmount);
+
   // الضريبة ملغاة نهائياً
   const TEMP_TAX_RATE = 0;
   const taxAmount = 0;
