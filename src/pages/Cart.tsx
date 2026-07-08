@@ -2595,18 +2595,7 @@ const Cart = () => {
         message += ` ✓ تم الدفع بالكامل من المحفظة`;
       }
 
-      // If coupon was used, record it
-      if (appliedCoupon && user) {
-        await supabase.from('coupon_usage').insert({
-          coupon_id: appliedCoupon.id,
-          user_id: user.id,
-        });
-        
-        await supabase
-          .from('coupons')
-          .update({ current_uses: appliedCoupon.current_uses + 1 })
-          .eq('id', appliedCoupon.id);
-      }
+      // (تسجيل الكوبون تم أعلاه عبر record_coupon_use — بدون تكرار)
 
       // Update offer purchase statuses to 'shipping_requested'
       const offerPurchaseIds2 = items
