@@ -440,6 +440,23 @@ const Cart = () => {
     enabled: !!user?.id,
   });
 
+  // Available points for cart redemption (1 point = 1 IQD)
+  const { data: userPoints } = useQuery({
+    queryKey: ['user-points-cart', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('user_points')
+        .select('available_points')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+  const availablePoints = Math.floor(Number(userPoints?.available_points || 0));
+
+
   // Fetch max quantities for bundle items in cart
   const bundleIds = items.filter(i => i.bundle_id).map(i => i.bundle_id!);
   const { data: bundleMaxQtyMap } = useQuery({
