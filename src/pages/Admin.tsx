@@ -3128,7 +3128,7 @@ const Admin = () => {
                             (products ?? [])
                               .map((p: any) => (p.brand ?? '').toString().trim())
                               .filter((b: string) => b.length > 0)
-                          ))
+                          ) as Set<string>)
                             .sort((a, b) => a.localeCompare(b))
                             .map((b) => (
                               <option key={b} value={b} />
