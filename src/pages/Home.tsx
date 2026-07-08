@@ -267,11 +267,13 @@ const Home = () => {
           )}
         </section>
 
-        <ProgressiveSection minHeight="180px" rootMargin="500px">
-          <Suspense fallback={<div className="h-32" />}>
-            <BundlesSection />
-          </Suspense>
-        </ProgressiveSection>
+        {activeCard ? (
+          <ProgressiveSection minHeight="180px" rootMargin="500px">
+            <Suspense fallback={<div className="h-32" />}>
+              <BundlesSection />
+            </Suspense>
+          </ProgressiveSection>
+        ) : null}
 
         <ProgressiveSection minHeight="200px" rootMargin="500px">
           <Suspense fallback={<div className="h-32 flex items-center justify-center"><div className="w-full max-w-md space-y-2 px-4"><div className="h-4 w-3/4 rounded bg-muted animate-pulse" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div></div>}>
@@ -279,11 +281,19 @@ const Home = () => {
           </Suspense>
         </ProgressiveSection>
 
-        <ProgressiveSection minHeight="120px" rootMargin="500px">
-          <Suspense fallback={<div className="h-24" />}>
-            <RandomFilamentSection />
-          </Suspense>
-        </ProgressiveSection>
+        {activeCard ? (
+          <ProgressiveSection minHeight="120px" rootMargin="500px">
+            <Suspense fallback={<div className="h-24" />}>
+              <RandomFilamentSection />
+            </Suspense>
+          </ProgressiveSection>
+        ) : (
+          <ProgressiveSection minHeight="200px" rootMargin="500px">
+            <Suspense fallback={<div className="h-32" />}>
+              <LevoCardLockBanner />
+            </Suspense>
+          </ProgressiveSection>
+        )}
 
         {/* Levo Community section is available at /community only. */}
 
