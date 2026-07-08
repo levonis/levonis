@@ -1942,6 +1942,21 @@ const Cart = () => {
         });
       }
 
+      // Record coupon usage tied to this order (atomic + de-duplicated + bumps current_uses)
+      if (appliedCoupon && user) {
+        try {
+          await (supabase as any).rpc('record_coupon_use', {
+            p_coupon_id: appliedCoupon.id,
+            p_user_id: user.id,
+            p_order_id: orderResult.id,
+          });
+          queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+        } catch (e) {
+          console.error('record_coupon_use (direct sale) failed:', e);
+        }
+      }
+
+
       // Reveal real product/color to user ONLY when fully paid via wallet (no COD at all).
       try {
         await supabase.rpc('link_random_filament_to_order' as any, { p_order_id: orderResult.id });
