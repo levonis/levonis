@@ -291,6 +291,17 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
             <div className="relative overflow-hidden bg-card/60 backdrop-blur-xl rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-primary/20 space-y-4">
               <h3 className="text-sm font-bold">شارك تجربتك</h3>
 
+              {/* Bonus points hint */}
+              <div className="rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/30 p-3 text-xs space-y-1">
+                <p className="font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                  <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                  اربح نقاط إضافية على تقييمك
+                </p>
+                <p className="text-muted-foreground">
+                  أضف <span className="font-semibold text-foreground">صورة</span> لتحصل على مضاعف <span className="font-bold text-amber-600">1x</span> من نقاط شرائك، أو <span className="font-semibold text-foreground">صورة + فيديو</span> للحصول على <span className="font-bold text-amber-600">2x</span>. التقييمات عالية الجودة قد تُكافأ بـ <span className="font-bold text-amber-600">3x</span>.
+                </p>
+              </div>
+
               {/* Stars */}
               <div className="flex gap-2 justify-center py-2">
                 {[1, 2, 3, 4, 5].map((s) => (

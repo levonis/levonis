@@ -1,69 +1,41 @@
+## نظام نقاط بونص التقييم
 
-## القاعدة الجديدة
+### القواعد
+- **الأساس**: عند شراء منتج، المستخدم يحصل على `basePoints = floor(net_spend / 1000)` (النظام الحالي).
+- **بونص التقييم**: بعد نشر التقييم، يُمنح مضاعف إضافي على `basePoints` لذلك المنتج:
+  - **1x تلقائي** — تقييم بصورة فقط
+  - **2x تلقائي** — تقييم بصورة + فيديو
+  - **3x يدوي** — الإدارة ترفعها لتقييم عالي الجودة (سقف 4x إجمالي مع نقاط الشراء)
+- **الشرط**: التقييم يجب أن يحوي **صورة واحدة على الأقل** ليبدأ البونص. تعليق نصي وحده لا يمنح بونص.
+- **مرة واحدة لكل منتج** لكل مستخدم: تعديل التقييم لاحقاً لا يزيد النقاط، وحذف التقييم يسحب النقاط الممنوحة.
+- **توقيت المنح**: بعد **48 ساعة** من نشر التقييم (فترة تبريد لمنع الحذف/التعديل السريع). يُنفَّذ عبر cron كل ساعة.
+- **السقف الإجمالي**: `min(bonusMultiplier * basePoints, 3 * basePoints)` — أي بونص أقصى 3x فوق الشراء الأصلي = إجمالي 4x.
+- **المصدر**: الشراء يجب أن يكون مؤكد التوصيل (`user_confirmed_delivery=true` أو `auto_confirmed=true`) قبل احتساب البونص.
 
-- **الكسب**: `1 نقطة = 1 دينار` تُمنح بمعدل **1 نقطة لكل 1000 د.ع** من الإنفاق الصافي.
-- **الأساس المحسوب** (لكل طلب) = `subtotal − discount_amount` (بعد الكوبون والخصومات، بدون التوصيل/رسوم COD/التبرع).
-- **التوقيت**: عند تأكيد الاستلام (`user_confirmed_delivery = true` أو `auto_confirmed = true`)، وليس عند تغيير الحالة إلى `delivered`.
-- **الاستخدام في السلة**: بدون حد أقصى — حتى تغطية كامل قيمة السلة.
+### تغييرات قاعدة البيانات (migration)
+1. عمود جديد على `reviews`:
+   - `points_awarded INT DEFAULT 0`
+   - `points_awarded_at TIMESTAMPTZ`
+   - `admin_quality_multiplier INT DEFAULT 0` (0=تلقائي، 3=مكافأة جودة)
+   - `base_points_snapshot INT` (نسخة من نقاط الشراء الأصلية للمنتج)
+2. RPC جديدة `award_review_bonus_points()` (SECURITY DEFINER):
+   - تختار reviews حيث `points_awarded=0` AND `created_at < now() - interval '48 hours'` AND يوجد `image_url` أو attachments.
+   - تحسب `basePoints` من `order_items` الخاصة بذلك المستخدم/المنتج (آخر طلب مؤكد).
+   - تحسب المضاعف: صورة=1x، صورة+فيديو=2x، + `admin_quality_multiplier`.
+   - تسقّف عند 3x.
+   - تضيف النقاط عبر `add_user_points` (source='review_bonus', related_id=review.id)، تحدّث `points_awarded`.
+3. Trigger `on_review_delete` لسحب النقاط عند حذف التقييم قبل/بعد المنح.
+4. Cron job كل ساعة يستدعي RPC.
+5. Backfill مرة واحدة: للتقييمات القديمة المؤهلة، حساب البونص ومنحه.
 
-## تغييرات قاعدة البيانات (migration)
+### تغييرات الواجهة
+- **`ProductDetail.tsx`** / صفحة التقييم: إظهار شارة "احصل على حتى 6000 نقطة إضافية بتقييم بصورة وفيديو" قبل الإرسال.
+- **`AdminReviews.tsx`**: إضافة زر "مكافأة جودة عالية (+3x)" لكل تقييم — يحدّث `admin_quality_multiplier` ويعيد حساب البونص إن لم يُمنح بعد، أو يمنح الفرق إن مُنح.
+- **صفحة النقاط للمستخدم**: إظهار سطر منفصل "نقاط بونص التقييم" في السجل.
+- **بطاقة التقييم في صفحة المنتج**: شارة صغيرة "+Nx نقاط" على التقييمات المكافأة (اختياري).
 
-1. **حذف السلوك القديم**:
-   - `DROP TRIGGER` الذي يستدعي `award_points_on_delivery` على جدول `orders` (منح فوري عند delivered).
-   - إبقاء الدالة كأرشيف أو حذفها.
-2. **دالة جديدة** `award_points_on_confirm()` (SECURITY DEFINER):
-   - تعمل عند `UPDATE` على `orders` حين ينتقل `user_confirmed_delivery` من false→true أو `auto_confirmed` من false→true.
-   - تحسب: `earned = FLOOR( (subtotal − COALESCE(discount_amount,0)) / 1000 )`.
-   - تضيف علاوة بطاقة الولاء (`bonus_points_percentage`) كما هو الآن.
-   - Idempotent: تتحقق أنه لا يوجد `points_transactions` سابق بـ `source='order_delivered'` و `related_id=order.id`.
-   - تُدرج المعاملة و تحدّث `user_points`.
-3. **أعمدة جديدة على `orders`**:
-   - `points_redeemed INTEGER DEFAULT 0` (كم نقطة استُخدمت خصماً في هذا الطلب)
-   - `points_discount_amount NUMERIC DEFAULT 0` (قيمة الخصم د.ع = points_redeemed)
-   - `points_earned INTEGER DEFAULT 0` (كم نقطة كسبها عند تأكيد الاستلام — للعرض في الإدارة)
-4. **RPC جديد** `redeem_points_in_cart(p_user_id uuid, p_order_id uuid, p_points int)`:
-   - SECURITY DEFINER، يتحقق من available_points، يخصم من `user_points`، يُدرج `points_transactions` بنوع `spent` و `source='cart_redemption'`، ويحدّث الطلب.
-   - يضاف `'cart_redemption'` إلى check constraint في `points_transactions.source`.
-5. **حذف الحقل اليدوي** `products.points_reward` و `product_offers.points_reward`:
-   - `ALTER TABLE ... DROP COLUMN points_reward` بعد إزالة كل مراجعه في الكود.
-6. **تعويض العملاء القدامى** (تشغيل مرة واحدة ضمن نفس الـmigration):
-   - لكل طلب `orders` بـ `status='delivered'` (89 طلب): حساب `should_earn = FLOOR((subtotal − discount_amount)/1000)` + علاوة الولاء.
-   - جمع كل `points_transactions` القديمة بـ `source IN ('order','order_delivered')` و `related_id=order.id` → `already_awarded`.
-   - إذا `should_earn > already_awarded` → إضافة الفرق بمعاملة جديدة `source='order_delivered'` و description = `"تعويض النظام الجديد لطلب X"` وتحديث `user_points`.
-
-## تغييرات الكود
-
-### إزالة/تنظيف
-- `src/pages/Admin.tsx`: حذف حقل input `points_reward` وحقل formData والاستخراج التلقائي منه.
-- `src/pages/AdminProductOffers.tsx`: حذف حقل `points_reward` من الفورم والعرض.
-- `src/pages/AdminDeliveredOrders.tsx`: قراءة `points_awarded` من عمود الطلب الجديد بدلاً من `products.points_reward`.
-- `src/pages/ProductDetail.tsx`: عرض النقاط المحسوبة تلقائياً `Math.floor(price/1000)` بدلاً من `product.points_reward`.
-- `src/pages/AdminPointsSettings.tsx`: حذف حقول `points_per_order` و `order_value_multiplier` من إعدادات النقاط.
-
-### إضافة استخدام النقاط في السلة `src/pages/Cart.tsx`
-- Query لجلب `user_points.available_points`.
-- بطاقة جديدة في ملخص السلة: Toggle "استخدام النقاط للخصم" + input عدد النقاط (max = min(available_points, subtotalWithTax)).
-- حساب `pointsDiscount` وطرحه من `finalTotal`.
-- عند إنشاء الطلب: تمرير `points_redeemed` و `points_discount_amount` لجدول الطلب، ثم استدعاء RPC `redeem_points_in_cart` بعد نجاح إنشاء الطلب (Atomic).
-- إظهار السطر "خصم النقاط: -X د.ع" في ملخص السلة.
-
-### عرض الإدارة `src/pages/AdminOrders.tsx` / `OrderDetail.tsx`
-- إضافة سطر واضح "خصم نقاط: -X د.ع (Y نقطة)" داخل تفاصيل الطلب عندما `points_redeemed > 0`.
-
-## التفاصيل التقنية
-
-```text
-Points earned = FLOOR( max(0, subtotal − discount_amount) / 1000 ) × (1 + loyalty_bonus%/100)
-Points redemption: 1 point = 1 IQD, max = subtotalWithTax
-Trigger: AFTER UPDATE ON orders WHEN user_confirmed_delivery becomes true
-```
-
-## الملفات المعدَّلة
-- Migration جديد (schema + backfill).
-- `src/pages/Cart.tsx` (استخدام النقاط + توليد الطلب مع points_redeemed).
-- `src/pages/Admin.tsx` (حذف حقل points_reward).
-- `src/pages/AdminProductOffers.tsx` (حذف حقل points_reward).
-- `src/pages/AdminPointsSettings.tsx` (حذف حقول قديمة).
-- `src/pages/AdminDeliveredOrders.tsx` (تحديث المصدر).
-- `src/pages/AdminOrders.tsx` أو ما يعادلها + `src/pages/OrderDetail.tsx` (عرض خصم النقاط للإدارة والمستخدم).
-- `src/pages/ProductDetail.tsx` (عرض النقاط المحسوبة تلقائياً).
+### الملفات المتأثرة
+- migration جديد
+- `src/pages/Admin*` (إدارة التقييمات — سأتحقق من الاسم الفعلي عند التنفيذ)
+- `src/pages/ProductDetail.tsx` (شارة تحفيزية عند فتح نموذج التقييم)
+- `src/pages/UserPoints.tsx` أو ما يعادلها (عرض السجل)
