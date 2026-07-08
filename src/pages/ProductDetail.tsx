@@ -202,7 +202,7 @@ const ProductDetail = () => {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!product || !product.category_id) return [];
-      const { data, error } = await supabase.from('products').select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, direct_sale_price, sea_price, air_price, land_price, round_up_price, direct_stock, pre_order_stock, sold_count, points_reward, ticket_reward, link_direct_commission_to_cod, cod_enabled, cod_fee_type, cod_fee_value, shipping_type, price_usd, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)').eq('category_id', product.category_id).eq('in_stock', true).neq('id', product.id).limit(4);
+      const { data, error } = await supabase.from('products').select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, direct_sale_price, sea_price, air_price, land_price, round_up_price, direct_stock, pre_order_stock, sold_count, points_reward, ticket_reward, link_direct_commission_to_cod, cod_enabled, cod_fee_type, cod_fee_value, shipping_type, price_usd, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)').eq('category_id', product.category_id).eq('in_stock', true).eq('is_pricing_updated', true).neq('id', product.id).limit(4);
       if (error) throw error;
       return data || [];
     },

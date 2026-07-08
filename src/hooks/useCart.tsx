@@ -369,6 +369,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             has_pre_order,
             personal_delivery_cost,
             is_system_reserved,
+            is_pricing_updated,
             categories!products_category_id_fkey (
               id,
               name_ar,
@@ -456,6 +457,38 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       } catch (rfFallbackError) {
         console.warn('[useCart.fetchCart] RF fallback crashed:', rfFallbackError);
       }
+
+      // Auto-remove hidden products from cart. Admin toggles visibility via
+      // products.is_pricing_updated; items linked to a now-hidden product
+      // must not remain purchasable. Locked / gift / RF rows are preserved.
+      try {
+        const hiddenRows = cartRows.filter((it: any) => {
+          if (!it?.product_id) return false;
+          if (it?.is_locked || it?.is_gift || it?.rf_offer_id) return false;
+          const prod = it?.products;
+          // If join returned no product row (e.g. deleted) or product is hidden
+          // (is_pricing_updated=false), treat as removable.
+          if (!prod) return true;
+          return prod?.is_pricing_updated === false;
+        });
+        if (hiddenRows.length > 0) {
+          const removedIds = hiddenRows.map((r: any) => r.id);
+          const removedNames = hiddenRows.map((r: any) => r?.products?.name_ar || r?.products?.name).filter(Boolean);
+          await supabase.from('cart_items').delete().eq('user_id', user.id).in('id', removedIds);
+          hiddenRows.forEach((r: any) => { r.__hidden_removed = true; });
+          const preview = removedNames.slice(0, 2).join('، ');
+          const suffix = removedNames.length > 2 ? ` +${removedNames.length - 2}` : '';
+          toast.info(
+            removedNames.length > 0
+              ? `تم حذف منتج غير متاح من سلتك: ${preview}${suffix}`
+              : 'تم حذف منتجات غير متاحة من سلتك'
+          );
+        }
+      } catch (hiddenErr) {
+        console.warn('[useCart.fetchCart] hidden-product cleanup failed:', hiddenErr);
+      }
+
+
       
       // Only update if no optimistic operation happened while we were fetching
       if (optimisticLockRef.current === lockValue) {
@@ -521,7 +554,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         } catch (e) { /* non-blocking */ }
 
         const mappedData = cartRows
-          .filter((it: any) => !it.__rf_removed)
+          .filter((it: any) => !it.__rf_removed && !it.__hidden_removed)
           .map((item: any) => ({
             ...item,
             offer_purchase: item.product_offer_purchases || null,

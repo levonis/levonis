@@ -81,6 +81,7 @@ export default function ProductSelector({
         .from('products')
         .select('id, name_ar, price, image_url')
         .eq('in_stock', true)
+        .eq('is_pricing_updated', true)
         .order('created_at', { ascending: false })
         .limit(50);
 

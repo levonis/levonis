@@ -82,8 +82,9 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
 
   const currentPrice = useMemo(() => {
     const base = product?.price_iqd || 0;
-    const adj = selectedOption !== null && productOptions[selectedOption] ? productOptions[selectedOption].price_adjustment : 0;
-    return base + adj;
+    // Independent price: option.price_adjustment > 0 REPLACES base (project-wide rule).
+    const adj = selectedOption !== null && productOptions[selectedOption] ? Number(productOptions[selectedOption].price_adjustment) || 0 : 0;
+    return adj > 0 ? adj : base;
   }, [product?.price_iqd, selectedOption, productOptions]);
 
   const depositAmount = useMemo(() => {
@@ -108,7 +109,8 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
 
     const selectedOpt = selectedOption !== null ? productOptions[selectedOption] : null;
     const selectedCol = selectedColor !== null ? productColors[selectedColor] : null;
-    const priceAdj = selectedOpt?.price_adjustment || 0;
+    const priceAdj = Number(selectedOpt?.price_adjustment) || 0;
+    const finalUnitPrice = priceAdj > 0 ? priceAdj : (product.price_iqd || 0);
 
     const variantTitle = product.title + (selectedOpt ? ` - ${selectedOpt.name}` : '') + (selectedCol ? ` (${selectedCol.name})` : '');
     const { data: existing } = await supabase
@@ -139,7 +141,7 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
         product_id: product.id,
         product_title: variantTitle,
         product_image: product.image_urls?.[product.primary_image_index] || product.image_urls?.[0] || null,
-        product_price: (product.price_iqd || 0) + priceAdj,
+        product_price: finalUnitPrice,
         quantity: cartQuantity,
       });
       if (error) throw error;

@@ -95,8 +95,10 @@ export default function ProductOfferDetailModal({
   const isOutOfStock = offer.stock_quantity !== null && offer.stock_quantity <= 0;
   const maxQuantity = offer.stock_quantity !== null ? offer.stock_quantity : 99;
   
-  // Calculate price with option adjustment
-  const basePrice = offer.price + (selectedOption?.price_adjustment || 0);
+  // Price semantics (project-wide): option.price_adjustment > 0 is an
+  // INDEPENDENT price that REPLACES the base — never additive.
+  const optionAdj = Number(selectedOption?.price_adjustment) || 0;
+  const basePrice = optionAdj > 0 ? optionAdj : offer.price;
   const totalPrice = basePrice * quantity;
   const totalTickets = offer.gift_tickets * quantity;
   const canAfford = walletBalance >= totalPrice;
@@ -252,8 +254,8 @@ export default function ProductOfferDetailModal({
                         className="h-7 text-[10px] px-2"
                       >
                         {opt.name_ar}
-                        {opt.price_adjustment !== 0 && (
-                          <span className="mr-1">({opt.price_adjustment > 0 ? '+' : ''}{opt.price_adjustment.toLocaleString()})</span>
+                        {opt.price_adjustment > 0 && (
+                          <span className="mr-1 text-muted-foreground">({opt.price_adjustment.toLocaleString()} {offer.currency})</span>
                         )}
                       </Button>
                     ))}
