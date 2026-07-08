@@ -554,7 +554,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         } catch (e) { /* non-blocking */ }
 
         const mappedData = cartRows
-          .filter((it: any) => !it.__rf_removed)
+          .filter((it: any) => !it.__rf_removed && !it.__hidden_removed)
           .map((item: any) => ({
             ...item,
             offer_purchase: item.product_offer_purchases || null,
