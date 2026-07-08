@@ -75,7 +75,7 @@ export default function AdminDeliveredOrders() {
           currency: order.currency || "د.ع",
           delivered_at: order.delivered_at || order.updated_at,
           profit: order.profit_amount || 0,
-          points_awarded: 0,
+          points_awarded: order.points_earned || 0,
           tickets_awarded: 0,
           has_insurance: false,
           gifts: null,
