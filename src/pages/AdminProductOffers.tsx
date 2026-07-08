@@ -501,12 +501,8 @@ export default function AdminProductOffers() {
                         {offer.gift_tickets}
                       </div>
                     )}
-                    {offer.points_reward > 0 && (
-                      <div className="bg-amber-500/90 text-white px-1.5 py-0.5 rounded text-[8px] font-bold flex items-center gap-0.5">
-                        <Coins className="h-2.5 w-2.5" />
-                        {offer.points_reward}
-                      </div>
-                    )}
+                    {/* points_reward badge removed — points auto-calculated on delivery */}
+
                   </div>
 
                   {/* Stock Warning */}
