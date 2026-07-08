@@ -217,27 +217,30 @@ export default function AdminPointsAuditTab() {
     },
   });
 
-  // تصحيح جميع الفروقات
+  // تصحيح جميع الفروقات (تلقائي - بشكل متوازي)
   const fixAllDiscrepancies = useMutation({
     mutationFn: async () => {
-      if (!discrepancies || discrepancies.length === 0) return;
-
-      for (const disc of discrepancies) {
-        const { error } = await supabase
-          .from('user_points')
-          .update({ 
-            available_points: Math.max(0, disc.calculated_balance),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', disc.user_id);
-
-        if (error) throw error;
-      }
+      if (!discrepancies || discrepancies.length === 0) return { fixed: 0 };
+      const results = await Promise.allSettled(
+        discrepancies.map((disc) =>
+          supabase
+            .from('user_points')
+            .update({
+              available_points: Math.max(0, disc.calculated_balance),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', disc.user_id)
+        )
+      );
+      const failed = results.filter((r) => r.status === 'rejected' || (r as any).value?.error).length;
+      const fixed = results.length - failed;
+      if (failed > 0) throw new Error(`فشل تصحيح ${failed} حساب من أصل ${results.length}`);
+      return { fixed };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['points-discrepancies'] });
       queryClient.invalidateQueries({ queryKey: ['admin-users-points'] });
-      toast.success(`تم تصحيح ${discrepancies?.length || 0} حساب بنجاح`);
+      toast.success(`تم تصحيح ${res?.fixed || 0} حساب بنجاح`);
     },
     onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ أثناء التصحيح');
