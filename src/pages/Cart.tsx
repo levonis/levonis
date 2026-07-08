@@ -181,6 +181,8 @@ const Cart = () => {
   const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number; custom_message?: string | null; banner_style?: string | null } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
+  const [usePointsRedemption, setUsePointsRedemption] = useState(false);
+  const [pointsToRedeem, setPointsToRedeem] = useState<number>(0);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'half' | 'cod'>('full');
   const [extraDonation, setExtraDonation] = useState<number>(0);
