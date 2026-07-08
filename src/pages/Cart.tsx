@@ -2195,7 +2195,7 @@ const Cart = () => {
 
       // Random filament with COD/partial: kept hidden as "Mystery" until full wallet payment.
       // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
-      const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
+      const orderSubtotal = Math.max(0, total - discount - protectionDiscountAmount - cardDiscountAmount - pointsDiscountAmount + referralOwnerEarnings);
       const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.5) : orderSubtotal);
       const orderRemaining = isPreOrderCod
         ? orderSubtotal + codFee
@@ -2218,6 +2218,8 @@ const Cart = () => {
         discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
+        points_redeemed: effectivePointsToRedeem,
+        points_discount_amount: pointsDiscountAmount,
         payment_method: isPreOrderCod ? 'cod' : 'wallet',
         payment_status: isPreOrderCod ? 'cod' : (isPreOrderWithPartialPayment ? 'partial' : 'paid'),
         auto_donation_amount: autoDonationAmount,
