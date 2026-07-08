@@ -1838,10 +1838,8 @@ const Admin = () => {
         searchable_attributes: productSearchableAttrs || [],
         // Taobao sync fields
         taobao_url: productUrl.trim() || (formData.get('taobao_url') as string)?.trim() || editingProduct?.taobao_url || null,
-        // Product rewards - points from form (can be auto-calculated or manually set)
-        points_reward: formData.get('points_reward') && formData.get('points_reward') !== '' 
-          ? Number(formData.get('points_reward')) 
-          : 0,
+        // Product rewards - points auto-calculated on delivery (1 point / 1000 IQD net spend)
+        points_reward: 0,
         // Multiple card discounts as JSON array
         card_discounts: productCardDiscounts.filter(d => d.card_id && d.discount_amount > 0),
         // New USD pricing fields
