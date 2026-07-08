@@ -647,6 +647,20 @@ const OrderDetail = () => {
                     cls="text-emerald-500"
                   />
                 )}
+                {Number(order.points_discount_amount) > 0 && (
+                  <Row
+                    label={`خصم النقاط (${Number(order.points_redeemed).toLocaleString()} نقطة)`}
+                    value={`-${formatPrice(Number(order.points_discount_amount))} ${cur}`}
+                    cls="text-amber-500"
+                  />
+                )}
+                {Number(order.points_earned) > 0 && (
+                  <Row
+                    label="نقاط مكتسبة من هذا الطلب"
+                    value={`+${Number(order.points_earned).toLocaleString()} نقطة`}
+                    cls="text-amber-600"
+                  />
+                )}
                 {order.referral_coupon_id && (
                   <Row label="كوبون إحالة مُطبّق" value="✓" cls="text-fuchsia-500" />
                 )}
