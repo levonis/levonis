@@ -11108,12 +11108,15 @@ export type Database = {
       reviews: {
         Row: {
           additional_comments: Json | null
+          admin_quality_multiplier: number
+          base_points_snapshot: number | null
           comment: string | null
           created_at: string
           id: string
           is_auto_rating: boolean | null
           media_files: string[] | null
           points_awarded: number | null
+          points_awarded_at: string | null
           product_id: string
           rating: number
           reorder_count: number | null
@@ -11124,12 +11127,15 @@ export type Database = {
         }
         Insert: {
           additional_comments?: Json | null
+          admin_quality_multiplier?: number
+          base_points_snapshot?: number | null
           comment?: string | null
           created_at?: string
           id?: string
           is_auto_rating?: boolean | null
           media_files?: string[] | null
           points_awarded?: number | null
+          points_awarded_at?: string | null
           product_id: string
           rating: number
           reorder_count?: number | null
@@ -11140,12 +11146,15 @@ export type Database = {
         }
         Update: {
           additional_comments?: Json | null
+          admin_quality_multiplier?: number
+          base_points_snapshot?: number | null
           comment?: string | null
           created_at?: string
           id?: string
           is_auto_rating?: boolean | null
           media_files?: string[] | null
           points_awarded?: number | null
+          points_awarded_at?: string | null
           product_id?: string
           rating?: number
           reorder_count?: number | null
@@ -15065,6 +15074,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      _review_base_points: {
+        Args: { p_product_id: string; p_user_id: string }
+        Returns: number
+      }
       _rf_weighted_pick: { Args: { p_items: Json }; Returns: string }
       add_prize_as_product: {
         Args: {
@@ -15438,6 +15451,7 @@ export type Database = {
       auto_award_expired_seasons: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       auto_hide_stale_priced_products: { Args: never; Returns: number }
+      award_review_bonus_points: { Args: never; Returns: number }
       ban_user_for_unreceived_random_filament: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: Json
