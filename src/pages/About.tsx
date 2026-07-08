@@ -24,7 +24,7 @@ const About = () => {
         supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_pricing_updated', true),
         supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'delivered'),
         supabase.from('orders').select('user_id').limit(5000),
-        supabase.from('community_customer_profiles').select('id', { count: 'exact', head: true }).eq('is_verified', true),
+        supabase.from('community_customer_profiles_public').select('id', { count: 'exact', head: true }).eq('is_verified', true),
       ]);
       const uniqueCustomers = new Set((customers.data || []).map((o: any) => o.user_id)).size;
       return {
