@@ -62,40 +62,13 @@ const AdminReviews = () => {
   });
 
   const updateReviewMutation = useMutation({
-    mutationFn: async ({ reviewId, status, pointsOverride }: { reviewId: string; status: string; pointsOverride?: number }) => {
-      const review = reviews.find((r: any) => r.id === reviewId);
-      if (!review) throw new Error('Review not found');
-
-      // Update review status
+    mutationFn: async ({ reviewId, status, qualityBonus }: { reviewId: string; status: string; qualityBonus?: boolean }) => {
       const updateData: any = { status };
-      if (pointsOverride !== undefined) {
-        updateData.points_awarded = pointsOverride;
+      if (status === 'approved' && qualityBonus !== undefined) {
+        updateData.admin_quality_multiplier = qualityBonus ? 3 : 0;
       }
-      
       const { error } = await supabase.from('reviews').update(updateData).eq('id', reviewId);
       if (error) throw error;
-
-      // If approving, award points
-      if (status === 'approved') {
-        const hasMedia = (review.media_files?.length > 0) || review.video_url;
-        const basePoints = reviewSettings?.points_per_review || 10;
-        const mediaPoints = reviewSettings?.points_per_verified_review || 25;
-        const pointsToAward = pointsOverride ?? (hasMedia ? mediaPoints : basePoints);
-
-        if (pointsToAward > 0) {
-          // Admin-driven award via edge function (validates admin role + caps)
-          const { error: awardError } = await supabase.functions.invoke('award-points', {
-            body: {
-              source: hasMedia ? 'verified_review' : 'review',
-              amount: pointsToAward,
-              target_user_id: review.user_id,
-              related_id: review.product_id,
-              description: 'جائزة تقييم المنتج',
-            },
-          });
-          if (awardError) throw awardError;
-        }
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
@@ -107,8 +80,23 @@ const AdminReviews = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
-  const handleApprove = (reviewId: string, points?: number) => {
-    updateReviewMutation.mutate({ reviewId, status: 'approved', pointsOverride: points });
+  const setQualityBonusMutation = useMutation({
+    mutationFn: async ({ reviewId, qualityBonus }: { reviewId: string; qualityBonus: boolean }) => {
+      const { error } = await supabase
+        .from('reviews')
+        .update({ admin_quality_multiplier: qualityBonus ? 3 : 0 })
+        .eq('id', reviewId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+      toast.success('تم تحديث مكافأة الجودة');
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const handleApprove = (reviewId: string, qualityBonus = false) => {
+    updateReviewMutation.mutate({ reviewId, status: 'approved', qualityBonus });
   };
 
   const handleReject = (reviewId: string) => {
