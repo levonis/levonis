@@ -1575,7 +1575,6 @@ const Admin = () => {
     const colorsCount = productInfo.colors?.length || 0;
     const optionsCount = optionsData.length || 0;
     const featuresCount = productInfo.features?.length || 0;
-    const pointsReward = productInfo.points_reward || 0;
     const hasShippingCalc = productInfo.dimensions || productInfo.weight_kg;
     toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات${hasShippingCalc ? '، + سعر الشحن' : ''})`);
   };
