@@ -315,32 +315,15 @@ export default function AdminPointsAuditTab() {
               <p className="text-sm text-muted-foreground">
                 يوجد {discrepancies.length} مستخدم لديهم فروقات في الأرصدة
               </p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <RefreshCw className="h-4 w-4 ml-2" />
-                    تصحيح الكل
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>تأكيد تصحيح جميع الحسابات</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      سيتم تحديث أرصدة {discrepancies.length} مستخدم لتتطابق مع مجموع معاملاتهم الفعلية.
-                      هذا الإجراء لا يمكن التراجع عنه.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => fixAllDiscrepancies.mutate()}
-                      disabled={fixAllDiscrepancies.isPending}
-                    >
-                      {fixAllDiscrepancies.isPending ? 'جاري التصحيح...' : 'تصحيح الكل'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => fixAllDiscrepancies.mutate()}
+                disabled={fixAllDiscrepancies.isPending}
+              >
+                <RefreshCw className={`h-4 w-4 ml-2 ${fixAllDiscrepancies.isPending ? 'animate-spin' : ''}`} />
+                {fixAllDiscrepancies.isPending ? 'جاري التصحيح...' : 'تصحيح الكل'}
+              </Button>
             </div>
           )}
 
