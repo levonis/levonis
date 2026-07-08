@@ -21,7 +21,7 @@ const About = () => {
     queryKey: ['about-live-stats'],
     queryFn: async () => {
       const [products, orders, customers, merchants] = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_pricing_updated', true),
         supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'delivered'),
         supabase.from('orders').select('user_id').limit(5000),
         supabase.from('community_customer_profiles').select('id', { count: 'exact', head: true }).eq('is_verified', true),

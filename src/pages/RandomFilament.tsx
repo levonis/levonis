@@ -541,6 +541,7 @@ function EligibleProductsDialog({
       let q = supabase
         .from("products")
         .select("id, name_ar, image_url, in_stock, colors, product_options(id, name_ar, available_for_direct_sale, available_for_pre_order, stock_quantity, in_stock)")
+        .eq("is_pricing_updated", true)
         .order("name_ar")
         .limit(200);
       if (catIds.length) q = q.in("category_id", catIds);

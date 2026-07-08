@@ -55,9 +55,10 @@ function ProductLinkPreview({ url, slug, isMe }: { url: string; slug: string; is
   useEffect(() => {
     supabase
       .from('products')
-      .select('name_ar, image_url, images, price, currency, slug')
+      .select('name_ar, image_url, images, price, currency, slug, is_pricing_updated')
       .eq('slug', slug)
-      .single()
+      .eq('is_pricing_updated', true)
+      .maybeSingle()
       .then(({ data }) => {
         if (data) setProduct(data as ProductPreview);
         setLoading(false);
