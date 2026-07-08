@@ -1982,9 +1982,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       <ImageLightbox src={msg.image_url} alt="صورة">
                                         {(open) => (
                                           <div className="mb-1">
-                                            <img 
-                                              src={msg.image_url} 
-                                              alt="" 
+                                            <SignedImage
+                                              src={msg.image_url}
+                                              alt=""
                                               className="rounded-lg max-w-full max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
                                               onClick={open} loading="lazy" decoding="async" />
                                           </div>

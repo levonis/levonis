@@ -2104,7 +2104,7 @@ const AdminOrders = () => {
                             />
                             {serialImagePreview && (
                               <div className="relative">
-                                <img src={serialImagePreview} alt="Serial" className="w-12 h-12 object-cover rounded" loading="lazy" decoding="async" />
+                                <SignedImage src={serialImagePreview} alt="Serial" className="w-12 h-12 object-cover rounded" loading="lazy" decoding="async" />
                                 <Button
                                   type="button"
                                   size="icon"

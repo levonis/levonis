@@ -663,7 +663,7 @@ export default function AdminChats() {
                             }`}
                           >
                             {msg.image_url && (
-                              <img
+                              <SignedImage
                                 src={msg.image_url}
                                 alt=""
                                 className="max-w-full rounded-lg mb-2 max-h-48 object-cover" loading="lazy" decoding="async" />

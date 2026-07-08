@@ -710,9 +710,9 @@ const OrderDetail = () => {
                 <p className="text-xs font-bold text-muted-foreground mb-2">{t('od_extra_images')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {order.admin_images.map((imageUrl: string, index: number) => (
-                    <a key={index} href={imageUrl} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-xl overflow-hidden border border-border/30 hover:border-primary/40 transition-colors shadow-sm">
-                      <img src={imageUrl} alt={`#${index + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                    </a>
+                    <SignedLink key={index} href={imageUrl} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-xl overflow-hidden border border-border/30 hover:border-primary/40 transition-colors shadow-sm">
+                      <SignedImage src={imageUrl} alt={`#${index + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    </SignedLink>
                   ))}
                 </div>
               </div>
@@ -724,11 +724,11 @@ const OrderDetail = () => {
                   {order.admin_files.map((fileUrl: string, index: number) => {
                     const fileName = fileUrl.split('/').pop() || `#${index + 1}`;
                     return (
-                      <a key={index} href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/20 hover:border-primary/30 transition-colors">
+                      <SignedLink key={index} href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/20 hover:border-primary/30 transition-colors">
                         <File className="h-4 w-4 text-primary shrink-0" />
                         <span className="flex-1 text-sm font-medium truncate">{fileName}</span>
                         <Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      </a>
+                      </SignedLink>
                     );
                   })}
                 </div>
