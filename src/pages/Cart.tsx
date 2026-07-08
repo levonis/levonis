@@ -1682,6 +1682,11 @@ const Cart = () => {
         payment_status: (codRemaining + extraDonationAmount) <= 0 ? 'paid' : 'cod',
         order_type: 'direct',
         delivery_method: selectedDeliveryMethod,
+        discount_amount: appliedCoupon ? calculateDiscount() : 0,
+        coupon_id: appliedCoupon?.id || null,
+        coupon_code: appliedCoupon?.code || null,
+        coupon_discount_amount: appliedCoupon ? calculateDiscount() : 0,
+        coupon_free_shipping: couponFreeShippingApplied,
         auto_donation_amount: autoDonationAmount,
         extra_donation_amount: extraDonationAmount,
       } as any;
