@@ -306,7 +306,7 @@ export default function AdminPointsSettings() {
     mutationFn: async () => {
       const settingsValue = {
         points_status: pointsStatus,
-        // Removed points_per_dinar - each product now has its own points (points_reward field)
+        // Auto: 1 point per 1000 IQD net spend, awarded on user delivery confirmation
         points_per_review: parseFloat(pointsPerReview),
         points_per_instagram_share: parseFloat(pointsPerInstagramShare),
         
