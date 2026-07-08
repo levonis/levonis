@@ -75,10 +75,17 @@ export default function AdminPointsAuditTab() {
       if (txError) throw txError;
 
       // Calculate balance from transactions
+      // Types: 'earned'/'earn' add; 'redeem' subtracts; 'spend' & 'revoked' already stored as negative
       const transactionBalances = new Map<string, number>();
       transactions?.forEach(tx => {
         const current = transactionBalances.get(tx.user_id) || 0;
-        transactionBalances.set(tx.user_id, current + (tx.type === 'earn' ? tx.points : -tx.points));
+        const p = Number(tx.points) || 0;
+        const delta = (tx.type === 'earned' || tx.type === 'earn')
+          ? p
+          : tx.type === 'redeem'
+            ? -p
+            : p; // spend/revoked stored negative
+        transactionBalances.set(tx.user_id, current + delta);
       });
 
       // Get user profiles
@@ -181,8 +188,13 @@ export default function AdminPointsAuditTab() {
       
       if (txError) throw txError;
 
-      const calculatedBalance = transactions?.reduce((sum, tx) => 
-        sum + (tx.type === 'earn' ? tx.points : -tx.points), 0) || 0;
+      const calculatedBalance = transactions?.reduce((sum, tx) => {
+        const p = Number(tx.points) || 0;
+        const delta = (tx.type === 'earned' || tx.type === 'earn')
+          ? p
+          : tx.type === 'redeem' ? -p : p;
+        return sum + delta;
+      }, 0) || 0;
 
       // Update user_points
       const { error: updateError } = await supabase
@@ -205,27 +217,30 @@ export default function AdminPointsAuditTab() {
     },
   });
 
-  // تصحيح جميع الفروقات
+  // تصحيح جميع الفروقات (تلقائي - بشكل متوازي)
   const fixAllDiscrepancies = useMutation({
     mutationFn: async () => {
-      if (!discrepancies || discrepancies.length === 0) return;
-
-      for (const disc of discrepancies) {
-        const { error } = await supabase
-          .from('user_points')
-          .update({ 
-            available_points: Math.max(0, disc.calculated_balance),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', disc.user_id);
-
-        if (error) throw error;
-      }
+      if (!discrepancies || discrepancies.length === 0) return { fixed: 0 };
+      const results = await Promise.allSettled(
+        discrepancies.map((disc) =>
+          supabase
+            .from('user_points')
+            .update({
+              available_points: Math.max(0, disc.calculated_balance),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', disc.user_id)
+        )
+      );
+      const failed = results.filter((r) => r.status === 'rejected' || (r as any).value?.error).length;
+      const fixed = results.length - failed;
+      if (failed > 0) throw new Error(`فشل تصحيح ${failed} حساب من أصل ${results.length}`);
+      return { fixed };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['points-discrepancies'] });
       queryClient.invalidateQueries({ queryKey: ['admin-users-points'] });
-      toast.success(`تم تصحيح ${discrepancies?.length || 0} حساب بنجاح`);
+      toast.success(`تم تصحيح ${res?.fixed || 0} حساب بنجاح`);
     },
     onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ أثناء التصحيح');
@@ -303,32 +318,15 @@ export default function AdminPointsAuditTab() {
               <p className="text-sm text-muted-foreground">
                 يوجد {discrepancies.length} مستخدم لديهم فروقات في الأرصدة
               </p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <RefreshCw className="h-4 w-4 ml-2" />
-                    تصحيح الكل
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>تأكيد تصحيح جميع الحسابات</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      سيتم تحديث أرصدة {discrepancies.length} مستخدم لتتطابق مع مجموع معاملاتهم الفعلية.
-                      هذا الإجراء لا يمكن التراجع عنه.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => fixAllDiscrepancies.mutate()}
-                      disabled={fixAllDiscrepancies.isPending}
-                    >
-                      {fixAllDiscrepancies.isPending ? 'جاري التصحيح...' : 'تصحيح الكل'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => fixAllDiscrepancies.mutate()}
+                disabled={fixAllDiscrepancies.isPending}
+              >
+                <RefreshCw className={`h-4 w-4 ml-2 ${fixAllDiscrepancies.isPending ? 'animate-spin' : ''}`} />
+                {fixAllDiscrepancies.isPending ? 'جاري التصحيح...' : 'تصحيح الكل'}
+              </Button>
             </div>
           )}
 
