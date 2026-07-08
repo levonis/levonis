@@ -285,49 +285,38 @@ const AdminReviews = () => {
                 </div>
               )}
 
-              {/* Points Award Section */}
+              {/* Quality Bonus & Actions */}
               {selectedReview.status === 'pending' && (
                 <div className="border-t pt-4 space-y-3">
-                  <Label className="font-medium flex items-center gap-2">
-                    <Gift className="h-4 w-4 text-amber-500" />
-                    تحديد الجائزة (نقاط)
-                  </Label>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setCustomPoints(String(reviewSettings?.points_per_review || 10))}>
-                        تقييم عادي ({reviewSettings?.points_per_review || 10})
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setCustomPoints(String(reviewSettings?.points_per_verified_review || 25))}>
-                        مع وسائط ({reviewSettings?.points_per_verified_review || 25})
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="أو أدخل قيمة مخصصة"
-                      value={customPoints}
-                      onChange={(e) => setCustomPoints(e.target.value)}
-                      className="flex-1"
-                    />
-                    <span className="text-sm text-muted-foreground">نقطة</span>
+                  <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1">
+                    <p className="flex items-center gap-2 font-medium">
+                      <Gift className="h-4 w-4" />
+                      النقاط تُمنح تلقائياً بعد 48 ساعة
+                    </p>
+                    <p>• صورة فقط: مضاعف 1x من نقاط الشراء</p>
+                    <p>• صورة + فيديو: مضاعف 2x</p>
+                    <p>• مكافأة جودة إدارية: مضاعف 3x (السقف)</p>
                   </div>
 
                   <div className="flex gap-2">
                     <Button
                       className="flex-1 bg-green-600 hover:bg-green-700"
-                      onClick={() => handleApprove(selectedReview.id, customPoints ? parseInt(customPoints) : undefined)}
+                      onClick={() => handleApprove(selectedReview.id, false)}
                       disabled={updateReviewMutation.isPending}
                     >
                       {updateReviewMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Check className="h-4 w-4 ml-2" />}
                       موافقة
                     </Button>
                     <Button
+                      className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                      onClick={() => handleApprove(selectedReview.id, true)}
+                      disabled={updateReviewMutation.isPending}
+                    >
+                      <Gift className="h-4 w-4 ml-2" />
+                      موافقة + مكافأة جودة (3x)
+                    </Button>
+                    <Button
                       variant="destructive"
-                      className="flex-1"
                       onClick={() => handleReject(selectedReview.id)}
                       disabled={updateReviewMutation.isPending}
                     >
@@ -340,14 +329,43 @@ const AdminReviews = () => {
 
               {/* Already processed */}
               {selectedReview.status !== 'pending' && (
-                <div className="border-t pt-4">
+                <div className="border-t pt-4 space-y-3">
                   <Badge variant={selectedReview.status === 'approved' ? 'default' : 'destructive'}>
                     {selectedReview.status === 'approved' ? 'تمت الموافقة' : 'مرفوض'}
                   </Badge>
                   {selectedReview.points_awarded > 0 && (
-                    <p className="text-sm mt-2 text-amber-600">
-                      تم منح {selectedReview.points_awarded} نقطة
+                    <p className="text-sm text-amber-600">
+                      تم منح {selectedReview.points_awarded} نقطة (بونص التقييم)
                     </p>
+                  )}
+                  {selectedReview.status === 'approved' && !selectedReview.points_awarded && (
+                    <p className="text-xs text-muted-foreground">
+                      سيتم منح النقاط تلقائياً بعد 48 ساعة من نشر التقييم إذا احتوى صورة.
+                    </p>
+                  )}
+                  {selectedReview.status === 'approved' && (
+                    <div className="flex items-center gap-2 pt-2">
+                      <span className="text-sm">مكافأة جودة (3x):</span>
+                      <Button
+                        size="sm"
+                        variant={selectedReview.admin_quality_multiplier > 0 ? 'default' : 'outline'}
+                        onClick={() => setQualityBonusMutation.mutate({ reviewId: selectedReview.id, qualityBonus: true })}
+                        disabled={setQualityBonusMutation.isPending || !!selectedReview.points_awarded}
+                      >
+                        مفعلة
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={selectedReview.admin_quality_multiplier === 0 ? 'default' : 'outline'}
+                        onClick={() => setQualityBonusMutation.mutate({ reviewId: selectedReview.id, qualityBonus: false })}
+                        disabled={setQualityBonusMutation.isPending || !!selectedReview.points_awarded}
+                      >
+                        معطلة
+                      </Button>
+                      {selectedReview.points_awarded > 0 && (
+                        <span className="text-xs text-muted-foreground mr-2">(مقفلة بعد المنح)</span>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
