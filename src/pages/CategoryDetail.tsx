@@ -251,8 +251,19 @@ const CategoryDetail = () => {
       return true;
     });
 
+    // Explicit display_order (>0) wins in the default view — lower number = higher priority.
+    // Products with display_order = 0/null fall to the end and use price desc as tie-breaker.
+    const orderRank = (p: any) => {
+      const n = Number(p?.display_order);
+      return Number.isFinite(n) && n > 0 ? n : Number.POSITIVE_INFINITY;
+    };
     const sorters: Record<SortKey, (a: any, b: any) => number> = {
-      'default': () => 0,
+      'default': (a, b) => {
+        const oa = orderRank(a);
+        const ob = orderRank(b);
+        if (oa !== ob) return oa - ob;
+        return (Number(b.price) || 0) - (Number(a.price) || 0);
+      },
       'price-asc': (a, b) => Number(a.price) - Number(b.price),
       'price-desc': (a, b) => Number(b.price) - Number(a.price),
       'newest': (a, b) =>
