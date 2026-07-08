@@ -2513,19 +2513,18 @@ const Cart = () => {
         console.warn('random filament link/reveal failed (preorder)', e);
       }
 
-      // تحديث استخدام الكوبون إذا كان موجوداً
+      // تحديث استخدام الكوبون إذا كان موجوداً (ذرّي + عدم تكرار + رفع العدّاد)
       if (appliedCoupon && user) {
-        await supabase
-          .from('coupon_usage')
-          .insert([{
-            coupon_id: appliedCoupon.id,
-            user_id: user.id
-          }]);
-
-        await supabase
-          .from('coupons')
-          .update({ current_uses: appliedCoupon.current_uses + 1 })
-          .eq('id', appliedCoupon.id);
+        try {
+          await (supabase as any).rpc('record_coupon_use', {
+            p_coupon_id: appliedCoupon.id,
+            p_user_id: user.id,
+            p_order_id: order.id,
+          });
+          queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+        } catch (e) {
+          console.error('record_coupon_use failed:', e);
+        }
       }
 
       // Build WhatsApp message
