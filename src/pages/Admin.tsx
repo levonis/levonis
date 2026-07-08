@@ -1564,11 +1564,8 @@ const Admin = () => {
       })));
     }
 
-    // Set points_reward if extracted
-    if (productInfo.points_reward && productInfo.points_reward > 0) {
-      const pointsInput = form?.querySelector('#points_reward') as HTMLInputElement;
-      if (pointsInput) pointsInput.value = String(productInfo.points_reward);
-    }
+    // points_reward is auto-calculated at delivery, no manual input
+
 
     // Shipping calculation now handled by AdminProductPricingSection
 
