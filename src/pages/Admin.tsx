@@ -3118,11 +3118,28 @@ const Admin = () => {
                           id="brand"
                           name="brand"
                           type="text"
+                          list="brand-suggestions"
                           defaultValue={editingProduct?.brand ?? ''}
-                          placeholder="مثال: Bambu Lab، Creality، Qidi، Anycubic"
+                          placeholder="اختر من القائمة أو اكتب اسماً جديداً"
+                          autoComplete="off"
                         />
+                        <datalist id="brand-suggestions">
+                          {Array.from(new Set(
+                            (products ?? [])
+                              .map((p: any) => (p.brand ?? '').toString().trim())
+                              .filter((b: string) => b.length > 0)
+                          ))
+                            .sort((a, b) => a.localeCompare(b))
+                            .map((b) => (
+                              <option key={b} value={b} />
+                            ))}
+                        </datalist>
+                        <p className="text-xs text-muted-foreground">
+                          يمكنك الاختيار من البراندات الموجودة أو كتابة اسم جديد.
+                        </p>
                       </div>
                     </div>
+
 
                     {/* Availability options now managed by AdminProductPricingSection */}
 
