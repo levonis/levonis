@@ -32,6 +32,7 @@ const Home = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [wishDialogOpen, setWishDialogOpen] = useState(false);
+  const { data: activeCard } = useActiveLevoCard();
 
   const { data: mainSections, isLoading: mainSectionsLoading } = useQuery({
     queryKey: ['main-sections'],
