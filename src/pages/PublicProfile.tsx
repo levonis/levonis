@@ -183,7 +183,7 @@ const PublicProfile = () => {
     queryFn: async () => {
       if (!userId) return null;
       const { data } = await supabase
-        .from('community_customer_profiles')
+        .from('community_customer_profiles_public')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
