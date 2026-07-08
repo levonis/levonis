@@ -75,10 +75,17 @@ export default function AdminPointsAuditTab() {
       if (txError) throw txError;
 
       // Calculate balance from transactions
+      // Types: 'earned'/'earn' add; 'redeem' subtracts; 'spend' & 'revoked' already stored as negative
       const transactionBalances = new Map<string, number>();
       transactions?.forEach(tx => {
         const current = transactionBalances.get(tx.user_id) || 0;
-        transactionBalances.set(tx.user_id, current + (tx.type === 'earn' ? tx.points : -tx.points));
+        const p = Number(tx.points) || 0;
+        const delta = (tx.type === 'earned' || tx.type === 'earn')
+          ? p
+          : tx.type === 'redeem'
+            ? -p
+            : p; // spend/revoked stored negative
+        transactionBalances.set(tx.user_id, current + delta);
       });
 
       // Get user profiles
