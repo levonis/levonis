@@ -2237,7 +2237,7 @@ const Cart = () => {
         ? orderSubtotal + codFee
         : (isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0);
 
-      const orderDeliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const orderDeliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied || couponFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
@@ -2254,6 +2254,10 @@ const Cart = () => {
         discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
+        coupon_id: appliedCoupon?.id || null,
+        coupon_code: appliedCoupon?.code || null,
+        coupon_discount_amount: discount,
+        coupon_free_shipping: couponFreeShippingApplied,
         points_redeemed: effectivePointsToRedeem,
         points_discount_amount: pointsDiscountAmount,
         payment_method: isPreOrderCod ? 'cod' : 'wallet',
