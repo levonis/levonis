@@ -6,11 +6,11 @@ import { formatPrice } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
 import { resizeSupabaseImage } from '@/lib/imageUtils';
-import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
+import { useOwnedLevoCard } from '@/hooks/useOwnedLevoCard';
 
 const BundlesSection = () => {
   const { t, language } = useLanguage();
-  const { data: activeLevoCard } = useActiveLevoCard();
+  const { data: activeLevoCard } = useOwnedLevoCard();
   const { data: bundles } = useQuery({
     queryKey: ['home-bundles-preview'],
     queryFn: async () => {
