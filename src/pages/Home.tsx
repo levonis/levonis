@@ -17,6 +17,7 @@ import ProgressiveSection from '@/components/ProgressiveSection';
 import SEO from '@/components/SEO';
 import QuestVerifier from '@/components/QuestVerifier';
 import { organizationLd, websiteLd } from '@/lib/seo/structured';
+import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
 
 // Lazy-load only sections gated by ProgressiveSection (genuinely below-the-fold)
 const BundlesSection = lazy(() => import('@/components/BundlesSection'));
