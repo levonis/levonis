@@ -2384,18 +2384,21 @@ export type Database = {
         Row: {
           coupon_id: string
           id: string
+          order_id: string | null
           used_at: string
           user_id: string
         }
         Insert: {
           coupon_id: string
           id?: string
+          order_id?: string | null
           used_at?: string
           user_id: string
         }
         Update: {
           coupon_id?: string
           id?: string
+          order_id?: string | null
           used_at?: string
           user_id?: string
         }
@@ -2405,6 +2408,13 @@ export type Database = {
             columns: ["coupon_id"]
             isOneToOne: false
             referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -7985,6 +7995,10 @@ export type Database = {
           card_discount_level_name: string | null
           cod_fee: number
           confirmed_at: string | null
+          coupon_code: string | null
+          coupon_discount_amount: number
+          coupon_free_shipping: boolean
+          coupon_id: string | null
           created_at: string
           currency: string
           customer_paid_amount: number | null
@@ -8051,6 +8065,10 @@ export type Database = {
           card_discount_level_name?: string | null
           cod_fee?: number
           confirmed_at?: string | null
+          coupon_code?: string | null
+          coupon_discount_amount?: number
+          coupon_free_shipping?: boolean
+          coupon_id?: string | null
           created_at?: string
           currency?: string
           customer_paid_amount?: number | null
@@ -8117,6 +8135,10 @@ export type Database = {
           card_discount_level_name?: string | null
           cod_fee?: number
           confirmed_at?: string | null
+          coupon_code?: string | null
+          coupon_discount_amount?: number
+          coupon_free_shipping?: boolean
+          coupon_id?: string | null
           created_at?: string
           currency?: string
           customer_paid_amount?: number | null
@@ -8167,6 +8189,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_user_id_fkey_profiles"
             columns: ["user_id"]
@@ -14894,6 +14923,10 @@ export type Database = {
           card_discount_level_name: string | null
           cod_fee: number
           confirmed_at: string | null
+          coupon_code: string | null
+          coupon_discount_amount: number
+          coupon_free_shipping: boolean
+          coupon_id: string | null
           created_at: string
           currency: string
           customer_paid_amount: number | null
@@ -15251,6 +15284,10 @@ export type Database = {
           card_discount_level_name: string | null
           cod_fee: number
           confirmed_at: string | null
+          coupon_code: string | null
+          coupon_discount_amount: number
+          coupon_free_shipping: boolean
+          coupon_id: string | null
           created_at: string
           currency: string
           customer_paid_amount: number | null
@@ -16178,6 +16215,10 @@ export type Database = {
           p_watch_number: number
         }
         Returns: Json
+      }
+      record_coupon_use: {
+        Args: { p_coupon_id: string; p_order_id: string; p_user_id: string }
+        Returns: undefined
       }
       record_listing_view: {
         Args: { p_listing_id: string }

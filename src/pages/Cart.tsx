@@ -1619,7 +1619,7 @@ const Cart = () => {
         .maybeSingle();
 
       const selectedAddress = defaultAddress || addresses[0];
-      const deliveryFeeCalc = getDeliveryFee(selectedAddress.governorate);
+      const deliveryFeeCalc = couponFreeShippingApplied ? 0 : getDeliveryFee(selectedAddress.governorate);
 
       const { data: profileData } = await supabase
         .from('profiles')
@@ -1682,6 +1682,11 @@ const Cart = () => {
         payment_status: (codRemaining + extraDonationAmount) <= 0 ? 'paid' : 'cod',
         order_type: 'direct',
         delivery_method: selectedDeliveryMethod,
+        discount_amount: appliedCoupon ? calculateDiscount() : 0,
+        coupon_id: appliedCoupon?.id || null,
+        coupon_code: appliedCoupon?.code || null,
+        coupon_discount_amount: appliedCoupon ? calculateDiscount() : 0,
+        coupon_free_shipping: couponFreeShippingApplied,
         auto_donation_amount: autoDonationAmount,
         extra_donation_amount: extraDonationAmount,
       } as any;
@@ -1936,6 +1941,21 @@ const Cart = () => {
           balanceBefore: walletBalanceBefore,
         });
       }
+
+      // Record coupon usage tied to this order (atomic + de-duplicated + bumps current_uses)
+      if (appliedCoupon && user) {
+        try {
+          await (supabase as any).rpc('record_coupon_use', {
+            p_coupon_id: appliedCoupon.id,
+            p_user_id: user.id,
+            p_order_id: orderResult.id,
+          });
+          queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+        } catch (e) {
+          console.error('record_coupon_use (direct sale) failed:', e);
+        }
+      }
+
 
       // Reveal real product/color to user ONLY when fully paid via wallet (no COD at all).
       try {
@@ -2217,7 +2237,7 @@ const Cart = () => {
         ? orderSubtotal + codFee
         : (isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0);
 
-      const orderDeliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const orderDeliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied || couponFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
@@ -2234,6 +2254,10 @@ const Cart = () => {
         discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
+        coupon_id: appliedCoupon?.id || null,
+        coupon_code: appliedCoupon?.code || null,
+        coupon_discount_amount: discount,
+        coupon_free_shipping: couponFreeShippingApplied,
         points_redeemed: effectivePointsToRedeem,
         points_discount_amount: pointsDiscountAmount,
         payment_method: isPreOrderCod ? 'cod' : 'wallet',
@@ -2489,19 +2513,18 @@ const Cart = () => {
         console.warn('random filament link/reveal failed (preorder)', e);
       }
 
-      // تحديث استخدام الكوبون إذا كان موجوداً
+      // تحديث استخدام الكوبون إذا كان موجوداً (ذرّي + عدم تكرار + رفع العدّاد)
       if (appliedCoupon && user) {
-        await supabase
-          .from('coupon_usage')
-          .insert([{
-            coupon_id: appliedCoupon.id,
-            user_id: user.id
-          }]);
-
-        await supabase
-          .from('coupons')
-          .update({ current_uses: appliedCoupon.current_uses + 1 })
-          .eq('id', appliedCoupon.id);
+        try {
+          await (supabase as any).rpc('record_coupon_use', {
+            p_coupon_id: appliedCoupon.id,
+            p_user_id: user.id,
+            p_order_id: order.id,
+          });
+          queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+        } catch (e) {
+          console.error('record_coupon_use failed:', e);
+        }
       }
 
       // Build WhatsApp message
@@ -2572,18 +2595,7 @@ const Cart = () => {
         message += ` ✓ تم الدفع بالكامل من المحفظة`;
       }
 
-      // If coupon was used, record it
-      if (appliedCoupon && user) {
-        await supabase.from('coupon_usage').insert({
-          coupon_id: appliedCoupon.id,
-          user_id: user.id,
-        });
-        
-        await supabase
-          .from('coupons')
-          .update({ current_uses: appliedCoupon.current_uses + 1 })
-          .eq('id', appliedCoupon.id);
-      }
+      // (تسجيل الكوبون تم أعلاه عبر record_coupon_use — بدون تكرار)
 
       // Update offer purchase statuses to 'shipping_requested'
       const offerPurchaseIds2 = items
