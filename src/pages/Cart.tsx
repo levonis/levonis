@@ -181,6 +181,8 @@ const Cart = () => {
   const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number; custom_message?: string | null; banner_style?: string | null } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
+  const [usePointsRedemption, setUsePointsRedemption] = useState(false);
+  const [pointsToRedeem, setPointsToRedeem] = useState<number>(0);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'half' | 'cod'>('full');
   const [extraDonation, setExtraDonation] = useState<number>(0);
@@ -439,6 +441,23 @@ const Cart = () => {
     },
     enabled: !!user?.id,
   });
+
+  // Available points for cart redemption (1 point = 1 IQD)
+  const { data: userPoints } = useQuery({
+    queryKey: ['user-points-cart', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('user_points')
+        .select('available_points')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+  const availablePoints = Math.floor(Number(userPoints?.available_points || 0));
+
 
   // Fetch max quantities for bundle items in cart
   const bundleIds = items.filter(i => i.bundle_id).map(i => i.bundle_id!);
@@ -1063,8 +1082,15 @@ const Cart = () => {
   // Independent ledgers — both stack in the cart total.
   const warrantyDiscountAmount = (useHardwareOverCard && useWarrantyContrib) ? (warrantyBenefits?.totalDiscount || 0) : 0;
   const subscriptionDiscountAmount = (useHardwareOverCard && useSubscriptionContrib) ? (subscriptionBenefits?.totalDiscount || 0) : 0;
-  const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
-  
+  const subtotalBeforePoints = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
+
+  // Points redemption: 1 point = 1 IQD. Max = min(available, subtotalBeforePoints).
+  const maxRedeemablePoints = Math.max(0, Math.min(availablePoints, Math.floor(Math.max(0, subtotalBeforePoints))));
+  const effectivePointsToRedeem = usePointsRedemption ? Math.max(0, Math.min(pointsToRedeem, maxRedeemablePoints)) : 0;
+  const pointsDiscountAmount = effectivePointsToRedeem;
+
+  const subtotalAfterDiscount = Math.max(0, subtotalBeforePoints - pointsDiscountAmount);
+
   // الضريبة ملغاة نهائياً
   const TEMP_TAX_RATE = 0;
   const taxAmount = 0;
@@ -2169,7 +2195,7 @@ const Cart = () => {
 
       // Random filament with COD/partial: kept hidden as "Mystery" until full wallet payment.
       // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
-      const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
+      const orderSubtotal = Math.max(0, total - discount - protectionDiscountAmount - cardDiscountAmount - pointsDiscountAmount + referralOwnerEarnings);
       const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.5) : orderSubtotal);
       const orderRemaining = isPreOrderCod
         ? orderSubtotal + codFee
@@ -2192,6 +2218,8 @@ const Cart = () => {
         discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
+        points_redeemed: effectivePointsToRedeem,
+        points_discount_amount: pointsDiscountAmount,
         payment_method: isPreOrderCod ? 'cod' : 'wallet',
         payment_status: isPreOrderCod ? 'cod' : (isPreOrderWithPartialPayment ? 'partial' : 'paid'),
         auto_donation_amount: autoDonationAmount,
@@ -2247,6 +2275,20 @@ const Cart = () => {
         });
         // Update aggregates on coupon
       }
+
+      // Redeem points if user opted in (non-blocking; failure logged but doesn't abort the order)
+      if (effectivePointsToRedeem > 0) {
+        try {
+          await supabase.rpc('redeem_points_in_cart', {
+            p_order_id: orderId as any,
+            p_points: effectivePointsToRedeem,
+          });
+          queryClient.invalidateQueries({ queryKey: ['user-points-cart', user.id] });
+        } catch (e) {
+          console.error('redeem_points_in_cart failed:', e);
+        }
+      }
+
 
       // Fetch the created order to get order_number
       const { data: order, error: fetchOrderError } = await supabase
@@ -3366,7 +3408,73 @@ const Cart = () => {
                     </div>
                   )}
 
-                  {/* Selector: Warranty / Subscription / Both — only when both are active */}
+                  {/* استخدام النقاط للخصم — 1 نقطة = 1 دينار */}
+                  {availablePoints > 0 && maxRedeemablePoints > 0 && (
+                    <div className="animate-fade-in rounded-xl p-3 border border-amber-500/30 bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent backdrop-blur-sm shadow-sm space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center shadow-inner">
+                            <Sparkles className="h-4 w-4 text-amber-600" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-amber-700 dark:text-amber-400">استخدام النقاط للخصم</div>
+                            <div className="text-[10px] text-muted-foreground">رصيدك: {availablePoints.toLocaleString()} نقطة (1 نقطة = 1 د.ع)</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !usePointsRedemption;
+                            setUsePointsRedemption(next);
+                            if (next && pointsToRedeem === 0) setPointsToRedeem(maxRedeemablePoints);
+                            if (!next) setPointsToRedeem(0);
+                          }}
+                          className={`relative w-11 h-6 rounded-full transition-all ${usePointsRedemption ? 'bg-amber-500' : 'bg-muted'}`}
+                          aria-pressed={usePointsRedemption}
+                        >
+                          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${usePointsRedemption ? 'right-0.5' : 'left-0.5'}`} />
+                        </button>
+                      </div>
+                      {usePointsRedemption && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={maxRedeemablePoints}
+                            value={pointsToRedeem}
+                            onChange={(e) => {
+                              const v = Math.max(0, Math.min(maxRedeemablePoints, Math.floor(Number(e.target.value) || 0)));
+                              setPointsToRedeem(v);
+                            }}
+                            className="h-9 text-sm"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-9 shrink-0 text-xs"
+                            onClick={() => setPointsToRedeem(maxRedeemablePoints)}
+                          >
+                            استخدم الأقصى ({maxRedeemablePoints.toLocaleString()})
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {pointsDiscountAmount > 0 && (
+                    <div className="flex justify-between items-center animate-fade-in">
+                      <span className="text-amber-600 text-sm flex items-center gap-1">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        خصم النقاط ({effectivePointsToRedeem.toLocaleString()} نقطة)
+                      </span>
+                      <span className="font-bold text-amber-600">
+                        -<AnimatedPrice value={pointsDiscountAmount} formatFn={formatPrice} /> {t('pd_currency_iqd')}
+                      </span>
+                    </div>
+                  )}
+
+
                   {hasBothActive && (
                     <div className="animate-fade-in rounded-xl p-3 border border-primary/20 bg-gradient-to-br from-primary/5 via-background/40 to-background/20 backdrop-blur-md shadow-sm space-y-2">
                       <div className="flex items-center gap-2">

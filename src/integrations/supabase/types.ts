@@ -8006,6 +8006,9 @@ export type Database = {
           payment_method: string | null
           payment_status: string | null
           phone_number: string
+          points_discount_amount: number
+          points_earned: number
+          points_redeemed: number
           priority: string | null
           processing_at: string | null
           profit_amount: number | null
@@ -8069,6 +8072,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           phone_number: string
+          points_discount_amount?: number
+          points_earned?: number
+          points_redeemed?: number
           priority?: string | null
           processing_at?: string | null
           profit_amount?: number | null
@@ -8132,6 +8138,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           phone_number?: string
+          points_discount_amount?: number
+          points_earned?: number
+          points_redeemed?: number
           priority?: string | null
           processing_at?: string | null
           profit_amount?: number | null
@@ -14897,6 +14906,9 @@ export type Database = {
           payment_method: string | null
           payment_status: string | null
           phone_number: string
+          points_discount_amount: number
+          points_earned: number
+          points_redeemed: number
           priority: string | null
           processing_at: string | null
           profit_amount: number | null
@@ -15247,6 +15259,9 @@ export type Database = {
           payment_method: string | null
           payment_status: string | null
           phone_number: string
+          points_discount_amount: number
+          points_earned: number
+          points_redeemed: number
           priority: string | null
           processing_at: string | null
           profit_amount: number | null
@@ -16172,6 +16187,10 @@ export type Database = {
       redeem_points_for_tickets: {
         Args: { p_description?: string; p_points: number; p_tickets: number }
         Returns: Json
+      }
+      redeem_points_in_cart: {
+        Args: { p_order_id: string; p_points: number }
+        Returns: boolean
       }
       redeem_points_store_product: {
         Args: { p_product_id: string }

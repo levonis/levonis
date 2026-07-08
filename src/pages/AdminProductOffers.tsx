@@ -501,12 +501,8 @@ export default function AdminProductOffers() {
                         {offer.gift_tickets}
                       </div>
                     )}
-                    {offer.points_reward > 0 && (
-                      <div className="bg-amber-500/90 text-white px-1.5 py-0.5 rounded text-[8px] font-bold flex items-center gap-0.5">
-                        <Coins className="h-2.5 w-2.5" />
-                        {offer.points_reward}
-                      </div>
-                    )}
+                    {/* points_reward badge removed — points auto-calculated on delivery */}
+
                   </div>
 
                   {/* Stock Warning */}
@@ -675,19 +671,8 @@ export default function AdminProductOffers() {
                     className="h-9"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium flex items-center gap-1">
-                    <Coins className="h-3 w-3 text-amber-500" />
-                    نقاط مكافأة
-                  </Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={formData.points_reward}
-                    onChange={(e) => setFormData({ ...formData, points_reward: e.target.value })}
-                    className="h-9"
-                  />
-                </div>
+                {/* Points reward is now auto-calculated (1 pt / 1000 IQD) — manual input removed */}
+
                 <div className="space-y-2">
                   <Label className="text-xs font-medium">المخزون</Label>
                   <Input

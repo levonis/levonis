@@ -1416,19 +1416,24 @@ const ProductDetail = () => {
               />
 
 
-              {/* Rewards */}
-              {(Number((product as any).points_reward) > 0 || (Array.isArray((product as any).card_discounts) && (product as any).card_discounts.length > 0)) && allLoyaltyLevels && (
-                <ProductRewardsSection
-                  pointsReward={Number((product as any).points_reward) || 0}
-                  cardDiscounts={Array.isArray((product as any).card_discounts) ? (product as any).card_discounts : []}
-                  loyaltyLevels={allLoyaltyLevels || []}
-                  userHasCard={!!userCard}
-                  userCardLevelId={userCard?.level_id}
-                  userCardLevelOrder={userCard?.membership_cards?.display_order}
-                  productPrice={finalPrice}
-                  currency={currency}
-                />
-              )}
+              {/* Rewards — points now auto-calculated: 1 point per 1000 IQD net spend */}
+              {(() => {
+                const autoPoints = Math.floor(Number(finalPrice || 0) / 1000);
+                const hasCardDiscounts = Array.isArray((product as any).card_discounts) && (product as any).card_discounts.length > 0;
+                return (autoPoints > 0 || hasCardDiscounts) && allLoyaltyLevels ? (
+                  <ProductRewardsSection
+                    pointsReward={autoPoints}
+                    cardDiscounts={Array.isArray((product as any).card_discounts) ? (product as any).card_discounts : []}
+                    loyaltyLevels={allLoyaltyLevels || []}
+                    userHasCard={!!userCard}
+                    userCardLevelId={userCard?.level_id}
+                    userCardLevelOrder={userCard?.membership_cards?.display_order}
+                    productPrice={finalPrice}
+                    currency={currency}
+                  />
+                ) : null;
+              })()}
+
 
               {/* Features */}
               {product.features && Array.isArray(product.features) && product.features.length > 0 && (

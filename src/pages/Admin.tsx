@@ -1564,11 +1564,8 @@ const Admin = () => {
       })));
     }
 
-    // Set points_reward if extracted
-    if (productInfo.points_reward && productInfo.points_reward > 0) {
-      const pointsInput = form?.querySelector('#points_reward') as HTMLInputElement;
-      if (pointsInput) pointsInput.value = String(productInfo.points_reward);
-    }
+    // points_reward is auto-calculated at delivery, no manual input
+
 
     // Shipping calculation now handled by AdminProductPricingSection
 
@@ -1578,7 +1575,6 @@ const Admin = () => {
     const colorsCount = productInfo.colors?.length || 0;
     const optionsCount = optionsData.length || 0;
     const featuresCount = productInfo.features?.length || 0;
-    const pointsReward = productInfo.points_reward || 0;
     const hasShippingCalc = productInfo.dimensions || productInfo.weight_kg;
     toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات${hasShippingCalc ? '، + سعر الشحن' : ''})`);
   };
@@ -1838,10 +1834,8 @@ const Admin = () => {
         searchable_attributes: productSearchableAttrs || [],
         // Taobao sync fields
         taobao_url: productUrl.trim() || (formData.get('taobao_url') as string)?.trim() || editingProduct?.taobao_url || null,
-        // Product rewards - points from form (can be auto-calculated or manually set)
-        points_reward: formData.get('points_reward') && formData.get('points_reward') !== '' 
-          ? Number(formData.get('points_reward')) 
-          : 0,
+        // Product rewards - points auto-calculated on delivery (1 point / 1000 IQD net spend)
+        points_reward: 0,
         // Multiple card discounts as JSON array
         card_discounts: productCardDiscounts.filter(d => d.card_id && d.discount_amount > 0),
         // New USD pricing fields
@@ -2999,19 +2993,11 @@ const Admin = () => {
                       </div>
                       
                       <div className="p-4 border border-primary/20 rounded-lg bg-primary/5 space-y-4">
-                        {/* Points Reward */}
-                        <div className="space-y-2">
-                          <Label htmlFor="points_reward">نقاط المكافأة</Label>
-                          <Input 
-                            id="points_reward" 
-                            name="points_reward"
-                            type="number"
-                            min="0"
-                            defaultValue={editingProduct?.points_reward || 0}
-                            placeholder="0"
-                          />
-                          <p className="text-xs text-muted-foreground">النقاط التي يحصل عليها العميل عند الشراء (تحسب تلقائياً: 1 نقطة لكل 1000 دينار)</p>
+                        {/* Points reward is now auto-calculated: 1 point per 1,000 IQD after coupons/discounts */}
+                        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-700 dark:text-emerald-400">
+                          🎁 النقاط تُحسب تلقائياً: <strong>نقطة واحدة لكل 1000 دينار</strong> من إنفاق العميل بعد الكوبونات والخصومات. لا حاجة لإدخال يدوي.
                         </div>
+                        
                         
                         {/* Multiple Card Discounts */}
                         <div className="space-y-3">

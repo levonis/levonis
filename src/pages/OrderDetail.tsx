@@ -91,6 +91,7 @@ const ORDER_DETAIL_SELECT = `
   purchased_at, on_the_way_at, cancelled_at, order_type, stock_deducted,
   delivery_method, card_discount_amount, card_discount_level_name,
   cod_fee, customer_paid_amount,
+  points_redeemed, points_discount_amount, points_earned,
   referral_coupon_id, referral_owner_earnings_iqd,
   order_items!order_items_order_id_fkey(
     id, order_id, product_id, product_option_id, product_name, product_name_ar,
@@ -644,6 +645,20 @@ const OrderDetail = () => {
                     label={`خصم بطاقة ${order.card_discount_level_name || 'الولاء'}`}
                     value={`-${formatPrice(cardDiscount)} ${cur}`}
                     cls="text-emerald-500"
+                  />
+                )}
+                {Number(order.points_discount_amount) > 0 && (
+                  <Row
+                    label={`خصم النقاط (${Number(order.points_redeemed).toLocaleString()} نقطة)`}
+                    value={`-${formatPrice(Number(order.points_discount_amount))} ${cur}`}
+                    cls="text-amber-500"
+                  />
+                )}
+                {Number(order.points_earned) > 0 && (
+                  <Row
+                    label="نقاط مكتسبة من هذا الطلب"
+                    value={`+${Number(order.points_earned).toLocaleString()} نقطة`}
+                    cls="text-amber-600"
                   />
                 )}
                 {order.referral_coupon_id && (

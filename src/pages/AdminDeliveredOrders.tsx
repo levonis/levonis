@@ -75,7 +75,7 @@ export default function AdminDeliveredOrders() {
           currency: order.currency || "د.ع",
           delivered_at: order.delivered_at || order.updated_at,
           profit: order.profit_amount || 0,
-          points_awarded: 0,
+          points_awarded: order.points_earned || 0,
           tickets_awarded: 0,
           has_insurance: false,
           gifts: null,
@@ -85,7 +85,7 @@ export default function AdminDeliveredOrders() {
       // 2. Fetch delivered offer purchases
       const { data: offerPurchases } = await supabase
         .from("product_offer_purchases")
-        .select("*, product_offers(title_ar, image_url, points_reward)")
+        .select("*, product_offers(title_ar, image_url)")
         .eq("purchase_status", "delivered")
         .order("delivered_at", { ascending: false });
 
@@ -116,7 +116,7 @@ export default function AdminDeliveredOrders() {
             currency: "د.ع",
             delivered_at: purchase.delivered_at || purchase.updated_at,
             profit: 0,
-            points_awarded: offer?.points_reward || 0,
+            points_awarded: 0,
             tickets_awarded: purchase.gift_tickets_awarded || 0,
             has_insurance: false,
             gifts: null,
