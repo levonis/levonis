@@ -1,3 +1,4 @@
+import { SignedImage } from '@/components/media/SignedImage';
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";

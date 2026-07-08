@@ -1,3 +1,4 @@
+import { SignedImage } from '@/components/media/SignedImage';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';

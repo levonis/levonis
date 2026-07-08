@@ -1,3 +1,4 @@
+import { SignedImage } from '@/components/media/SignedImage';
 import { useState, useEffect, memo, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
