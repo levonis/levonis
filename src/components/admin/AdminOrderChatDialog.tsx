@@ -1,3 +1,4 @@
+import { SignedImage, SignedAudio, SignedVideo } from '@/components/media/SignedImage';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -776,13 +777,13 @@ export default function AdminOrderChatDialog({
                               <div className={`max-w-[80%] rounded-xl px-4 py-2 ${isSupport ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                                 {msg.image_url && (
                                   msg.image_url.includes('voice_') ? (
-                                    <audio controls src={msg.image_url} className="max-w-full mb-2" onLoadedData={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
+                                    <SignedAudio controls src={msg.image_url} className="max-w-full mb-2" onLoadedData={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
                                   ) : msg.image_url.match(/\.(mp4|mov|avi|webm)$/i) ? (
-                                    <video controls src={msg.image_url} className="max-w-full rounded-lg mb-2" onLoadedMetadata={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
+                                    <SignedVideo controls src={msg.image_url} className="max-w-full rounded-lg mb-2" onLoadedMetadata={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
                                   ) : (
                                     <ImageLightbox src={msg.image_url} alt="صورة">
                                       {(openLb) => (
-                                        <img src={msg.image_url!} alt="صورة" className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity" onClick={openLb} onLoad={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
+                                        <SignedImage src={msg.image_url!} alt="صورة" className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity" onClick={openLb} onLoad={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
                                       )}
                                     </ImageLightbox>
                                   )

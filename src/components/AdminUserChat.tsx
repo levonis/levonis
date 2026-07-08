@@ -1,3 +1,5 @@
+import { SignedImage } from '@/components/media/SignedImage';
+import { toSignedStorageUrl } from '@/lib/signedStorageUrl';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -421,11 +423,14 @@ export default function AdminUserChat({
                       }`}
                     >
                       {msg.image_url && (
-                        <img
+                        <SignedImage
                           src={msg.image_url}
                           alt="صورة"
                           className="rounded-xl mb-2 max-w-full max-h-40 cursor-pointer"
-                          onClick={() => window.open(msg.image_url, '_blank')}
+                          onClick={async (e) => {
+                            const signed = await toSignedStorageUrl(msg.image_url);
+                            if (signed) window.open(signed, '_blank');
+                          }}
                         />
                       )}
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>

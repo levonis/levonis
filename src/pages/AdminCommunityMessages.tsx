@@ -1,3 +1,4 @@
+import { SignedImage } from '@/components/media/SignedImage';
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -687,7 +688,7 @@ function SupportMessagesContent() {
                           }`}
                         >
                           {msg.image_url && (
-                            <img
+                            <SignedImage
                               src={msg.image_url}
                               alt=""
                               className="max-w-full rounded-lg mb-2 max-h-48 object-cover" loading="lazy" decoding="async" />
