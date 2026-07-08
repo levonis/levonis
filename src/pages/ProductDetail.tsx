@@ -406,10 +406,19 @@ const ProductDetail = () => {
   }
 
   const getProductImages = () => {
-    if (optionImageUrl) return [optionImageUrl];
-    if (colorImageUrl) return [colorImageUrl];
-    return product.images && product.images.length > 0 ? product.images : product.image_url ? [product.image_url] : [];
+    const base = product.images && product.images.length > 0
+      ? [...product.images]
+      : product.image_url
+      ? [product.image_url]
+      : [];
+    const priority = optionImageUrl || colorImageUrl || null;
+    if (priority) {
+      const rest = base.filter((img) => img !== priority);
+      return [priority, ...rest];
+    }
+    return base;
   };
+
   const productImages = getProductImages();
   const currency = product.currency || t('pd_currency_iqd');
 
