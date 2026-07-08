@@ -188,8 +188,13 @@ export default function AdminPointsAuditTab() {
       
       if (txError) throw txError;
 
-      const calculatedBalance = transactions?.reduce((sum, tx) => 
-        sum + (tx.type === 'earn' ? tx.points : -tx.points), 0) || 0;
+      const calculatedBalance = transactions?.reduce((sum, tx) => {
+        const p = Number(tx.points) || 0;
+        const delta = (tx.type === 'earned' || tx.type === 'earn')
+          ? p
+          : tx.type === 'redeem' ? -p : p;
+        return sum + delta;
+      }, 0) || 0;
 
       // Update user_points
       const { error: updateError } = await supabase
