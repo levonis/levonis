@@ -3408,7 +3408,73 @@ const Cart = () => {
                     </div>
                   )}
 
-                  {/* Selector: Warranty / Subscription / Both — only when both are active */}
+                  {/* استخدام النقاط للخصم — 1 نقطة = 1 دينار */}
+                  {availablePoints > 0 && maxRedeemablePoints > 0 && (
+                    <div className="animate-fade-in rounded-xl p-3 border border-amber-500/30 bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent backdrop-blur-sm shadow-sm space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center shadow-inner">
+                            <Sparkles className="h-4 w-4 text-amber-600" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-amber-700 dark:text-amber-400">استخدام النقاط للخصم</div>
+                            <div className="text-[10px] text-muted-foreground">رصيدك: {availablePoints.toLocaleString()} نقطة (1 نقطة = 1 د.ع)</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !usePointsRedemption;
+                            setUsePointsRedemption(next);
+                            if (next && pointsToRedeem === 0) setPointsToRedeem(maxRedeemablePoints);
+                            if (!next) setPointsToRedeem(0);
+                          }}
+                          className={`relative w-11 h-6 rounded-full transition-all ${usePointsRedemption ? 'bg-amber-500' : 'bg-muted'}`}
+                          aria-pressed={usePointsRedemption}
+                        >
+                          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${usePointsRedemption ? 'right-0.5' : 'left-0.5'}`} />
+                        </button>
+                      </div>
+                      {usePointsRedemption && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={maxRedeemablePoints}
+                            value={pointsToRedeem}
+                            onChange={(e) => {
+                              const v = Math.max(0, Math.min(maxRedeemablePoints, Math.floor(Number(e.target.value) || 0)));
+                              setPointsToRedeem(v);
+                            }}
+                            className="h-9 text-sm"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-9 shrink-0 text-xs"
+                            onClick={() => setPointsToRedeem(maxRedeemablePoints)}
+                          >
+                            استخدم الأقصى ({maxRedeemablePoints.toLocaleString()})
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {pointsDiscountAmount > 0 && (
+                    <div className="flex justify-between items-center animate-fade-in">
+                      <span className="text-amber-600 text-sm flex items-center gap-1">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        خصم النقاط ({effectivePointsToRedeem.toLocaleString()} نقطة)
+                      </span>
+                      <span className="font-bold text-amber-600">
+                        -<AnimatedPrice value={pointsDiscountAmount} formatFn={formatPrice} /> {t('pd_currency_iqd')}
+                      </span>
+                    </div>
+                  )}
+
+
                   {hasBothActive && (
                     <div className="animate-fade-in rounded-xl p-3 border border-primary/20 bg-gradient-to-br from-primary/5 via-background/40 to-background/20 backdrop-blur-md shadow-sm space-y-2">
                       <div className="flex items-center gap-2">
