@@ -82,7 +82,14 @@ const Cart = () => {
       Array.from(
         new Set(
           (items || [])
-            .filter((it: any) => it.sale_type === 'direct' && it.products?.link_direct_commission_to_cod && it.products?.id)
+            // Include ALL items linked to COD% — even preorder ones —
+            // because the COD fee calculation below derives the fee from
+            // (live direct price − preorder price), so both sides of that
+            // delta need the LIVE server-computed direct price. Filtering
+            // to `direct` only leaves the map empty and forces a fallback
+            // to the stored (often stale) `direct_sale_price`, which
+            // inflates the displayed COD fee.
+            .filter((it: any) => it.products?.link_direct_commission_to_cod && it.products?.id)
             .map((it: any) => it.products!.id as string),
         ),
       ),
@@ -98,7 +105,9 @@ const Cart = () => {
   const linkedVariantCostRequests = useMemo(() => {
     return (items || []).flatMap((item: any) => {
       const product = item.products;
-      if (item.sale_type !== 'direct' || !product?.id || !product.link_direct_commission_to_cod) return [];
+      // Same rationale as above — include preorder items with variant overrides
+      // so the COD fee derivation has the live direct-sale price to work with.
+      if (!product?.id || !product.link_direct_commission_to_cod) return [];
       const costIqd = getCartItemVariantOverrideCostIqd(item, usdToIqd);
       return costIqd ? [{ productId: product.id, costIqd }] : [];
     });
