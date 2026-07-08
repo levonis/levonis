@@ -94,14 +94,15 @@ export default function AdminLevoCardOrders() {
       if (!resendFor.assigned_card_id) throw new Error('لا توجد بطاقة مرتبطة بالطلب');
       const { data: card, error: cErr } = await (supabase as any)
         .from('levo_physical_cards')
-        .select('card_number, pin_plaintext, qr_token, nfc_token')
+        .select('card_number, qr_token, nfc_token')
         .eq('id', resendFor.assigned_card_id)
         .maybeSingle();
       if (cErr) throw cErr;
       if (!card) throw new Error('البطاقة غير موجودة');
 
       let card_number = card.card_number;
-      let pin = card.pin_plaintext;
+      // PIN is never stored in plaintext — always regenerate to resend.
+      let pin: string | null = null;
       let qr_token = card.qr_token;
       let nfc_token = card.nfc_token;
 
