@@ -2999,19 +2999,11 @@ const Admin = () => {
                       </div>
                       
                       <div className="p-4 border border-primary/20 rounded-lg bg-primary/5 space-y-4">
-                        {/* Points Reward */}
-                        <div className="space-y-2">
-                          <Label htmlFor="points_reward">نقاط المكافأة</Label>
-                          <Input 
-                            id="points_reward" 
-                            name="points_reward"
-                            type="number"
-                            min="0"
-                            defaultValue={editingProduct?.points_reward || 0}
-                            placeholder="0"
-                          />
-                          <p className="text-xs text-muted-foreground">النقاط التي يحصل عليها العميل عند الشراء (تحسب تلقائياً: 1 نقطة لكل 1000 دينار)</p>
+                        {/* Points reward is now auto-calculated: 1 point per 1,000 IQD after coupons/discounts */}
+                        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-700 dark:text-emerald-400">
+                          🎁 النقاط تُحسب تلقائياً: <strong>نقطة واحدة لكل 1000 دينار</strong> من إنفاق العميل بعد الكوبونات والخصومات. لا حاجة لإدخال يدوي.
                         </div>
+                        
                         
                         {/* Multiple Card Discounts */}
                         <div className="space-y-3">
