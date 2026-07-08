@@ -116,7 +116,7 @@ export default function AdminDeliveredOrders() {
             currency: "د.ع",
             delivered_at: purchase.delivered_at || purchase.updated_at,
             profit: 0,
-            points_awarded: offer?.points_reward || 0,
+            points_awarded: 0,
             tickets_awarded: purchase.gift_tickets_awarded || 0,
             has_insurance: false,
             gifts: null,
