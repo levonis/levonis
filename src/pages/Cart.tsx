@@ -2276,6 +2276,20 @@ const Cart = () => {
         // Update aggregates on coupon
       }
 
+      // Redeem points if user opted in (non-blocking; failure logged but doesn't abort the order)
+      if (effectivePointsToRedeem > 0) {
+        try {
+          await supabase.rpc('redeem_points_in_cart', {
+            p_order_id: orderId as any,
+            p_points: effectivePointsToRedeem,
+          });
+          queryClient.invalidateQueries({ queryKey: ['user-points-cart', user.id] });
+        } catch (e) {
+          console.error('redeem_points_in_cart failed:', e);
+        }
+      }
+
+
       // Fetch the created order to get order_number
       const { data: order, error: fetchOrderError } = await supabase
         .from('orders')
