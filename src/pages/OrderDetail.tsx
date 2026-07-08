@@ -91,6 +91,7 @@ const ORDER_DETAIL_SELECT = `
   purchased_at, on_the_way_at, cancelled_at, order_type, stock_deducted,
   delivery_method, card_discount_amount, card_discount_level_name,
   cod_fee, customer_paid_amount,
+  points_redeemed, points_discount_amount, points_earned,
   referral_coupon_id, referral_owner_earnings_iqd,
   order_items!order_items_order_id_fkey(
     id, order_id, product_id, product_option_id, product_name, product_name_ar,
