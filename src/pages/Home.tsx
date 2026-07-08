@@ -17,12 +17,13 @@ import ProgressiveSection from '@/components/ProgressiveSection';
 import SEO from '@/components/SEO';
 import QuestVerifier from '@/components/QuestVerifier';
 import { organizationLd, websiteLd } from '@/lib/seo/structured';
+import { useActiveLevoCard } from '@/hooks/useActiveLevoCard';
 
 // Lazy-load only sections gated by ProgressiveSection (genuinely below-the-fold)
 const BundlesSection = lazy(() => import('@/components/BundlesSection'));
-// CommunitySection moved off the homepage to /community to reduce initial load.
 const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
 const RandomFilamentSection = lazy(() => import('@/components/RandomFilamentSection'));
+const LevoCardLockBanner = lazy(() => import('@/components/LevoCardLockBanner'));
 
 
 const MemoizedCategoryCard = memo(CategoryCard);
@@ -31,6 +32,7 @@ const Home = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [wishDialogOpen, setWishDialogOpen] = useState(false);
+  const { data: activeCard } = useActiveLevoCard();
 
   const { data: mainSections, isLoading: mainSectionsLoading } = useQuery({
     queryKey: ['main-sections'],
@@ -265,11 +267,13 @@ const Home = () => {
           )}
         </section>
 
-        <ProgressiveSection minHeight="180px" rootMargin="500px">
-          <Suspense fallback={<div className="h-32" />}>
-            <BundlesSection />
-          </Suspense>
-        </ProgressiveSection>
+        {activeCard ? (
+          <ProgressiveSection minHeight="180px" rootMargin="500px">
+            <Suspense fallback={<div className="h-32" />}>
+              <BundlesSection />
+            </Suspense>
+          </ProgressiveSection>
+        ) : null}
 
         <ProgressiveSection minHeight="200px" rootMargin="500px">
           <Suspense fallback={<div className="h-32 flex items-center justify-center"><div className="w-full max-w-md space-y-2 px-4"><div className="h-4 w-3/4 rounded bg-muted animate-pulse" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div></div>}>
@@ -277,11 +281,19 @@ const Home = () => {
           </Suspense>
         </ProgressiveSection>
 
-        <ProgressiveSection minHeight="120px" rootMargin="500px">
-          <Suspense fallback={<div className="h-24" />}>
-            <RandomFilamentSection />
-          </Suspense>
-        </ProgressiveSection>
+        {activeCard ? (
+          <ProgressiveSection minHeight="120px" rootMargin="500px">
+            <Suspense fallback={<div className="h-24" />}>
+              <RandomFilamentSection />
+            </Suspense>
+          </ProgressiveSection>
+        ) : (
+          <ProgressiveSection minHeight="200px" rootMargin="500px">
+            <Suspense fallback={<div className="h-32" />}>
+              <LevoCardLockBanner />
+            </Suspense>
+          </ProgressiveSection>
+        )}
 
         {/* Levo Community section is available at /community only. */}
 
