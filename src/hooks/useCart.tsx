@@ -609,18 +609,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (!user?.id) return;
 
     let channel: any = null;
-    let pendingRefresh = false;
 
     const handleChange = () => {
-      // Skip refetch when tab is hidden — refetch once on visibility return
-      if (typeof document !== 'undefined' && document.hidden) {
-        pendingRefresh = true;
-        return;
-      }
       fetchCart();
     };
 
     const subscribe = () => {
+      if (channel) return;
       channel = supabase
         .channel(`cart-items-${user.id}`)
         .on(
@@ -636,21 +631,37 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .subscribe();
     };
 
-    subscribe();
+    const unsubscribe = () => {
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch {}
+        channel = null;
+      }
+    };
 
+    if (!document.hidden) subscribe();
+
+    // Disconnect the WebSocket when the tab is hidden so the browser can
+    // put the tab into bfcache (WebSockets block bfcache on Chrome/Safari).
+    // On return, resubscribe and refetch to catch up on missed events.
     const onVisibility = () => {
-      if (!document.hidden && pendingRefresh) {
-        pendingRefresh = false;
+      if (document.hidden) {
+        unsubscribe();
+      } else {
+        subscribe();
         fetchCart();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
+    const onPageHide = () => unsubscribe();
+    window.addEventListener('pagehide', onPageHide);
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
-      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener('pagehide', onPageHide);
+      unsubscribe();
     };
   }, [user?.id, fetchCart]);
+
 
   // Realtime: when stock of a product currently sitting in the user's cart
   // changes (e.g. another user's RF reveal deducted option_stocks via
