@@ -212,7 +212,9 @@ function AppContent() {
   const navigate = useNavigate();
   const { visible: islandVisible } = useIsland();
   const { t } = useLanguage();
+  useBFCacheRestore();
   const [mountedSearch, setMountedSearch] = useState(false);
+
   useEffect(() => {
     const ric = (window as any).requestIdleCallback as
       | ((cb: () => void, opts?: any) => number)
