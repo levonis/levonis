@@ -121,47 +121,13 @@ export const useShippingSettings = () => {
   // invalidate all queries that derive prices from them so product cards,
   // cart totals, and detail pages refresh immediately.
   useEffect(() => {
-    // Unique channel name per hook instance — supabase-js reuses channels by
-    // name and throws "cannot add postgres_changes callbacks after subscribe()"
-    // when multiple components mount the same channel name concurrently.
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    const invalidateRates = () => {
-      RATE_DEPENDENT_KEYS.forEach((key) => {
-        qc.invalidateQueries({ queryKey: key });
-      });
-    };
-    const subscribe = () => {
-      if (channel || document.hidden) return;
-      channel = supabase
-        .channel(`shipping-settings-sync-${Math.random().toString(36).slice(2)}`)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'shipping_settings' },
-          invalidateRates,
-        )
-        .subscribe();
-    };
-    const unsubscribe = () => {
-      if (!channel) return;
-      try { supabase.removeChannel(channel); } catch {}
-      channel = null;
-    };
-    const onVisibility = () => {
-      if (document.hidden) {
-        unsubscribe();
-      } else {
-        subscribe();
-        invalidateRates();
-      }
-    };
-
-    subscribe();
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pagehide', unsubscribe);
+    shippingSettingsClients.add(qc);
+    addShippingSettingsListeners();
+    subscribeShippingSettings();
     return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('pagehide', unsubscribe);
-      unsubscribe();
+      shippingSettingsClients.delete(qc);
+      removeShippingSettingsListeners();
+      if (shippingSettingsClients.size === 0) unsubscribeShippingSettings();
     };
   }, [qc]);
 
