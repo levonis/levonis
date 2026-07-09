@@ -61,6 +61,59 @@ interface ShippingSettings {
   air_use_volumetric_weight: number;
 }
 
+let shippingSettingsChannel: ReturnType<typeof supabase.channel> | null = null;
+const shippingSettingsClients = new Set<ReturnType<typeof useQueryClient>>();
+
+const invalidateShippingDependents = () => {
+  shippingSettingsClients.forEach((client) => {
+    RATE_DEPENDENT_KEYS.forEach((key) => {
+      client.invalidateQueries({ queryKey: key });
+    });
+  });
+};
+
+const subscribeShippingSettings = () => {
+  if (shippingSettingsChannel || document.hidden || shippingSettingsClients.size === 0) return;
+  shippingSettingsChannel = supabase
+    .channel('shipping-settings-sync-global')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'shipping_settings' },
+      invalidateShippingDependents,
+    )
+    .subscribe();
+};
+
+const unsubscribeShippingSettings = () => {
+  if (!shippingSettingsChannel) return;
+  try { supabase.removeChannel(shippingSettingsChannel); } catch {}
+  shippingSettingsChannel = null;
+};
+
+const handleShippingVisibility = () => {
+  if (document.hidden) {
+    unsubscribeShippingSettings();
+  } else {
+    subscribeShippingSettings();
+    invalidateShippingDependents();
+  }
+};
+
+let shippingSettingsDomListeners = 0;
+
+const addShippingSettingsListeners = () => {
+  if (shippingSettingsDomListeners++ > 0) return;
+  document.addEventListener('visibilitychange', handleShippingVisibility);
+  window.addEventListener('pagehide', unsubscribeShippingSettings);
+};
+
+const removeShippingSettingsListeners = () => {
+  shippingSettingsDomListeners = Math.max(0, shippingSettingsDomListeners - 1);
+  if (shippingSettingsDomListeners > 0) return;
+  document.removeEventListener('visibilitychange', handleShippingVisibility);
+  window.removeEventListener('pagehide', unsubscribeShippingSettings);
+};
+
 export const useShippingSettings = () => {
   const qc = useQueryClient();
 
