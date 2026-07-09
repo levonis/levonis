@@ -26,17 +26,9 @@ export const useOrderRealtimeNotifications = () => {
 
     console.log('Setting up realtime subscription for orders...');
 
-    const channel = supabase
-      .channel('order-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const handleOrderUpdate = (payload: any) => {
           console.log('Order update received:', payload);
           
           const newOrder = payload.new as any;
@@ -116,15 +108,51 @@ export const useOrderRealtimeNotifications = () => {
           // Invalidate queries to refresh data
           queryClient.invalidateQueries({ queryKey: ['my-orders'] });
           queryClient.invalidateQueries({ queryKey: ['order-detail', newOrder.id] });
-        }
-      )
-      .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-      });
+    };
+
+    const subscribe = () => {
+      if (channel || document.hidden) return;
+      channel = supabase
+        .channel('order-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `user_id=eq.${user.id}`
+          },
+          handleOrderUpdate,
+        )
+        .subscribe((status) => {
+          console.log('Realtime subscription status:', status);
+        });
+    };
+
+    const unsubscribe = () => {
+      if (!channel) return;
+      console.log('Cleaning up realtime subscription...');
+      try { supabase.removeChannel(channel); } catch {}
+      channel = null;
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        unsubscribe();
+      } else {
+        subscribe();
+        queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      }
+    };
+
+    subscribe();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', unsubscribe);
 
     return () => {
-      console.log('Cleaning up realtime subscription...');
-      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', unsubscribe);
+      unsubscribe();
     };
   }, [user, toast, queryClient]);
 };
