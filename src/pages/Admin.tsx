@@ -344,6 +344,7 @@ const Admin = () => {
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
   const [formKey, setFormKey] = useState(0); // Key to force form re-render with correct defaults
+  const [hasConfirmedAdminAccess, setHasConfirmedAdminAccess] = useState(false);
 
   // ===== Product draft autosave =====
   const PRODUCT_DRAFT_KEY = 'admin-product-draft-v1';
@@ -491,11 +492,17 @@ const Admin = () => {
 
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (isAdminOrAssistant) {
+      setHasConfirmedAdminAccess(true);
+    }
+  }, [isAdminOrAssistant]);
+
+  useEffect(() => {
+    if (!authLoading && !user && !hasConfirmedAdminAccess) {
       navigate('/');
       toast.error('ليس لديك صلاحية الوصول');
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, hasConfirmedAdminAccess, navigate]);
 
   // Fetch default settings
   const { data: defaultSettings } = useQuery({
@@ -2369,7 +2376,7 @@ const Admin = () => {
     return matchesSearch && matchesMainSection;
   });
 
-  if (authLoading || !isAdminOrAssistant) {
+  if (!hasConfirmedAdminAccess && (authLoading || !isAdminOrAssistant)) {
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto space-y-6">
