@@ -14,6 +14,8 @@ import { useLanguage } from "@/lib/i18n";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import { CartProvider } from "@/hooks/useCart";
 import AdminRoute from "@/components/AdminRoute";
+import { useBFCacheRestore } from "@/hooks/useBFCacheRestore";
+
 
 // Defer chrome and non-critical hooks for faster first paint on mobile
 import AppNavBar from "@/components/AppNavBar";
