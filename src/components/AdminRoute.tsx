@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
@@ -26,6 +26,7 @@ const AdminRoute = ({ children, requireFullAdmin = false }: AdminRouteProps) => 
   const location = useLocation();
   const [verifying, setVerifying] = useState(true);
   const [verified, setVerified] = useState(false);
+  const lastVerifiedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const verifyAdminAccess = async () => {
@@ -94,16 +95,28 @@ const AdminRoute = ({ children, requireFullAdmin = false }: AdminRouteProps) => 
 
       // All checks passed
       setVerified(true);
+      lastVerifiedKeyRef.current = `${user.id}:${location.pathname}:${requireFullAdmin ? 'admin' : 'admin-or-assistant'}`;
       setVerifying(false);
     };
 
-    setVerified(false);
-    setVerifying(true);
+    const verificationKey = user
+      ? `${user.id}:${location.pathname}:${requireFullAdmin ? 'admin' : 'admin-or-assistant'}`
+      : null;
+    const canVerifyInBackground = verified && verificationKey === lastVerifiedKeyRef.current;
+
+    // Android Chrome can emit auth/session changes when switching tabs. If we
+    // blank the admin route during that re-check, the whole page unmounts and
+    // every open Dialog/Sheet/fullscreen editor loses its local `open` state.
+    // Keep already-verified content mounted while revalidating the same route.
+    if (!canVerifyInBackground) {
+      setVerified(false);
+      setVerifying(true);
+    }
     verifyAdminAccess();
-  }, [user, session, authLoading, navigate, location.pathname, requireFullAdmin]);
+  }, [user?.id, session?.access_token, authLoading, navigate, location.pathname, requireFullAdmin, verified]);
 
   // Show loading while verifying (transparent so AppBackground shows through)
-  if (authLoading || verifying) {
+  if (!verified && (authLoading || verifying)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
