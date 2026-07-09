@@ -14,6 +14,7 @@ const isStaleChunkError = (msg: string) =>
   /Importing a module script failed|Failed to fetch dynamically imported module|Loading chunk \d+ failed|ChunkLoadError|error loading dynamically imported module/i.test(msg);
 
 const recoverFromStaleChunk = async () => {
+  if (typeof document !== 'undefined' && document.hidden) return;
   try {
     if (sessionStorage.getItem('__levo_chunk_reload_v1') === '1') return;
     sessionStorage.setItem('__levo_chunk_reload_v1', '1');
@@ -30,11 +31,17 @@ const recoverFromStaleChunk = async () => {
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (e) => {
     const msg = e?.message || (e?.error && String(e.error?.message || e.error)) || '';
-    if (isStaleChunkError(msg)) recoverFromStaleChunk();
+    if (isStaleChunkError(msg)) {
+      if (document.hidden) return;
+      recoverFromStaleChunk();
+    }
   });
   window.addEventListener('unhandledrejection', (e) => {
     const msg = String((e as any)?.reason?.message || (e as any)?.reason || '');
-    if (isStaleChunkError(msg)) recoverFromStaleChunk();
+    if (isStaleChunkError(msg)) {
+      if (document.hidden) return;
+      recoverFromStaleChunk();
+    }
   });
   // Clear the guard after a successful first paint so future deploys can recover again.
   window.addEventListener('load', () => {

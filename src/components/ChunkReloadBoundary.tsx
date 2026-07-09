@@ -33,6 +33,9 @@ export default class ChunkReloadBoundary extends React.Component<
 
   componentDidCatch(error: unknown) {
     if (isChunkLoadError(error)) {
+      if (typeof document !== "undefined" && document.hidden) {
+        return;
+      }
       try {
         const attempted = sessionStorage.getItem(KEY);
         if (!attempted) {

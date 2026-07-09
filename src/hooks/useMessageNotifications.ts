@@ -19,17 +19,9 @@ export function useMessageNotifications(activeConversationId?: string | null) {
     if (!user) return;
 
     const effectiveUserId = user.id;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    const channel = supabase
-      .channel('global-message-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'listing_messages',
-        },
-        async (payload) => {
+    const handleMessageInsert = async (payload: any) => {
           const newMsg = payload.new as any;
           if (!newMsg) return;
 
@@ -86,12 +78,48 @@ export function useMessageNotifications(activeConversationId?: string | null) {
               } as NotificationOptions);
             }
           }
-        }
-      )
-      .subscribe();
+    };
+
+    const subscribe = () => {
+      if (channel || document.hidden) return;
+      channel = supabase
+        .channel('global-message-notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'listing_messages',
+          },
+          handleMessageInsert,
+        )
+        .subscribe();
+    };
+
+    const unsubscribe = () => {
+      if (!channel) return;
+      try { supabase.removeChannel(channel); } catch {}
+      channel = null;
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        unsubscribe();
+      } else {
+        subscribe();
+        queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['unified-chat-unread'] });
+      }
+    };
+
+    subscribe();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', unsubscribe);
 
     return () => {
-      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', unsubscribe);
+      unsubscribe();
     };
   }, [user?.id, queryClient]);
 }

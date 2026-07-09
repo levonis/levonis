@@ -13,6 +13,10 @@ import { lazy, type ComponentType } from "react";
  */
 const DEFAULT_TIMEOUT_MS = 12_000;
 
+function isDocumentHidden(): boolean {
+  return typeof document !== "undefined" && document.hidden;
+}
+
 function isRetryableError(err: unknown): boolean {
   const msg = (err as { message?: string })?.message || String(err || "");
   return (
@@ -27,16 +31,42 @@ function isRetryableError(err: unknown): boolean {
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error(`Failed to fetch dynamically imported module (timeout ${ms}ms)`));
-    }, ms);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let visibilityCleanup: (() => void) | null = null;
+
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      if (visibilityCleanup) visibilityCleanup();
+      visibilityCleanup = null;
+    };
+
+    const armTimer = () => {
+      cleanup();
+      timer = setTimeout(() => {
+        // Mobile browsers throttle/suspend tabs while another app/tab is open.
+        // Do not convert that pause into a chunk failure/reload; wait until the
+        // page is visible and give the import a fresh timeout window.
+        if (isDocumentHidden()) {
+          const onVisible = () => {
+            if (!isDocumentHidden()) armTimer();
+          };
+          document.addEventListener("visibilitychange", onVisible);
+          visibilityCleanup = () => document.removeEventListener("visibilitychange", onVisible);
+          return;
+        }
+        reject(new Error(`Lazy import timeout after ${ms}ms`));
+      }, ms);
+    };
+
+    armTimer();
     promise.then(
       (value) => {
-        clearTimeout(timer);
+        cleanup();
         resolve(value);
       },
       (err) => {
-        clearTimeout(timer);
+        cleanup();
         reject(err);
       },
     );

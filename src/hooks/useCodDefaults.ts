@@ -60,24 +60,48 @@ export function useCodDefaults() {
     // Unique channel name per hook instance — Supabase realtime forbids adding
     // callbacks to a channel after subscribe(), which fires when the same
     // channel name is reused across multiple mounted hook instances.
-    const channelName = `cod-defaults-sync-${Math.random().toString(36).slice(2)}`;
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'default_settings',
-          filter: 'setting_key=eq.partial_payment_settings',
-        },
-        () => {
-          qc.invalidateQueries({ queryKey: QUERY_KEY });
-        },
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const invalidateDefaults = () => {
+      qc.invalidateQueries({ queryKey: QUERY_KEY });
+    };
+    const subscribe = () => {
+      if (channel || document.hidden) return;
+      const channelName = `cod-defaults-sync-${Math.random().toString(36).slice(2)}`;
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'default_settings',
+            filter: 'setting_key=eq.partial_payment_settings',
+          },
+          invalidateDefaults,
+        )
+        .subscribe();
+    };
+    const unsubscribe = () => {
+      if (!channel) return;
+      try { supabase.removeChannel(channel); } catch {}
+      channel = null;
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        unsubscribe();
+      } else {
+        subscribe();
+        invalidateDefaults();
+      }
+    };
+
+    subscribe();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', unsubscribe);
     return () => {
-      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', unsubscribe);
+      unsubscribe();
     };
   }, [qc]);
 
