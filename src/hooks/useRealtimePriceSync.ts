@@ -114,13 +114,9 @@ export function useRealtimePriceSync(cartProductNames?: Map<string, string>) {
       toast(`تم تحديث سعر ${name}`.trim(), { duration: 2500 });
     };
 
-    // Single channel with 3 handlers → 1 WebSocket subscription instead of 3.
-    const priceChannel = supabase
-      .channel('rt-prices')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'products' },
-        (payload: any) => {
+    let priceChannel: ReturnType<typeof supabase.channel> | null = null;
+
+    const handleProductUpdate = (payload: any) => {
           const oldP = payload.old ?? {};
           const newP = payload.new ?? {};
           const id = newP.id ?? oldP.id;
@@ -147,12 +143,9 @@ export function useRealtimePriceSync(cartProductNames?: Map<string, string>) {
 
           scheduleInvalidate();
           maybeNotifyCart(id);
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'product_options' },
-        (payload: any) => {
+    };
+
+    const handleProductOptionsChange = (payload: any) => {
           const oldP = payload.old ?? {};
           const newP = payload.new ?? {};
           const optionId = newP.id ?? oldP.id;
@@ -165,12 +158,9 @@ export function useRealtimePriceSync(cartProductNames?: Map<string, string>) {
           }
           scheduleInvalidate();
           maybeNotifyCart(newP.product_id ?? oldP.product_id);
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'product_offers' },
-        (payload: any) => {
+    };
+
+    const handleProductOffersChange = (payload: any) => {
           const oldP = payload.old ?? {};
           const newP = payload.new ?? {};
           const offerId = newP.id ?? oldP.id;
@@ -194,21 +184,63 @@ export function useRealtimePriceSync(cartProductNames?: Map<string, string>) {
           }
           scheduleInvalidate();
           maybeNotifyCart(newP.product_id ?? oldP.product_id);
-        },
-      )
-      .subscribe();
+    };
+
+    const subscribe = () => {
+      if (priceChannel || document.hidden) return;
+      // Single channel with 3 handlers → 1 WebSocket subscription instead of 3.
+      priceChannel = supabase
+        .channel('rt-prices')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'products' },
+          handleProductUpdate,
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'product_options' },
+          handleProductOptionsChange,
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'product_offers' },
+          handleProductOffersChange,
+        )
+        .subscribe();
+    };
+
+    const unsubscribe = () => {
+      if (!priceChannel) return;
+      try { supabase.removeChannel(priceChannel); } catch {}
+      priceChannel = null;
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        unsubscribe();
+      } else {
+        subscribe();
+        scheduleInvalidate();
+      }
+    };
+
+    subscribe();
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', unsubscribe);
 
     // Re-invalidate on reconnect so we catch any events missed while offline.
     const handleOnline = () => scheduleInvalidate();
     window.addEventListener('online', handleOnline);
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', unsubscribe);
       window.removeEventListener('online', handleOnline);
       if (pendingRef.current !== null) {
         clearTimeout(pendingRef.current);
         pendingRef.current = null;
       }
-      supabase.removeChannel(priceChannel);
+      unsubscribe();
 
     };
   }, [queryClient]);
