@@ -609,18 +609,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (!user?.id) return;
 
     let channel: any = null;
-    let pendingRefresh = false;
 
     const handleChange = () => {
-      // Skip refetch when tab is hidden — refetch once on visibility return
-      if (typeof document !== 'undefined' && document.hidden) {
-        pendingRefresh = true;
-        return;
-      }
       fetchCart();
     };
 
     const subscribe = () => {
+      if (channel) return;
       channel = supabase
         .channel(`cart-items-${user.id}`)
         .on(
@@ -636,21 +631,37 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .subscribe();
     };
 
-    subscribe();
+    const unsubscribe = () => {
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch {}
+        channel = null;
+      }
+    };
 
+    if (!document.hidden) subscribe();
+
+    // Disconnect the WebSocket when the tab is hidden so the browser can
+    // put the tab into bfcache (WebSockets block bfcache on Chrome/Safari).
+    // On return, resubscribe and refetch to catch up on missed events.
     const onVisibility = () => {
-      if (!document.hidden && pendingRefresh) {
-        pendingRefresh = false;
+      if (document.hidden) {
+        unsubscribe();
+      } else {
+        subscribe();
         fetchCart();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
+    const onPageHide = () => unsubscribe();
+    window.addEventListener('pagehide', onPageHide);
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
-      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener('pagehide', onPageHide);
+      unsubscribe();
     };
   }, [user?.id, fetchCart]);
+
 
   // Realtime: when stock of a product currently sitting in the user's cart
   // changes (e.g. another user's RF reveal deducted option_stocks via
@@ -663,42 +674,52 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
     if (productIds.length === 0) return;
 
-    let pendingRefresh = false;
+    let channel: any = null;
+
     const handleChange = () => {
-      // Always invalidate the Cart page's stock-check query so quantities
-      // refresh even if the user is not on Cart.tsx yet.
       queryClient.invalidateQueries({ queryKey: ['cart-stock-check'] });
       queryClient.invalidateQueries({ queryKey: ['bundle-max-qty'] });
-      if (typeof document !== 'undefined' && document.hidden) {
-        pendingRefresh = true;
-        return;
-      }
       fetchCart();
     };
 
-    // Single channel with one binding per product id → 1 websocket instead of N.
-    let ch = supabase.channel(`cart-products-${user.id}`);
-    productIds.forEach((pid) => {
-      ch = ch.on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${pid}` },
-        handleChange
-      );
-    });
-    const channel = ch.subscribe();
+    const subscribe = () => {
+      if (channel) return;
+      let ch = supabase.channel(`cart-products-${user.id}`);
+      productIds.forEach((pid) => {
+        ch = ch.on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${pid}` },
+          handleChange
+        );
+      });
+      channel = ch.subscribe();
+    };
 
+    const unsubscribe = () => {
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch {}
+        channel = null;
+      }
+    };
+
+    if (!document.hidden) subscribe();
 
     const onVisibility = () => {
-      if (!document.hidden && pendingRefresh) {
-        pendingRefresh = false;
+      if (document.hidden) {
+        unsubscribe();
+      } else {
+        subscribe();
         fetchCart();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
+    const onPageHide = () => unsubscribe();
+    window.addEventListener('pagehide', onPageHide);
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
-      supabase.removeChannel(channel);
+      window.removeEventListener('pagehide', onPageHide);
+      unsubscribe();
     };
   }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart, queryClient]);
 
@@ -707,7 +728,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // the cart is empty so opening Cart immediately reflects fresh stock/prices.
   useEffect(() => {
     if (!user?.id) return;
-    let pendingRefresh = false;
+    let channel: any = null;
+
     const refresh = () => {
       queryClient.invalidateQueries({ queryKey: ['cart-stock-check'] });
       queryClient.invalidateQueries({ queryKey: ['bundle-max-qty'] });
@@ -715,32 +737,49 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       queryClient.invalidateQueries({ queryKey: ['random-filament-section-stats'] });
       queryClient.invalidateQueries({ queryKey: ['product'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      if (typeof document !== 'undefined' && document.hidden) {
-        pendingRefresh = true;
-        return;
-      }
       fetchCart();
     };
-    const channel = supabase
-      .channel(`cart-rf-global-${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'random_filament_orders' },
-        refresh
-      )
-      .subscribe();
+
+    const subscribe = () => {
+      if (channel) return;
+      channel = supabase
+        .channel(`cart-rf-global-${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'random_filament_orders' },
+          refresh
+        )
+        .subscribe();
+    };
+
+    const unsubscribe = () => {
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch {}
+        channel = null;
+      }
+    };
+
+    if (!document.hidden) subscribe();
+
     const onVisibility = () => {
-      if (!document.hidden && pendingRefresh) {
-        pendingRefresh = false;
+      if (document.hidden) {
+        unsubscribe();
+      } else {
+        subscribe();
         fetchCart();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
+    const onPageHide = () => unsubscribe();
+    window.addEventListener('pagehide', onPageHide);
+
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
-      supabase.removeChannel(channel);
+      window.removeEventListener('pagehide', onPageHide);
+      unsubscribe();
     };
   }, [user?.id, fetchCart, queryClient]);
+
 
   const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string; type?: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {

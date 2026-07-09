@@ -23,14 +23,35 @@ export function useOnlineHeartbeat() {
     // Immediate ping
     ping();
 
-    // Repeat every 2 minutes — runs even when tab is hidden
-    const interval = setInterval(ping, 2 * 60 * 1000);
+    // Repeat every 2 minutes — but ONLY when the tab is visible.
+    // Keeping timers alive while hidden pins the tab in memory and
+    // disqualifies it from bfcache on mobile browsers.
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (interval != null) return;
+      interval = setInterval(ping, 2 * 60 * 1000);
+    };
+    const stop = () => {
+      if (interval != null) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+    if (!document.hidden) start();
 
-    // Ping when tab becomes visible (immediate refresh)
+    // Ping when tab becomes visible (immediate refresh) and manage the timer.
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') ping();
+      if (document.visibilityState === 'visible') {
+        ping();
+        start();
+      } else {
+        stop();
+      }
     };
     document.addEventListener('visibilitychange', onVisibility);
+    // Also stop on pagehide so the tab can enter bfcache cleanly.
+    const onPageHide = () => stop();
+    window.addEventListener('pagehide', onPageHide);
 
     // Ping on first interaction (throttled)
     let interactionPinged = false;
@@ -45,10 +66,12 @@ export function useOnlineHeartbeat() {
     window.addEventListener('keydown', onInteraction, { passive: true });
 
     return () => {
-      clearInterval(interval);
+      stop();
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', onPageHide);
       window.removeEventListener('pointerdown', onInteraction);
       window.removeEventListener('keydown', onInteraction);
     };
   }, [user?.id, ping]);
 }
+
