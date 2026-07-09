@@ -1,69 +1,56 @@
-## المشكلات المكتشفة أثناء التشخيص
+## المشكلة
 
-| # | المشكلة | السبب الجذري |
-|---|---------|---------------|
-| 1 | منتجات مخفيّة تظهر للمستخدمين | زر "إخفاء" في الأدمن يقلب `is_pricing_updated` فقط، لكن فلترة `is_pricing_updated=true` مطبَّقة **فقط** في `CategoryDetail`. باقي الاستعلامات (تفاصيل المنتج، منتجات ذات صلة، السلة، محدد المنتجات في المحادثة، الباندلز، الفلمنت العشوائي، LinkRenderer، احتساب "About") لا تفلتر → المخفي يظهر عبر رابط مباشر أو أقسام أخرى |
-| 2 | المنتج المخفي يبقى في السلة | لا يوجد أي إعادة تقييم لعناصر السلة عند تغيير حالة الظهور من الأدمن |
-| 3 | سعر الخيار/اللون خاطئ في بطاقات التصفح | مكوّنات قديمة (`ProductOfferDetailModal`, `community/AddToCartSheet`, وأي مكان يستخدم النمط القديم `price + price_adjustment`) ما زالت تعامل `price_adjustment` كـ"فارق إضافي" بدلاً من "سعر مستقل" — يخالف المنطق الجديد الموثّق في الذاكرة والمستخدَم في `computeUnifiedCardPrice` |
+على متصفحات الهاتف (Chrome Android / Safari iOS)، حين يبدّل المستخدم إلى تبويب آخر ثم يعود بعد ثوانٍ قليلة، الصفحة تعمل **Refresh كامل**، فتُغلق كل النوافذ المفتوحة (Dialog / Sheet / Popover) ويفقد المستخدم موضعه.
 
----
+## السبب الجذري
 
-## خطة التنفيذ
+تبويب الويب في المتصفحات الحديثة يجب أن يدخل **bfcache** (back/forward cache) لكي يبقى في الذاكرة عند التبديل ويُستأنف فوراً بدون إعادة تحميل. الاتصالات الحية التالية في المشروع **تُعطّل bfcache** فيقرر المتصفح تحرير التبويب من الذاكرة، وعند العودة يفتح الصفحة من الصفر:
 
-### 1) توحيد فلترة الظهور (`is_pricing_updated=true`) لكل استعلامات المنتجات
+1. **Supabase Realtime WebSockets** — 3 قنوات في `useCart` (`cart-items-*`, `cart-products-*`, `cart-rf-global-*`) تُبقي WebSocket مفتوحاً. أي WebSocket نشط = طرد فوري من bfcache على Chrome/Safari.
+2. **`useOnlineHeartbeat`** — يرسل نبضات دورية.
+3. لا يوجد تعامل مع حدث `pageshow` لاستئناف الحالة عند استرجاع bfcache حين ينجح، ولا لإعادة الاشتراك بالقنوات عند إعادة التحميل.
 
-**دالة مساعدة** جديدة `applyPublicVisibility(query)` في `src/lib/productVisibility.ts` تضيف `.eq('is_pricing_updated', true)`، لضمان مصدر واحد للحقيقة.
+النافذة تختفي لأن كل حالة React (مثل `open` في Dialog) تُبنى من الصفر مع reload.
 
-**تطبيقها في:**
-- `src/pages/ProductDetail.tsx` (الاستعلام الرئيسي سطر 112 + المنتجات ذات الصلة سطر 205)
-- `src/pages/ProductBundles.tsx` (سطر 73)
-- `src/pages/RandomFilament.tsx` (سطر 542)
-- `src/pages/About.tsx` (عدّاد المنتجات سطر 24)
-- `src/hooks/useCart.tsx` (استعلامات re-fetch للمنتج سطر 732 و1097)
-- `src/components/chat/LinkRenderer.tsx` (سطر 57)
-- `src/components/chat/ProductSelector.tsx` (سطر 81)
-- `src/components/rewards/OrderLevoCardCta.tsx` (سطر 75)
-- `src/components/CompetitionFormDialog.tsx` (سطر 251)
-- في `ProductDetail`، عند فتح رابط منتج مخفي مباشرةً → إعادة التوجيه إلى 404/الفئة مع رسالة "المنتج غير متاح"
+## الحل
 
-الاستعلامات الإدارية (`products_admin` و `Admin.tsx` وما شابه) تبقى كما هي.
+### 1) قطع الاتصالات الحية عند إخفاء التبويب (يجعله مؤهّلاً لـ bfcache)
 
-### 2) إزالة عناصر السلة تلقائياً عند إخفاء المنتج
+في `src/hooks/useCart.tsx` للقنوات الثلاث:
+- الاستماع لـ `visibilitychange`: عند `document.hidden === true` → `supabase.removeChannel(ch)` وحفظ العلامة `needsResubscribe`.
+- عند `visible` مجدداً → إعادة إنشاء القناة من نفس المفاتيح + `queryClient.invalidateQueries` للسلة (يعوّض أي تغييرات فاتت).
 
-في `src/hooks/useCart.tsx`:
-- عند جلب السلة، إحضار حقل `products.is_pricing_updated` ضمن الـ join.
-- تصفية العناصر التي `is_pricing_updated=false` قبل تسليمها للـ UI.
-- استدعاء RPC/mutation تحذف صفوف `cart_items` المرتبطة بمنتجات مخفيّة وتُظهر Toast للمستخدم مرّة واحدة: "تم حذف منتج غير متاح من سلتك" (مع اسم المنتج).
-- الاشتراك في تغييرات `products` (موجود جزئياً في `useRealtimePriceSync`) لإعادة التقييم فوراً عند إخفاء الأدمن للمنتج بينما السلة مفتوحة.
-- نفس المعالجة على السيرفر: `trigger` على `products` عند `is_pricing_updated=false` يحذف صفوف `cart_items` لهذا المنتج (حماية إضافية لمنع الشراء والدفع بالخطأ).
+في `src/hooks/useOnlineHeartbeat.ts`:
+- إيقاف مؤقت `setInterval` عند `hidden`، واستئنافه عند `visible`.
 
-### 3) توحيد سعر الخيار/اللون في كل عرض
+### 2) دعم استعادة bfcache صراحةً
 
-- **`ProductOfferDetailModal.tsx`**: يستخدم حالياً `offer.price + selectedOption.price_adjustment` وشارة `(+X)`. سيتم تحويله لاستخدام نفس دلالة المشروع: إذا `price_adjustment > 0` فهو سعر مستقل يحلّ محل السعر، وإلا يُستخدم سعر العرض. إزالة شارة `(+X)`.
-- **`src/components/community/AddToCartSheet.tsx`**: نفس التصحيح (استبدال جمع `price + priceAdj` بمنطق الاستقلال).
-- **`src/components/admin/MysteryCaseTab.tsx` و `AdminProductOffersTab.tsx`**: هذه شاشات إدارية — يبقى عرض الرقم كما هو **مع تسمية أوضح** ("السعر المستقل للخيار") بدل شارة `+`.
-- إجراء بحث شامل لأي مكان يستخدم `product_options[...].price_adjustment` في العرض للتأكد من التوافق مع الدلالة الحالية (المصدر الوحيد للحقيقة: `computeUnifiedCardPrice` و `getGuardedCartItemPrice`).
-- إبقاء `computeUnifiedCardPrice` و `getMinOptionOverridePriceIqd` بدون تغيير — منطقهم صحيح حسب توضيحك.
+إنشاء `src/hooks/useBFCacheRestore.ts` يستمع لحدث `pageshow`:
+- إن كان `event.persisted === true` (استُرجعت الصفحة من bfcache) → `queryClient.invalidateQueries()` لتحديث البيانات الطازجة، دون تفريغ حالة الواجهة (النوافذ تبقى مفتوحة كما كانت).
+- استخدامه مرة واحدة في `App.tsx`.
 
-### 4) توثيق ومنع التكرار
+### 3) الحفاظ على حالة الحوارات الحرجة حين يتعذّر bfcache
 
-- إضافة سطر لملف الذاكرة `mem://features/products/visibility-and-cart-cleanup` يوثّق:
-  - `is_pricing_updated=false` = مخفي عن المستخدمين ⇒ يجب فلترته في **كل** استعلام واجهة.
-  - عناصر السلة تُحذف تلقائياً (Client + Trigger) لأي منتج يصبح مخفياً.
+بعض حالات المتصفحات (ضغط الذاكرة الشديد، iOS مع صور كبيرة) لا تسمح بـ bfcache حتى بعد الإصلاحات السابقة. للحد الأدنى من الأذى:
+- إضافة دالة مساعدة صغيرة `src/lib/dialogStatePersist.ts` تحفظ في `sessionStorage` حالة (open + معرّف السياق) للنوافذ الطويلة (السلة – خطوة تأكيد الطلب، نافذة تفاصيل المنتج القادمة من deep link) لتُفتح تلقائياً عند إعادة التحميل الفوري.
 
----
+### 4) التحقق
 
-## التفاصيل التقنية
+- تشغيل الموقع في مقاس موبايل مع أدوات DevTools ← Application ← Back/forward cache: التأكد من ظهور "Restored from back/forward cache" بعد الإصلاح بدل قائمة أسباب الرفض.
+- سيناريو Playwright: فتح Dialog في `/cart`، تبديل التركيز عبر `page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")`، محاكاة `pageshow`، والتأكد أن Dialog لا يزال مفتوحاً وأن السلة تحدّث بياناتها.
 
-- **قاعدة البيانات**: Trigger جديد `remove_hidden_products_from_carts()` على `products` (AFTER UPDATE OF is_pricing_updated) يحذف `cart_items` عندما يصبح المنتج مخفيّاً.
-- **الأداء**: الفلترة تتم عبر فهرس موجود ضمنياً على `is_pricing_updated`؛ سنضيف فهرس جزئي `(is_pricing_updated) WHERE is_pricing_updated = true` إذا لزم لاحقاً.
-- **حالات الحافة**:
-  - المنتجات في تاريخ الطلبات (`orders`, `order_items`) لا تتأثر — تُعرض دائماً.
-  - صفحات الأدمن تبقى تعرض كل المنتجات كالمعتاد.
-  - إذا كان عنصر السلة مربوطاً بعرض `product_offers` فقط (بلا `product_id` علني)، فلا يُحذف.
+## الملفات المتأثرة
 
----
+- `src/hooks/useCart.tsx` — قطع/إعادة القنوات على visibilitychange (تعديل موضعي).
+- `src/hooks/useOnlineHeartbeat.ts` — إيقاف المؤقت عند إخفاء التبويب.
+- `src/hooks/useBFCacheRestore.ts` — جديد.
+- `src/App.tsx` — استدعاء الهوك الجديد مرة واحدة.
+- (اختياري لخطوة 3) `src/lib/dialogStatePersist.ts` + استعمال في `Cart.tsx`.
 
-## سؤال مطلوب قبل التنفيذ (اختياري)
+## ملاحظات
 
-لو أمكنك مشاركة **مثال محدد** (اسم منتج + خيار/لون + السعر الظاهر) لمشكلة السعر، سأتحقق من الحالة قبل التعديل وأتأكد أنّ الإصلاح يعالجها فعلاً. وإلا سأنفّذ الخطة أعلاه كما هي.
+- لن أعدّل الـ backend ولا الـ RLS.
+- لا تغيير للتصميم أو الترجمات.
+- الإصلاح متوافق تماماً مع تطبيق Android داخل Capacitor (WebView) — نفس منطق التبويب المخفي ينطبق.
+
+هل توافق على تنفيذ الخطة؟
