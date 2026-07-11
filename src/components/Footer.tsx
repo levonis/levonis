@@ -65,11 +65,6 @@ const Footer = () => {
             <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors">{labels.privacy}</Link>
             <span className="text-border">•</span>
             <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">{labels.terms}</Link>
-            <span className="text-border">•</span>
-            <Link to="/download-app" className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
-              {labels.download}
-            </Link>
           </nav>
 
           <div className="text-center space-y-2 mt-2">

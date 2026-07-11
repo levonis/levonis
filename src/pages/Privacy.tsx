@@ -200,8 +200,6 @@ const Privacy = () => {
           <Link to="/faq" className="text-primary hover:underline">{language === 'en' ? 'FAQ' : language === 'ku' ? 'پرسیار' : 'الأسئلة الشائعة'}</Link>
           <span className="text-muted-foreground">•</span>
           <Link to="/about" className="text-primary hover:underline">{language === 'en' ? 'About' : language === 'ku' ? 'دەربارە' : 'من نحن'}</Link>
-          <span className="text-muted-foreground">•</span>
-          <Link to="/download-app" className="text-primary hover:underline">{language === 'en' ? 'Download App' : language === 'ku' ? 'دابگرە' : 'تحميل التطبيق'}</Link>
         </div>
 
         <Footer />

@@ -464,28 +464,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* APP CTA */}
-        <section className="rounded-3xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground p-8 md:p-12 text-center relative overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: 'radial-gradient(circle at 30% 20%, white 1px, transparent 1px)',
-              backgroundSize: '32px 32px',
-            }}
-          />
-          <div className="relative">
-            <Smartphone className="w-12 h-12 mx-auto mb-3 opacity-90" />
-            <h2 className="text-2xl md:text-3xl font-black mb-2">{t.app}</h2>
-            <p className="opacity-90 mb-6 max-w-xl mx-auto">{t.appText}</p>
-            <Link
-              to="/download-app"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-foreground text-primary font-bold hover:scale-[1.02] transition-transform"
-            >
-              <Download className="w-4 h-4" />
-              {t.appBtn}
-            </Link>
-          </div>
-        </section>
 
         {/* CONTACT */}
         <section className="rounded-3xl bg-card border border-border p-8 md:p-10 text-center">

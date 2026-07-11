@@ -73,7 +73,7 @@ const HIDDEN_PREFIXES: string[] = [
   "/confirm-delivery",
   "/activate-printer",
   "/warranty-dashboard",
-  "/download",
+  
   "/printer-protection",
   "/store",
   "/community/store",

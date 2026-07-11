@@ -153,13 +153,6 @@ export default function InstallPrompt() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Hide entirely inside native (Capacitor) app
-    import('@capacitor/core').then(({ Capacitor }) => {
-      if (Capacitor.isNativePlatform()) {
-        setInstallDismissed(true);
-        setNotifDismissed(true);
-      }
-    }).catch(() => {});
     // Check session dismissals
     if (sessionStorage.getItem('install-prompt-dismissed')) setInstallDismissed(true);
     if (sessionStorage.getItem('notif-prompt-dismissed')) setNotifDismissed(true);
