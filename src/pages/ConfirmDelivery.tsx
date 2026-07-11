@@ -196,23 +196,24 @@ const ConfirmDelivery = () => {
           .maybeSingle();
 
         if (existingReview) {
-          // Update existing review - status pending for admin approval
+          // Update existing review — auto-published (no admin review needed)
           await supabase.from('reviews').update({
             rating: data.rating,
             comment: data.comment.trim() || null,
             media_files: uploadedUrls.length > 0 ? uploadedUrls : null,
             is_auto_rating: false,
-            status: 'pending',
+            status: 'approved',
           }).eq('id', existingReview.id);
         } else {
-          // Insert new review - status pending for admin approval
+          // Insert new review — auto-published
           const { error: reviewError } = await supabase.from('reviews').insert({
             user_id: user.id,
             product_id: item.product_id,
             rating: data.rating,
             comment: data.comment.trim() || null,
             media_files: uploadedUrls.length > 0 ? uploadedUrls : null,
-            status: 'pending',
+            is_auto_rating: false,
+            status: 'approved',
           });
           if (reviewError) throw reviewError;
         }
@@ -222,7 +223,8 @@ const ConfirmDelivery = () => {
 
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
       queryClient.invalidateQueries({ queryKey: ['reviewable-orders'] });
-      toast.success(`تم إرسال التقييمات بنجاح! سيتم مراجعتها ومنح الجوائز بعد الموافقة 🎉`);
+      toast.success(`تم نشر تقييماتك 🎉 ستُحتسب نقاطك تلقائياً`);
+
       setStep('done');
     } catch (error: any) {
       console.error('Error submitting reviews:', error);
