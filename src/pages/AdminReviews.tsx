@@ -5,247 +5,247 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Star, Check, X, Eye, Image, Video, Gift, Loader2 } from 'lucide-react';
-import { ADMIN_ROUTES } from '@/config/adminConfig';
+import { Star, Trash2, Eye, Image as ImageIcon, Video, Gift, Search, MessageSquareOff } from 'lucide-react';
 
 const AdminReviews = () => {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('pending');
   const [selectedReview, setSelectedReview] = useState<any>(null);
-  const [customPoints, setCustomPoints] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; label: string } | null>(null);
+  const [confirmClearComment, setConfirmClearComment] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
 
   const { data: reviews = [], isLoading } = useQuery({
-    queryKey: ['admin-reviews', activeTab],
+    queryKey: ['admin-reviews-all'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reviews')
         .select('*, products:product_id(name_ar, image_url, images)')
-        .eq('status', activeTab)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500);
       if (error) throw error;
       return data || [];
     },
   });
 
-  const { data: reviewSettings } = useQuery({
-    queryKey: ['review-reward-settings'],
+  const { data: stats } = useQuery({
+    queryKey: ['admin-reviews-stats'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('default_settings')
-        .select('*')
-        .in('setting_key', ['points_per_review', 'points_per_verified_review']);
-      const settings: Record<string, number> = {};
-      data?.forEach((s: any) => {
-        settings[s.setting_key] = typeof s.setting_value === 'object' 
-          ? (s.setting_value as any).value || 0 
-          : Number(s.setting_value) || 0;
-      });
-      return settings;
+      const { count: total } = await supabase.from('reviews').select('id', { count: 'exact', head: true });
+      const { count: lowRated } = await supabase.from('reviews').select('id', { count: 'exact', head: true }).lte('rating', 2);
+      const { count: withMedia } = await supabase.from('reviews').select('id', { count: 'exact', head: true }).not('media_files', 'is', null);
+      return { total: total || 0, lowRated: lowRated || 0, withMedia: withMedia || 0 };
     },
   });
 
-  const { data: counts } = useQuery({
-    queryKey: ['admin-reviews-counts'],
-    queryFn: async () => {
-      const [pending, approved, rejected] = await Promise.all([
-        supabase.from('reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('reviews').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
-        supabase.from('reviews').select('id', { count: 'exact', head: true }).eq('status', 'rejected'),
-      ]);
-      return { pending: pending.count || 0, approved: approved.count || 0, rejected: rejected.count || 0 };
-    },
-  });
-
-  const updateReviewMutation = useMutation({
-    mutationFn: async ({ reviewId, status, qualityBonus }: { reviewId: string; status: string; qualityBonus?: boolean }) => {
-      const updateData: any = { status };
-      if (status === 'approved' && qualityBonus !== undefined) {
-        updateData.admin_quality_multiplier = qualityBonus ? 3 : 0;
-      }
-      const { error } = await supabase.from('reviews').update(updateData).eq('id', reviewId);
+  const deleteReviewMutation = useMutation({
+    mutationFn: async (reviewId: string) => {
+      const { error } = await supabase.from('reviews').delete().eq('id', reviewId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-reviews-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews-all'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews-stats'] });
       setSelectedReview(null);
-      setCustomPoints('');
-      toast.success('تم تحديث التقييم بنجاح');
+      setConfirmDelete(null);
+      toast.success('تم حذف التقييم');
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message || 'فشل الحذف'),
   });
 
-  const setQualityBonusMutation = useMutation({
-    mutationFn: async ({ reviewId, qualityBonus }: { reviewId: string; qualityBonus: boolean }) => {
-      const { error } = await supabase
-        .from('reviews')
-        .update({ admin_quality_multiplier: qualityBonus ? 3 : 0 })
-        .eq('id', reviewId);
+  const clearCommentMutation = useMutation({
+    mutationFn: async (reviewId: string) => {
+      const { error } = await supabase.from('reviews').update({ comment: null }).eq('id', reviewId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
-      toast.success('تم تحديث مكافأة الجودة');
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews-all'] });
+      setConfirmClearComment(null);
+      toast.success('تم حذف نص التعليق (النجوم محفوظة)');
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message || 'فشل الحذف'),
   });
-
-  const handleApprove = (reviewId: string, qualityBonus = false) => {
-    updateReviewMutation.mutate({ reviewId, status: 'approved', qualityBonus });
-  };
-
-  const handleReject = (reviewId: string) => {
-    updateReviewMutation.mutate({ reviewId, status: 'rejected' });
-  };
 
   const renderStars = (rating: number) => (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map(i => (
-        <Star key={i} className={`h-4 w-4 ${i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted'}`} />
+        <Star key={i} className={`h-4 w-4 ${i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`} />
       ))}
     </div>
   );
 
   const getProductImage = (review: any) => {
-    const product = review.products;
-    if (!product) return null;
-    return product.image_url || (product.images && product.images[0]) || null;
+    const p = review.products;
+    if (!p) return null;
+    return p.image_url || (p.images && p.images[0]) || null;
   };
 
-  const ReviewCard = ({ review }: { review: any }) => {
-    const hasMedia = (review.media_files?.length > 0) || review.video_url;
-    const productImg = getProductImage(review);
-
-    return (
-      <Card className="overflow-hidden">
-        <CardContent className="p-4">
-          <div className="flex gap-4" dir="rtl">
-            {/* Product Image */}
-            {productImg && (
-              <img src={productImg} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" loading="lazy" decoding="async" />
-            )}
-
-            <div className="flex-1 min-w-0 space-y-2">
-              {/* Product Name & Rating */}
-              <div className="flex items-center justify-between gap-2">
-                <h4 className="font-medium text-sm truncate">{review.products?.name_ar || 'منتج محذوف'}</h4>
-                {renderStars(review.rating)}
-              </div>
-
-              {/* Comment */}
-              {review.comment && (
-                <p className="text-sm text-muted-foreground line-clamp-2">{review.comment}</p>
-              )}
-
-              {/* Media indicators */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {review.media_files?.length > 0 && (
-                  <Badge variant="secondary" className="gap-1 text-xs">
-                    <Image className="h-3 w-3" />
-                    {review.media_files.length} صور
-                  </Badge>
-                )}
-                {review.video_url && (
-                  <Badge variant="secondary" className="gap-1 text-xs">
-                    <Video className="h-3 w-3" />
-                    فيديو
-                  </Badge>
-                )}
-                {review.is_auto_rating && (
-                  <Badge variant="outline" className="text-xs">تقييم تلقائي</Badge>
-                )}
-                {review.points_awarded > 0 && (
-                  <Badge className="gap-1 text-xs bg-amber-500/10 text-amber-600 border-amber-200">
-                    <Gift className="h-3 w-3" />
-                    {review.points_awarded} نقطة
-                  </Badge>
-                )}
-              </div>
-
-              {/* Date */}
-              <p className="text-xs text-muted-foreground">
-                {new Date(review.created_at).toLocaleDateString('ar-IQ')}
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col gap-2 shrink-0">
-              <Button size="sm" variant="outline" onClick={() => setSelectedReview(review)}>
-                <Eye className="h-4 w-4" />
-              </Button>
-              {activeTab === 'pending' && (
-                <>
-                  <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700"
-                    onClick={() => handleApprove(review.id)}
-                    disabled={updateReviewMutation.isPending}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="destructive"
-                    onClick={() => handleReject(review.id)}
-                    disabled={updateReviewMutation.isPending}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
+  const filtered = reviews.filter((r: any) => {
+    if (ratingFilter !== null && r.rating !== ratingFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const productName = (r.products?.name_ar || '').toLowerCase();
+      const comment = (r.comment || '').toLowerCase();
+      if (!productName.includes(q) && !comment.includes(q)) return false;
+    }
+    return true;
+  });
 
   return (
     <AdminLayout title="إدارة التقييمات" icon={<Star className="h-6 w-6" />}>
-      <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="pending" className="gap-2">
-            بانتظار الموافقة
-            {counts?.pending ? <Badge variant="destructive" className="text-xs">{counts.pending}</Badge> : null}
-          </TabsTrigger>
-          <TabsTrigger value="approved" className="gap-2">
-            تمت الموافقة
-            {counts?.approved ? <Badge variant="secondary" className="text-xs">{counts.approved}</Badge> : null}
-          </TabsTrigger>
-          <TabsTrigger value="rejected" className="gap-2">
-            مرفوض
-            {counts?.rejected ? <Badge variant="secondary" className="text-xs">{counts.rejected}</Badge> : null}
-          </TabsTrigger>
-        </TabsList>
+      {/* Info banner */}
+      <Card className="mb-4 border-emerald-500/30 bg-emerald-500/5">
+        <CardContent className="py-3 flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+            <Star className="h-4 w-4 text-emerald-600 fill-emerald-600" />
+          </div>
+          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+            التقييمات تُنشر تلقائياً بدون مراجعة. يمكنك حذف أي تقييم مسيء أو مسح نص التعليق فقط.
+          </p>
+        </CardContent>
+      </Card>
 
-        {['pending', 'approved', 'rejected'].map(tab => (
-          <TabsContent key={tab} value={tab}>
-            {isLoading ? (
-              <div className="space-y-3">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-4 space-y-2"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-muted animate-pulse" /><div className="h-4 w-24 rounded bg-muted animate-pulse" /></div><div className="h-3 w-full rounded bg-muted animate-pulse" /><div className="h-3 w-2/3 rounded bg-muted animate-pulse" /></div>)}</div>
-            ) : reviews.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                لا توجد تقييمات
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {reviews.map((review: any) => (
-                  <ReviewCard key={review.id} review={review} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <Card><CardContent className="p-3 text-center">
+          <p className="text-2xl font-black text-primary">{stats?.total || 0}</p>
+          <p className="text-xs text-muted-foreground">إجمالي التقييمات</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className="text-2xl font-black text-destructive">{stats?.lowRated || 0}</p>
+          <p className="text-xs text-muted-foreground">منخفضة (≤2★)</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className="text-2xl font-black text-emerald-600">{stats?.withMedia || 0}</p>
+          <p className="text-xs text-muted-foreground">تحتوي وسائط</p>
+        </CardContent></Card>
+      </div>
 
-      {/* Review Detail Dialog */}
-      <Dialog open={!!selectedReview} onOpenChange={() => { setSelectedReview(null); setCustomPoints(''); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>تفاصيل التقييم</DialogTitle>
-          </DialogHeader>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="ابحث في اسم المنتج أو التعليق..."
+            className="pr-9"
+          />
+        </div>
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant={ratingFilter === null ? 'default' : 'outline'}
+            onClick={() => setRatingFilter(null)}
+          >الكل</Button>
+          {[5, 4, 3, 2, 1].map(n => (
+            <Button
+              key={n}
+              size="sm"
+              variant={ratingFilter === n ? 'default' : 'outline'}
+              onClick={() => setRatingFilter(ratingFilter === n ? null : n)}
+              className="gap-1"
+            >
+              {n}<Star className="h-3 w-3 fill-current" />
+            </Button>
+          ))}
+        </div>
+      </div>
 
+      {/* List */}
+      {isLoading ? (
+        <div className="space-y-3">{[1,2,3].map(i => (
+          <div key={i} className="rounded-lg border bg-card p-4 h-24 animate-pulse" />
+        ))}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">لا توجد تقييمات</div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((review: any) => {
+            const productImg = getProductImage(review);
+            return (
+              <Card key={review.id} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex gap-4" dir="rtl">
+                    {productImg && (
+                      <img src={productImg} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" loading="lazy" decoding="async" />
+                    )}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="font-medium text-sm truncate">{review.products?.name_ar || 'منتج محذوف'}</h4>
+                        {renderStars(review.rating)}
+                      </div>
+                      {review.comment && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{review.comment}</p>
+                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {review.media_files?.length > 0 && (
+                          <Badge variant="secondary" className="gap-1 text-xs">
+                            <ImageIcon className="h-3 w-3" />{review.media_files.length}
+                          </Badge>
+                        )}
+                        {review.video_url && (
+                          <Badge variant="secondary" className="gap-1 text-xs">
+                            <Video className="h-3 w-3" />فيديو
+                          </Badge>
+                        )}
+                        {review.is_auto_rating && (
+                          <Badge variant="outline" className="text-xs">تلقائي</Badge>
+                        )}
+                        {review.points_awarded > 0 && (
+                          <Badge className="gap-1 text-xs bg-amber-500/10 text-amber-700 border-amber-500/30">
+                            <Gift className="h-3 w-3" />{review.points_awarded}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground mr-auto">
+                          {new Date(review.created_at).toLocaleDateString('ar-IQ')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <Button size="sm" variant="outline" onClick={() => setSelectedReview(review)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {review.comment && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setConfirmClearComment(review.id)}
+                          title="مسح نص التعليق فقط"
+                        >
+                          <MessageSquareOff className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setConfirmDelete({ id: review.id, label: review.products?.name_ar || 'التقييم' })}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedReview} onOpenChange={() => setSelectedReview(null)}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader><DialogTitle>تفاصيل التقييم</DialogTitle></DialogHeader>
           {selectedReview && (
             <div className="space-y-4">
-              {/* Product */}
               <div className="flex items-center gap-3">
                 {getProductImage(selectedReview) && (
                   <img src={getProductImage(selectedReview)} alt="" className="w-14 h-14 rounded-lg object-cover" loading="lazy" decoding="async" />
@@ -255,124 +255,88 @@ const AdminReviews = () => {
                   <div className="mt-1">{renderStars(selectedReview.rating)}</div>
                 </div>
               </div>
-
-              {/* Comment */}
               {selectedReview.comment && (
                 <div>
                   <Label className="text-sm text-muted-foreground">التعليق</Label>
                   <p className="mt-1 text-sm bg-muted/50 rounded-lg p-3">{selectedReview.comment}</p>
                 </div>
               )}
-
-              {/* Media */}
               {selectedReview.media_files?.length > 0 && (
                 <div>
-                  <Label className="text-sm text-muted-foreground mb-2 block">الوسائط المرفقة</Label>
+                  <Label className="text-sm text-muted-foreground mb-2 block">الوسائط</Label>
                   <div className="grid grid-cols-3 gap-2">
                     {selectedReview.media_files.map((url: string, idx: number) => (
                       <a key={idx} href={url} target="_blank" rel="noreferrer">
-                        <img src={url} alt={`Media ${idx + 1}`} className="w-full aspect-square object-cover rounded-lg border hover:opacity-80 transition" loading="lazy" decoding="async" />
+                        <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg border" loading="lazy" decoding="async" />
                       </a>
                     ))}
                   </div>
                 </div>
               )}
-
               {selectedReview.video_url && (
-                <div>
-                  <Label className="text-sm text-muted-foreground mb-2 block">فيديو</Label>
-                  <video src={selectedReview.video_url} controls className="w-full rounded-lg" />
-                </div>
+                <video src={selectedReview.video_url} controls className="w-full rounded-lg" />
               )}
-
-              {/* Quality Bonus & Actions */}
-              {selectedReview.status === 'pending' && (
-                <div className="border-t pt-4 space-y-3">
-                  <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1">
-                    <p className="flex items-center gap-2 font-medium">
-                      <Gift className="h-4 w-4" />
-                      النقاط تُمنح تلقائياً بعد 48 ساعة
-                    </p>
-                    <p>• صورة فقط: مضاعف 1x من نقاط الشراء</p>
-                    <p>• صورة + فيديو: مضاعف 2x</p>
-                    <p>• مكافأة جودة إدارية: مضاعف 3x (السقف)</p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                      onClick={() => handleApprove(selectedReview.id, false)}
-                      disabled={updateReviewMutation.isPending}
-                    >
-                      {updateReviewMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Check className="h-4 w-4 ml-2" />}
-                      موافقة
-                    </Button>
-                    <Button
-                      className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
-                      onClick={() => handleApprove(selectedReview.id, true)}
-                      disabled={updateReviewMutation.isPending}
-                    >
-                      <Gift className="h-4 w-4 ml-2" />
-                      موافقة + مكافأة جودة (3x)
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleReject(selectedReview.id)}
-                      disabled={updateReviewMutation.isPending}
-                    >
-                      <X className="h-4 w-4 ml-2" />
-                      رفض
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Already processed */}
-              {selectedReview.status !== 'pending' && (
-                <div className="border-t pt-4 space-y-3">
-                  <Badge variant={selectedReview.status === 'approved' ? 'default' : 'destructive'}>
-                    {selectedReview.status === 'approved' ? 'تمت الموافقة' : 'مرفوض'}
-                  </Badge>
-                  {selectedReview.points_awarded > 0 && (
-                    <p className="text-sm text-amber-600">
-                      تم منح {selectedReview.points_awarded} نقطة (بونص التقييم)
-                    </p>
-                  )}
-                  {selectedReview.status === 'approved' && !selectedReview.points_awarded && (
-                    <p className="text-xs text-muted-foreground">
-                      سيتم منح النقاط تلقائياً بعد 48 ساعة من نشر التقييم إذا احتوى صورة.
-                    </p>
-                  )}
-                  {selectedReview.status === 'approved' && (
-                    <div className="flex items-center gap-2 pt-2">
-                      <span className="text-sm">مكافأة جودة (3x):</span>
-                      <Button
-                        size="sm"
-                        variant={selectedReview.admin_quality_multiplier > 0 ? 'default' : 'outline'}
-                        onClick={() => setQualityBonusMutation.mutate({ reviewId: selectedReview.id, qualityBonus: true })}
-                        disabled={setQualityBonusMutation.isPending || !!selectedReview.points_awarded}
-                      >
-                        مفعلة
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={selectedReview.admin_quality_multiplier === 0 ? 'default' : 'outline'}
-                        onClick={() => setQualityBonusMutation.mutate({ reviewId: selectedReview.id, qualityBonus: false })}
-                        disabled={setQualityBonusMutation.isPending || !!selectedReview.points_awarded}
-                      >
-                        معطلة
-                      </Button>
-                      {selectedReview.points_awarded > 0 && (
-                        <span className="text-xs text-muted-foreground mr-2">(مقفلة بعد المنح)</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="flex gap-2 border-t pt-4">
+                {selectedReview.comment && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setConfirmClearComment(selectedReview.id)}
+                  >
+                    <MessageSquareOff className="h-4 w-4 ml-2" />
+                    حذف التعليق فقط
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => setConfirmDelete({ id: selectedReview.id, label: selectedReview.products?.name_ar || 'التقييم' })}
+                >
+                  <Trash2 className="h-4 w-4 ml-2" />
+                  حذف التقييم
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={() => setConfirmDelete(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف التقييم؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف التقييم بالكامل (النجوم، التعليق، الوسائط). هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDelete && deleteReviewMutation.mutate(confirmDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >حذف</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear comment confirmation */}
+      <AlertDialog open={!!confirmClearComment} onOpenChange={() => setConfirmClearComment(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>مسح نص التعليق؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم مسح نص التعليق فقط. النجوم والوسائط تبقى محفوظة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmClearComment && clearCommentMutation.mutate(confirmClearComment)}
+            >مسح</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };
