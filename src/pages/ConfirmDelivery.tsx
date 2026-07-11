@@ -419,44 +419,66 @@ const ConfirmDelivery = () => {
             </motion.div>
           )}
 
-          {/* Step 2: Rate Products */}
-          {step === 'rating' && (
+          {/* Step 2: Rate Products - Taobao-style */}
+          {step === 'rating' && (() => {
+            const ratedCount = ratableItems.filter((it: any) => {
+              const d = itemRatings[it.id];
+              return d && (d.rating > 0);
+            }).length;
+            const totalPotential = ratableItems.reduce((sum: number, it: any) => {
+              const d = itemRatings[it.id];
+              const media = d?.mediaFiles?.length > 0;
+              return sum + reviewPoints + (media ? mediaBonus : 0);
+            }, 0);
+
+            return (
             <motion.div
               key="rating"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="space-y-4"
+              className="space-y-4 pb-28"
             >
-              {/* Rewards reminder */}
-              <Card className="border border-primary/20 bg-primary/5 backdrop-blur-xl">
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
+              {/* Progress + points banner */}
+              <Card className="border-0 bg-gradient-to-br from-primary/10 via-amber-500/5 to-emerald-500/10 backdrop-blur-xl shadow-[0_8px_32px_hsl(var(--primary)/0.1)]">
+                <CardContent className="py-5">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      <span className="font-bold text-sm">جوائز التقييم</span>
+                      <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">قيّم منتجاتك</p>
+                        <p className="text-[11px] text-muted-foreground">تقييمك يساعد الآخرين ويربحك نقاط</p>
+                      </div>
                     </div>
-                    <div className="flex gap-3">
-                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
-                        <Star className="h-3 w-3 ml-1 fill-amber-500 text-amber-500" />
-                        {reviewPoints} نقطة
-                      </Badge>
-                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                        <Camera className="h-3 w-3 ml-1" />
-                        +{mediaBonus} مع صور/فيديو
-                      </Badge>
-                    </div>
+                    <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 gap-1">
+                      <Coins className="h-3 w-3" />
+                      +{totalPotential} نقطة
+                    </Badge>
                   </div>
+                  <div className="relative h-2 rounded-full bg-muted/40 overflow-hidden">
+                    <motion.div
+                      className="absolute inset-y-0 right-0 bg-gradient-to-l from-emerald-500 via-amber-400 to-primary rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(ratedCount / Math.max(1, ratableItems.length)) * 100}%` }}
+                      transition={{ duration: 0.4 }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                    {ratedCount} من {ratableItems.length} مُقيّمة
+                  </p>
                 </CardContent>
               </Card>
 
-              {/* Rating forms per product */}
+              {/* Rating cards per product */}
               {ratableItems.map((item: any) => {
                 const imageUrl = item.products?.images?.[0] || item.products?.image_url;
                 const itemData = itemRatings[item.id] || { rating: 5, comment: '', mediaFiles: [], mediaPreviews: [] };
                 const hasMedia = itemData.mediaFiles.length > 0;
                 const potentialPoints = reviewPoints + (hasMedia ? mediaBonus : 0);
+                const ratingLabels: Record<number, string> = { 1: 'سيء 😞', 2: 'مقبول 😐', 3: 'جيد 🙂', 4: 'جيد جداً 😊', 5: 'ممتاز 🤩' };
 
                 return (
                   <Card key={item.id} className="border border-border/50 bg-card/40 backdrop-blur-xl overflow-hidden">
@@ -464,31 +486,24 @@ const ConfirmDelivery = () => {
                       {/* Product header */}
                       <div className="flex items-center gap-3">
                         {imageUrl ? (
-                          <img src={imageUrl} alt={item.product_name_ar} className="w-14 h-14 object-cover rounded-xl border border-border/50 bg-muted" loading="lazy" decoding="async" />
+                          <img src={imageUrl} alt={item.product_name_ar} className="w-16 h-16 object-cover rounded-2xl border border-border/50 bg-muted shadow-sm" loading="lazy" decoding="async" />
                         ) : (
-                          <div className="w-14 h-14 bg-muted/50 rounded-xl flex items-center justify-center">
+                          <div className="w-16 h-16 bg-muted/50 rounded-2xl flex items-center justify-center">
                             <Package className="h-6 w-6 text-muted-foreground" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm line-clamp-1">{item.product_name_ar}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Coins className="h-3 w-3 text-amber-500" />
-                            <span className="text-xs font-bold text-amber-600">
-                              +{potentialPoints} نقطة
-                            </span>
-                            {hasMedia && (
-                              <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-0">
-                                يشمل مكافأة الوسائط!
-                              </Badge>
-                            )}
-                          </div>
+                          <p className="font-bold text-sm line-clamp-2">{item.product_name_ar}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">الكمية: {item.quantity}</p>
                         </div>
+                        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 shrink-0">
+                          <Coins className="h-3 w-3" />
+                          +{potentialPoints}
+                        </Badge>
                       </div>
 
-                      {/* Star rating */}
-                      <div>
-                        <label className="text-xs font-medium mb-2 block text-muted-foreground">تقييمك</label>
+                      {/* Star rating - large & centered like Taobao */}
+                      <div className="flex flex-col items-center gap-2 py-2">
                         <div className="flex gap-1.5">
                           {[1, 2, 3, 4, 5].map(star => (
                             <button
@@ -497,37 +512,36 @@ const ConfirmDelivery = () => {
                               onClick={() => updateItemRating(item.id, 'rating', star)}
                               className="transition-transform hover:scale-125 active:scale-95"
                             >
-                              <Star className={`h-8 w-8 ${star <= itemData.rating
-                                ? 'text-amber-500 fill-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.4)]'
-                                : 'text-muted-foreground/30'
+                              <Star className={`h-9 w-9 transition-all ${star <= itemData.rating
+                                ? 'text-amber-500 fill-amber-500 drop-shadow-[0_2px_8px_rgba(245,158,11,0.5)]'
+                                : 'text-muted-foreground/25'
                               }`} />
                             </button>
                           ))}
                         </div>
+                        {itemData.rating > 0 && (
+                          <motion.p
+                            key={itemData.rating}
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-xs font-bold text-primary"
+                          >
+                            {ratingLabels[itemData.rating]}
+                          </motion.p>
+                        )}
                       </div>
 
                       {/* Comment */}
-                      <div>
-                        <label className="text-xs font-medium mb-1.5 block text-muted-foreground">تعليقك (اختياري)</label>
-                        <Textarea
-                          value={itemData.comment}
-                          onChange={e => updateItemRating(item.id, 'comment', e.target.value)}
-                          placeholder="شاركنا رأيك في المنتج..."
-                          rows={3}
-                          className="text-sm resize-none"
-                        />
-                      </div>
+                      <Textarea
+                        value={itemData.comment}
+                        onChange={e => updateItemRating(item.id, 'comment', e.target.value)}
+                        placeholder="شاركنا رأيك في المنتج... (اختياري)"
+                        rows={2}
+                        className="text-sm resize-none bg-background/50 backdrop-blur border-border/50 focus:border-primary/50"
+                      />
 
                       {/* Media upload */}
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-xs font-medium text-muted-foreground">صور أو فيديو (اختياري)</label>
-                          {!hasMedia && (
-                            <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 animate-pulse">
-                              +{mediaBonus} نقطة إضافية!
-                            </Badge>
-                          )}
-                        </div>
                         <input
                           ref={el => { fileInputRefs.current[item.id] = el; }}
                           type="file"
@@ -542,7 +556,7 @@ const ConfirmDelivery = () => {
                             const file = itemData.mediaFiles[idx];
                             const isVideo = file?.type?.startsWith('video');
                             return (
-                              <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border/50 bg-muted group">
+                              <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-border/50 bg-muted group">
                                 {isVideo ? (
                                   <div className="w-full h-full flex items-center justify-center bg-muted">
                                     <Video className="h-6 w-6 text-muted-foreground" />
@@ -552,7 +566,7 @@ const ConfirmDelivery = () => {
                                 )}
                                 <button
                                   onClick={() => removeMedia(item.id, idx)}
-                                  className="absolute top-0.5 left-0.5 bg-destructive/80 rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="absolute top-0.5 left-0.5 bg-destructive/90 rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                   <X className="h-2.5 w-2.5 text-white" />
                                 </button>
@@ -563,50 +577,60 @@ const ConfirmDelivery = () => {
                           {itemData.mediaFiles.length < 5 && (
                             <button
                               onClick={() => fileInputRefs.current[item.id]?.click()}
-                              className="w-16 h-16 rounded-lg border-2 border-dashed border-border/50 hover:border-primary/30 flex flex-col items-center justify-center gap-1 transition-colors"
+                              className="w-16 h-16 rounded-xl border-2 border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/5 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
-                              <Upload className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-[8px] text-muted-foreground">إضافة</span>
+                              <Camera className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-[9px] text-muted-foreground">صور/فيديو</span>
                             </button>
                           )}
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-1.5">
-                          {itemData.mediaFiles.length}/5 ملفات • صور أو فيديو (حد 10 ميجا)
-                        </p>
+                        {!hasMedia && (
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1.5 font-medium">
+                            💡 أضف صورة أو فيديو واربح +{mediaBonus} نقطة إضافية!
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
                 );
               })}
 
-              {/* Submit reviews */}
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleSubmitReviews}
-                  disabled={submittingReviews}
-                  className="flex-1 bg-primary hover:bg-primary/90 shadow-lg"
-                  size="lg"
-                >
-                  {submittingReviews ? (
-                    <Loader2 className="ml-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    <Star className="ml-2 h-5 w-5" />
-                  )}
-                  إرسال التقييمات
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setStep('done');
-                    toast.info('يمكنك التقييم لاحقاً من صفحة المهام');
-                  }}
-                  size="lg"
-                >
-                  لاحقاً
-                </Button>
+              {/* Sticky submit bar */}
+              <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur-xl px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+                <div className="max-w-3xl mx-auto flex items-center gap-3">
+                  <div className="flex-1">
+                    <p className="text-[10px] text-muted-foreground">إجمالي النقاط</p>
+                    <p className="text-lg font-black text-amber-600 flex items-center gap-1">
+                      <Coins className="h-4 w-4" />
+                      +{totalPotential}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => { setStep('done'); toast.info('يمكنك التقييم لاحقاً من طلباتك'); }}
+                    size="sm"
+                  >
+                    تخطي
+                  </Button>
+                  <Button
+                    onClick={handleSubmitReviews}
+                    disabled={submittingReviews}
+                    className="flex-1 max-w-[220px] bg-primary hover:bg-primary/90 shadow-lg"
+                    size="lg"
+                  >
+                    {submittingReviews ? (
+                      <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+                    ) : (
+                      <Star className="ml-2 h-4 w-4 fill-current" />
+                    )}
+                    إرسال ({ratedCount})
+                  </Button>
+                </div>
               </div>
             </motion.div>
-          )}
+            );
+          })()}
+
 
           {/* Step 3: Done */}
           {step === 'done' && (
