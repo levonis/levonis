@@ -99,63 +99,7 @@ declare global {
   }
 }
 
-// Capacitor: initialize native platform UI — deferred to idle so the web
-// path never pays for downloading @capacitor/core during first paint.
-idle(() => { import('@capacitor/core').then(({ Capacitor }) => {
-  if (!Capacitor.isNativePlatform()) return;
-  if (!Capacitor.isNativePlatform()) return;
-  // Mark the document so CSS can target native vs web
-  document.documentElement.classList.add('is-native', `platform-${Capacitor.getPlatform()}`);
-
-  import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-    StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-    StatusBar.setBackgroundColor({ color: '#103d33' }).catch(() => {});
-    StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
-  }).catch(() => {});
-
-  import('@capacitor/splash-screen').then(({ SplashScreen }) => {
-    setTimeout(() => SplashScreen.hide().catch(() => {}), 500);
-  }).catch(() => {});
-
-  import('@capacitor/app').then(({ App }) => {
-    App.addListener('backButton', ({ canGoBack }) => {
-      if (canGoBack) window.history.back();
-      else App.exitApp();
-    });
-
-    // Deep link handler — receives Android App Links such as
-    // https://levonisiq.com/~oauth?code=... after Google sign-in. We close the
-    // in-app system browser and route the WebView to /~oauth so the lovable
-    // OAuth broker can complete the token exchange.
-    App.addListener('appUrlOpen', async (event: { url: string }) => {
-      try {
-        const url = new URL(event.url);
-        // Try to dismiss the OAuth browser tab (no-op if not opened).
-        try {
-          const { Browser } = await import('@capacitor/browser');
-          await Browser.close();
-        } catch {}
-        // Navigate the in-app WebView to the path+query+hash. SPA router will
-        // pick it up; /~oauth specifically is excluded from SW caching.
-        const target = `${url.pathname}${url.search}${url.hash}` || '/';
-        window.history.replaceState({}, '', target);
-        window.dispatchEvent(new PopStateEvent('popstate'));
-      } catch {}
-    });
-  }).catch(() => {});
-
-  // Push the layout up when keyboard opens, restore on close
-  import('@capacitor/keyboard').then(({ Keyboard }) => {
-    Keyboard.addListener('keyboardWillShow', (info) => {
-      document.documentElement.style.setProperty('--keyboard-height', `${info.keyboardHeight}px`);
-      document.body.classList.add('keyboard-open');
-    });
-    Keyboard.addListener('keyboardWillHide', () => {
-      document.documentElement.style.setProperty('--keyboard-height', '0px');
-      document.body.classList.remove('keyboard-open');
-    });
-  }).catch(() => {});
-}).catch(() => {}); });
+// Native (Capacitor) initialization removed — web-only build.
 
 // Telegram WebApp SDK is loaded only inside Telegram (see index.html).
 // Poll briefly, then give up so we never keep timers alive on regular browsers.

@@ -74,36 +74,7 @@ const Auth = () => {
     setGoogleLoading(true);
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const isCapacitorOrigin = /capacitor:|file:|localhost|127\.0\.0\.1|10\.0\.2\.2/i.test(origin);
-
-      // Inside the native APK we open the OAuth flow in the system browser and
-      // come back into the app via an Android App Link to /~oauth (handled by
-      // the deep-link listener registered in main.tsx). The redirect_uri must
-      // therefore be the public HTTPS domain that's verified for App Links.
-      const redirectUri = isCapacitorOrigin ? 'https://levonisiq.com/~oauth' : origin;
-
-      if (isCapacitorOrigin) {
-        // Lazy import so web bundle stays clean.
-        const { Browser } = await import('@capacitor/browser');
-        const { lovable: lov } = await import('@/integrations/lovable');
-        const result = await lov.auth.signInWithOAuth('google', {
-          redirect_uri: redirectUri,
-          // Skip the automatic browser redirect — we'll open it ourselves so we
-          // can close the in-app browser tab after the deep link returns.
-          skipBrowserRedirect: true as never,
-        } as never);
-        if (result.error) {
-          toast.error(`${t('auth_google_failed')}: ${result.error.message}`);
-          setGoogleLoading(false);
-          return;
-        }
-        const url = (result as { url?: string }).url;
-        if (url) {
-          await Browser.open({ url, presentationStyle: 'popover' });
-        }
-        // Loading stays true until deep link returns and AuthProvider sets the user.
-        return;
-      }
+      const redirectUri = origin;
 
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: redirectUri,

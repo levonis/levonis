@@ -27,7 +27,7 @@ import { DynamicIsland } from "@/island/DynamicIsland";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
-import NativeAuthGate from "@/components/auth/NativeAuthGate";
+
 // EmailVerificationBanner available for post-login verification
 const AppBackground = lazyWithRetry(() => import("@/components/AppBackground"));
 const ProfileOrb = lazyWithRetry(() => import("@/components/ProfileOrb"));
@@ -84,8 +84,6 @@ const AdminSavedInvoices = lazyWithRetry(() => import("./pages/AdminSavedInvoice
 const AdminFinancials = lazyWithRetry(() => import("./pages/AdminFinancials"));
 const AdminDonations = lazyWithRetry(() => import("./pages/AdminDonations"));
 const AdminPartialPaymentSettings = lazyWithRetry(() => import("./pages/AdminPartialPaymentSettings"));
-const DownloadApp = lazyWithRetry(() => import("./pages/DownloadApp"));
-const AdminAppVersions = lazyWithRetry(() => import("./pages/admin/AdminAppVersions"));
 const AdminPrinterAdvisor = lazyWithRetry(() => import("./pages/AdminPrinterAdvisor"));
 
 const RewardsHub = lazyWithRetry(() => import("./pages/RewardsHub"));
@@ -345,9 +343,6 @@ function AppContent() {
             <Route path="/order/:orderId" element={<RequireAuth><OrderDetail /></RequireAuth>} />
             <Route path="/my-orders/:orderId/confirm" element={<RequireAuth><ConfirmDelivery /></RequireAuth>} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/download-app" element={<DownloadApp />} />
-            <Route path="/download" element={<DownloadApp />} />
-            <Route path={`${ADMIN_BASE_PATH}/app-versions`} element={<AdminRoute><AdminAppVersions /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/printer-advisor`} element={<AdminRoute><AdminPrinterAdvisor /></AdminRoute>} />
 
             
@@ -581,9 +576,7 @@ export default function App() {
                 <IslandProvider>
                   <PageSearchProvider>
                     <ProfileTransitionProvider>
-                      <NativeAuthGate>
-                        <AppContent />
-                      </NativeAuthGate>
+                      <AppContent />
                     </ProfileTransitionProvider>
                   </PageSearchProvider>
                 </IslandProvider>

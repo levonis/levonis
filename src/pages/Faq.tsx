@@ -340,8 +340,6 @@ const Faq = () => {
           <Link to="/privacy" className="text-primary hover:underline">{language === 'en' ? 'Privacy' : language === 'ku' ? 'تایبەتمەندی' : 'سياسة الخصوصية'}</Link>
           <span className="text-muted-foreground">•</span>
           <Link to="/terms" className="text-primary hover:underline">{language === 'en' ? 'Terms' : language === 'ku' ? 'مەرجەکان' : 'الشروط والأحكام'}</Link>
-          <span className="text-muted-foreground">•</span>
-          <Link to="/download-app" className="text-primary hover:underline">{language === 'en' ? 'Download App' : language === 'ku' ? 'دابگرە' : 'تحميل التطبيق'}</Link>
         </div>
 
         <Footer />
