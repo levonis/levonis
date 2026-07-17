@@ -24,12 +24,10 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
+          // Keep CommonJS helpers inside vendor. This check must run before the
+          // node_modules guard because Rollup emits the helper as a virtual id.
+          if (id.includes('commonjsHelpers')) return 'vendor';
           if (!id.includes('node_modules')) return undefined;
-          // Keep CommonJS helpers with React. If they are emitted into the
-          // generic vendor chunk, the React chunk imports vendor while vendor
-          // imports React, creating a production circular dependency that can
-          // crash before React.forwardRef is initialized.
-          if (id.includes('commonjsHelpers')) return 'react-vendor';
 
           // Heavy, lazy-only libraries: let Rollup place them INSIDE the async
           // chunks that import them (games, admin invoices, STL viewer, QR).
@@ -43,14 +41,17 @@ export default defineConfig(({ mode }) => ({
             return undefined;
           }
 
-          // Keep React runtime bundled together (small, needed on every page).
+          // Keep React runtime in the same vendor chunk as Radix and other UI
+          // libraries. Splitting React separately can create a production-only
+          // circular dependency where vendor imports React while React imports
+          // vendor helpers, leaving React.forwardRef undefined at startup.
           if (
             id.includes('react-dom') ||
             id.includes('react-router') ||
             id.includes('/react/') ||
             id.includes('scheduler')
           ) {
-            return 'react-vendor';
+            return 'vendor';
           }
           return 'vendor';
         },
