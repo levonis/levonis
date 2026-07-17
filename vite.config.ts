@@ -25,9 +25,11 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: (id) => {
           if (!id.includes('node_modules')) return undefined;
-          // Keep CommonJS helpers with the main vendor bundle so route
-          // chunks never end up importing them back (production TDZ risk).
-          if (id.includes('commonjsHelpers')) return 'vendor';
+          // Keep CommonJS helpers with React. If they are emitted into the
+          // generic vendor chunk, the React chunk imports vendor while vendor
+          // imports React, creating a production circular dependency that can
+          // crash before React.forwardRef is initialized.
+          if (id.includes('commonjsHelpers')) return 'react-vendor';
 
           // Heavy, lazy-only libraries: let Rollup place them INSIDE the async
           // chunks that import them (games, admin invoices, STL viewer, QR).
